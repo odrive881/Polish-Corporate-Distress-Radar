@@ -1,0 +1,21 @@
+# Environments and secrets
+.venv/
+.env
+
+# Python / tooling caches
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# IDE (not part of DIRECTORY_STRUCTURE.md; local to each contributor)
+.idea/
+
+# Generated artifacts (DIRECTORY_STRUCTURE.md §6 rule 6)
+*.parquet
+*.duckdb
+mlruns/
+site/build/
+site/.evidence/
+report/_output/
