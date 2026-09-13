@@ -376,6 +376,7 @@ Rules:
 │   ├── PROJECT_OVERVIEW.md
 │   ├── TECHNICAL_ARCHITECTURE.md
 │   ├── adr/                   # one record per decision
+│   ├── plans/                 # numbered, per-stage build plans (see docs/plans/)
 │   ├── specs/                 # per-stage specs
 │   └── glossary.md            # Polish accounting/legal terms, PL/EN
 ├── prompts/                   # versioned extraction prompts

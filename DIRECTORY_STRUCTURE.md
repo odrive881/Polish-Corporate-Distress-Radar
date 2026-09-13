@@ -31,6 +31,8 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   ├── TECHNICAL_ARCHITECTURE.md      # tool selection and rationale
 │   ├── adr/                           # architecture decision records, one file per decision
 │   │   └── 0001-record-title.md
+│   ├── plans/                         # numbered, per-stage build plans, written by /plan
+│   │   └── 0001-short-title.md
 │   ├── specs/                         # per-stage functional specs, one file per stage group
 │   │   ├── acquisition.md
 │   │   ├── parsing.md
@@ -202,6 +204,7 @@ Use this table before creating any new file. If a file doesn't clearly fit one r
 | Is a hand-labelled evaluation example | `evals/` | `tests/fixtures/` |
 | Is a golden document used to test parsing logic | `tests/fixtures/` | `evals/` |
 | Records why a tool or pattern was chosen | `docs/adr/` | code comments |
+| Is a numbered, stage-by-stage build plan | `docs/plans/` | `docs/specs/`, conversation-only |
 | Is a versioned LLM prompt | `prompts/` | inline in `src/distress_radar/extraction/` |
 
 ### `AGENTS.md` and `CLAUDE.md`
@@ -243,6 +246,7 @@ Import as `from distress_radar.acquisition import regon_client`, never via relat
 - **Config files:** match the thing they configure — `size_thresholds.yaml`, not `config1.yaml`.
 - **XML structure mapping files:** `<form>-<year>-v<n>.yaml`, e.g. `small-2018-v1.yaml`, `full-2026-v1.yaml`. The filename must be independently sufficient to identify which Ministry structure it maps.
 - **ADRs:** `docs/adr/NNNN-short-title.md`, sequential, never renumbered or deleted after merge — superseded ADRs are marked superseded in their own text, not removed.
+- **Build plans:** `docs/plans/NNNN-short-title.md`, sequential, one file per requested stage plan, never overwritten — mirrors the ADR numbering convention.
 - **Eval sets:** `evals/text_signals/<signal_type>.jsonl`, matching the `signal_type` enum in `AGENT_SPEC.md` §5 exactly — `going_concern_uncertainty.jsonl`, not `going_concern.jsonl`.
 - **Prompts:** `prompts/extraction/<signal_type>_v<n>.md`, using the same `signal_type` enum so prompt and eval set pair unambiguously.
 - **Tests:** mirror the `src/` path — `tests/parsing/test_mapping_engine.py` tests `src/distress_radar/parsing/mapping_engine.py`.
@@ -256,4 +260,4 @@ Import as `from distress_radar.acquisition import regon_client`, never via relat
 3. **New top-level directories require an ADR.** Write `docs/adr/NNNN-add-<name>-directory.md` explaining what it holds and why none of the existing directories fit, before creating it.
 4. **Never create a second location for the same kind of thing.** If a mapping table already lives in `config/mappings/`, a new one of the same kind goes there too — do not start a parallel `mappings/` folder inside `src/`.
 5. **Notebooks never get imported.** If exploratory code in `notebooks/` proves useful, promote it by rewriting it as a proper module in `src/`, not by importing the notebook.
-6. **Generated artifacts are never committed** except: golden fixtures (`tests/fixtures/`), golden eval sets (`evals/`), and rendered ADRs/specs (`docs/`). Model weights, MLflow run data, Parquet outputs, and rendered site builds are gitignored.
+6. **Generated artifacts are never committed** except: golden fixtures (`tests/fixtures/`), golden eval sets (`evals/`), and rendered ADRs/specs/plans (`docs/`). Model weights, MLflow run data, Parquet outputs, and rendered site builds are gitignored.

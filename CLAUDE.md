@@ -10,6 +10,7 @@ Context for Claude Code working in this repository. This file is intentionally s
 | What does this Polish term mean? | `docs/glossary.md` |
 | Why was tool X chosen over Y? | `docs/adr/`, then `docs/TECHNICAL_ARCHITECTURE.md` |
 | How do the numbered stages map to A–L? | `docs/PROJECT_OVERVIEW.md` § Stage crosswalk |
+| What's the plan for the next build step? | `docs/plans/` (numbered; highest number = current) |
 
 `AGENT_SPEC.md` and `DIRECTORY_STRUCTURE.md` sit at repo root, next to this file — they're read on every task, not just for context. `PROJECT_OVERVIEW.md`, `TECHNICAL_ARCHITECTURE.md`, and `glossary.md` live in `docs/`.
 

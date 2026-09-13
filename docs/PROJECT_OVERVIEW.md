@@ -63,6 +63,10 @@ The numbered stages below are the functional view. `AGENT_SPEC.md` and the code 
 
 Spec stage D (exploration, `notebooks/`) supports the work but produces no production asset, so it has no numbered stage here.
 
+### Build plans
+
+Stage-by-stage implementation plans live in `docs/plans/`, one numbered `.md` file per requested build step, never overwritten — the highest-numbered file describes the current step.
+
 ---
 
 ## Stage 1: Universe Discovery
