@@ -585,6 +585,7 @@ Phase 1 comes before phase 2 on purpose: discovering that a source is inaccessib
 │   ├── PROJECT_OVERVIEW.md    # what the platform does, stage by stage
 │   ├── TECHNICAL_ARCHITECTURE.md  # why each tool was chosen
 │   ├── adr/                   # one record per decision
+│   ├── plans/                 # numbered, per-stage build plans (see docs/plans/)
 │   ├── specs/                 # per-stage specs
 │   └── glossary.md            # Polish accounting/legal terms, PL/EN
 ├── prompts/                   # versioned extraction prompts
