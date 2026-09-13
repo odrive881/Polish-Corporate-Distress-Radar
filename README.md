@@ -2,7 +2,7 @@
 
 A batch data platform that estimates the probability a Polish company enters bankruptcy, restructuring, or liquidation within 12 and 24 months, built from statutory financial filings, registry history, and insolvency registers.
 
-**Status:** Phase 0 (repo skeleton). The only implemented code is a prototype XML parser with a golden-fixture test harness.
+**Status:** Phase 0 complete (repo skeleton, verification ADRs, Docker Compose, Dagster hello-world asset — see `docs/plans/0001-phase-0-completion.md`). Starting Phase 1 (acquisition). The only pipeline code so far is a prototype XML parser with a golden-fixture test harness.
 
 ## Where to start
 
@@ -23,6 +23,10 @@ Requires [uv](https://docs.astral.sh/uv/). `.venv` is created and kept in sync w
 make install   # uv sync --locked --extra dev
 make check     # ruff + pyright + pytest
 ```
+
+Local services (MinIO + Postgres): `cp .env.example .env` and fill it in, then `make dev-up` (`make dev-down` to stop; data persists in named volumes).
+
+Dagster (orchestration wiring in `dagster_defs/`, imports from `src/`): `uv run dagster dev -m dagster_defs.definitions` from the repo root.
 
 ## What not to build
 

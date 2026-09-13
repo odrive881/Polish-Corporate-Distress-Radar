@@ -123,9 +123,7 @@ Dataset names are defined once, in `AGENT_SPEC.md` §5. Use those exactly: `fina
 
 `model_registry` refers to MLflow, the tool, never to a table in this project.
 
-## Known moving targets — verify, don't assume
+## Known moving targets — verified
 
-- RDF was rebuilt in February 2026; confirm current access patterns before building acquisition (A3) against it.
-- A new generation of Ministry of Finance XML structures applies from fiscal year 2026 onward; confirm published XSDs before writing mappings (C2) for that year.
-
-Record findings from both checks as ADRs.
+- RDF was rebuilt in February 2026. Confirmed: public per-entity lookup/download (`ekrs.ms.gov.pl/rdf/rd/`, by KRS number, no auth, XML/PDF) still works as A3 assumes, no bulk API. It is bot-protected, so A3 may need the same `httpx`-first / `Playwright`-fallback tiering A1 already uses — confirm empirically in Phase 1. Full findings: `docs/adr/0004-rdf-2026-platform-verification.md`.
+- The new generation of Ministry of Finance XML structures applies to statements for **fiscal years beginning 1 January 2025 or later** (not "fiscal year 2026" — corrected from the earlier assumption). `tests/fixtures/neobis_001.xml` already uses this generation (`wariant 2 / wersja 1-0E`); a pre-2026-generation fixture is still needed for C2 coverage. Full findings: `docs/adr/0005-mf-xml-2026-structures-verification.md`.
