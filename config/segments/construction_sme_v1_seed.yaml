@@ -1,6 +1,8 @@
 # Hand-picked Phase 1 seed for construction_sme_v1 (plan 0002 §D).
 #
-# review_status: PENDING HUMAN REVIEW — do not commit until reviewed.
+# review_status: human-reviewed 2026-09-14. Reviewer removed POLBUD - WYKONAWSTWO
+# (0000212233) and PRZEDSIĘBIORSTWO BUDOWLANE MARBUD (0000163893): not present in
+# RDF. The remaining 17 are confirmed correctly assigned and present in RDF.
 #
 # Proposed 2026-09-14 by the implementing agent. Candidates came from registry
 # aggregator listings (bizraport.pl, imsig.pl); each KRS was then checked
@@ -25,13 +27,11 @@ entities:
   - {krs: "0000386777", regon: "221230335", status_hint: "w restrukturyzacji", name: "4 INVEST"}
   - {krs: "0000397658", regon: "021742314", status_hint: "w likwidacji", name: "AZ BUDOWNICTWO INWESTYCJE"}
   - {krs: "0000440028", regon: "302278641", status_hint: "w likwidacji", name: "BUDOWNICTWO DROGOWE KASPRZAK"}
-  - {krs: "0000212233", regon: "093200821", status_hint: "w likwidacji", name: "POLBUD - WYKONAWSTWO"}
   # --- no distress suffix reported ---
   - {krs: "0000209396", regon: "932989044", name: "PRZEDSIĘBIORSTWO TRANSPORTOWO-BUDOWLANE"}
   - {krs: "0000225354", regon: "391077382", name: "FIRMA BUDOWLANA FOBIS"}
   - {krs: "0000198429", regon: "251613610", name: "PARTNER FIRMA BUDOWLANA"}
   - {krs: "0000498679", regon: "222037089", name: "FIRMA BUDOWLANA GRANIT"}
-  - {krs: "0000163893", regon: "430036025", name: "PRZEDSIĘBIORSTWO BUDOWLANE MARBUD"}
   - {krs: "0000153402", regon: "291183897", name: "BUDOWNICTWO DROGOWE BUDAR"}
   - {krs: "0000041651", regon: "072312999", name: "BUDOWNICTWO WODNO-INŻYNIERYJNE I DROGOWE"}
   - {krs: "0000291203", regon: "060295431", name: "JS BUDOWNICTWO"}
