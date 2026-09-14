@@ -1,0 +1,38 @@
+# Hand-picked Phase 1 seed for construction_sme_v1 (plan 0002 §D).
+#
+# review_status: PENDING HUMAN REVIEW — do not commit until reviewed.
+#
+# Proposed 2026-09-14 by the implementing agent. Candidates came from registry
+# aggregator listings (bizraport.pl, imsig.pl); each KRS was then checked
+# against the GUS BIR1 *test* environment: all resolve to a legal person with
+# szczególna forma prawna 117 (sp. z o.o.) and a predominant PKD 2007 code in
+# section F. `regon` is the value BIR1 returned and acts as a reconciliation
+# hint. `status_hint` is the aggregator-reported name suffix, unverified
+# against KRZ/MSiG — it is a reviewer aid only and is not loaded as a label.
+#
+# KRS values MUST be quoted: an unquoted zero-padded number is parsed by YAML
+# as an integer (or as octal) and is quarantined as malformed.
+segment: construction_sme_v1
+discovery_source: manual_seed
+entities:
+  # --- publicly reported bankruptcy / restructuring / liquidation ---
+  - {krs: "0000507997", regon: "123109888", status_hint: "w upadłości (declared 2025-08-05)", name: "STALBUD-KONSTRUKCJE"}
+  - {krs: "0000181328", regon: "292841279", status_hint: "w upadłości (declared 2025-05-20)", name: "BS CONSTRUCTION"}
+  - {krs: "0000188883", regon: "432692450", status_hint: "w upadłości likwidacyjnej", name: "HENPOL"}
+  - {krs: "0000070294", regon: "932714873", status_hint: "w upadłości", name: "PRZEDSIĘBIORSTWO BUDOWLANO-INWESTYCYJNE"}
+  - {krs: "0000225506", regon: "180007809", status_hint: "w upadłości", name: "INSTALBUD-RZESZÓW"}
+  - {krs: "0000277937", regon: "020493949", status_hint: "w restrukturyzacji", name: "ISB BUDOWNICTWO"}
+  - {krs: "0000386777", regon: "221230335", status_hint: "w restrukturyzacji", name: "4 INVEST"}
+  - {krs: "0000397658", regon: "021742314", status_hint: "w likwidacji", name: "AZ BUDOWNICTWO INWESTYCJE"}
+  - {krs: "0000440028", regon: "302278641", status_hint: "w likwidacji", name: "BUDOWNICTWO DROGOWE KASPRZAK"}
+  - {krs: "0000212233", regon: "093200821", status_hint: "w likwidacji", name: "POLBUD - WYKONAWSTWO"}
+  # --- no distress suffix reported ---
+  - {krs: "0000209396", regon: "932989044", name: "PRZEDSIĘBIORSTWO TRANSPORTOWO-BUDOWLANE"}
+  - {krs: "0000225354", regon: "391077382", name: "FIRMA BUDOWLANA FOBIS"}
+  - {krs: "0000198429", regon: "251613610", name: "PARTNER FIRMA BUDOWLANA"}
+  - {krs: "0000498679", regon: "222037089", name: "FIRMA BUDOWLANA GRANIT"}
+  - {krs: "0000163893", regon: "430036025", name: "PRZEDSIĘBIORSTWO BUDOWLANE MARBUD"}
+  - {krs: "0000153402", regon: "291183897", name: "BUDOWNICTWO DROGOWE BUDAR"}
+  - {krs: "0000041651", regon: "072312999", name: "BUDOWNICTWO WODNO-INŻYNIERYJNE I DROGOWE"}
+  - {krs: "0000291203", regon: "060295431", name: "JS BUDOWNICTWO"}
+  - {krs: "0000123720", regon: "006470327", name: "BUDIMPOL"}

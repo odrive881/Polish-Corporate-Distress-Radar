@@ -1,0 +1,59 @@
+<root>
+  <dane>
+    <praw_regon9>291218756</praw_regon9>
+    <praw_nip>6612064945</praw_nip>
+    <praw_statusNip />
+    <praw_nazwa>"GRANT" SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ</praw_nazwa>
+    <praw_nazwaSkrocona>GRANT SP.Z O.O.</praw_nazwaSkrocona>
+    <praw_numerWRejestrzeEwidencji>0000028301</praw_numerWRejestrzeEwidencji>
+    <praw_dataWpisuDoRejestruEwidencji>2001-07-16</praw_dataWpisuDoRejestruEwidencji>
+    <praw_dataPowstania>2000-08-31</praw_dataPowstania>
+    <praw_dataRozpoczeciaDzialalnosci>2000-10-01</praw_dataRozpoczeciaDzialalnosci>
+    <praw_dataWpisuDoRegon />
+    <praw_dataZawieszeniaDzialalnosci />
+    <praw_dataWznowieniaDzialalnosci />
+    <praw_dataZaistnieniaZmiany>2010-12-06</praw_dataZaistnieniaZmiany>
+    <praw_dataZakonczeniaDzialalnosci />
+    <praw_dataSkresleniaZRegon />
+    <praw_dataOrzeczeniaOUpadlosci />
+    <praw_dataZakonczeniaPostepowaniaUpadlosciowego />
+    <praw_adSiedzKraj_Symbol>PL</praw_adSiedzKraj_Symbol>
+    <praw_adSiedzWojewodztwo_Symbol>26</praw_adSiedzWojewodztwo_Symbol>
+    <praw_adSiedzPowiat_Symbol>07</praw_adSiedzPowiat_Symbol>
+    <praw_adSiedzGmina_Symbol>011</praw_adSiedzGmina_Symbol>
+    <praw_adSiedzKodPocztowy>27400</praw_adSiedzKodPocztowy>
+    <praw_adSiedzMiejscowoscPoczty_Symbol>0947308</praw_adSiedzMiejscowoscPoczty_Symbol>
+    <praw_adSiedzMiejscowosc_Symbol>0947308</praw_adSiedzMiejscowosc_Symbol>
+    <praw_adSiedzUlica_Symbol>10013</praw_adSiedzUlica_Symbol>
+    <praw_adSiedzNumerNieruchomosci>8</praw_adSiedzNumerNieruchomosci>
+    <praw_adSiedzNumerLokalu />
+    <praw_adSiedzNietypoweMiejsceLokalizacji />
+    <praw_numerTelefonu />
+    <praw_numerWewnetrznyTelefonu />
+    <praw_numerFaksu />
+    <praw_adresEmail />
+    <praw_adresStronyinternetowej />
+    <praw_adSiedzKraj_Nazwa>POLSKA</praw_adSiedzKraj_Nazwa>
+    <praw_adSiedzWojewodztwo_Nazwa>ŚWIĘTOKRZYSKIE</praw_adSiedzWojewodztwo_Nazwa>
+    <praw_adSiedzPowiat_Nazwa>ostrowiecki</praw_adSiedzPowiat_Nazwa>
+    <praw_adSiedzGmina_Nazwa>Ostrowiec Świętokrzyski</praw_adSiedzGmina_Nazwa>
+    <praw_adSiedzMiejscowosc_Nazwa>Ostrowiec Świętokrzyski</praw_adSiedzMiejscowosc_Nazwa>
+    <praw_adSiedzMiejscowoscPoczty_Nazwa>Ostrowiec Świętokrzyski</praw_adSiedzMiejscowoscPoczty_Nazwa>
+    <praw_adSiedzUlica_Nazwa>ul. Test-Krucza</praw_adSiedzUlica_Nazwa>
+    <praw_podstawowaFormaPrawna_Symbol>1</praw_podstawowaFormaPrawna_Symbol>
+    <praw_szczegolnaFormaPrawna_Symbol>117</praw_szczegolnaFormaPrawna_Symbol>
+    <praw_formaFinansowania_Symbol>1</praw_formaFinansowania_Symbol>
+    <praw_formaWlasnosci_Symbol>214</praw_formaWlasnosci_Symbol>
+    <praw_organZalozycielski_Symbol />
+    <praw_organRejestrowy_Symbol>071290010</praw_organRejestrowy_Symbol>
+    <praw_rodzajRejestruEwidencji_Symbol>138</praw_rodzajRejestruEwidencji_Symbol>
+    <praw_podstawowaFormaPrawna_Nazwa>OSOBA PRAWNA</praw_podstawowaFormaPrawna_Nazwa>
+    <praw_szczegolnaFormaPrawna_Nazwa>SPÓŁKI Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ</praw_szczegolnaFormaPrawna_Nazwa>
+    <praw_formaFinansowania_Nazwa>JEDNOSTKA SAMOFINANSUJĄCA NIE BĘDĄCA JEDNOSTKĄ BUDŻETOWĄ LUB SAMORZĄDOWYM ZAKŁADEM BUDŻETOWYM</praw_formaFinansowania_Nazwa>
+    <praw_formaWlasnosci_Nazwa>WŁASNOŚĆ KRAJOWYCH OSÓB FIZYCZNYCH</praw_formaWlasnosci_Nazwa>
+    <praw_organZalozycielski_Nazwa />
+    <praw_organRejestrowy_Nazwa>SĄD REJONOWY W KIELCACH, X WYDZIAŁ GOSPODARCZY KRAJOWEGO REJESTRU SĄDOWEGO</praw_organRejestrowy_Nazwa>
+    <praw_rodzajRejestruEwidencji_Nazwa>REJESTR PRZEDSIĘBIORCÓW</praw_rodzajRejestruEwidencji_Nazwa>
+    <praw_liczbaJednLokalnych>0</praw_liczbaJednLokalnych>
+  </dane>
+</root>

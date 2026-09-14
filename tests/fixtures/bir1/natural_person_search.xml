@@ -1,0 +1,20 @@
+<root>
+  <dane>
+    <Regon>000000000</Regon>
+    <Nip>0000000000</Nip>
+    <StatusNip />
+    <Nazwa>SYNTHETIC SANITISED NATURAL PERSON</Nazwa>
+    <Wojewodztwo>MAZOWIECKIE</Wojewodztwo>
+    <Powiat>m. st. Warszawa</Powiat>
+    <Gmina>Śródmieście</Gmina>
+    <Miejscowosc>Warszawa</Miejscowosc>
+    <KodPocztowy>00-000</KodPocztowy>
+    <Ulica>ul. Test-Wilcza</Ulica>
+    <NrNieruchomosci>1</NrNieruchomosci>
+    <NrLokalu />
+    <Typ>F</Typ>
+    <SilosID>1</SilosID>
+    <DataZakonczeniaDzialalnosci />
+    <MiejscowoscPoczty>Warszawa</MiejscowoscPoczty>
+  </dane>
+</root>

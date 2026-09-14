@@ -1,0 +1,98 @@
+<root>
+  <dane>
+    <praw_pkdWersja>2007</praw_pkdWersja>
+    <praw_pkdKod>4321Z</praw_pkdKod>
+    <praw_pkdNazwa>WYKONYWANIE INSTALACJI ELEKTRYCZNYCH</praw_pkdNazwa>
+    <praw_pkdPrzewazajace>0</praw_pkdPrzewazajace>
+  </dane>
+  <dane>
+    <praw_pkdWersja>2007</praw_pkdWersja>
+    <praw_pkdKod>4674Z</praw_pkdKod>
+    <praw_pkdNazwa>SPRZEDAŻ HURTOWA WYROBÓW METALOWYCH ORAZ SPRZĘTU I DODATKOWEGO WYPOSAŻENIA HYDRAULICZNEGO I GRZEJNEGO</praw_pkdNazwa>
+    <praw_pkdPrzewazajace>0</praw_pkdPrzewazajace>
+  </dane>
+  <dane>
+    <praw_pkdWersja>2007</praw_pkdWersja>
+    <praw_pkdKod>4677Z</praw_pkdKod>
+    <praw_pkdNazwa>SPRZEDAŻ HURTOWA ODPADÓW I ZŁOMU</praw_pkdNazwa>
+    <praw_pkdPrzewazajace>0</praw_pkdPrzewazajace>
+  </dane>
+  <dane>
+    <praw_pkdWersja>2007</praw_pkdWersja>
+    <praw_pkdKod>4663Z</praw_pkdKod>
+    <praw_pkdNazwa>SPRZEDAŻ HURTOWA MASZYN WYKORZYSTYWANYCH W GÓRNICTWIE, BUDOWNICTWIE ORAZ INŻYNIERII LĄDOWEJ I WODNEJ</praw_pkdNazwa>
+    <praw_pkdPrzewazajace>0</praw_pkdPrzewazajace>
+  </dane>
+  <dane>
+    <praw_pkdWersja>2007</praw_pkdWersja>
+    <praw_pkdKod>4221Z</praw_pkdKod>
+    <praw_pkdNazwa>ROBOTY ZWIĄZANE Z BUDOWĄ RUROCIĄGÓW PRZESYŁOWYCH I SIECI ROZDZIELCZYCH</praw_pkdNazwa>
+    <praw_pkdPrzewazajace>0</praw_pkdPrzewazajace>
+  </dane>
+  <dane>
+    <praw_pkdWersja>2007</praw_pkdWersja>
+    <praw_pkdKod>4299Z</praw_pkdKod>
+    <praw_pkdNazwa>ROBOTY ZWIĄZANE Z BUDOWĄ POZOSTAŁYCH OBIEKTÓW INŻYNIERII LĄDOWEJ I WODNEJ, GDZIE INDZIEJ NIESKLASYFIKOWANE</praw_pkdNazwa>
+    <praw_pkdPrzewazajace>0</praw_pkdPrzewazajace>
+  </dane>
+  <dane>
+    <praw_pkdWersja>2007</praw_pkdWersja>
+    <praw_pkdKod>2573Z</praw_pkdKod>
+    <praw_pkdNazwa>PRODUKCJA NARZĘDZI</praw_pkdNazwa>
+    <praw_pkdPrzewazajace>0</praw_pkdPrzewazajace>
+  </dane>
+  <dane>
+    <praw_pkdWersja>2007</praw_pkdWersja>
+    <praw_pkdKod>2511Z</praw_pkdKod>
+    <praw_pkdNazwa>PRODUKCJA KONSTRUKCJI METALOWYCH I ICH CZĘŚCI</praw_pkdNazwa>
+    <praw_pkdPrzewazajace>1</praw_pkdPrzewazajace>
+  </dane>
+  <dane>
+    <praw_pkdWersja>2007</praw_pkdWersja>
+    <praw_pkdKod>7022Z</praw_pkdKod>
+    <praw_pkdNazwa>POZOSTAŁE DORADZTWO W ZAKRESIE PROWADZENIA DZIAŁALNOŚCI GOSPODARCZEJ I ZARZĄDZANIA</praw_pkdNazwa>
+    <praw_pkdPrzewazajace>0</praw_pkdPrzewazajace>
+  </dane>
+  <dane>
+    <praw_pkdWersja>2007</praw_pkdWersja>
+    <praw_pkdKod>7120B</praw_pkdKod>
+    <praw_pkdNazwa>POZOSTAŁE BADANIA I ANALIZY TECHNICZNE</praw_pkdNazwa>
+    <praw_pkdPrzewazajace>0</praw_pkdPrzewazajace>
+  </dane>
+  <dane>
+    <praw_pkdWersja>2007</praw_pkdWersja>
+    <praw_pkdKod>3832Z</praw_pkdKod>
+    <praw_pkdNazwa>ODZYSK SUROWCÓW Z MATERIAŁÓW SEGREGOWANYCH</praw_pkdNazwa>
+    <praw_pkdPrzewazajace>0</praw_pkdPrzewazajace>
+  </dane>
+  <dane>
+    <praw_pkdWersja>2007</praw_pkdWersja>
+    <praw_pkdKod>3314Z</praw_pkdKod>
+    <praw_pkdNazwa>NAPRAWA I KONSERWACJA URZĄDZEŃ ELEKTRYCZNYCH</praw_pkdNazwa>
+    <praw_pkdPrzewazajace>0</praw_pkdPrzewazajace>
+  </dane>
+  <dane>
+    <praw_pkdWersja>2007</praw_pkdWersja>
+    <praw_pkdKod>3311Z</praw_pkdKod>
+    <praw_pkdNazwa>NAPRAWA I KONSERWACJA METALOWYCH WYROBÓW GOTOWYCH</praw_pkdNazwa>
+    <praw_pkdPrzewazajace>0</praw_pkdPrzewazajace>
+  </dane>
+  <dane>
+    <praw_pkdWersja>2007</praw_pkdWersja>
+    <praw_pkdKod>3312Z</praw_pkdKod>
+    <praw_pkdNazwa>NAPRAWA I KONSERWACJA MASZYN</praw_pkdNazwa>
+    <praw_pkdPrzewazajace>0</praw_pkdPrzewazajace>
+  </dane>
+  <dane>
+    <praw_pkdWersja>2007</praw_pkdWersja>
+    <praw_pkdKod>3320Z</praw_pkdKod>
+    <praw_pkdNazwa>INSTALOWANIE MASZYN PRZEMYSŁOWYCH, SPRZĘTU I WYPOSAŻENIA</praw_pkdNazwa>
+    <praw_pkdPrzewazajace>0</praw_pkdPrzewazajace>
+  </dane>
+  <dane>
+    <praw_pkdWersja>2007</praw_pkdWersja>
+    <praw_pkdKod>7112Z</praw_pkdKod>
+    <praw_pkdNazwa>DZIAŁALNOŚĆ W ZAKRESIE INŻYNIERII I ZWIĄZANE Z NIĄ DORADZTWO TECHNICZNE</praw_pkdNazwa>
+    <praw_pkdPrzewazajace>0</praw_pkdPrzewazajace>
+  </dane>
+</root>

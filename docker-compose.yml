@@ -17,7 +17,9 @@ services:
       retries: 10
 
   minio:
-    image: minio/minio:latest
+    # Docker Hub `minio/minio` was withdrawn; quay.io still serves the upstream
+    # image. Pinned to the last community release — `latest` no longer moves.
+    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
     restart: unless-stopped
     # MINIO_BUCKET (.env) is not created here — B1's raw-write path creates it
     # on first use (or `mc mb` ad hoc); Phase 0 only stands the server up.

@@ -1,0 +1,20 @@
+<root>
+  <dane>
+    <Regon>430036025</Regon>
+    <Nip>7160004884</Nip>
+    <StatusNip />
+    <Nazwa>PRZEDSIĘBIORSTWO BUDOWLANE MARBUD SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ</Nazwa>
+    <Wojewodztwo>LUBELSKIE</Wojewodztwo>
+    <Powiat>puławski</Powiat>
+    <Gmina>Puławy</Gmina>
+    <Miejscowosc>Puławy</Miejscowosc>
+    <KodPocztowy>24-100</KodPocztowy>
+    <Ulica>ul. Test-Wilcza</Ulica>
+    <NrNieruchomosci>18</NrNieruchomosci>
+    <NrLokalu>22</NrLokalu>
+    <Typ>P</Typ>
+    <SilosID>6</SilosID>
+    <DataZakonczeniaDzialalnosci />
+    <MiejscowoscPoczty>Puławy</MiejscowoscPoczty>
+  </dane>
+</root>

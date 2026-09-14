@@ -11,12 +11,75 @@ below).
 Orchestration wiring only: this module and its `assets/`/`checks/` siblings
 import from `src/distress_radar/`, never the reverse. See
 `DIRECTORY_STRUCTURE.md` §3 "The core boundary".
+
+Resources are built from `distress_radar.settings.Settings` (environment /
+`.env`), so they carry no Dagster config of their own. Assets reach them by
+resource key (`postgres`, `raw_object_store`, `bir1`).
 """
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+from contextlib import contextmanager
+
 import dagster as dg
+import psycopg
+
+from distress_radar.acquisition.base import postgres_limiter
+from distress_radar.acquisition.raw_store import S3ObjectStore
+from distress_radar.acquisition.regon_client import ENDPOINTS, ZeepBir1Service, bir1_policy
+from distress_radar.settings import Settings
+
+
+class PostgresResource(dg.ConfigurableResource):
+    """Manifest database (B2). Connections are not autocommit; assets commit."""
+
+    @contextmanager
+    def connect(self) -> Iterator[psycopg.Connection]:
+        with psycopg.connect(Settings().postgres_conninfo) as conn:
+            yield conn
+
+
+class RawObjectStoreResource(dg.ConfigurableResource):
+    """Content-addressed raw store (B1) in MinIO."""
+
+    def store(self) -> S3ObjectStore:
+        settings = Settings()
+        return S3ObjectStore.from_endpoint(
+            settings.minio_endpoint,
+            settings.minio_access_key,
+            settings.minio_secret_key.get_secret_value(),
+            settings.minio_bucket,
+        )
+
+
+class Bir1Resource(dg.ConfigurableResource):
+    """GUS BIR1 (A2) with Postgres-persistent pacing. Test endpoint unless configured."""
+
+    @contextmanager
+    def service(self) -> Iterator[ZeepBir1Service]:
+        settings = Settings()
+        policy = bir1_policy(settings.bir1_requests_per_minute)
+        limiter = postgres_limiter(settings, policy)
+        try:
+            with ZeepBir1Service(
+                ENDPOINTS[settings.gus_bir1_endpoint],
+                settings.bir1_api_key(),
+                limiter=limiter,
+                policy=policy,
+            ) as service:
+                yield service
+        finally:
+            limiter.close()
+
 
 from dagster_defs.assets.acquisition import acquisition_assets
 
-defs = dg.Definitions(assets=acquisition_assets)
+defs = dg.Definitions(
+    assets=acquisition_assets,
+    resources={
+        "postgres": PostgresResource(),
+        "raw_object_store": RawObjectStoreResource(),
+        "bir1": Bir1Resource(),
+    },
+)
