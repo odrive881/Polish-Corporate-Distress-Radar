@@ -1,0 +1,26 @@
+# Universe spec for v1 (AGENT_SPEC.md §1, §6A). Declarative data, not code.
+#
+# Enforced at A2 (GUS BIR1): legal form and PKD section.
+# Declared only, enforced from filings in later stages: size_classes (§4.4,
+# computed per fiscal year from statements, never from a registry) and
+# min_history_years.
+segment: construction_sme_v1
+version: 1
+effective_from: 2026-09-14
+
+pkd_section: F
+pkd_match: predominant   # predominant | any
+# PKD divisions forming section F, keyed by the classification version BIR1
+# reports (praw_pkdWersja). Section-level check only: the full PKD 2007 <-> 2025
+# crosswalk (config/mappings/pkd_crosswalk.yaml) arrives with broader discovery.
+pkd_section_divisions:
+  "2007": ["41", "42", "43"]
+  "2025": ["41", "42", "43"]
+
+legal_form:
+  label: sp. z o.o.
+  # GUS "szczególna forma prawna" code: 117 = spółki z ograniczoną odpowiedzialnością
+  bir1_szczegolna_forma_prawna_symbol: "117"
+
+size_classes: [small, medium]
+min_history_years: 3

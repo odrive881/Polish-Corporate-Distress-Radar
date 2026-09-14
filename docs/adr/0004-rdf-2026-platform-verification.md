@@ -2,6 +2,7 @@
 
 - **Status:** accepted
 - **Date:** 2026-09-13
+- **Follow-up:** 0007 (empirical probe, 2026-09-14: the lookup endpoint moved and all RDF hosts are behind an Incapsula WAF)
 
 ## Context
 

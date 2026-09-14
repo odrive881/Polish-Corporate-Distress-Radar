@@ -1,0 +1,128 @@
+<root>
+  <dane>
+    <praw_pkdWersja>2007</praw_pkdWersja>
+    <praw_pkdKod>4332Z</praw_pkdKod>
+    <praw_pkdNazwa>ZAKŁADANIE STOLARKI BUDOWLANEJ</praw_pkdNazwa>
+    <praw_pkdPrzewazajace>0</praw_pkdPrzewazajace>
+  </dane>
+  <dane>
+    <praw_pkdWersja>2007</praw_pkdWersja>
+    <praw_pkdKod>4313Z</praw_pkdKod>
+    <praw_pkdNazwa>WYKONYWANIE WYKOPÓW I WIERCEŃ GEOLOGICZNO-INŻYNIERSKICH</praw_pkdNazwa>
+    <praw_pkdPrzewazajace>0</praw_pkdPrzewazajace>
+  </dane>
+  <dane>
+    <praw_pkdWersja>2007</praw_pkdWersja>
+    <praw_pkdKod>4339Z</praw_pkdKod>
+    <praw_pkdNazwa>WYKONYWANIE POZOSTAŁYCH ROBÓT BUDOWLANYCH WYKOŃCZENIOWYCH</praw_pkdNazwa>
+    <praw_pkdPrzewazajace>0</praw_pkdPrzewazajace>
+  </dane>
+  <dane>
+    <praw_pkdWersja>2007</praw_pkdWersja>
+    <praw_pkdKod>4329Z</praw_pkdKod>
+    <praw_pkdNazwa>WYKONYWANIE POZOSTAŁYCH INSTALACJI BUDOWLANYCH</praw_pkdNazwa>
+    <praw_pkdPrzewazajace>0</praw_pkdPrzewazajace>
+  </dane>
+  <dane>
+    <praw_pkdWersja>2007</praw_pkdWersja>
+    <praw_pkdKod>4391Z</praw_pkdKod>
+    <praw_pkdNazwa>WYKONYWANIE KONSTRUKCJI I POKRYĆ DACHOWYCH</praw_pkdNazwa>
+    <praw_pkdPrzewazajace>0</praw_pkdPrzewazajace>
+  </dane>
+  <dane>
+    <praw_pkdWersja>2007</praw_pkdWersja>
+    <praw_pkdKod>4321Z</praw_pkdKod>
+    <praw_pkdNazwa>WYKONYWANIE INSTALACJI ELEKTRYCZNYCH</praw_pkdNazwa>
+    <praw_pkdPrzewazajace>0</praw_pkdPrzewazajace>
+  </dane>
+  <dane>
+    <praw_pkdWersja>2007</praw_pkdWersja>
+    <praw_pkdKod>4331Z</praw_pkdKod>
+    <praw_pkdNazwa>TYNKOWANIE</praw_pkdNazwa>
+    <praw_pkdPrzewazajace>0</praw_pkdPrzewazajace>
+  </dane>
+  <dane>
+    <praw_pkdWersja>2007</praw_pkdWersja>
+    <praw_pkdKod>4941Z</praw_pkdKod>
+    <praw_pkdNazwa>TRANSPORT DROGOWY TOWARÓW</praw_pkdNazwa>
+    <praw_pkdPrzewazajace>0</praw_pkdPrzewazajace>
+  </dane>
+  <dane>
+    <praw_pkdWersja>2007</praw_pkdWersja>
+    <praw_pkdKod>4311Z</praw_pkdKod>
+    <praw_pkdNazwa>ROZBIÓRKA I BURZENIE OBIEKTÓW BUDOWLANYCH</praw_pkdNazwa>
+    <praw_pkdPrzewazajace>0</praw_pkdPrzewazajace>
+  </dane>
+  <dane>
+    <praw_pkdWersja>2007</praw_pkdWersja>
+    <praw_pkdKod>4221Z</praw_pkdKod>
+    <praw_pkdNazwa>ROBOTY ZWIĄZANE Z BUDOWĄ RUROCIĄGÓW PRZESYŁOWYCH I SIECI ROZDZIELCZYCH</praw_pkdNazwa>
+    <praw_pkdPrzewazajace>0</praw_pkdPrzewazajace>
+  </dane>
+  <dane>
+    <praw_pkdWersja>2007</praw_pkdWersja>
+    <praw_pkdKod>4299Z</praw_pkdKod>
+    <praw_pkdNazwa>ROBOTY ZWIĄZANE Z BUDOWĄ POZOSTAŁYCH OBIEKTÓW INŻYNIERII LĄDOWEJ I WODNEJ, GDZIE INDZIEJ NIESKLASYFIKOWANE</praw_pkdNazwa>
+    <praw_pkdPrzewazajace>0</praw_pkdPrzewazajace>
+  </dane>
+  <dane>
+    <praw_pkdWersja>2007</praw_pkdWersja>
+    <praw_pkdKod>4291Z</praw_pkdKod>
+    <praw_pkdNazwa>ROBOTY ZWIĄZANE Z BUDOWĄ OBIEKTÓW INŻYNIERII WODNEJ</praw_pkdNazwa>
+    <praw_pkdPrzewazajace>0</praw_pkdPrzewazajace>
+  </dane>
+  <dane>
+    <praw_pkdWersja>2007</praw_pkdWersja>
+    <praw_pkdKod>4222Z</praw_pkdKod>
+    <praw_pkdNazwa>ROBOTY ZWIĄZANE Z BUDOWĄ LINII TELEKOMUNIKACYJNYCH I ELEKTROENERGETYCZNYCH</praw_pkdNazwa>
+    <praw_pkdPrzewazajace>0</praw_pkdPrzewazajace>
+  </dane>
+  <dane>
+    <praw_pkdWersja>2007</praw_pkdWersja>
+    <praw_pkdKod>4211Z</praw_pkdKod>
+    <praw_pkdNazwa>ROBOTY ZWIĄZANE Z BUDOWĄ DRÓG I AUTOSTRAD</praw_pkdNazwa>
+    <praw_pkdPrzewazajace>0</praw_pkdPrzewazajace>
+  </dane>
+  <dane>
+    <praw_pkdWersja>2007</praw_pkdWersja>
+    <praw_pkdKod>4120Z</praw_pkdKod>
+    <praw_pkdNazwa>ROBOTY BUDOWLANE ZWIĄZANE ZE WZNOSZENIEM BUDYNKÓW MIESZKALNYCH I NIEMIESZKALNYCH</praw_pkdNazwa>
+    <praw_pkdPrzewazajace>1</praw_pkdPrzewazajace>
+  </dane>
+  <dane>
+    <praw_pkdWersja>2007</praw_pkdWersja>
+    <praw_pkdKod>4312Z</praw_pkdKod>
+    <praw_pkdNazwa>PRZYGOTOWANIE TERENU POD BUDOWĘ</praw_pkdNazwa>
+    <praw_pkdPrzewazajace>0</praw_pkdPrzewazajace>
+  </dane>
+  <dane>
+    <praw_pkdWersja>2007</praw_pkdWersja>
+    <praw_pkdKod>4399Z</praw_pkdKod>
+    <praw_pkdNazwa>POZOSTAŁE SPECJALISTYCZNE ROBOTY BUDOWLANE, GDZIE INDZIEJ NIESKLASYFIKOWANE</praw_pkdNazwa>
+    <praw_pkdPrzewazajace>0</praw_pkdPrzewazajace>
+  </dane>
+  <dane>
+    <praw_pkdWersja>2007</praw_pkdWersja>
+    <praw_pkdKod>4333Z</praw_pkdKod>
+    <praw_pkdNazwa>POSADZKARSTWO; TAPETOWANIE I OBLICOWYWANIE ŚCIAN</praw_pkdNazwa>
+    <praw_pkdPrzewazajace>0</praw_pkdPrzewazajace>
+  </dane>
+  <dane>
+    <praw_pkdWersja>2007</praw_pkdWersja>
+    <praw_pkdKod>4334Z</praw_pkdKod>
+    <praw_pkdNazwa>MALOWANIE I SZKLENIE</praw_pkdNazwa>
+    <praw_pkdPrzewazajace>0</praw_pkdPrzewazajace>
+  </dane>
+  <dane>
+    <praw_pkdWersja>2007</praw_pkdWersja>
+    <praw_pkdKod>7410Z</praw_pkdKod>
+    <praw_pkdNazwa>DZIAŁALNOŚĆ W ZAKRESIE SPECJALISTYCZNEGO PROJEKTOWANIA</praw_pkdNazwa>
+    <praw_pkdPrzewazajace>0</praw_pkdPrzewazajace>
+  </dane>
+  <dane>
+    <praw_pkdWersja>2007</praw_pkdWersja>
+    <praw_pkdKod>7112Z</praw_pkdKod>
+    <praw_pkdNazwa>DZIAŁALNOŚĆ W ZAKRESIE INŻYNIERII I ZWIĄZANE Z NIĄ DORADZTWO TECHNICZNE</praw_pkdNazwa>
+    <praw_pkdPrzewazajace>0</praw_pkdPrzewazajace>
+  </dane>
+</root>

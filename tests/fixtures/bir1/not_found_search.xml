@@ -1,0 +1,8 @@
+<root>
+  <dane>
+    <ErrorCode>4</ErrorCode>
+    <ErrorMessagePl>Nie znaleziono podmiotu dla podanych kryteriów wyszukiwania.</ErrorMessagePl>
+    <ErrorMessageEn>No data found for the specified search criteria.</ErrorMessageEn>
+    <Krs>9999999999</Krs>
+  </dane>
+</root>

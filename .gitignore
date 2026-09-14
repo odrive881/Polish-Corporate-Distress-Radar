@@ -9,6 +9,9 @@ __pycache__/
 .ruff_cache/
 .mypy_cache/
 
+# Acquisition HTTP cache (HTTP_CACHE_DIR)
+.cache/
+
 # IDE (not part of DIRECTORY_STRUCTURE.md; local to each contributor)
 .idea/
 

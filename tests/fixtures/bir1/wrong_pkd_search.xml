@@ -1,0 +1,20 @@
+<root>
+  <dane>
+    <Regon>291218756</Regon>
+    <Nip>6612064945</Nip>
+    <StatusNip />
+    <Nazwa>"GRANT" SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ</Nazwa>
+    <Wojewodztwo>ŚWIĘTOKRZYSKIE</Wojewodztwo>
+    <Powiat>ostrowiecki</Powiat>
+    <Gmina>Ostrowiec Świętokrzyski</Gmina>
+    <Miejscowosc>Ostrowiec Świętokrzyski</Miejscowosc>
+    <KodPocztowy>27-400</KodPocztowy>
+    <Ulica>ul. Test-Krucza</Ulica>
+    <NrNieruchomosci>8</NrNieruchomosci>
+    <NrLokalu />
+    <Typ>P</Typ>
+    <SilosID>6</SilosID>
+    <DataZakonczeniaDzialalnosci />
+    <MiejscowoscPoczty>Ostrowiec Świętokrzyski</MiejscowoscPoczty>
+  </dane>
+</root>

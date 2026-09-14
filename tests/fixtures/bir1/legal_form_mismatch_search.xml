@@ -1,0 +1,20 @@
+<root>
+  <dane>
+    <Regon>276566762</Regon>
+    <Nip>9542300051</Nip>
+    <StatusNip />
+    <Nazwa>UNISERV SPÓŁKA AKCYJNA W UPADŁOŚCI UKŁADOWEJ</Nazwa>
+    <Wojewodztwo>ŚLĄSKIE</Wojewodztwo>
+    <Powiat>m. Katowice</Powiat>
+    <Gmina>M. Katowice</Gmina>
+    <Miejscowosc>Katowice</Miejscowosc>
+    <KodPocztowy>40-337</KodPocztowy>
+    <Ulica>ul. Test-Krucza</Ulica>
+    <NrNieruchomosci>7 A</NrNieruchomosci>
+    <NrLokalu />
+    <Typ>P</Typ>
+    <SilosID>6</SilosID>
+    <DataZakonczeniaDzialalnosci />
+    <MiejscowoscPoczty>Katowice</MiejscowoscPoczty>
+  </dane>
+</root>
