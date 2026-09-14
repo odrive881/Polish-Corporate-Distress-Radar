@@ -35,6 +35,83 @@ ADR 0004 confirmed from documentation that RDF offers free, per-entity, unauthen
    - Until then, no code path automates past the Incapsula challenge.
 3. **The `ContentCheck` → `ContentCheckFailed` seam stays as built.** Whichever option is chosen, A3 must treat an HTTP-200 WAF page as a failure, never as a document. The probe's `detect_gate` is the reference check to promote into `document_retrieval.py`.
 
+## Option C in detail: a human-paced Playwright tier
+
+This section says what option C would involve, so it can be weighed against a and b. It is not a decision. Status stays `proposed`.
+
+### Precondition
+
+Option C needs **written confirmation** that automated browser access at this rate is acceptable. It must come from the RDF operator (Ministry of Justice) or from its published terms. Record who confirmed it, when, and the scope in this ADR before any code lands. Without that confirmation, option C does not proceed. This is a hard gate, not a formality.
+
+### What it is
+
+- A real Chromium browser, driven through Playwright's Python async API, uses the public `rdf-przegladarka.ms.gov.pl` UI the way a person would:
+  1. open the page;
+  2. search by KRS;
+  3. open the filing list;
+  4. download each document.
+- The browser runs Imperva's JavaScript challenge as it would for any visitor. The session cookies it gets (`visid_incap_*`, `incap_ses_*`) stay inside that browser context.
+- Playwright is already in the locked stack (AGENT_SPEC "Browser fallback: Playwright"). This is not a stack substitution.
+
+### Explicit limits: what option C does *not* include
+
+- No CAPTCHA-solving services, and no manual-solve relays built into the pipeline.
+- No stealth or fingerprint-spoofing plugins, no User-Agent forging, no proxy or IP rotation.
+- No exporting browser cookies into `httpx` (cookie replay) to skip the browser.
+- No parallel browser contexts to get around pacing.
+
+If an honest, real browser at human pace is still blocked or gets a CAPTCHA, option C has **failed**. The run stops, and the project falls back to option a or b. It does not escalate.
+
+### How it would fit A3 (shape for plan 0003)
+
+- **Adapter.** `acquisition/document_retrieval.py` gets an RDF adapter behind a small `FilingBrowser` Protocol, with a Playwright implementation and a fake for tests. This mirrors `ObjectStore` (`raw_store.py`) and `Bir1Service` (`regon_client.py`).
+- **Browser-only for RDF.** Every RDF host is gated, so RDF is fetched through the browser only, not "httpx first, browser on failure". The `ContentCheck` → `ContentCheckFailed` seam (`base.py`) still runs on every page and every download, with the probe's `detect_gate` as the reference check. A WAF page is always a failure, never a document.
+- **Filing list.** Capture the SPA's own XHR/JSON responses (`page.on("response")`) rather than scraping the DOM:
+  - they are sturdier than CSS selectors;
+  - the submission date (`known_from`) should appear there.
+
+  The list response itself is raw-stored through `put_raw`.
+- **Documents.** Download via `page.expect_download()` or the context's `APIRequestContext`, which shares the browser session.
+  - Bytes go to `put_raw` unmodified.
+  - The sidecar records `fetch_tier: playwright`, the browser version, and the document URL.
+  - Manifest rows follow the existing `raw_documents` / `raw_document_fetches` pattern.
+- **Pacing.**
+  - One serial browser with one context.
+  - A `pyrate-limiter` `PostgresBucket` keyed per *entity*, using `RDF_REQUESTS_PER_MINUTE` (e.g. 1–2 entities/minute).
+  - Randomised think-time between UI actions, and a daily cap.
+- **Circuit breaker.** After N consecutive `ContentCheckFailed` or CAPTCHA results, stop the whole run instead of retrying entity by entity.
+- **Failure taxonomy.**
+  - Timeouts → `TransientSourceError`, with bounded retries.
+  - Unresolved challenge, CAPTCHA, or block → `PermanentSourceError` (`rdf_access_blocked`). The entity stays unresolved for a later run, like A2 source errors.
+  - "Entity has no filings in RDF" → a reason-coded `quarantine` row.
+
+### Operational cost
+
+- **Memory.** Chromium uses about 300–500 MB of RAM per context.
+- **Install.** `playwright install chromium --with-deps` pulls system libraries under WSL. A later Dagster container would build on the `mcr.microsoft.com/playwright/python` base image.
+- **Throughput.** At about 1 entity/minute, a v1 universe of a few thousand entities is roughly 2–4 days of wall-clock backfill, spread over sessions. Incremental runs are small afterwards, because statements arrive annually.
+
+### Testing
+
+- `make check` stays network-free: tests use the fake `FilingBrowser` with recorded list JSON and document fixtures.
+- An optional `@pytest.mark.integration` test drives Playwright against local HTML served through `page.route`, never against RDF.
+
+### Risks
+
+- Imperva may flag automated Chromium even at low rates with honest behaviour. If so, option C does not work.
+- Terms and WAF posture can change. Re-run the probe notebook before each backfill.
+- The SPA's structure is fragile. That is why capture relies on its XHR responses first.
+- A browser tier is slower and harder to debug than `httpx`.
+
+### A no-automation next step, useful for every option
+
+A human opens `rdf-przegladarka.ms.gov.pl` in an ordinary browser, looks up one seed KRS, and saves a DevTools HAR. That is normal manual use of the public UI. It answers the probe's "not observable" findings:
+- the list endpoint shape;
+- the download URL shape;
+- whether a submission date is exposed.
+
+It de-risks plan 0003 whichever option is chosen. Store the HAR sanitised, with cookies and session tokens stripped, under `tests/fixtures/`.
+
 ## Consequences
 
 - Phase 1's deliverable ("raw documents in MinIO") is **blocked for financial statements**. A1/A2 (identity, BIR1 payloads in MinIO, manifest in Postgres) are unaffected. This is exactly the early discovery AGENT_SPEC §10 orders Phase 1 before Phase 2 to surface.

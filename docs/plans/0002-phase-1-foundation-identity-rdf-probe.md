@@ -98,12 +98,33 @@ This plan builds the shared foundation every adapter needs, lands the seed unive
 
 ## Definition of done
 
-- [ ] `settings`, `base`, `raw_store`, `manifest`, `universe_discovery`, `regon_client` implemented and tested.
-- [ ] Seed list human-reviewed and committed.
-- [ ] Dagster assets replace hello-world and materialize end to end against compose services: ~20 `universe_candidates` rows, `entity_master` rows for valid entities, reason-coded `quarantine` rows for the rest, `raw/sha256/...` objects with sidecars in MinIO.
-- [ ] Re-materializing adds no new raw objects or manifest rows (idempotence).
-- [ ] ADR 0006 and ADR 0007 written; `README.md` updated.
-- [ ] `make check` green; `make test-integration` green with `make dev-up`.
+- [x] `settings`, `base`, `raw_store`, `manifest`, `universe_discovery`, `regon_client` implemented and tested.
+- [x] Seed list human-reviewed and committed.
+- [x] Dagster assets replace hello-world and materialize end to end against compose services: ~20 `universe_candidates` rows, `entity_master` rows for valid entities, reason-coded `quarantine` rows for the rest, `raw/sha256/...` objects with sidecars in MinIO.
+- [x] Re-materializing adds no new raw objects or manifest rows (idempotence).
+- [x] ADR 0006 and ADR 0007 written; `README.md` updated.
+- [x] `make check` green; `make test-integration` green with `make dev-up`.
+
+## Close-out (2026-09-14)
+
+- **Seed review.** The human review removed POLBUD - WYKONAWSTWO (`0000212233`) and PRZEDSIĘBIORSTWO BUDOWLANE MARBUD (`0000163893`), because neither is present in RDF. The remaining 17 are confirmed correctly assigned and present in RDF: 9 carry an aggregator distress hint, 8 do not.
+- **Verification, on fresh compose volumes.**
+  - `make check`: ruff clean, pyright 0 errors, 36 passed.
+  - `make test-integration`: 4 passed.
+  - Dagster run 1 resolved 17 candidates. Row counts were:
+    - `universe_candidates` 17
+    - `entity_master` 17
+    - `quarantine` 0
+    - `raw_documents` 48
+    - `raw_document_fetches` 51 (3 fetches returned bytes already stored)
+    - `entity_reconciliation_log` 0
+
+    MinIO held 96 objects: 48 documents plus 48 sidecars.
+  - Dagster run 2 found 0 unresolved candidates, and all counts were identical.
+- **MinIO image.** Docker Hub's `minio/minio` was withdrawn, so `docker-compose.yml` pins `quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z`, the last community release. Community MinIO gets no further updates. Revisit if a security fix or S3 feature is needed.
+- **No live quarantine rows.** Every seed entity passed the A2 checks, so the quarantine path is covered only by the fixture tests in `tests/acquisition/test_regon_client.py`.
+- **BIR1 reports all 17 entities `active`,** including the 9 with a distress hint. BIR1 carries no insolvency status, and the test environment is a snapshot. Positive labels must come from KRZ/MSiG (A4).
+- **Plan 0003 is blocked** on the terms-of-use decision in ADR 0007 (options a/b/c; option C is detailed there).
 
 ## Next plan
 
