@@ -2,7 +2,7 @@
 
 A batch data platform that estimates the probability a Polish company enters bankruptcy, restructuring, or liquidation within 12 and 24 months, built from statutory financial filings, registry history, and insolvency registers.
 
-**Status:** Phase 1, first half (`docs/plans/0002-phase-1-foundation-identity-rdf-probe.md`): shared acquisition base, content-addressed raw store (MinIO) and manifest (Postgres), a 17-entity hand-picked seed universe, and GUS BIR1 identity validation wired as Dagster assets. The RDF access probe found every RDF host behind an Imperva Incapsula WAF (`docs/adr/0007-rdf-access-probe-results.md`), so financial-statement retrieval (A3, plan 0003) is on hold pending a terms-of-use decision. Parsing is still the prototype XML parser with a golden-fixture harness.
+**Status:** Phase 1, first half done (`docs/plans/0002-phase-1-foundation-identity-rdf-probe.md`): shared acquisition base, content-addressed raw store (MinIO) and manifest (Postgres), a 17-entity hand-picked seed universe, and GUS BIR1 identity validation wired as Dagster assets. The RDF access probe found every RDF host behind an Imperva Incapsula WAF; KRS support has since confirmed a non-invasive automated client at 3 documents/minute is permitted (`docs/adr/0007-rdf-access-probe-results.md`, accepted), and financial-statement retrieval (A3) is now being built per `docs/plans/0003-a3-rdf-document-retrieval.md`, which will close out Phase 1. Parsing is still the prototype XML parser with a golden-fixture harness.
 
 ## Where to start
 

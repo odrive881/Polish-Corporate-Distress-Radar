@@ -1,8 +1,9 @@
 # 0007 — RDF access probe results
 
-- **Status:** proposed. The decision below needs a human call on terms of use before plan 0003 is written.
-- **Date:** 2026-09-14
+- **Status:** accepted. Option C, below, is the decision.
+- **Date:** 2026-09-14 (probe); decided 2026-09-15
 - **Follows up:** 0004
+- **Followed up by:** plan 0003 (A3 build)
 
 ## Context
 
@@ -27,16 +28,23 @@ ADR 0004 confirmed from documentation that RDF offers free, per-entity, unauthen
 ## Decision
 
 1. **Plain `httpx` does not work for RDF.** A3 cannot be built as an httpx-only adapter.
-2. **Whether to add a Playwright tier is not an engineering routing decision. It needs a human decision on terms of use.** ADR 0004 anticipated a JS gate that a browser tier would simply render. What the probe found is a commercial bot-management WAF that blocks automated clients on every path. RDF's own description says it is protected against robot downloading. Driving a headless browser to pass that challenge would deliberately defeat an access control, which is more than "routing on failure". AGENT_SPEC §11.3 and §12 require acquisition to stay within the source's terms. So:
-   - **Plan 0003 is on hold** until someone decides between these options (in order of preference):
-     - **a.** Ask the Ministry of Justice (RDF operator) for sanctioned programmatic or research access, or an allow-listed client, at the project's modest rate. Record the answer.
-     - **b.** Look for a sanctioned bulk or partner channel for financial statements, e.g. licensed data from a registry aggregator that obtains them legitimately. Record licence terms.
-     - **c.** The Playwright tier ADR 0004 described, human-paced, per entity.
-3. **The `ContentCheck` → `ContentCheckFailed` seam stays as built.** Whichever option is chosen, A3 must treat an HTTP-200 WAF page as a failure, never as a document. The probe's `detect_gate` is the reference check to promote into `document_retrieval.py`.
+2. **Whether to add a Playwright tier was not an engineering routing decision. It needed a human decision on terms of use.** ADR 0004 anticipated a JS gate that a browser tier would simply render. What the probe found is a commercial bot-management WAF that blocks automated clients on every path. RDF's own description says it is protected against robot downloading. Driving a headless browser to pass that challenge without sanction would deliberately defeat an access control, which is more than "routing on failure". AGENT_SPEC §11.3 and §12 require acquisition to stay within the source's terms.
 
-## Option C in detail: a human-paced Playwright tier
+   **Resolved 2026-09-15: option C, below, is chosen.** See "KRS support confirmation" for the basis. Options a and b were not pursued — the confirmation covers a human-paced automated client directly, which is what option C already was, so there was no need to separately request an allow-listed client (option a) or source a licensed aggregator feed (option b). They remain the documented fallback, per option C's own "if blocked, falls back to a/b, does not escalate" rule below, if the WAF proves stricter in practice than the confirmation anticipated.
+3. **The `ContentCheck` → `ContentCheckFailed` seam stays as built.** A3 must treat an HTTP-200 WAF page as a failure, never as a document. The probe's `detect_gate` is the reference check to promote into `document_retrieval.py`.
 
-This section says what option C would involve, so it can be weighed against a and b. It is not a decision. Status stays `proposed`.
+## KRS support confirmation (2026-09-15)
+
+The user contacted KRS support directly and explained the project, specifically option C as described below: a real browser, human-paced, downloading an entity's own filed documents one at a time through the public RDF UI, for a research/modelling use case.
+
+- **Asked:** whether a non-invasive download automation script, operating at a low, human-comparable rate, is permitted against RDF.
+- **Confirmed by support:** yes — **3 documents a minute**, with a non-invasive download automation script, is allowed.
+- **Caveat, stated by support and recorded here verbatim in substance:** they do not know how the WAF (Imperva Incapsula) will behave toward such a script in practice. The confirmation is about permission, not about guaranteeing the WAF will let the traffic through.
+- **Status of this confirmation:** verbal/informal (support conversation), not a published written rate-limit policy. It resolves the terms-of-use question this ADR was blocked on, but it does not change the risk that Incapsula flags the traffic anyway (see Risks, below) — the circuit breaker and conservative pacing in option C's design are load-bearing, not just precautionary, because of that caveat. If a written confirmation becomes available later, replace this section with it.
+
+This is why the design below uses **3 documents/minute** in place of the earlier "1–2 entities/minute" placeholder, and why the design stays exactly as conservative in every other respect (no CAPTCHA-solving, no stealth, single serial context, circuit breaker).
+
+## Option C in detail: a human-paced Playwright tier, finalized
 
 ### What it is
 
@@ -55,7 +63,7 @@ This section says what option C would involve, so it can be weighed against a an
 - No exporting browser cookies into `httpx` (cookie replay) to skip the browser.
 - No parallel browser contexts to get around pacing.
 
-If an honest, real browser at human pace is still blocked or gets a CAPTCHA, option C has **failed**. The run stops, and the project falls back to option a or b. It does not escalate.
+If an honest, real browser at human pace is still blocked or gets a CAPTCHA, option C has **failed**, regardless of the KRS support confirmation above. The run stops, and the project falls back to option a or b. It does not escalate.
 
 ### How it would fit A3 (shape for plan 0003)
 
@@ -72,7 +80,7 @@ If an honest, real browser at human pace is still blocked or gets a CAPTCHA, opt
   - Manifest rows follow the existing `raw_documents` / `raw_document_fetches` pattern.
 - **Pacing.**
   - One serial browser with one context.
-  - A `pyrate-limiter` `PostgresBucket` keyed per *entity*, using `RDF_REQUESTS_PER_MINUTE` (e.g. 1–2 entities/minute).
+  - A `pyrate-limiter` `PostgresBucket` keyed per *request*, using `RDF_REQUESTS_PER_MINUTE = 3` — the literal, conservative reading of the KRS support confirmation ("3 documents a minute"). One token is spent per RDF network action: opening the filing list and every document download, not once per entity. An entity with several documents therefore takes several tokens, not one.
   - Randomised think-time between UI actions, and a daily cap.
 - **Circuit breaker.** After N consecutive `ContentCheckFailed` or CAPTCHA results, stop the whole run instead of retrying entity by entity.
 - **Failure taxonomy.**
@@ -84,7 +92,7 @@ If an honest, real browser at human pace is still blocked or gets a CAPTCHA, opt
 
 - **Memory.** Chromium uses about 300–500 MB of RAM per context.
 - **Install.** `playwright install chromium --with-deps` pulls system libraries under WSL. A later Dagster container would build on the `mcr.microsoft.com/playwright/python` base image.
-- **Throughput.** At about 1 entity/minute, a v1 universe of a few thousand entities is roughly 2–4 days of wall-clock backfill, spread over sessions. Incremental runs are small afterwards, because statements arrive annually.
+- **Throughput.** At 3 requests/minute, the 17-entity Phase 1 seed (roughly 1 filing-list open + ~4 documents per entity, ~5 requests/entity) is about 85 requests, or roughly 30 minutes of wall-clock time. The full v1 universe (a few thousand entities) is a much larger backfill at this rate — order of days to weeks depending on documents-per-entity — and is out of scope for Phase 1, which only needs the seed. Incremental runs afterwards are small, because statements arrive annually.
 
 ### Testing
 
@@ -93,8 +101,8 @@ If an honest, real browser at human pace is still blocked or gets a CAPTCHA, opt
 
 ### Risks
 
-- Imperva may flag automated Chromium even at low rates with honest behaviour. If so, option C does not work.
-- Terms and WAF posture can change. Re-run the probe notebook before each backfill.
+- Imperva may flag automated Chromium even at low rates with honest behaviour, regardless of KRS support's confirmation that the *policy* permits it — support was explicit they cannot promise how the WAF itself will react. If Imperva blocks it anyway, option C does not work and plan 0003 falls back to option a or b.
+- Terms and WAF posture can change, and the KRS confirmation is verbal, not a published policy. Re-run the probe notebook before each backfill, and before relying on this ADR if significant time has passed.
 - The SPA's structure is fragile. That is why capture relies on its XHR responses first.
 - A browser tier is slower and harder to debug than `httpx`.
 
@@ -105,11 +113,12 @@ A human opens `rdf-przegladarka.ms.gov.pl` in an ordinary browser, looks up one 
 - the download URL shape;
 - whether a submission date is exposed.
 
-It de-risks plan 0003 whichever option is chosen. Store the HAR sanitised, with cookies and session tokens stripped, under `tests/fixtures/`.
+This still de-risks plan 0003 even though option C is now decided and automation is confirmed permitted — the SPA's shape is still unobserved, and it is cheaper to learn it by hand than by writing scraper code against guesses. Plan 0003 makes this its first step. Store the HAR sanitised, with cookies and session tokens stripped, under `tests/fixtures/`.
 
 ## Consequences
 
-- Phase 1's deliverable ("raw documents in MinIO") is **blocked for financial statements**. A1/A2 (identity, BIR1 payloads in MinIO, manifest in Postgres) are unaffected. This is exactly the early discovery AGENT_SPEC §10 orders Phase 1 before Phase 2 to surface.
-- `CLAUDE.md` § "Known moving targets" and AGENT_SPEC §11.1 said the `ekrs.ms.gov.pl/rdf/rd/` lookup "still works as A3 assumes". That is no longer true. `CLAUDE.md` now points here. ADR 0004 remains as the documentary record and is not superseded, since its documentary findings still hold.
-- Re-run the probe notebook when the access question is answered, or if the WAF posture changes. It is cheap, low-rate, and stores what it sees.
-- The C2 parsing work (Phase 2) can still proceed against `tests/fixtures/` golden documents obtained by hand through the public browser UI, as `neobis_001.xml` was.
+- Phase 1's deliverable ("raw documents in MinIO") was blocked for financial statements while this ADR was `proposed`; it is **unblocked** now that option C is accepted. A1/A2 (identity, BIR1 payloads in MinIO, manifest in Postgres) were unaffected throughout. This is exactly the early discovery AGENT_SPEC §10 orders Phase 1 before Phase 2 to surface — it just took a real-world terms-of-use answer, not just an engineering one, to close.
+- `CLAUDE.md` § "Known moving targets" and AGENT_SPEC §11.1 said the `ekrs.ms.gov.pl/rdf/rd/` lookup "still works as A3 assumes". That is no longer true. `CLAUDE.md` now points here, and records the option-C decision. ADR 0004 remains as the documentary record and is not superseded, since its documentary findings still hold.
+- Re-run the probe notebook before the plan 0003 backfill, and periodically afterwards — it is cheap, low-rate, and stores what it sees, and both the WAF posture and the informal rate confirmation could change without notice.
+- The C2 parsing work (Phase 2) can still proceed against `tests/fixtures/` golden documents obtained by hand through the public browser UI, as `neobis_001.xml` was, independent of plan 0003's progress.
+- **Next:** `docs/plans/0003-a3-rdf-document-retrieval.md` builds the adapter this ADR specifies.
