@@ -8,6 +8,7 @@ Context for Claude Code working in this repository. This file is intentionally s
 | How do I build stage X? | `AGENT_SPEC.md` |
 | Where does this file go? | `DIRECTORY_STRUCTURE.md` |
 | What does this Polish term mean? | `docs/glossary.md` |
+| What data, documents, and credentials does the project need? | `docs/data_inventory.md` |
 | Why was tool X chosen over Y? | `docs/adr/`, then `docs/TECHNICAL_ARCHITECTURE.md` |
 | How do the numbered stages map to A–L? | `docs/PROJECT_OVERVIEW.md` § Stage crosswalk |
 | What's the plan for the next build step? | `docs/plans/` (numbered; highest number = current) |

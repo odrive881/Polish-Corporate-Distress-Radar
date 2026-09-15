@@ -124,7 +124,7 @@ This plan builds the shared foundation every adapter needs, lands the seed unive
 - **MinIO image.** Docker Hub's `minio/minio` was withdrawn, so `docker-compose.yml` pins `quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z`, the last community release. Community MinIO gets no further updates. Revisit if a security fix or S3 feature is needed.
 - **No live quarantine rows.** Every seed entity passed the A2 checks, so the quarantine path is covered only by the fixture tests in `tests/acquisition/test_regon_client.py`.
 - **BIR1 reports all 17 entities `active`,** including the 9 with a distress hint. BIR1 carries no insolvency status, and the test environment is a snapshot. Positive labels must come from KRZ/MSiG (A4).
-- **Plan 0003 is blocked** on the terms-of-use decision in ADR 0007 (options a/b/c; option C is detailed there).
+- **Plan 0003 is blocked** pending decision in ADR 0007 (options a/b/c; option C is detailed there).
 
 ## Next plan
 

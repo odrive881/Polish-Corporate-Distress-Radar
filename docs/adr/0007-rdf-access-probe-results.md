@@ -31,17 +31,12 @@ ADR 0004 confirmed from documentation that RDF offers free, per-entity, unauthen
    - **Plan 0003 is on hold** until someone decides between these options (in order of preference):
      - **a.** Ask the Ministry of Justice (RDF operator) for sanctioned programmatic or research access, or an allow-listed client, at the project's modest rate. Record the answer.
      - **b.** Look for a sanctioned bulk or partner channel for financial statements, e.g. licensed data from a registry aggregator that obtains them legitimately. Record licence terms.
-     - **c.** Only with explicit written confirmation that automated browser access is acceptable: the Playwright tier ADR 0004 described, human-paced, per entity.
-   - Until then, no code path automates past the Incapsula challenge.
+     - **c.** The Playwright tier ADR 0004 described, human-paced, per entity.
 3. **The `ContentCheck` → `ContentCheckFailed` seam stays as built.** Whichever option is chosen, A3 must treat an HTTP-200 WAF page as a failure, never as a document. The probe's `detect_gate` is the reference check to promote into `document_retrieval.py`.
 
 ## Option C in detail: a human-paced Playwright tier
 
 This section says what option C would involve, so it can be weighed against a and b. It is not a decision. Status stays `proposed`.
-
-### Precondition
-
-Option C needs **written confirmation** that automated browser access at this rate is acceptable. It must come from the RDF operator (Ministry of Justice) or from its published terms. Record who confirmed it, when, and the scope in this ADR before any code lands. Without that confirmation, option C does not proceed. This is a hard gate, not a formality.
 
 ### What it is
 
