@@ -35,7 +35,7 @@ These are the "credentials" of a company: they decide whether it belongs in the 
 
 All documents in this section come from the Repozytorium Dokumentów Finansowych, looked up one KRS number at a time (A3 / stage 3). Raw bytes go to MinIO before any parsing (SPEC §2.2, §6B).
 
-> **Status:** RDF is behind an Imperva Incapsula WAF that blocks plain HTTP clients. ADR 0007 option C (accepted) reaches it through a human-paced Playwright browser at 3 requests/minute, which KRS support informally confirmed is permitted. Plan 0003 builds it: every listed document is indexed with its detail (submission date included), and annual financial statements and their corrections are downloaded (`config/mappings/rdf_document_types.yaml`). The flow as observed: ADR 0007 addendum, 2026-09-16.
+> **Status:** RDF is behind an Imperva Incapsula WAF that blocks plain HTTP clients. ADR 0007 option C (accepted) reaches it through a human-paced Playwright browser at 3 requests/minute, which KRS support informally confirmed is permitted. Plan 0003 builds it: every listed document is indexed with its detail (submission date included), and annual financial statements and their corrections are downloaded (`config/mappings/rdf_document_types.yaml`). The flow as observed: ADR 0007 addendum, 2026-09-16. **The live run was then shown an hCaptcha**, so until another access route exists, documents are captured by hand as browser recordings and imported (`README.md` § "Manual RDF capture").
 
 ### 2.1 Filing metadata
 
@@ -154,8 +154,8 @@ The spec forbids bulk enumeration of any source. Acquisition is per entity, seed
 
 | Credential / access | Env var | Stage | Req. | Status |
 |---|---|---|---|---|
-| GUS BIR1 **production** API key (issued by GUS on request) | `GUS_BIR1_API_KEY`, `GUS_BIR1_ENDPOINT=prod`, `BIR1_REQUESTS_PER_MINUTE` | A2 | required for real data | test environment with public test key works; production key needed |
-| RDF portal access | `RDF_REQUESTS_PER_MINUTE` | A3 | required | no login; WAF blocks plain HTTP, so a Playwright browser at 3 requests/minute (ADR 0007 option C, informal KRS support confirmation) |
+| GUS BIR1 **production** API key (issued by GUS on request) | `GUS_BIR1_API_KEY`, `GUS_BIR1_ENDPOINT=prod`, `BIR1_REQUESTS_PER_MINUTE` | A2 | required for real data | obtained 2026-09-16; set in the local `.env` (gitignored), verified with one production lookup |
+| RDF portal access | `RDF_REQUESTS_PER_MINUTE`, `RDF_MANUAL_INBOX` | A3 | required | no login; WAF blocks plain HTTP, and automated browsers get a CAPTCHA (ADR 0007), so captured by hand for now |
 | KRS extract access | — | A2, A4 | required | public; terms and rate expectations to confirm (SPEC §11.3) |
 | KRZ access | — | A4 | required | public; terms to confirm (SPEC §11.3) |
 | MSiG archive access | — | A4 | required | public; terms to confirm (SPEC §11.3) |

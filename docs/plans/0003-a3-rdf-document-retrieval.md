@@ -8,7 +8,13 @@ Plan 0002 delivered A1 (17-entity seed), A2 (GUS BIR1 identity validation), B1 (
 
 ADR 0007 is now `accepted`: the user contacted KRS support, explained the project's option C (a human-paced Playwright tier), and got confirmation that 3 documents a minute with a non-invasive automation script is allowed. This plan builds exactly the adapter ADR 0007 specifies, with the confirmed rate folded in from the start rather than the ADR's earlier "1–2 entities/minute" placeholder. Once this lands, Phase 1's deliverable is complete for the 17-entity seed.
 
-## Status, 2026-09-16: step A done, design adjusted
+## Status, 2026-09-16: blocked. The first live run got a CAPTCHA
+
+The first live `filing_index` run (one entity, headed browser) was served an Imperva hCaptcha image challenge on the entry page, before any RDF API request. Under ADR 0007 that means option C has failed. The live DoD items below cannot be met without a new access decision (see ADR 0007, "Live result, 2026-09-16"). The code and tests are complete and green.
+
+**Interim, 2026-09-16:** documents are captured by hand as HAR files and imported by the `rdf_manual_import` asset (`acquisition/har_import.py`, procedure in `README.md` § "Manual RDF capture"). The live DoD items below are met through that asset instead of `filing_index` / `raw_filing_documents`.
+
+## Step A done, design adjusted (2026-09-16)
 
 Step A's HAR (2026-09-15) and DOM capture (2026-09-16) are in, as small recorded fixtures under `tests/fixtures/rdf/` (the HAR itself is gitignored). They showed that parts of steps D–F below assumed the wrong shape. **Where this section and the steps disagree, this section wins.** Full findings: ADR 0007 addendum.
 

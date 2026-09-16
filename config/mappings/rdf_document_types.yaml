@@ -11,9 +11,17 @@
 # with `download: true` are fetched. Corrections share their original's type
 # (`czyKorekta` in the detail), so they follow the same flag.
 #
+# Codes 1 and 5 are RDF's pre-2018 codes (seen on 2017 filings, KRS 0000041651,
+# 2026-09-16). Their names are inferred, not read from a detail: the list's
+# "Roczne sprawozdanie finansowe" filter returned the code-1 rows, and code 5 is
+# the only remaining name in that entity's filter list. Before 2018 a statement
+# was filed as separate documents (Bilans, Rachunek zysków i strat, Informacja
+# dodatkowa), named in the list row's `nazwa`. The detail check confirms or
+# refutes the code on first expansion.
+#
 # A code missing here is not an error: the document is indexed and detailed,
 # not downloaded, and its code/name pair should be added after review.
-version: 1
+version: 2
 effective_from: 2026-09-16
 observed:
   krs: "0000209396"
@@ -29,6 +37,14 @@ types:
     canonical: auditor_report
     download: false
   "20":
+    name: Sprawozdanie z działalności
+    canonical: management_report
+    download: false
+  "1":
+    name: Roczne sprawozdanie finansowe
+    canonical: statement
+    download: true
+  "5":
     name: Sprawozdanie z działalności
     canonical: management_report
     download: false

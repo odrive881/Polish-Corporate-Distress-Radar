@@ -25,8 +25,10 @@ from distress_radar.acquisition.document_retrieval import (
     load_document_types,
     retrieve_document,
 )
+from distress_radar.acquisition.har_import import import_har
 from distress_radar.acquisition.regon_client import resolve_entity
 from distress_radar.acquisition.universe_discovery import load_seed, load_segment
+from distress_radar.settings import Settings
 
 if TYPE_CHECKING:
     from dagster_defs.definitions import (
@@ -151,12 +153,18 @@ def _circuit_open_failure(exc: RdfCircuitOpen, done: int, failures: list[str]) -
     )
 
 
+class FilingIndexConfig(dg.Config):
+    only_krs: list[str] | None = None  # restrict this run to these entities
+
+
 @dg.asset(
     group_name="acquisition",
     deps=[entity_master],
     required_resource_keys={"postgres", "raw_object_store", "rdf_browser"},
 )
-def filing_index(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
+def filing_index(
+    context: dg.AssetExecutionContext, config: FilingIndexConfig
+) -> dg.MaterializeResult:
     """A3 — search each resolved entity in RDF and index its filing list.
 
     Inputs: `entity_master` rows with no A3 outcome yet (no `filing_index` rows,
@@ -168,7 +176,7 @@ def filing_index(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
     Indexed entities are skipped, so re-materializing makes no RDF requests and
     adds no rows. Each entity commits on its own; a blocked or failed lookup
     leaves the entity unresolved and fails the asset; the circuit breaker stops
-    the run at once.
+    the run at once. `only_krs` restricts a run to the listed entities.
     Partition scheme: none (unpartitioned).
     """
     postgres = cast("PostgresResource", context.resources.postgres)
@@ -183,6 +191,8 @@ def filing_index(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
         manifest.ensure_schema(conn)
         conn.commit()
         pending = manifest.unindexed_entities(conn)
+        if config.only_krs:
+            pending = [krs for krs in pending if krs in config.only_krs]
         context.log.info(f"{len(pending)} entities without an A3 filing-list outcome")
         if pending:
             with rdf.browser() as browser:
@@ -324,4 +334,103 @@ def raw_filing_documents(
     )
 
 
-acquisition_assets = [universe_candidates, entity_master, filing_index, raw_filing_documents]
+class RdfManualImportConfig(dg.Config):
+    inbox: str | None = None  # folder of HAR files; default RDF_MANUAL_INBOX
+
+
+@dg.asset(
+    group_name="acquisition",
+    deps=[entity_master],
+    required_resource_keys={"postgres", "raw_object_store"},
+)
+def rdf_manual_import(
+    context: dg.AssetExecutionContext, config: RdfManualImportConfig
+) -> dg.MaterializeResult:
+    """A3, manual tier — import RDF sessions a person recorded as HAR files.
+
+    Inputs: every `*.har` in the inbox (`RDF_MANUAL_INBOX`, default
+    `.cache/rdf_inbox`, gitignored), saved per README § "Manual RDF capture";
+    `entity_master`; `config/mappings/rdf_document_types.yaml`.
+    Outputs: the same as `filing_index` + `raw_filing_documents` for what the
+    HARs contain — raw RDF API responses and document bytes in MinIO (sidecar
+    `fetch_tier: manual_har`, `fetched_at` = capture time), `filing_index` rows
+    with their detail columns and `sha256`, and A3 `quarantine` rows. Only
+    pending work is done, so re-importing the same files adds nothing. The HAR
+    files themselves are never stored. In-scope documents a capture did not
+    complete are listed in the metadata (`missing_documents`); a file that could
+    not be read or imported fails the asset after the other files are done.
+    Partition scheme: none (unpartitioned).
+    """
+    postgres = cast("PostgresResource", context.resources.postgres)
+    object_store = cast("RawObjectStoreResource", context.resources.raw_object_store)
+    inbox = Path(config.inbox) if config.inbox else Settings().rdf_manual_inbox
+    files = sorted(inbox.glob("*.har"))
+    context.log.info(f"{len(files)} HAR files in {inbox}")
+    store = object_store.store()
+    document_types = load_document_types()
+
+    indexed = topped_up = details = downloads = 0
+    missing: dict[str, list[str]] = {}
+    problems: list[str] = []
+    with postgres.connect() as conn:
+        manifest.ensure_schema(conn)
+        conn.commit()
+        resolved = set(manifest.resolved_entities(conn))
+        for path in files:
+            try:
+                report = import_har(
+                    path.name,
+                    path.read_bytes(),
+                    conn=conn,
+                    store=store,
+                    ingestion_run_id=context.run_id,
+                    document_types=document_types,
+                    resolved=resolved,
+                )
+            except SourceError as exc:
+                problems.append(f"{path.name}: {exc}")
+                continue
+            context.log.info(
+                f"{path.name}: indexed {report.indexed}, quarantined {report.quarantined}, "
+                f"added to already-indexed {report.topped_up}, "
+                f"{report.details} details, {report.downloads} downloads, "
+                f"still missing {report.missing}"
+            )
+            for krs in report.not_resolved:
+                context.log.warning(f"{path.name}: KRS {krs} is not in entity_master; skipped")
+            problems.extend(f"{path.name}: {p}" for p in report.problems)
+            indexed += len(report.indexed)
+            topped_up += sum(report.topped_up.values())
+            details += report.details
+            downloads += report.downloads
+            for krs, refs in report.missing.items():
+                missing[krs] = refs  # later files see earlier imports, so the last word wins
+        counts = manifest.table_counts(conn)
+
+    for problem in problems:
+        context.log.error(problem)
+    if problems:
+        raise dg.Failure(
+            description=f"{len(problems)} problems importing RDF HAR files",
+            metadata={"problems": problems, "missing_documents": missing},
+        )
+    return dg.MaterializeResult(
+        metadata={
+            "har_files": len(files),
+            "indexed_this_run": indexed,
+            "documents_added_to_indexed_entities": topped_up,
+            "details_this_run": details,
+            "downloads_this_run": downloads,
+            "missing_documents": missing,
+            **{f"{table}_rows": n for table, n in counts.items()},
+        }
+    )
+
+
+acquisition_assets = [
+    universe_candidates,
+    entity_master,
+    filing_index,
+    raw_filing_documents,
+    rdf_manual_import,
+]

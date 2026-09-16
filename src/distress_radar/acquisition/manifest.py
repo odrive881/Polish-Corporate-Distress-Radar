@@ -23,6 +23,7 @@ from distress_radar.acquisition.document_retrieval import (
 )
 from distress_radar.acquisition.models import (
     EntityMasterRow,
+    FilingDocumentState,
     FilingIndexRow,
     PendingFilingDocument,
     QuarantineRecord,
@@ -415,6 +416,37 @@ def pending_filing_documents(
         )
         for krs, ref, code, type_id, file_name, downloaded in cur.fetchall()
     ]
+
+
+def filing_documents(conn: Connection, krs_numbers: Sequence[str]) -> list[FilingDocumentState]:
+    """Every `filing_index` row of these entities, newest period first."""
+    cur = conn.execute(
+        """
+        SELECT krs, document_ref, rdf_type_code, status, rdf_type_id, file_name,
+               sha256 IS NOT NULL
+        FROM filing_index
+        WHERE krs = ANY(%s)
+        ORDER BY krs, period_end DESC, document_ref
+        """,
+        (list(krs_numbers),),
+    )
+    return [
+        FilingDocumentState(
+            krs=str(krs).strip(),
+            document_ref=ref,
+            rdf_type_code=code,
+            status=status,
+            rdf_type_id=type_id,
+            file_name=file_name,
+            downloaded=downloaded,
+        )
+        for krs, ref, code, status, type_id, file_name, downloaded in cur.fetchall()
+    ]
+
+
+def resolved_entities(conn: Connection) -> list[str]:
+    cur = conn.execute("SELECT krs FROM entity_master ORDER BY krs")
+    return [str(krs).strip() for (krs,) in cur.fetchall()]
 
 
 def table_counts(conn: Connection) -> dict[str, int]:

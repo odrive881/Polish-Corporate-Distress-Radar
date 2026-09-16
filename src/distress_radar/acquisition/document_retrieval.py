@@ -515,6 +515,11 @@ class FilingBrowser(Protocol):
     @property
     def browser_version(self) -> str | None: ...
 
+    @property
+    def fetch_tier(self) -> str:
+        """Sidecar `fetch_tier` for what this browser returns (e.g. "playwright")."""
+        ...
+
     def open_filing_list(self, krs: str) -> FilingListing: ...
 
     def open_document(self, krs: str, document_ref: str) -> DocumentView: ...
@@ -625,6 +630,10 @@ class PlaywrightFilingBrowser:
     @property
     def browser_version(self) -> str | None:
         return self._browser.version if self._browser is not None else None
+
+    @property
+    def fetch_tier(self) -> str:
+        return FETCH_TIER
 
     def open_filing_list(self, krs: str) -> FilingListing:
         return self._call(lambda: self._open_filing_list_once(krs))
@@ -1018,7 +1027,7 @@ def _store_raw(
     *,
     ingestion_run_id: str,
     fetched_at: datetime,
-    browser_version: str | None,
+    browser: FilingBrowser,
     original_filename: str | None = None,
 ) -> RawFetchRecord:
     disposition = response.headers.get("content-disposition", "")
@@ -1031,8 +1040,8 @@ def _store_raw(
         http_headers={k: v for k, v in response.headers.items() if k in _KEPT_HEADERS},
         ingestion_run_id=ingestion_run_id,
         original_filename=filename.group(1) if filename is not None else original_filename,
-        fetch_tier=FETCH_TIER,
-        browser_version=browser_version,
+        fetch_tier=browser.fetch_tier,
+        browser_version=browser.browser_version,
     )
     digest = put_raw(store, response.body, meta)
     return RawFetchRecord(sha256=digest, byte_size=len(response.body), meta=meta)
@@ -1077,7 +1086,7 @@ def index_filings(
             response,
             ingestion_run_id=ingestion_run_id,
             fetched_at=fetched_at,
-            browser_version=browser.browser_version,
+            browser=browser,
         )
         for response in listing.responses
     ]
@@ -1148,7 +1157,7 @@ def fetch_filing_detail(
             response,
             ingestion_run_id=ingestion_run_id,
             fetched_at=fetched_at,
-            browser_version=browser.browser_version,
+            browser=browser,
         )
         for response in view.responses
     )
@@ -1182,7 +1191,7 @@ def download_filing(
         response,
         ingestion_run_id=ingestion_run_id,
         fetched_at=clock(),
-        browser_version=browser.browser_version,
+        browser=browser,
         original_filename=original_filename,
     )
     return A3Download(krs=krs, document_ref=document_ref, raw_fetch=record)

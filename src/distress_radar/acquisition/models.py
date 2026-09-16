@@ -277,3 +277,15 @@ class PendingFilingDocument(_Frozen):
     rdf_type_id: str | None
     file_name: str | None
     downloaded: bool
+
+
+class FilingDocumentState(_Frozen):
+    """Where one `filing_index` row stands: detail known (`rdf_type_id`), downloaded or not."""
+
+    krs: str
+    document_ref: str
+    rdf_type_code: str
+    status: RdfDocumentStatus
+    rdf_type_id: str | None
+    file_name: str | None
+    downloaded: bool

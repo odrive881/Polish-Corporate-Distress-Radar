@@ -134,3 +134,15 @@ A human HAR capture (2026-09-15) and DOM capture (2026-09-16) of one seed KRS (`
 - **Phase 1 download scope** is the annual financial statement and its corrections (type 18, `config/mappings/rdf_document_types.yaml`). Every listed document is still indexed and gets its detail.
 - **Throughput, replacing the estimate above.** The captured entity lists 49 documents, not ~4. At 3 requests/minute, statements for the 17-entity seed take about 3 hours. Details for the other ~660 documents take about 7 more, and can run later.
 - **Natural persons.** "Pokaż zgłoszenie" (`zgloszenie/{id}`) lists the filing's signatories by name. The adapter never clicks it, and its browser context aborts any request to that endpoint (invariant 6).
+
+## Live result, 2026-09-16: option C blocked by a CAPTCHA
+
+The first live run of the A3 adapter (`filing_index`, one entity, KRS `0000209396`, headed Chromium through Playwright, honest settings, before any API request) never got past the entry page:
+
+- The probe notebook, re-run first, showed the same posture as 2026-09-14: plain HTTP gets the Incapsula block page on every RDF host.
+- The adapter's first page load of `rdf-przegladarka.ms.gov.pl/wyszukaj-podmiot` returned the Incapsula block page ("Request unsuccessful. Incapsula incident ID"). The gate check stopped the run, and nothing was stored.
+- One diagnostic load, same settings, waiting 25 seconds, showed why: the block page loads an **hCaptcha image challenge** (`js.hcaptcha.com`, `api.hcaptcha.com/getcaptcha`, `challenge/image_label_binary`). It is not a JavaScript check that clears by itself, and the search form never appeared.
+
+By this ADR's own rule, **option C has failed**: an honest browser at human pace got a CAPTCHA. No further live runs were made. Nothing was retried, and nothing was done to get past the challenge. Choosing the fallback (option a or b, or a manual route) is an open decision; this addendum does not change the ADR's status. The adapter and its tests stay in place for the case where sanctioned access makes the same browser flow usable.
+
+**Interim route, decided 2026-09-16:** financial statements are captured by hand. A person uses the public UI in an ordinary browser, at human pace, and saves the session as a HAR. `acquisition/har_import.py` (the `rdf_manual_import` asset) imports the RDF API responses from it through the same A3 flow, with sidecar `fetch_tier: manual_har`. Procedure: `README.md` § "Manual RDF capture". This is ordinary manual use of the public UI, the same as the step-A capture. It is not automation, and it does not get around the CAPTCHA. Options a/b remain open for scale.

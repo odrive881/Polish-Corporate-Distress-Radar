@@ -40,6 +40,8 @@ class Settings(BaseSettings):
     gus_bir1_endpoint: Literal["test", "prod"] = "test"
 
     http_cache_dir: Path = Path(".cache/http")
+    # Where HAR files of manual RDF sessions are dropped for import (gitignored).
+    rdf_manual_inbox: Path = Path(".cache/rdf_inbox")
 
     # Per-source request pacing (A2/A3).
     # BIR1 publishes no rate limit (ADR 0004): deliberately conservative.

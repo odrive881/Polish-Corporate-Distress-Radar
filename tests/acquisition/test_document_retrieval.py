@@ -122,6 +122,7 @@ class FakeFilingBrowser:
     """Serves recorded responses; `blocked` KRS / document refs get the WAF page."""
 
     browser_version = "fake-chromium-1.0"
+    fetch_tier = FETCH_TIER
 
     def __init__(self, blocked: set[str] | None = None) -> None:
         self.blocked = blocked or set()
@@ -358,7 +359,7 @@ def test_detail_without_submission_date_is_refused_not_imputed():
 def test_document_type_config_matches_the_capture():
     types = load_document_types()
 
-    assert types.download_codes == ["18"]
+    assert types.download_codes == ["1", "18"]  # current and pre-2018 annual statements
     assert types.types["18"].name == json.loads(DETAIL)["rodzajDokumentu"]["nazwa"]
     listed_codes = {item["rodzaj"] for item in _recorded_items()}
     assert listed_codes <= set(types.types)
