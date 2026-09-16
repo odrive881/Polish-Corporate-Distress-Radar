@@ -41,11 +41,14 @@ class Settings(BaseSettings):
 
     http_cache_dir: Path = Path(".cache/http")
 
-    # Per-source request pacing (A2/A3). Deliberately conservative: neither
-    # source publishes a rate limit (ADR 0004), so stay well below anything
-    # that could look like bulk access.
+    # Per-source request pacing (A2/A3).
+    # BIR1 publishes no rate limit (ADR 0004): deliberately conservative.
     bir1_requests_per_minute: int = 30
-    rdf_requests_per_minute: int = 6
+    # RDF: KRS support confirmed, informally, 3 documents/minute for a
+    # non-invasive automation script (ADR 0007). Counted per RDF request —
+    # every filing-list open and every document download spends one token, not
+    # one per entity. Do not raise without a new ADR.
+    rdf_requests_per_minute: int = 3
 
     @property
     def postgres_conninfo(self) -> str:

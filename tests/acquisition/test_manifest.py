@@ -11,9 +11,12 @@ import psycopg
 import pytest
 
 from distress_radar.acquisition import manifest
+from distress_radar.acquisition.document_retrieval import A3Detail, A3Download, A3IndexResult
 from distress_radar.acquisition.models import (
     Bir1PkdCode,
     EntityMasterRow,
+    FilingDetail,
+    FilingIndexRow,
     QuarantineRecord,
     RawFetchRecord,
     ReconciliationRecord,
@@ -133,6 +136,7 @@ def test_ensure_schema_is_idempotent(conn: psycopg.Connection):
         "entity_master": 0,
         "entity_reconciliation_log": 0,
         "quarantine": 0,
+        "filing_index": 0,
     }
 
 
@@ -151,6 +155,7 @@ def test_reinserts_are_noops(conn: psycopg.Connection):
         "entity_master": 1,
         "entity_reconciliation_log": 1,
         "quarantine": 1,
+        "filing_index": 0,
     }
 
 
@@ -169,3 +174,157 @@ def test_unresolved_candidates_excludes_resolved_entities(conn: psycopg.Connecti
     _write_everything(conn, "run-1")
 
     assert manifest.unresolved_candidates(conn) == [("9999999999", None, None)]
+
+
+# --- A3 filing_index ---------------------------------------------------------------------------
+
+LIST_SHA = "ef" * 32
+DOC_SHA = "12" * 32
+CORR_SHA = "34" * 32
+DETAIL_SHA = "56" * 32
+OTHER_DETAIL_SHA = "78" * 32
+KRS = "0000163893"
+SCOPE = ["18"]
+
+
+def _row(ref: str, code: str, period_end: date, status: str = "NIEUSUNIETY") -> FilingIndexRow:
+    return FilingIndexRow(
+        krs=KRS,
+        document_ref=ref,
+        rdf_type_code=code,
+        status=status,  # type: ignore[arg-type]
+        period_start=date(period_end.year, 1, 1),
+        period_end=period_end,
+        deleted_on=date(2026, 1, 5) if status == "USUNIETY" else None,
+        discovered_at=NOW,
+        ingestion_run_id="run-1",
+    )
+
+
+def _index_result(run_id: str) -> A3IndexResult:
+    return A3IndexResult(
+        krs=KRS,
+        raw_fetches=[_fetch(LIST_SHA, run_id)],
+        entries=[
+            _row("aud-2025", "19", date(2025, 12, 31)),
+            _row("sf-2024", "18", date(2024, 12, 31)),
+            _row("sf-2025", "18", date(2025, 12, 31)),
+            _row("sf-2023-deleted", "18", date(2023, 12, 31), status="USUNIETY"),
+        ],
+    )
+
+
+def _detail(ref: str, type_id: str, detail_sha: str, submitted: date) -> A3Detail:
+    return A3Detail(
+        krs=KRS,
+        detail=FilingDetail(
+            document_ref=ref,
+            rdf_type_id=type_id,
+            rdf_type_name="Roczne sprawozdanie finansowe" if type_id == "18" else "Opinia",
+            submission_date=submitted,
+            prepared_date=date(2026, 5, 28),
+            is_correction=False,
+            is_ifrs=False,
+            file_name=f"{ref}.xml",
+            correction_refs=[ref],
+        ),
+        corrections_fetch=_fetch(CORR_SHA, "run-2"),
+        detail_fetch=_fetch(detail_sha, "run-2"),
+    )
+
+
+def _pending(conn: psycopg.Connection, **kwargs: bool) -> list[tuple[str, str | None, bool]]:
+    return [
+        (p.document_ref, p.rdf_type_id, p.downloaded)
+        for p in manifest.pending_filing_documents(conn, SCOPE, **kwargs)
+    ]
+
+
+def test_filing_index_reinserts_are_noops_and_counted(conn: psycopg.Connection):
+    manifest.ensure_schema(conn)
+    manifest.ensure_schema(conn)
+    _write_everything(conn, "run-1")
+    manifest.record_a3_index_result(conn, _index_result("run-1"))
+    first = manifest.table_counts(conn)
+
+    manifest.record_a3_index_result(conn, _index_result("run-1"))
+
+    assert manifest.table_counts(conn) == first
+    assert first["filing_index"] == 4
+
+
+def test_pending_documents_put_download_scope_first_and_skip_deleted(conn: psycopg.Connection):
+    manifest.ensure_schema(conn)
+    _write_everything(conn, "run-1")
+    assert manifest.unindexed_entities(conn) == [KRS]
+
+    manifest.record_a3_index_result(conn, _index_result("run-1"))
+
+    assert manifest.unindexed_entities(conn) == []
+    assert _pending(conn) == [
+        ("sf-2025", None, False),
+        ("sf-2024", None, False),
+        ("aud-2025", None, False),
+    ]
+    assert _pending(conn, download_scope_only=True) == [
+        ("sf-2025", None, False),
+        ("sf-2024", None, False),
+    ]
+
+
+def test_detail_and_download_settle_rows_once(conn: psycopg.Connection):
+    manifest.ensure_schema(conn)
+    _write_everything(conn, "run-1")
+    manifest.record_a3_index_result(conn, _index_result("run-1"))
+
+    # an out-of-scope document is settled by its detail alone
+    manifest.record_a3_detail(conn, _detail("aud-2025", "19", OTHER_DETAIL_SHA, date(2026, 6, 29)))
+    # an in-scope one still owes its download
+    manifest.record_a3_detail(conn, _detail("sf-2025", "18", DETAIL_SHA, date(2026, 6, 29)))
+    manifest.record_a3_detail(conn, _detail("sf-2025", "18", OTHER_DETAIL_SHA, date(2030, 1, 1)))
+    assert _pending(conn) == [("sf-2025", "18", False), ("sf-2024", None, False)]
+    row = conn.execute(
+        """
+        SELECT rdf_type_name, submission_date, file_name, correction_refs, detail_sha256
+        FROM filing_index WHERE document_ref = 'sf-2025'
+        """
+    ).fetchone()
+    assert row == (
+        "Roczne sprawozdanie finansowe",
+        date(2026, 6, 29),  # the first detail stands; a later one does not overwrite it
+        "sf-2025.xml",
+        ["sf-2025"],
+        DETAIL_SHA,
+    )
+
+    download = A3Download(krs=KRS, document_ref="sf-2025", raw_fetch=_fetch(DOC_SHA, "run-2"))
+    manifest.record_a3_download(conn, download)
+    manifest.record_a3_download(conn, download)
+    assert _pending(conn) == [("sf-2024", None, False)]
+    row = conn.execute("SELECT sha256 FROM filing_index WHERE document_ref = 'sf-2025'").fetchone()
+    assert row == (DOC_SHA,)
+
+
+def test_no_rdf_filings_quarantine_marks_entity_indexed(conn: psycopg.Connection):
+    manifest.ensure_schema(conn)
+    _write_everything(conn, "run-1")
+    manifest.record_a3_index_result(
+        conn,
+        A3IndexResult(
+            krs=KRS,
+            raw_fetches=[_fetch(LIST_SHA, "run-1")],
+            quarantine=[
+                QuarantineRecord(
+                    stage="A3",
+                    entity_key=KRS,
+                    reason_code="no_rdf_filings",
+                    detail="RDF filing list is empty",
+                    source_document_hash=LIST_SHA,
+                    ingestion_run_id="run-1",
+                    created_at=NOW,
+                )
+            ],
+        ),
+    )
+
+    assert manifest.unindexed_entities(conn) == []

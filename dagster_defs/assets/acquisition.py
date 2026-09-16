@@ -1,6 +1,6 @@
 """Dagster assets for stage A (acquisition). See AGENT_SPEC.md §6A.
 
-Thin wrappers: all logic lives in `distress_radar.acquisition`. Both assets
+Thin wrappers: all logic lives in `distress_radar.acquisition`. All assets
 write to the B2 manifest in Postgres and return only materialization metadata.
 `ingestion_run_id` is the Dagster run id.
 
@@ -15,12 +15,26 @@ from typing import TYPE_CHECKING, cast
 import dagster as dg
 
 from distress_radar.acquisition import manifest
-from distress_radar.acquisition.base import PermanentSourceError
+from distress_radar.acquisition.base import PermanentSourceError, SourceError
+from distress_radar.acquisition.document_retrieval import (
+    A3Detail,
+    A3Download,
+    CircuitBreaker,
+    RdfCircuitOpen,
+    index_filings,
+    load_document_types,
+    retrieve_document,
+)
 from distress_radar.acquisition.regon_client import resolve_entity
 from distress_radar.acquisition.universe_discovery import load_seed, load_segment
 
 if TYPE_CHECKING:
-    from dagster_defs.definitions import Bir1Resource, PostgresResource, RawObjectStoreResource
+    from dagster_defs.definitions import (
+        Bir1Resource,
+        PostgresResource,
+        RawObjectStoreResource,
+        RdfBrowserResource,
+    )
 
 SEGMENTS_DIR = Path(__file__).resolve().parents[2] / "config" / "segments"
 
@@ -130,4 +144,184 @@ def entity_master(context: dg.AssetExecutionContext, config: SegmentConfig) -> d
     )
 
 
-acquisition_assets = [universe_candidates, entity_master]
+def _circuit_open_failure(exc: RdfCircuitOpen, done: int, failures: list[str]) -> dg.Failure:
+    return dg.Failure(
+        description=f"RDF run stopped by circuit breaker: {exc}",
+        metadata={"completed_this_run": done, "failed_before_stop": failures},
+    )
+
+
+@dg.asset(
+    group_name="acquisition",
+    deps=[entity_master],
+    required_resource_keys={"postgres", "raw_object_store", "rdf_browser"},
+)
+def filing_index(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
+    """A3 — search each resolved entity in RDF and index its filing list.
+
+    Inputs: `entity_master` rows with no A3 outcome yet (no `filing_index` rows,
+    no A3 `quarantine` row).
+    Outputs: the raw entity-lookup and filing-list responses in MinIO (sidecar
+    `fetch_tier: playwright`); Postgres `raw_documents` / `raw_document_fetches`,
+    one `filing_index` row per listed document (detail columns and `sha256`
+    NULL), and `rdf_entity_not_found` / `no_rdf_filings` A3 `quarantine` rows.
+    Indexed entities are skipped, so re-materializing makes no RDF requests and
+    adds no rows. Each entity commits on its own; a blocked or failed lookup
+    leaves the entity unresolved and fails the asset; the circuit breaker stops
+    the run at once.
+    Partition scheme: none (unpartitioned).
+    """
+    postgres = cast("PostgresResource", context.resources.postgres)
+    object_store = cast("RawObjectStoreResource", context.resources.raw_object_store)
+    rdf = cast("RdfBrowserResource", context.resources.rdf_browser)
+    store = object_store.store()
+    breaker = CircuitBreaker()
+
+    indexed = quarantined = 0
+    failures: list[str] = []
+    with postgres.connect() as conn:
+        manifest.ensure_schema(conn)
+        conn.commit()
+        pending = manifest.unindexed_entities(conn)
+        context.log.info(f"{len(pending)} entities without an A3 filing-list outcome")
+        if pending:
+            with rdf.browser() as browser:
+                for krs in pending:
+                    try:
+                        result = index_filings(
+                            krs,
+                            browser=browser,
+                            store=store,
+                            ingestion_run_id=context.run_id,
+                            breaker=breaker,
+                        )
+                    except RdfCircuitOpen as exc:
+                        raise _circuit_open_failure(exc, indexed + quarantined, failures) from exc
+                    except SourceError as exc:
+                        context.log.error(f"KRS {krs}: {exc}")
+                        failures.append(krs)
+                        continue
+                    manifest.record_a3_index_result(conn, result)
+                    conn.commit()
+                    indexed += bool(result.entries)
+                    quarantined += bool(result.quarantine)
+        counts = manifest.table_counts(conn)
+
+    if failures:
+        raise dg.Failure(
+            description=f"RDF filing-list lookup failed for {len(failures)} KRS; left unresolved",
+            metadata={"failed_krs": failures},
+        )
+    return dg.MaterializeResult(
+        metadata={
+            "indexed_this_run": indexed,
+            "quarantined_this_run": quarantined,
+            **{f"{table}_rows": n for table, n in counts.items()},
+        }
+    )
+
+
+class RdfDocumentsConfig(dg.Config):
+    """Batching for the long-running document pass (3 RDF requests/minute)."""
+
+    max_documents: int | None = None  # stop after this many pending documents
+    download_scope_only: bool = False  # only documents whose type is in the download scope
+
+
+@dg.asset(
+    group_name="acquisition",
+    deps=[filing_index],
+    required_resource_keys={"postgres", "raw_object_store", "rdf_browser"},
+)
+def raw_filing_documents(
+    context: dg.AssetExecutionContext, config: RdfDocumentsConfig
+) -> dg.MaterializeResult:
+    """A3 — expand each indexed RDF document; download those in the download scope.
+
+    Inputs: not-deleted `filing_index` rows with no detail yet, or with a detail
+    whose type is in scope but no download yet; the scope is
+    `config/mappings/rdf_document_types.yaml` (Phase 1: annual financial
+    statements and their corrections). In-scope types go first.
+    Outputs: the detail responses and the document bytes in MinIO under
+    `raw/sha256/...`, unmodified, with sidecars (`fetch_tier: playwright`);
+    Postgres `raw_documents` / `raw_document_fetches`, and on each
+    `filing_index` row its detail columns (`submission_date` = known_from,
+    `detail_sha256`) and, for in-scope types, `sha256`. One expanded row serves
+    both steps. Each step commits on its own, so a failed download keeps its
+    detail; settled rows are skipped, so re-materializing makes no RDF requests
+    and adds no objects or rows. Contents are not parsed here (C1–C3). A failed
+    document stays pending and fails the asset; the circuit breaker stops the
+    run at once. `max_documents` / `download_scope_only` split the multi-hour
+    pass into shorter runs.
+    Partition scheme: none (unpartitioned).
+    """
+    postgres = cast("PostgresResource", context.resources.postgres)
+    object_store = cast("RawObjectStoreResource", context.resources.raw_object_store)
+    rdf = cast("RdfBrowserResource", context.resources.rdf_browser)
+    store = object_store.store()
+    document_types = load_document_types()
+    breaker = CircuitBreaker()
+
+    detailed = downloaded = 0
+    failures: list[str] = []
+    with postgres.connect() as conn:
+        manifest.ensure_schema(conn)
+        conn.commit()
+        pending = manifest.pending_filing_documents(
+            conn,
+            document_types.download_codes,
+            download_scope_only=config.download_scope_only,
+        )
+        context.log.info(f"{len(pending)} indexed RDF documents owed a detail or download")
+        if config.max_documents is not None:
+            pending = pending[: config.max_documents]
+
+        def on_detail(fetched: A3Detail) -> None:
+            nonlocal detailed
+            manifest.record_a3_detail(conn, fetched)
+            conn.commit()
+            detailed += 1
+
+        def on_download(download: A3Download) -> None:
+            nonlocal downloaded
+            manifest.record_a3_download(conn, download)
+            conn.commit()
+            downloaded += 1
+
+        if pending:
+            with rdf.browser() as browser:
+                for document in pending:
+                    try:
+                        retrieve_document(
+                            document,
+                            browser=browser,
+                            store=store,
+                            ingestion_run_id=context.run_id,
+                            breaker=breaker,
+                            document_types=document_types,
+                            on_detail=on_detail,
+                            on_download=on_download,
+                        )
+                    except RdfCircuitOpen as exc:
+                        raise _circuit_open_failure(exc, detailed + downloaded, failures) from exc
+                    except SourceError as exc:
+                        context.log.error(f"KRS {document.krs} document {document.document_ref}: {exc}")
+                        failures.append(f"{document.krs}:{document.document_ref}")
+                        continue
+        counts = manifest.table_counts(conn)
+
+    if failures:
+        raise dg.Failure(
+            description=f"RDF document retrieval failed for {len(failures)} documents; left pending",
+            metadata={"failed_documents": failures},
+        )
+    return dg.MaterializeResult(
+        metadata={
+            "detailed_this_run": detailed,
+            "downloaded_this_run": downloaded,
+            **{f"{table}_rows": n for table, n in counts.items()},
+        }
+    )
+
+
+acquisition_assets = [universe_candidates, entity_master, filing_index, raw_filing_documents]

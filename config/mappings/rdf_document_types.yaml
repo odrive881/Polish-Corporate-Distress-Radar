@@ -1,0 +1,42 @@
+# RDF document types (A3, plan 0003). Data, not code.
+#
+# Keyed by RDF's own type id: the filing list's `rodzaj` code, which equals the
+# document detail's `rodzajDokumentu.id` (checked at detail time). RDF does not
+# publish this taxonomy, so every entry here was observed, not looked up:
+# `name` is RDF's label, confirmed against both the rendered list and the
+# detail response.
+#
+# `download` sets the Phase 1 download scope. Every listed document is indexed
+# and gets its detail (submission date = known_from) regardless; only types
+# with `download: true` are fetched. Corrections share their original's type
+# (`czyKorekta` in the detail), so they follow the same flag.
+#
+# A code missing here is not an error: the document is indexed and detailed,
+# not downloaded, and its code/name pair should be added after review.
+version: 1
+effective_from: 2026-09-16
+observed:
+  krs: "0000209396"
+  captured: 2026-09-15
+
+types:
+  "18":
+    name: Roczne sprawozdanie finansowe
+    canonical: statement
+    download: true
+  "19":
+    name: Opinia biegłego rewidenta / Sprawozdanie z badania rocznego sprawozdania finansowego
+    canonical: auditor_report
+    download: false
+  "20":
+    name: Sprawozdanie z działalności
+    canonical: management_report
+    download: false
+  "3":
+    name: Uchwała lub postanowienie o zatwierdzeniu rocznego sprawozdania finansowego
+    canonical: approval_resolution
+    download: false
+  "4":
+    name: Uchwała o podziale zysku bądź pokryciu straty
+    canonical: profit_allocation_resolution
+    download: false

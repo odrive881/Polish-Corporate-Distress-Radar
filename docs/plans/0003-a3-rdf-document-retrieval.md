@@ -8,6 +8,19 @@ Plan 0002 delivered A1 (17-entity seed), A2 (GUS BIR1 identity validation), B1 (
 
 ADR 0007 is now `accepted`: the user contacted KRS support, explained the project's option C (a human-paced Playwright tier), and got confirmation that 3 documents a minute with a non-invasive automation script is allowed. This plan builds exactly the adapter ADR 0007 specifies, with the confirmed rate folded in from the start rather than the ADR's earlier "1–2 entities/minute" placeholder. Once this lands, Phase 1's deliverable is complete for the 17-entity seed.
 
+## Status, 2026-09-16: step A done, design adjusted
+
+Step A's HAR (2026-09-15) and DOM capture (2026-09-16) are in, as small recorded fixtures under `tests/fixtures/rdf/` (the HAR itself is gitignored). They showed that parts of steps D–F below assumed the wrong shape. **Where this section and the steps disagree, this section wins.** Full findings: ADR 0007 addendum.
+
+- **No URL templates.** The list is reached only by typing the KRS into the SPA and clicking "Wyszukaj". The SPA encrypts the KRS in its list request, so the adapter drives the page and reads its responses (`RdfSpaSpec` holds the entry URL and selectors, checked against the recorded DOM).
+- **`FilingBrowser`** is `open_filing_list(krs) -> FilingListing` (the entity lookup plus every list page), `open_document(krs, ref) -> DocumentView` (corrections list plus detail, from expanding the row), and `download(krs, ref)` ("Pobierz dokumenty", with the bytes read from the browser download).
+- **`filing_index`** holds the list's own fields (`rdf_type_code`, `status`, `period_start`/`period_end`, `deleted_on`) from the start. Detail columns (`submission_date` = known_from, `rdf_type_id`/`_name`, `is_correction`, `correction_refs`, `file_name`, `detail_sha256`) fill in on expansion, and `sha256` on download. There is no `fiscal_year`: reporting periods need not be calendar years, so C derives it.
+- **Scope.** Every listed, not-deleted document gets its detail. Only types with `download: true` in `config/mappings/rdf_document_types.yaml` are downloaded (Phase 1: type 18, the annual statement, and its corrections).
+- **Two A3 assets, not three steps.** `filing_index` lists entities. `raw_filing_documents` expands each pending document and, when in scope, downloads it from the same expanded row, so the row isn't expanded twice. Each step commits on its own. The asset's `max_documents` / `download_scope_only` config splits the long pass.
+- **Rate.** 3 tokens a minute, counted per API request the page sends. The page size is raised to 50 before paging. The circuit breaker is the only stop mechanism; no daily cap setting was added.
+- **Quarantine reasons:** `rdf_entity_not_found` (unknown KRS) and `no_rdf_filings`. A list or detail whose shape changed raises `RdfShapeError` (`rdf_response_shape_changed`) and leaves the item pending.
+- **Invariant 6.** The browser context aborts requests to `zgloszenie/{id}`, the submission view that lists signatories by name.
+
 ## Out of scope (do not do these here)
 
 - A4 (KRZ/MSiG legal events), A5 (NBP/BDL reference data) — later phases.
@@ -114,12 +127,12 @@ CREATE TABLE IF NOT EXISTS filing_index (
 
 ## Definition of done
 
-- [ ] Step A's sanitised HAR captured and committed under `tests/fixtures/rdf/`.
-- [ ] `playwright` added to `pyproject.toml`; `make lock` run; `chromium` installed locally.
-- [ ] `settings.rdf_requests_per_minute` defaults to `3`, documented as per-request in `.env.example`.
-- [ ] `document_retrieval.py`, `FilingBrowser` Protocol, Playwright + fake implementations, `filing_index` manifest table, and Dagster assets implemented and tested.
-- [ ] `make check` green (ruff, pyright, pytest — no network).
-- [ ] `make test-integration` green with `make dev-up`.
+- [x] Step A's HAR captured (2026-09-15, gitignored) and turned into recorded fixtures under `tests/fixtures/rdf/`, with the DOM capture (2026-09-16).
+- [x] `playwright` added to `pyproject.toml`; `make lock` run; `chromium` installed locally.
+- [x] `settings.rdf_requests_per_minute` defaults to `3`, documented as per-request in `.env.example`.
+- [x] `document_retrieval.py`, `FilingBrowser` Protocol, Playwright + fake implementations, `filing_index` manifest table, and Dagster assets implemented and tested.
+- [x] `make check` green (ruff, pyright, pytest — no network).
+- [x] `make test-integration` green with `make dev-up` (2026-09-16: 17 passed, including the Playwright loopback tests).
 - [ ] Dagster run materializes `filing_index` and `raw_filing_documents` against compose services for the 17-entity seed; document counts and any quarantine rows recorded in this plan's close-out, matching plan 0002's format.
 - [ ] Re-materializing adds no new raw objects or manifest rows (idempotence, invariant 5).
 - [ ] `README.md` and `CLAUDE.md` updated to reflect Phase 1 completion.

@@ -78,7 +78,7 @@ class UniverseCandidate(_Frozen):
 
 # --- Quarantine (Postgres landing table, ADR 0006) -------------------------------------------
 
-QuarantineStage = Literal["A1", "A2"]
+QuarantineStage = Literal["A1", "A2", "A3"]
 
 
 class QuarantineRecord(_Frozen):
@@ -187,3 +187,93 @@ class ReconciliationRecord(_Frozen):
     created_at: datetime
 
     _aware = field_validator("created_at")(_require_aware)
+
+
+# --- A3: RDF filing index --------------------------------------------------------------------
+
+
+RdfDocumentStatus = Literal["NIEUSUNIETY", "USUNIETY"]
+
+
+class RdfDocumentType(_Frozen):
+    name: str
+    canonical: str
+    download: bool
+
+
+class RdfDocumentTypes(_Frozen):
+    """`config/mappings/rdf_document_types.yaml`: observed RDF types and the download scope."""
+
+    model_config = ConfigDict(frozen=True, extra="ignore")
+
+    version: int
+    effective_from: date
+    types: dict[str, RdfDocumentType]
+
+    @property
+    def download_codes(self) -> list[str]:
+        return sorted(code for code, t in self.types.items() if t.download)
+
+
+class FilingListEntry(_Frozen):
+    """One row of an entity's RDF filing list (`dokumenty/wyszukiwanie`).
+
+    The list carries no submission date and no fiscal year: `known_from` comes
+    from the document detail, and the fiscal year is derived from the reporting
+    period later (periods need not be calendar years).
+    """
+
+    krs: str
+    document_ref: str  # RDF's own document id, e.g. "kQL-7bDLHvl-dIGIeLuLlQ=="
+    rdf_type_code: str  # `rodzaj`; equals the detail's `rodzajDokumentu.id`
+    status: RdfDocumentStatus
+    period_start: date
+    period_end: date
+    deleted_on: date | None
+
+
+class FilingDetail(_Frozen):
+    """One document's RDF detail (`dokumenty/{id}` + `dokumenty/{id}/id-dokumentu-i-korekt`)."""
+
+    document_ref: str
+    rdf_type_id: str
+    rdf_type_name: str
+    submission_date: date  # `dataDodania` -> known_from
+    prepared_date: date | None  # `dataSporzadzenia`
+    is_correction: bool
+    is_ifrs: bool
+    file_name: str | None
+    correction_refs: list[str]  # the document and its corrections, as RDF lists them
+
+
+class FilingIndexRow(_Frozen):
+    """A `filing_index` manifest row as first written from the list.
+
+    Detail columns and `sha256` are filled in later by `record_a3_document`.
+    """
+
+    krs: str
+    document_ref: str
+    rdf_type_code: str
+    status: RdfDocumentStatus
+    period_start: date
+    period_end: date
+    deleted_on: date | None
+    discovered_at: datetime
+    ingestion_run_id: str
+
+    _aware = field_validator("discovered_at")(_require_aware)
+
+
+class PendingFilingDocument(_Frozen):
+    """A listed document still owed a detail lookup, a download, or both.
+
+    `rdf_type_id` / `file_name` are `None` until the detail has been fetched.
+    """
+
+    krs: str
+    document_ref: str
+    rdf_type_code: str
+    rdf_type_id: str | None
+    file_name: str | None
+    downloaded: bool

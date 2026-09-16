@@ -14,7 +14,7 @@ import from `src/distress_radar/`, never the reverse. See
 
 Resources are built from `distress_radar.settings.Settings` (environment /
 `.env`), so they carry no Dagster config of their own. Assets reach them by
-resource key (`postgres`, `raw_object_store`, `bir1`).
+resource key (`postgres`, `raw_object_store`, `bir1`, `rdf_browser`).
 """
 
 from __future__ import annotations
@@ -26,6 +26,11 @@ import dagster as dg
 import psycopg
 
 from distress_radar.acquisition.base import postgres_limiter
+from distress_radar.acquisition.document_retrieval import (
+    RDF_SPA_SPEC,
+    PlaywrightFilingBrowser,
+    rdf_policy,
+)
 from distress_radar.acquisition.raw_store import S3ObjectStore
 from distress_radar.acquisition.regon_client import ENDPOINTS, ZeepBir1Service, bir1_policy
 from distress_radar.settings import Settings
@@ -73,6 +78,30 @@ class Bir1Resource(dg.ConfigurableResource):
             limiter.close()
 
 
+class RdfBrowserResource(dg.ConfigurableResource):
+    """RDF (A3) through one serial Playwright Chromium context, Postgres-persistent pacing.
+
+    The browser launches once per asset run and closes at the end (ADR 0007).
+    Set `headless: false` in the launchpad to watch a run (recommended for the
+    first live one); it needs a display (WSLg).
+    """
+
+    headless: bool = True
+
+    @contextmanager
+    def browser(self) -> Iterator[PlaywrightFilingBrowser]:
+        settings = Settings()
+        policy = rdf_policy(settings.rdf_requests_per_minute)
+        limiter = postgres_limiter(settings, policy)
+        try:
+            with PlaywrightFilingBrowser(
+                RDF_SPA_SPEC, limiter=limiter, policy=policy, headless=self.headless
+            ) as browser:
+                yield browser
+        finally:
+            limiter.close()
+
+
 from dagster_defs.assets.acquisition import acquisition_assets
 
 defs = dg.Definitions(
@@ -81,5 +110,6 @@ defs = dg.Definitions(
         "postgres": PostgresResource(),
         "raw_object_store": RawObjectStoreResource(),
         "bir1": Bir1Resource(),
+        "rdf_browser": RdfBrowserResource(),
     },
 )

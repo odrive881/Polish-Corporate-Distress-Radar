@@ -1,0 +1,24 @@
+{
+  "note": "metadata of the recorded download; the bytes are not committed",
+  "request": {
+    "method": "POST",
+    "url": "https://rdf-przegladarka.ms.gov.pl/services/rdf/przegladarka-dokumentow-finansowych/dokumenty/tresc",
+    "body": "[\"kQL-7bDLHvl-dIGIeLuLlQ==\"]"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-length": "3834323",
+      "content-type": "application/octet-stream"
+    },
+    "byte_size": 3834323,
+    "sha256": "ca1990eb3bfdc2a397eefa03d846a7daed90133f35e24699ec7a43723985ac1f",
+    "magic_hex": "504b030414000808",
+    "zip_members": [
+      {
+        "name": "sprawozdanie finansowe za rok 2025 korekta/sprawozdanie finansowe za rok 2025 korekta.xml",
+        "size": 6219085
+      }
+    ]
+  }
+}

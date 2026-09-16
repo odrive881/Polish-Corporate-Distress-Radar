@@ -59,6 +59,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   ├── mappings/
 │   │   ├── canonical_chart.yaml       # the canonical chart of accounts
 │   │   ├── pkd_crosswalk.yaml         # PKD 2007 <-> PKD 2025
+│   │   ├── rdf_document_types.yaml    # observed RDF document types, A3 download scope
 │   │   └── structures/                # one file per XML structure version
 │   │       ├── full-2018-v1.yaml
 │   │       ├── small-2018-v1.yaml

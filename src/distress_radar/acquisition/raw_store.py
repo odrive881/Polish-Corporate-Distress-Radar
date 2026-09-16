@@ -35,6 +35,9 @@ class RawDocumentMeta(BaseModel):
     http_headers: dict[str, str]
     ingestion_run_id: str
     original_filename: str | None = None
+    # How the bytes were fetched, when not plain HTTP (A3: "playwright", ADR 0007).
+    fetch_tier: str | None = None
+    browser_version: str | None = None
 
     @field_validator("fetched_at")
     @classmethod
