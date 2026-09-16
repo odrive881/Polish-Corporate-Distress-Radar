@@ -47,8 +47,8 @@ Use Chrome or Edge on Windows, at a normal pace (about 3 downloads a minute, the
    - If the list has more than 10 documents, first set the rows-per-page selector under the list to its largest option (50 or 100).
    - If the list is still longer than one page, click through every page with **›**.
    - The type filter is fine to use afterwards. The import ignores filtered lists, but it needs the full list to have loaded once.
-4. For each **Roczne sprawozdanie finansowe** row (corrections included):
-   - Before 2018, a statement was filed as separate rows (**Bilans**, **Rachunek zysków i strat**, **Informacja dodatkowa…**). Do each of them.
+4. For each **Roczne sprawozdanie finansowe** row from 2018 onwards (corrections included):
+   - Skip pre-2018 statements. They were filed as separate PDF rows (**Bilans**, **Rachunek zysków i strat**, **Informacja dodatkowa…**) and are out of v1 scope. They are still indexed from the list.
    - click the arrow at the end of the row to expand it, and wait for the details;
    - click **Pobierz dokumenty** and wait for the download to finish.
 

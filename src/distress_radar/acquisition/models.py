@@ -241,7 +241,7 @@ class FilingDetail(_Frozen):
     submission_date: date  # `dataDodania` -> known_from
     prepared_date: date | None  # `dataSporzadzenia`
     is_correction: bool
-    is_ifrs: bool
+    is_ifrs: bool | None  # RDF leaves it empty on pre-2018 filings
     file_name: str | None
     correction_refs: list[str]  # the document and its corrections, as RDF lists them
 

@@ -349,6 +349,19 @@ def test_detail_for_another_document_is_refused():
         parse_document_detail(STATEMENT_REF, CORRECTIONS, _detail_for(AUDITOR_REF, 19, "x"))
 
 
+def test_pre_2018_detail_without_ifrs_flag_parses():
+    detail = json.loads(DETAIL)
+    detail["czyMSR"] = None  # as RDF sends it for 2017 filings
+    detail["rodzajDokumentu"] = {**detail["rodzajDokumentu"], "id": 1}
+
+    parsed = parse_document_detail(STATEMENT_REF, CORRECTIONS, json.dumps(detail).encode())
+
+    assert (parsed.rdf_type_id, parsed.is_ifrs) == ("1", None)
+    with pytest.raises(RdfShapeError, match="czyMSR"):
+        detail["czyMSR"] = "Nie"
+        parse_document_detail(STATEMENT_REF, CORRECTIONS, json.dumps(detail).encode())
+
+
 def test_detail_without_submission_date_is_refused_not_imputed():
     detail = json.loads(DETAIL)
     detail["dataDodania"] = None
@@ -359,7 +372,8 @@ def test_detail_without_submission_date_is_refused_not_imputed():
 def test_document_type_config_matches_the_capture():
     types = load_document_types()
 
-    assert types.download_codes == ["1", "18"]  # current and pre-2018 annual statements
+    assert types.download_codes == ["18"]  # pre-2018 statements (code 1) are out of v1 scope
+    assert types.types["1"].name == types.types["18"].name
     assert types.types["18"].name == json.loads(DETAIL)["rodzajDokumentu"]["nazwa"]
     listed_codes = {item["rodzaj"] for item in _recorded_items()}
     assert listed_codes <= set(types.types)

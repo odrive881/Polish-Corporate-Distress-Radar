@@ -312,6 +312,10 @@ def _bool(value: object, what: str) -> bool:
     return value
 
 
+def _optional_bool(value: object, what: str) -> bool | None:
+    return None if value is None else _bool(value, what)
+
+
 def _date(value: object, what: str) -> date:
     try:
         return date.fromisoformat(_str(value, what))
@@ -471,7 +475,7 @@ def parse_document_detail(
         submission_date=_date(detail["dataDodania"], "dataDodania"),
         prepared_date=_optional_date(detail.get("dataSporzadzenia"), "dataSporzadzenia"),
         is_correction=_bool(detail["czyKorekta"], "czyKorekta"),
-        is_ifrs=_bool(detail["czyMSR"], "czyMSR"),
+        is_ifrs=_optional_bool(detail["czyMSR"], "czyMSR"),  # empty on pre-2018 filings
         file_name=_optional_str(detail.get("nazwaPliku"), "nazwaPliku"),
         correction_refs=refs,
     )
