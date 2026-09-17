@@ -191,14 +191,15 @@ class HarCapture:
                 ref = path.removeprefix("dokumenty/").removesuffix(CORRECTIONS_SUFFIX)
                 capture.corrections[ref] = exchange  # latest wins
             elif path == DOWNLOAD_PATH:
+                # One file per click: the expanded document and its corrections.
                 requested = _json_or_none(exchange.request_body)
-                if isinstance(requested, list) and len(cast(list[object], requested)) == 1:
-                    ref = cast(list[object], requested)[0]
-                    if isinstance(ref, str):
-                        capture.downloads[ref] = exchange
-                        continue
+                refs = cast(list[object], requested) if isinstance(requested, list) else []
+                if refs and all(isinstance(ref, str) for ref in refs):
+                    for ref in refs:
+                        capture.downloads[cast(str, ref)] = exchange  # latest wins
+                    continue
                 capture.skipped.append(
-                    f"download of {requested!r} at {exchange.started}: not one document"
+                    f"download of {requested!r} at {exchange.started}: not a list of documents"
                 )
             elif (ref := _document_ref(path)) is not None:
                 capture.details[ref] = exchange
@@ -295,13 +296,28 @@ class HarFilingBrowser:
         detail = self._capture.details.get(document_ref)
         if corrections is None or detail is None:
             raise NotCaptured(f"the capture did not expand document {document_ref}")
-        answer = _json_or_none(detail.response.body)
-        if isinstance(answer, dict):
-            owner = cast(dict[str, Any], answer).get("nrKRS")
-            if owner is not None and owner != krs:
-                raise RdfShapeError(f"document {document_ref} belongs to {owner}, not {krs}")
-        self._returned([corrections, detail])
-        return DocumentView(corrections=corrections.response, detail=detail.response)
+        refs = _json_or_none(corrections.response.body)
+        others = [
+            ref
+            for ref in (cast(list[object], refs) if isinstance(refs, list) else [])
+            if isinstance(ref, str) and ref != document_ref
+        ]
+        missing = [ref for ref in others if ref not in self._capture.details]
+        if missing:
+            raise NotCaptured(f"the capture expanded {document_ref} without details of {missing}")
+        related = {ref: self._capture.details[ref] for ref in others}
+        for exchange in (detail, *related.values()):
+            answer = _json_or_none(exchange.response.body)
+            if isinstance(answer, dict):
+                owner = cast(dict[str, Any], answer).get("nrKRS")
+                if owner is not None and owner != krs:
+                    raise RdfShapeError(f"document {document_ref} belongs to {owner}, not {krs}")
+        self._returned([corrections, detail, *related.values()])
+        return DocumentView(
+            corrections=corrections.response,
+            detail=detail.response,
+            related={ref: exchange.response for ref, exchange in related.items()},
+        )
 
     def has_detail(self, document_ref: str) -> bool:
         return document_ref in self._capture.details and document_ref in self._capture.corrections
@@ -400,29 +416,45 @@ def import_har(
             report.topped_up[krs] = len({e.document_ref for e in result.entries} - known)
 
     searched = [krs for krs in capture.krs_numbers if krs in resolved]
+    saved_refs: set[str] = set()  # rows a file from this capture already covers
     for row in manifest.filing_documents(conn, searched):
         ref = row.document_ref
-        type_id, file_name, downloaded = row.rdf_type_id, row.file_name, row.downloaded
-        if type_id is None and browser.has_detail(ref):
+        type_id, file_name, bundle = row.rdf_type_id, row.file_name, row.bundle
+        if row.needs_detail and browser.has_detail(ref):
             fetched = attempt(
                 f"detail of {ref} ({row.krs})", partial(fetch_filing_detail, row.krs, ref, **flow)
             )
             if fetched is not None:
                 manifest.record_a3_detail(conn, fetched)
                 conn.commit()
-                report.details += 1
+                report.details += 1 + len(fetched.related)
                 type_id, file_name = fetched.detail.rdf_type_id, fetched.detail.file_name
-        if type_id is not None and not downloaded and browser.has_download(ref):
+                bundle = fetched.detail.correction_refs
+        if (
+            type_id is not None
+            and not row.downloaded
+            and ref not in saved_refs
+            and browser.has_download(row.download_ref)
+        ):
             saved = attempt(
-                f"download of {ref} ({row.krs})",
-                partial(download_filing, row.krs, ref, original_filename=file_name, **flow),
+                f"download of {row.download_ref} ({row.krs})",
+                partial(
+                    download_filing,
+                    row.krs,
+                    row.download_ref,
+                    bundle=bundle,
+                    original_filename=file_name,
+                    **flow,
+                ),
             )
             if saved is not None:
                 manifest.record_a3_download(conn, saved)
                 conn.commit()
                 report.downloads += 1
-                downloaded = True
-        in_scope = (type_id if type_id is not None else row.rdf_type_code) in scope
-        if row.status == "NIEUSUNIETY" and in_scope and not downloaded:
-            report.missing.setdefault(row.krs, []).append(ref)
+                saved_refs.update(saved.document_refs)
+
+    for row in manifest.filing_documents(conn, searched):
+        in_scope = (row.rdf_type_id or row.rdf_type_code) in scope
+        if row.status == "NIEUSUNIETY" and in_scope and (row.needs_detail or not row.downloaded):
+            report.missing.setdefault(row.krs, []).append(row.document_ref)
     return report

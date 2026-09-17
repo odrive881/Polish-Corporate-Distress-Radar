@@ -65,6 +65,10 @@ EMPTY_KRS = "0000277937"
 UNKNOWN_KRS = "0000000009"
 STATEMENT_REF = "kQL-7bDLHvl-dIGIeLuLlQ=="  # 2025 annual statement, rodzaj 18
 AUDITOR_REF = "B2opwZt-Ik8Yg4luKMAqQA=="  # 2025 auditor report, rodzaj 19
+# A statement with a correction, shaped like KRS 0000153402's 2022 filing: the
+# correction is not a list row, only a second id in the original's expanded row.
+ORIGINAL_REF = "_OdJUXJvvyacsRf0ul442g=="
+CORRECTION_REF = "m7XcfLIW7RJVBLSp8XsIMg=="
 API = "https://rdf.test" + API_PREFIX
 
 
@@ -106,6 +110,16 @@ def _detail_for(ref: str, type_id: int, type_name: str) -> bytes:
     return json.dumps(detail).encode()
 
 
+def _correction_detail() -> bytes:
+    detail = json.loads(_detail_for(CORRECTION_REF, 18, "Roczne sprawozdanie finansowe"))
+    detail.update(czyKorekta=True, dataDodania="2024-01-04", nazwaPliku="eSPR_report.xml")
+    detail.update(okresSprawozdawczyPoczatek="2022-01-01", okresSprawozdawczyKoniec="2022-12-31")
+    return json.dumps(detail).encode()
+
+
+BUNDLE = [ORIGINAL_REF, CORRECTION_REF]
+
+
 def _ok(url: str, body: bytes, **headers: str) -> RdfResponse:
     return RdfResponse(url=url, status_code=200, headers=headers, body=body)
 
@@ -133,7 +147,13 @@ class FakeFilingBrowser:
                 json.dumps([AUDITOR_REF]).encode(),
                 _detail_for(AUDITOR_REF, 19, "Opinia biegłego rewidenta"),
             ),
+            ORIGINAL_REF: (
+                json.dumps(BUNDLE).encode(),
+                _detail_for(ORIGINAL_REF, 18, "Roczne sprawozdanie finansowe"),
+            ),
         }
+        self.related = {CORRECTION_REF: _correction_detail()}
+        self.bundles = {ORIGINAL_REF: BUNDLE}
 
     def open_filing_list(self, krs: str) -> FilingListing:
         self.calls.append(("list", krs))
@@ -153,9 +173,11 @@ class FakeFilingBrowser:
         if document_ref in self.blocked:
             return DocumentView(corrections=_waf(API + "x"), detail=_waf(API + "y"))
         corrections, detail = self.details[document_ref]
+        others = [r for r in json.loads(corrections) if r != document_ref and r in self.related]
         return DocumentView(
             corrections=_json(corrections_path(document_ref), corrections),
             detail=_json(detail_path(document_ref), detail),
+            related={r: _json(detail_path(r), self.related[r]) for r in others},
         )
 
     def download(self, krs: str, document_ref: str) -> RdfResponse:
@@ -171,7 +193,7 @@ class FakeFilingBrowser:
                 "set-cookie": "visid_incap_1=secret; incap_ses_1=secret",
             },
             body=DOCUMENT_ZIP,
-            request_body=json.dumps([document_ref]).encode(),
+            request_body=json.dumps(self.bundles.get(document_ref, [document_ref])).encode(),
         )
 
 
@@ -362,6 +384,15 @@ def test_pre_2018_detail_without_ifrs_flag_parses():
         parse_document_detail(STATEMENT_REF, CORRECTIONS, json.dumps(detail).encode())
 
 
+def test_corrections_list_must_not_repeat_ids():
+    with pytest.raises(RdfShapeError, match="repeats"):
+        parse_document_detail(
+            ORIGINAL_REF,
+            json.dumps([ORIGINAL_REF, ORIGINAL_REF]).encode(),
+            _detail_for(ORIGINAL_REF, 18, "x"),
+        )
+
+
 def test_detail_without_submission_date_is_refused_not_imputed():
     detail = json.loads(DETAIL)
     detail["dataDodania"] = None
@@ -533,7 +564,7 @@ def test_download_stores_bytes_unmodified_without_session_cookies():
         clock=lambda: NOW,
     )
 
-    assert (download.krs, download.document_ref) == (KRS, STATEMENT_REF)
+    assert (download.krs, download.document_refs) == (KRS, [STATEMENT_REF])
     digest = download.raw_fetch.sha256
     assert digest == sha256_hex(DOCUMENT_ZIP)
     assert store.get(raw_key(digest)) == DOCUMENT_ZIP
@@ -565,15 +596,25 @@ def test_waf_page_on_download_is_blocked():
 
 
 def _pending(
-    ref: str, code: str, *, type_id: str | None = None, downloaded: bool = False
+    ref: str,
+    code: str,
+    *,
+    type_id: str | None = None,
+    downloaded: bool = False,
+    correction_of: str | None = None,
+    bundle: list[str] | None = None,
 ) -> PendingFilingDocument:
     return PendingFilingDocument(
         krs=KRS,
         document_ref=ref,
         rdf_type_code=code,
+        status="NIEUSUNIETY",
         rdf_type_id=type_id,
         file_name=None if type_id is None else "known.xml",
         downloaded=downloaded,
+        needs_detail=type_id is None,
+        correction_of=correction_of,
+        bundle=bundle if bundle is not None else ([] if type_id is None else [ref]),
     )
 
 
@@ -718,3 +759,103 @@ def test_blocked_detail_counts_towards_the_breaker():
             breaker=breaker,
             clock=lambda: NOW,
         )
+
+
+# --- corrections -----------------------------------------------------------------------------
+
+
+def test_expanded_row_yields_the_corrections_details():
+    store = InMemoryObjectStore()
+
+    fetched = fetch_filing_detail(
+        KRS,
+        ORIGINAL_REF,
+        browser=FakeFilingBrowser(),
+        store=store,
+        ingestion_run_id="run-1",
+        breaker=CircuitBreaker(),
+        clock=lambda: NOW,
+    )
+
+    assert fetched.detail.correction_refs == BUNDLE
+    assert fetched.detail.is_correction is False
+    [(correction, fetch)] = fetched.related
+    assert (correction.document_ref, correction.is_correction) == (CORRECTION_REF, True)
+    assert correction.submission_date == date(2024, 1, 4)  # its own known_from
+    assert (correction.period_start, correction.period_end) == (date(2022, 1, 1), date(2022, 12, 31))
+    assert fetch.sha256 == sha256_hex(_correction_detail())
+    assert store.exists(raw_key(fetch.sha256))
+
+
+def test_expanded_row_missing_a_correction_detail_is_refused():
+    browser = FakeFilingBrowser()
+    browser.related = {}
+
+    with pytest.raises(RdfShapeError, match="without the details"):
+        fetch_filing_detail(
+            KRS,
+            ORIGINAL_REF,
+            browser=browser,
+            store=InMemoryObjectStore(),
+            ingestion_run_id="run-1",
+            breaker=CircuitBreaker(),
+            clock=lambda: NOW,
+        )
+
+
+def test_bundle_download_covers_the_document_and_its_corrections():
+    download = download_filing(
+        KRS,
+        ORIGINAL_REF,
+        browser=FakeFilingBrowser(),
+        store=InMemoryObjectStore(),
+        ingestion_run_id="run-1",
+        breaker=CircuitBreaker(),
+        bundle=BUNDLE,
+        original_filename="original.xml",
+        clock=lambda: NOW,
+    )
+
+    assert download.document_refs == BUNDLE
+    assert download.raw_fetch.meta.original_filename is None  # the ZIP holds several files
+
+
+def test_download_covering_other_documents_than_expected_stores_nothing():
+    store = InMemoryObjectStore()
+
+    with pytest.raises(PermanentSourceError, match="not attributable"):
+        download_filing(
+            KRS,
+            ORIGINAL_REF,  # RDF bundles its correction, but the caller expected it alone
+            browser=FakeFilingBrowser(),
+            store=store,
+            ingestion_run_id="run-1",
+            breaker=CircuitBreaker(),
+            clock=lambda: NOW,
+        )
+
+    assert store.objects == {}
+
+
+def test_correction_is_downloaded_through_the_document_it_corrects():
+    browser = FakeFilingBrowser()
+    pending = _pending(
+        CORRECTION_REF, "18", type_id="18", correction_of=ORIGINAL_REF, bundle=BUNDLE
+    )
+
+    events = _retrieve(pending, browser)
+
+    assert browser.calls == [("download", KRS, ORIGINAL_REF)]
+    [download] = events
+    assert isinstance(download, A3Download) and download.document_refs == BUNDLE
+
+
+def test_statement_with_a_correction_gets_detail_then_bundle():
+    browser = FakeFilingBrowser()
+
+    events = _retrieve(_pending(ORIGINAL_REF, "18"), browser)
+
+    assert [type(e) for e in events] == [A3Detail, A3Download]
+    detail, download = events
+    assert isinstance(detail, A3Detail) and len(detail.related) == 1
+    assert isinstance(download, A3Download) and download.document_refs == BUNDLE

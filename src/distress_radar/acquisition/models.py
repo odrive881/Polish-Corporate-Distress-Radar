@@ -244,12 +244,19 @@ class FilingDetail(_Frozen):
     is_ifrs: bool | None  # RDF leaves it empty on pre-2018 filings
     file_name: str | None
     correction_refs: list[str]  # the document and its corrections, as RDF lists them
+    # Also in the detail; the only source of these for corrections, which the list omits.
+    status: RdfDocumentStatus | None = None
+    period_start: date | None = None
+    period_end: date | None = None
+    deleted_on: date | None = None  # `dataUsunieciaDokumentuPrzezSad`
 
 
 class FilingIndexRow(_Frozen):
     """A `filing_index` manifest row as first written from the list.
 
-    Detail columns and `sha256` are filled in later by `record_a3_document`.
+    Detail columns and `sha256` are filled in later (`record_a3_detail`,
+    `record_a3_download`). Corrections never appear in RDF's list; their rows
+    are added from the corrected document's expanded row (`correction_of`).
     """
 
     krs: str
@@ -265,22 +272,15 @@ class FilingIndexRow(_Frozen):
     _aware = field_validator("discovered_at")(_require_aware)
 
 
-class PendingFilingDocument(_Frozen):
-    """A listed document still owed a detail lookup, a download, or both.
+class FilingDocumentState(_Frozen):
+    """Where one `filing_index` row stands.
 
     `rdf_type_id` / `file_name` are `None` until the detail has been fetched.
+    `needs_detail` is also true for a detailed document whose corrections have
+    no rows yet. `bundle` is what RDF downloads for it: the document and its
+    corrections (empty until detailed). A correction (`correction_of` set) is
+    downloaded through the document it corrects.
     """
-
-    krs: str
-    document_ref: str
-    rdf_type_code: str
-    rdf_type_id: str | None
-    file_name: str | None
-    downloaded: bool
-
-
-class FilingDocumentState(_Frozen):
-    """Where one `filing_index` row stands: detail known (`rdf_type_id`), downloaded or not."""
 
     krs: str
     document_ref: str
@@ -289,3 +289,14 @@ class FilingDocumentState(_Frozen):
     rdf_type_id: str | None
     file_name: str | None
     downloaded: bool
+    needs_detail: bool
+    correction_of: str | None = None
+    bundle: list[str] = []
+
+    @property
+    def download_ref(self) -> str:
+        """The listed document whose "Pobierz dokumenty" delivers this one."""
+        return self.correction_of or self.document_ref
+
+
+PendingFilingDocument = FilingDocumentState  # a state still owed a detail or a download

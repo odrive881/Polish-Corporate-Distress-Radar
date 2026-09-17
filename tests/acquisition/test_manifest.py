@@ -6,9 +6,11 @@ Each test runs in a throwaway schema so it never touches real manifest data.
 import uuid
 from collections.abc import Iterator
 from datetime import UTC, date, datetime
+from typing import Any
 
 import psycopg
 import pytest
+from psycopg.types.json import Jsonb
 
 from distress_radar.acquisition import manifest
 from distress_radar.acquisition.document_retrieval import A3Detail, A3Download, A3IndexResult
@@ -214,22 +216,37 @@ def _index_result(run_id: str) -> A3IndexResult:
     )
 
 
-def _detail(ref: str, type_id: str, detail_sha: str, submitted: date) -> A3Detail:
+def _filing_detail(
+    ref: str, type_id: str, submitted: date, bundle: list[str] | None = None, **extra: Any
+) -> FilingDetail:
+    return FilingDetail(
+        document_ref=ref,
+        rdf_type_id=type_id,
+        rdf_type_name="Roczne sprawozdanie finansowe" if type_id == "18" else "Opinia",
+        submission_date=submitted,
+        prepared_date=date(2026, 5, 28),
+        is_correction=extra.pop("is_correction", False),
+        is_ifrs=False,
+        file_name=f"{ref}.xml",
+        correction_refs=bundle or [ref],
+        **extra,
+    )
+
+
+def _detail(
+    ref: str,
+    type_id: str,
+    detail_sha: str,
+    submitted: date,
+    related: list[tuple[FilingDetail, RawFetchRecord]] | None = None,
+) -> A3Detail:
+    bundle = [ref, *(d.document_ref for d, _ in related or [])]
     return A3Detail(
         krs=KRS,
-        detail=FilingDetail(
-            document_ref=ref,
-            rdf_type_id=type_id,
-            rdf_type_name="Roczne sprawozdanie finansowe" if type_id == "18" else "Opinia",
-            submission_date=submitted,
-            prepared_date=date(2026, 5, 28),
-            is_correction=False,
-            is_ifrs=False,
-            file_name=f"{ref}.xml",
-            correction_refs=[ref],
-        ),
+        detail=_filing_detail(ref, type_id, submitted, bundle),
         corrections_fetch=_fetch(CORR_SHA, "run-2"),
         detail_fetch=_fetch(detail_sha, "run-2"),
+        related=related or [],
     )
 
 
@@ -297,7 +314,7 @@ def test_detail_and_download_settle_rows_once(conn: psycopg.Connection):
         DETAIL_SHA,
     )
 
-    download = A3Download(krs=KRS, document_ref="sf-2025", raw_fetch=_fetch(DOC_SHA, "run-2"))
+    download = A3Download(krs=KRS, document_refs=["sf-2025"], raw_fetch=_fetch(DOC_SHA, "run-2"))
     manifest.record_a3_download(conn, download)
     manifest.record_a3_download(conn, download)
     assert _pending(conn) == [("sf-2024", None, False)]
@@ -328,3 +345,77 @@ def test_no_rdf_filings_quarantine_marks_entity_indexed(conn: psycopg.Connection
     )
 
     assert manifest.unindexed_entities(conn) == []
+
+
+CORRECTION_DETAIL_SHA = "9a" * 32
+
+
+def test_corrections_get_their_own_rows_and_share_the_bundle(conn: psycopg.Connection):
+    manifest.ensure_schema(conn)
+    _write_everything(conn, "run-1")
+    manifest.record_a3_index_result(conn, _index_result("run-1"))
+    # sf-2025 was detailed before corrections were handled: its row lacks one.
+    manifest.record_a3_detail(conn, _detail("sf-2025", "18", DETAIL_SHA, date(2026, 6, 29)))
+    conn.execute(
+        "UPDATE filing_index SET correction_refs = %s WHERE document_ref = 'sf-2025'",
+        (Jsonb(["sf-2025", "sf-2025-k"]),),
+    )
+    assert _pending(conn)[0] == ("sf-2025", "18", False)
+    assert manifest.pending_filing_documents(conn, SCOPE)[0].needs_detail is True
+
+    correction = _filing_detail(
+        "sf-2025-k",
+        "18",
+        date(2026, 8, 1),
+        ["sf-2025", "sf-2025-k"],
+        is_correction=True,
+        status="NIEUSUNIETY",
+        period_end=date(2025, 12, 31),
+    )
+    expanded = _detail(
+        "sf-2025",
+        "18",
+        DETAIL_SHA,
+        date(2026, 6, 29),
+        related=[(correction, _fetch(CORRECTION_DETAIL_SHA, "run-3"))],
+    )
+    manifest.record_a3_detail(conn, expanded)
+    manifest.record_a3_detail(conn, expanded)
+
+    row = conn.execute(
+        """
+        SELECT rdf_type_code, status, period_start, period_end, correction_of,
+               is_correction, submission_date, detail_sha256, ingestion_run_id
+        FROM filing_index WHERE document_ref = 'sf-2025-k'
+        """
+    ).fetchone()
+    assert row == (
+        "18",
+        "NIEUSUNIETY",
+        date(2025, 1, 1),  # not in the detail: taken from the corrected document
+        date(2025, 12, 31),
+        "sf-2025",
+        True,
+        date(2026, 8, 1),
+        CORRECTION_DETAIL_SHA,
+        "run-3",
+    )
+    pending = manifest.pending_filing_documents(conn, SCOPE)
+    assert [(p.document_ref, p.needs_detail, p.download_ref) for p in pending[:2]] == [
+        ("sf-2025", False, "sf-2025"),
+        ("sf-2025-k", False, "sf-2025"),
+    ]
+    assert pending[1].bundle == ["sf-2025", "sf-2025-k"]
+
+    bundle = A3Download(
+        krs=KRS, document_refs=["sf-2025", "sf-2025-k"], raw_fetch=_fetch(DOC_SHA, "run-3")
+    )
+    manifest.record_a3_download(conn, bundle)
+    shas = conn.execute(
+        "SELECT document_ref, sha256 FROM filing_index WHERE document_ref LIKE 'sf-2025%' ORDER BY 1"
+    ).fetchall()
+    assert shas == [("sf-2025", DOC_SHA), ("sf-2025-k", DOC_SHA)]
+    assert [p.document_ref for p in manifest.pending_filing_documents(conn, SCOPE)] == [
+        "sf-2024",
+        "aud-2025",  # still owed its detail
+    ]

@@ -11,7 +11,7 @@ the transaction (a Dagster asset commits once per materialization).
 from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
-from typing import LiteralString
+from typing import Any, LiteralString
 
 from psycopg import Connection, sql
 from psycopg.types.json import Jsonb
@@ -23,6 +23,7 @@ from distress_radar.acquisition.document_retrieval import (
 )
 from distress_radar.acquisition.models import (
     EntityMasterRow,
+    FilingDetail,
     FilingDocumentState,
     FilingIndexRow,
     PendingFilingDocument,
@@ -132,6 +133,11 @@ SCHEMA_DDL: tuple[LiteralString, ...] = (
         ingestion_run_id  text NOT NULL,
         PRIMARY KEY (krs, document_ref)
     )
+    """,
+    # Corrections are not in RDF's list: their rows come from the expanded row of
+    # the document they correct, named here. Added after the table first shipped.
+    """
+    ALTER TABLE filing_index ADD COLUMN IF NOT EXISTS correction_of text
     """,
 )
 
@@ -322,44 +328,82 @@ def record_a3_index_result(conn: Connection, result: A3IndexResult) -> None:
     insert_quarantine(conn, result.quarantine)
 
 
+_UPDATE_DETAIL: LiteralString = """
+    UPDATE filing_index SET
+        rdf_type_id = %(type_id)s, rdf_type_name = %(type_name)s,
+        submission_date = %(submitted)s, prepared_date = %(prepared)s,
+        is_correction = %(is_correction)s, is_ifrs = %(is_ifrs)s, file_name = %(file_name)s,
+        correction_refs = %(correction_refs)s, detail_sha256 = %(detail_sha256)s
+    WHERE krs = %(krs)s AND document_ref = %(ref)s AND detail_sha256 IS NULL
+"""
+
+
+def _detail_params(krs: str, detail: FilingDetail, fetch: RawFetchRecord) -> dict[str, object]:
+    return {
+        "krs": krs,
+        "ref": detail.document_ref,
+        "type_id": detail.rdf_type_id,
+        "type_name": detail.rdf_type_name,
+        "submitted": detail.submission_date,
+        "prepared": detail.prepared_date,
+        "is_correction": detail.is_correction,
+        "is_ifrs": detail.is_ifrs,
+        "file_name": detail.file_name,
+        "correction_refs": Jsonb(detail.correction_refs),
+        "detail_sha256": fetch.sha256,
+    }
+
+
 def record_a3_detail(conn: Connection, fetched: A3Detail) -> None:
-    """Record the detail's raw responses and fill the row's detail columns (once)."""
+    """Record an expanded row: fill the listed document's detail columns (once), and add
+    a row per correction, filled from its own detail.
+
+    A correction's list columns come from its detail, falling back to the
+    document it corrects where the detail lacks them.
+    """
     insert_raw_fetch(conn, fetched.corrections_fetch)
     insert_raw_fetch(conn, fetched.detail_fetch)
-    detail = fetched.detail
-    conn.execute(
-        """
-        UPDATE filing_index SET
-            rdf_type_id = %s, rdf_type_name = %s, submission_date = %s, prepared_date = %s,
-            is_correction = %s, is_ifrs = %s, file_name = %s, correction_refs = %s,
-            detail_sha256 = %s
-        WHERE krs = %s AND document_ref = %s AND detail_sha256 IS NULL
-        """,
-        (
-            detail.rdf_type_id,
-            detail.rdf_type_name,
-            detail.submission_date,
-            detail.prepared_date,
-            detail.is_correction,
-            detail.is_ifrs,
-            detail.file_name,
-            Jsonb(detail.correction_refs),
-            fetched.detail_fetch.sha256,
-            fetched.krs,
-            detail.document_ref,
-        ),
-    )
+    conn.execute(_UPDATE_DETAIL, _detail_params(fetched.krs, fetched.detail, fetched.detail_fetch))
+    listed = fetched.detail.document_ref
+    for detail, fetch in fetched.related:
+        insert_raw_fetch(conn, fetch)
+        conn.execute(
+            """
+            INSERT INTO filing_index
+                (krs, document_ref, rdf_type_code, status, period_start, period_end,
+                 deleted_on, correction_of, discovered_at, ingestion_run_id)
+            SELECT o.krs, %(ref)s, %(type_id)s, COALESCE(%(status)s, o.status),
+                   COALESCE(%(start)s, o.period_start), COALESCE(%(end)s, o.period_end),
+                   %(deleted)s, o.document_ref, %(at)s, %(run)s
+            FROM filing_index o
+            WHERE o.krs = %(krs)s AND o.document_ref = %(listed)s
+            ON CONFLICT DO NOTHING
+            """,
+            {
+                "krs": fetched.krs,
+                "listed": listed,
+                "ref": detail.document_ref,
+                "type_id": detail.rdf_type_id,
+                "status": detail.status,
+                "start": detail.period_start,
+                "end": detail.period_end,
+                "deleted": detail.deleted_on,
+                "at": fetch.meta.fetched_at,
+                "run": fetch.meta.ingestion_run_id,
+            },
+        )
+        conn.execute(_UPDATE_DETAIL, _detail_params(fetched.krs, detail, fetch))
 
 
 def record_a3_download(conn: Connection, download: A3Download) -> None:
-    """Record the downloaded bytes and point the `filing_index` row at them (once)."""
+    """Record a downloaded file and point every row it holds at it (once each)."""
     insert_raw_fetch(conn, download.raw_fetch)
     conn.execute(
         """
         UPDATE filing_index SET sha256 = %s
-        WHERE krs = %s AND document_ref = %s AND sha256 IS NULL
+        WHERE krs = %s AND document_ref = ANY(%s) AND sha256 IS NULL
         """,
-        (download.raw_fetch.sha256, download.krs, download.document_ref),
+        (download.raw_fetch.sha256, download.krs, download.document_refs),
     )
 
 
@@ -382,54 +426,21 @@ def unindexed_entities(conn: Connection) -> list[str]:
     return [str(krs).strip() for (krs,) in cur.fetchall()]
 
 
-def pending_filing_documents(
-    conn: Connection, download_codes: Sequence[str], *, download_scope_only: bool = False
-) -> list[PendingFilingDocument]:
-    """Listed, not-deleted documents still owed a detail or (in scope) a download.
-
-    Documents whose list type is in the download scope come first, grouped by
-    entity so the browser searches each KRS as few times as possible.
-    `download_scope_only` skips the rest (their details can trail behind).
-    """
-    cur = conn.execute(
-        """
-        SELECT krs, document_ref, rdf_type_code, rdf_type_id, file_name, sha256 IS NOT NULL
-        FROM filing_index
-        WHERE status = 'NIEUSUNIETY'
-          AND (
-              detail_sha256 IS NULL
-              OR (sha256 IS NULL AND rdf_type_id = ANY(%(codes)s))
-          )
-          AND (NOT %(scope_only)s OR rdf_type_code = ANY(%(codes)s))
-        ORDER BY rdf_type_code = ANY(%(codes)s) DESC, krs, period_end DESC, document_ref
-        """,
-        {"codes": list(download_codes), "scope_only": download_scope_only},
-    )
-    return [
-        PendingFilingDocument(
-            krs=str(krs).strip(),
-            document_ref=ref,
-            rdf_type_code=code,
-            rdf_type_id=type_id,
-            file_name=file_name,
-            downloaded=downloaded,
-        )
-        for krs, ref, code, type_id, file_name, downloaded in cur.fetchall()
-    ]
+_STATE_SQL: LiteralString = """
+    SELECT f.krs, f.document_ref, f.rdf_type_code, f.status, f.rdf_type_id, f.file_name,
+           f.sha256 IS NOT NULL AS downloaded,
+           f.detail_sha256 IS NULL OR EXISTS (
+               SELECT 1 FROM jsonb_array_elements_text(f.correction_refs) AS c (ref)
+               WHERE NOT EXISTS (
+                   SELECT 1 FROM filing_index g WHERE g.krs = f.krs AND g.document_ref = c.ref
+               )
+           ) AS needs_detail,
+           f.correction_of, f.correction_refs, f.period_end
+    FROM filing_index f
+"""
 
 
-def filing_documents(conn: Connection, krs_numbers: Sequence[str]) -> list[FilingDocumentState]:
-    """Every `filing_index` row of these entities, newest period first."""
-    cur = conn.execute(
-        """
-        SELECT krs, document_ref, rdf_type_code, status, rdf_type_id, file_name,
-               sha256 IS NOT NULL
-        FROM filing_index
-        WHERE krs = ANY(%s)
-        ORDER BY krs, period_end DESC, document_ref
-        """,
-        (list(krs_numbers),),
-    )
+def _states(rows: Iterable[tuple[Any, ...]]) -> list[FilingDocumentState]:
     return [
         FilingDocumentState(
             krs=str(krs).strip(),
@@ -439,9 +450,64 @@ def filing_documents(conn: Connection, krs_numbers: Sequence[str]) -> list[Filin
             rdf_type_id=type_id,
             file_name=file_name,
             downloaded=downloaded,
+            needs_detail=needs_detail,
+            correction_of=correction_of,
+            bundle=list(bundle or []),
         )
-        for krs, ref, code, status, type_id, file_name, downloaded in cur.fetchall()
+        for (
+            krs,
+            ref,
+            code,
+            status,
+            type_id,
+            file_name,
+            downloaded,
+            needs_detail,
+            correction_of,
+            bundle,
+            _period_end,
+        ) in rows
     ]
+
+
+def pending_filing_documents(
+    conn: Connection, download_codes: Sequence[str], *, download_scope_only: bool = False
+) -> list[PendingFilingDocument]:
+    """Not-deleted documents still owed a detail or (in scope) a download.
+
+    "Owed a detail" includes a detailed document whose corrections have no rows
+    yet. Documents whose list type is in the download scope come first, grouped
+    by entity so the browser searches each KRS as few times as possible, each
+    document before its corrections. `download_scope_only` skips the rest.
+    """
+    cur = conn.execute(
+        """
+        SELECT * FROM ("""
+        + _STATE_SQL
+        + """) s
+        WHERE s.status = 'NIEUSUNIETY'
+          AND (s.needs_detail OR (NOT s.downloaded AND s.rdf_type_id = ANY(%(codes)s)))
+          AND (NOT %(scope_only)s OR s.rdf_type_code = ANY(%(codes)s))
+        ORDER BY s.rdf_type_code = ANY(%(codes)s) DESC, s.krs, s.period_end DESC,
+                 s.correction_of IS NOT NULL, s.document_ref
+        """,
+        {"codes": list(download_codes), "scope_only": download_scope_only},
+    )
+    return _states(cur.fetchall())
+
+
+def filing_documents(conn: Connection, krs_numbers: Sequence[str]) -> list[FilingDocumentState]:
+    """Every `filing_index` row of these entities, newest period first, documents before
+    their corrections."""
+    cur = conn.execute(
+        _STATE_SQL
+        + """
+        WHERE f.krs = ANY(%s)
+        ORDER BY f.krs, f.period_end DESC, f.correction_of IS NOT NULL, f.document_ref
+        """,
+        (list(krs_numbers),),
+    )
+    return _states(cur.fetchall())
 
 
 def resolved_entities(conn: Connection) -> list[str]:

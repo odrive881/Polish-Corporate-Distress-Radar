@@ -172,17 +172,24 @@ class HarBuilder:
             self.add("POST", API + "dokumenty/wyszukiwanie", body, post='{"nrKRS":"<encrypted>"}')
         return self
 
-    def expand(self, ref: str, detail: str) -> "HarBuilder":
+    def expand(
+        self, ref: str, detail: str, corrections: dict[str, str] | None = None
+    ) -> "HarBuilder":
+        """Expand `ref`; the SPA then loads one detail per id in its corrections list."""
+        refs = [ref, *(corrections or {})]
         encoded = ref.replace("=", "%3D")
-        self.add("GET", API + f"dokumenty/{encoded}/id-dokumentu-i-korekt", json.dumps([ref]))
-        return self.add("GET", API + f"dokumenty/{encoded}", detail)
+        self.add("GET", API + f"dokumenty/{encoded}/id-dokumentu-i-korekt", json.dumps(refs))
+        self.add("GET", API + f"dokumenty/{encoded}", detail)
+        for other, other_detail in (corrections or {}).items():
+            self.add("GET", API + f"dokumenty/{other.replace('=', '%3D')}", other_detail)
+        return self
 
-    def download(self, ref: str, body: bytes) -> "HarBuilder":
+    def download(self, ref: str | list[str], body: bytes) -> "HarBuilder":
         return self.add(
             "POST",
             API + "dokumenty/tresc",
             body,
-            post=json.dumps([ref]),
+            post=json.dumps(ref if isinstance(ref, list) else [ref]),
             content_type="application/octet-stream",
         )
 
@@ -243,6 +250,7 @@ def test_capture_groups_exchanges_by_search_and_document():
         _session()
         .search(OTHER_KRS, _list(10, 0, [], total=0, pages=0))
         .add("POST", API + "dokumenty/tresc", b"PK", post=json.dumps(["a", "b"]))
+        .add("POST", API + "dokumenty/tresc", b"PK", post='{"not": "a list"}')
         .build()
     )
 
@@ -253,8 +261,9 @@ def test_capture_groups_exchanges_by_search_and_document():
     assert [len(s) for s in capture.searches[OTHER_KRS]] == [2]
     assert set(capture.details) == {STATEMENT_2025, AUDITOR_2025}  # %3D decoded
     assert set(capture.corrections) == {STATEMENT_2025, AUDITOR_2025}
-    assert set(capture.downloads) == {STATEMENT_2025}
-    assert len(capture.skipped) == 1 and "not one document" in capture.skipped[0]
+    assert set(capture.downloads) == {STATEMENT_2025, "a", "b"}  # one file, both documents
+    assert capture.downloads["a"] is capture.downloads["b"]
+    assert len(capture.skipped) == 1 and "not a list of documents" in capture.skipped[0]
 
 
 def test_browser_serves_the_largest_complete_list():
@@ -320,6 +329,56 @@ def test_document_of_another_entity_is_refused():
 
     with pytest.raises(RdfShapeError, match="belongs to"):
         HarFilingBrowser(HarCapture.from_har(data)).open_document(KRS, AUDITOR_2025)
+
+
+CORRECTION_2024 = "korekta-2024=="
+CORRECTION_DETAIL = json.dumps(
+    {
+        **json.loads(_detail(CORRECTION_2024, 18, "Roczne sprawozdanie finansowe")),
+        "czyKorekta": True,
+        "dataDodania": "2025-11-03",
+        "okresSprawozdawczyPoczatek": "2024-01-01",
+        "okresSprawozdawczyKoniec": "2024-12-31",
+    }
+)
+BUNDLE_ZIP = _zip("original + correction")
+
+
+def _corrected_session() -> HarBuilder:
+    return (
+        _session()
+        .expand(
+            STATEMENT_2024,
+            _detail(STATEMENT_2024, 18, "Roczne sprawozdanie finansowe"),
+            {CORRECTION_2024: CORRECTION_DETAIL},
+        )
+        .download([STATEMENT_2024, CORRECTION_2024], BUNDLE_ZIP)
+    )
+
+
+def test_expanded_row_serves_its_corrections():
+    browser = HarFilingBrowser(HarCapture.from_har(_corrected_session().build()))
+
+    view = browser.open_document(KRS, STATEMENT_2024)
+
+    assert list(view.related) == [CORRECTION_2024]
+    assert browser.download(KRS, CORRECTION_2024).body == BUNDLE_ZIP
+
+
+def test_expanded_row_without_a_correction_detail_is_not_captured():
+    data = (
+        HarBuilder()
+        .expand(STATEMENT_2024, _detail(STATEMENT_2024, 18, "x"))
+        .add(
+            "GET",
+            API + f"dokumenty/{STATEMENT_2024}/id-dokumentu-i-korekt",
+            json.dumps([STATEMENT_2024, CORRECTION_2024]),
+        )
+        .build()
+    )
+
+    with pytest.raises(NotCaptured, match="without details"):
+        HarFilingBrowser(HarCapture.from_har(data)).open_document(KRS, STATEMENT_2024)
 
 
 def test_unexpanded_or_undownloaded_documents_are_not_captured():
@@ -531,3 +590,53 @@ def test_later_capture_adds_documents_the_index_is_missing(conn: psycopg.Connect
     counts = manifest.table_counts(conn)
     assert _import(conn, _session().build(), store, "run-3").topped_up == {}
     assert manifest.table_counts(conn) == counts
+
+
+@pytest.mark.integration
+def test_import_adds_corrections_and_files_the_bundle_once(conn: psycopg.Connection):
+    store = InMemoryObjectStore()
+
+    report = _import(conn, _corrected_session().build(), store, "run-1")
+
+    assert report.problems == []
+    assert (report.details, report.downloads) == (4, 2)  # 3 listed + 1 correction; 2 files
+    assert report.missing == {}
+    rows = conn.execute(
+        """
+        SELECT document_ref, correction_of, is_correction, submission_date, period_end, sha256
+        FROM filing_index WHERE document_ref IN (%s, %s) ORDER BY correction_of NULLS FIRST
+        """,
+        (STATEMENT_2024, CORRECTION_2024),
+    ).fetchall()
+    assert rows == [
+        (STATEMENT_2024, None, False, date(2026, 6, 29), date(2024, 12, 31), sha256_hex(BUNDLE_ZIP)),
+        (CORRECTION_2024, STATEMENT_2024, True, date(2025, 11, 3), date(2024, 12, 31), sha256_hex(BUNDLE_ZIP)),
+    ]
+    sidecar = json.loads(store.get(sidecar_key(sha256_hex(BUNDLE_ZIP))))
+    assert sidecar["original_filename"] is None  # several files in one ZIP
+    counts = manifest.table_counts(conn)
+
+    again = _import(conn, _corrected_session().build(), store, "run-2")
+
+    assert (again.details, again.downloads, again.missing) == (0, 0, {})
+    assert manifest.table_counts(conn) == counts
+
+
+@pytest.mark.integration
+def test_bundle_not_matching_the_corrections_list_is_refused(conn: psycopg.Connection):
+    data = (
+        HarBuilder()
+        .search(KRS, FULL_AT_50)
+        .expand(
+            STATEMENT_2024,
+            _detail(STATEMENT_2024, 18, "Roczne sprawozdanie finansowe"),
+            {CORRECTION_2024: CORRECTION_DETAIL},
+        )
+        .download([STATEMENT_2024], BUNDLE_ZIP)  # the correction left out
+        .build()
+    )
+
+    report = _import(conn, data, InMemoryObjectStore(), "run-1")
+
+    assert len(report.problems) == 1 and "not attributable" in report.problems[0]
+    assert set(report.missing[KRS]) >= {STATEMENT_2024, CORRECTION_2024}

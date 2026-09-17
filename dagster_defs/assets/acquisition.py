@@ -248,16 +248,19 @@ def raw_filing_documents(
 ) -> dg.MaterializeResult:
     """A3 — expand each indexed RDF document; download those in the download scope.
 
-    Inputs: not-deleted `filing_index` rows with no detail yet, or with a detail
-    whose type is in scope but no download yet; the scope is
+    Inputs: not-deleted `filing_index` rows with no detail yet (or whose
+    corrections have no rows yet), or with a detail whose type is in scope but
+    no download yet; the scope is
     `config/mappings/rdf_document_types.yaml` (Phase 1: annual financial
     statements and their corrections). In-scope types go first.
     Outputs: the detail responses and the document bytes in MinIO under
     `raw/sha256/...`, unmodified, with sidecars (`fetch_tier: playwright`);
     Postgres `raw_documents` / `raw_document_fetches`, and on each
     `filing_index` row its detail columns (`submission_date` = known_from,
-    `detail_sha256`) and, for in-scope types, `sha256`. One expanded row serves
-    both steps. Each step commits on its own, so a failed download keeps its
+    `detail_sha256`) and, for in-scope types, `sha256`; a row per correction,
+    which RDF only shows inside the corrected document's expanded row. One
+    expanded row serves both steps, and one download holds a document and its
+    corrections. Each step commits on its own, so a failed download keeps its
     detail; settled rows are skipped, so re-materializing makes no RDF requests
     and adds no objects or rows. Contents are not parsed here (C1–C3). A failed
     document stays pending and fails the asset; the circuit breaker stops the
@@ -292,15 +295,20 @@ def raw_filing_documents(
             conn.commit()
             detailed += 1
 
+        saved_refs: set[str] = set()  # one file holds a document and its corrections
+
         def on_download(download: A3Download) -> None:
             nonlocal downloaded
             manifest.record_a3_download(conn, download)
             conn.commit()
             downloaded += 1
+            saved_refs.update(download.document_refs)
 
         if pending:
             with rdf.browser() as browser:
                 for document in pending:
+                    if document.document_ref in saved_refs and not document.needs_detail:
+                        continue
                     try:
                         retrieve_document(
                             document,

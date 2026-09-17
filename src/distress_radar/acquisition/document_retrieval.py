@@ -58,7 +58,7 @@ import logging
 import random
 import re
 import time
-from collections.abc import Callable, Collection, Mapping
+from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from pathlib import Path
@@ -447,14 +447,25 @@ def parse_filing_list(krs: str, pages: list[bytes]) -> list[FilingListEntry]:
     return entries
 
 
-def parse_document_detail(
-    document_ref: str, corrections_body: bytes, detail_body: bytes
-) -> FilingDetail:
-    """Parse one expanded row's two responses. Metadata only; the document is not opened."""
-    corrections = _json(corrections_body, "corrections list")
+def parse_correction_refs(body: bytes) -> list[str]:
+    """`id-dokumentu-i-korekt`: the expanded document and its corrections, in RDF's order."""
+    corrections = _json(body, "corrections list")
     if not isinstance(corrections, list):
         raise RdfShapeError("corrections list: expected a list")
     refs = [_str(ref, "correction id") for ref in cast(list[object], corrections)]
+    if len(set(refs)) != len(refs):
+        raise RdfShapeError(f"corrections list repeats an id: {refs}")
+    return refs
+
+
+def parse_document_detail(
+    document_ref: str, corrections_body: bytes, detail_body: bytes
+) -> FilingDetail:
+    """Parse one document's detail within an expanded row. Metadata only; the file is not opened.
+
+    `document_ref` is the expanded document or one of its corrections.
+    """
+    refs = parse_correction_refs(corrections_body)
     if document_ref not in refs:
         raise RdfShapeError(f"corrections list for {document_ref} does not contain it: {refs}")
 
@@ -478,6 +489,14 @@ def parse_document_detail(
         is_ifrs=_optional_bool(detail["czyMSR"], "czyMSR"),  # empty on pre-2018 filings
         file_name=_optional_str(detail.get("nazwaPliku"), "nazwaPliku"),
         correction_refs=refs,
+        status=None if detail.get("status") is None else _status(detail["status"]),
+        period_start=_optional_date(
+            detail.get("okresSprawozdawczyPoczatek"), "okresSprawozdawczyPoczatek"
+        ),
+        period_end=_optional_date(detail.get("okresSprawozdawczyKoniec"), "okresSprawozdawczyKoniec"),
+        deleted_on=_optional_date(
+            detail.get("dataUsunieciaDokumentuPrzezSad"), "dataUsunieciaDokumentuPrzezSad"
+        ),
     )
 
 
@@ -498,14 +517,19 @@ class FilingListing:
 
 @dataclass(frozen=True)
 class DocumentView:
-    """The two responses an expanded row loads."""
+    """What an expanded row loads: the corrections list, then one detail per document in it.
+
+    Corrections are not rows of RDF's list; expanding the document they correct
+    is the only way to reach them. `related` holds their details by id.
+    """
 
     corrections: RdfResponse
     detail: RdfResponse
+    related: dict[str, RdfResponse] = field(default_factory=dict[str, RdfResponse])
 
     @property
     def responses(self) -> list[RdfResponse]:
-        return [self.corrections, self.detail]
+        return [self.corrections, self.detail, *self.related.values()]
 
 
 class FilingBrowser(Protocol):
@@ -528,7 +552,12 @@ class FilingBrowser(Protocol):
 
     def open_document(self, krs: str, document_ref: str) -> DocumentView: ...
 
-    def download(self, krs: str, document_ref: str) -> RdfResponse: ...
+    def download(self, krs: str, document_ref: str) -> RdfResponse:
+        """"Pobierz dokumenty" for a listed document: one file holding it and its corrections.
+
+        `request_body` must carry the JSON list of ids the file covers.
+        """
+        ...
 
 
 @dataclass(frozen=True)
@@ -728,6 +757,7 @@ class PlaywrightFilingBrowser:
         self._pages: list[list[str]] = []
         self._page_number = 0
         self._expanded: str | None = None
+        self._expanded_refs: list[str] = []
 
     def _require_page(self) -> Page:
         if self._page is None:
@@ -900,12 +930,19 @@ class PlaywrightFilingBrowser:
             raise PermanentSourceError(
                 f"row {row} opened {corrections.url}, not document {document_ref}"
             )
-        detail = self._captured(
-            self._await(marks, lambda p: p == detail_path(document_ref), "document detail")
-        )
+        refs = parse_correction_refs(corrections.body)  # one detail loads per id
+        details = {
+            ref: self._captured(
+                self._await(marks, lambda p, ref=ref: p == detail_path(ref), f"detail of {ref}")
+            )
+            for ref in refs
+        }
         self._finish(marks, 2)
-        self._expanded = document_ref
-        return DocumentView(corrections=corrections, detail=detail)
+        if document_ref not in details:
+            raise PermanentSourceError(f"document {document_ref} is not in its own row: {refs}")
+        self._expanded, self._expanded_refs = document_ref, refs
+        detail = details.pop(document_ref)
+        return DocumentView(corrections=corrections, detail=detail, related=details)
 
     def _open_document_once(self, krs: str, document_ref: str) -> DocumentView:
         self._ensure_entry()
@@ -933,9 +970,10 @@ class PlaywrightFilingBrowser:
             requested: object = json.loads(response.request_body or b"null")
         except (UnicodeDecodeError, json.JSONDecodeError):
             requested = response.request_body
-        if requested != [document_ref]:
+        if requested != self._expanded_refs:
             raise PermanentSourceError(
-                f"download for {document_ref} requested {requested!r}; bytes not attributable"
+                f"download for {document_ref} requested {requested!r}, expected "
+                f"{self._expanded_refs!r}; bytes not attributable"
             )
         return response
 
@@ -985,20 +1023,23 @@ class A3IndexResult:
 
 @dataclass(frozen=True)
 class A3Detail:
-    """One document's detail lookup: two raw fetches and the parsed detail."""
+    """One expanded row: the listed document's detail, and each correction's."""
 
     krs: str
     detail: FilingDetail
     corrections_fetch: RawFetchRecord
     detail_fetch: RawFetchRecord
+    related: list[tuple[FilingDetail, RawFetchRecord]] = field(
+        default_factory=list[tuple[FilingDetail, RawFetchRecord]]
+    )
 
 
 @dataclass(frozen=True)
 class A3Download:
-    """One downloaded document: its raw fetch and the `filing_index` key it fills."""
+    """One downloaded file and every `filing_index` row it holds (a document + corrections)."""
 
     krs: str
-    document_ref: str
+    document_refs: list[str]
     raw_fetch: RawFetchRecord
 
 
@@ -1155,19 +1196,29 @@ def fetch_filing_detail(
         lambda: browser.open_document(krs, document_ref), lambda r: r.responses, breaker
     )
     fetched_at = clock()
-    corrections_fetch, detail_fetch = (
-        _store_raw(
-            store,
-            response,
-            ingestion_run_id=ingestion_run_id,
-            fetched_at=fetched_at,
-            browser=browser,
+
+    def store_raw(response: RdfResponse) -> RawFetchRecord:
+        return _store_raw(
+            store, response, ingestion_run_id=ingestion_run_id, fetched_at=fetched_at, browser=browser
         )
-        for response in view.responses
-    )
+
+    corrections_fetch = store_raw(view.corrections)
+    detail_fetch = store_raw(view.detail)
+    related_fetches = {ref: store_raw(response) for ref, response in view.related.items()}
     detail = parse_document_detail(document_ref, view.corrections.body, view.detail.body)
+    missing = set(detail.correction_refs) - {document_ref} - set(view.related)
+    if missing:
+        raise RdfShapeError(f"expanded {document_ref} without the details of {sorted(missing)}")
+    related = [
+        (parse_document_detail(ref, view.corrections.body, view.related[ref].body), fetch)
+        for ref, fetch in related_fetches.items()
+    ]
     return A3Detail(
-        krs=krs, detail=detail, corrections_fetch=corrections_fetch, detail_fetch=detail_fetch
+        krs=krs,
+        detail=detail,
+        corrections_fetch=corrections_fetch,
+        detail_fetch=detail_fetch,
+        related=related,
     )
 
 
@@ -1179,26 +1230,43 @@ def download_filing(
     store: ObjectStore,
     ingestion_run_id: str,
     breaker: CircuitBreaker,
+    bundle: Sequence[str] | None = None,
     original_filename: str | None = None,
     clock: Callable[[], datetime] = lambda: datetime.now(UTC),
 ) -> A3Download:
-    """Download one listed document and store its bytes unmodified. Contents are not read.
+    """Download a listed document and store the file unmodified. Contents are not read.
 
-    RDF sends no `content-disposition`, so `original_filename` (the detail's
-    `nazwaPliku`) names the file in the sidecar.
+    RDF delivers a document together with its corrections, so the file must
+    cover exactly `bundle` (the detail's `correction_refs`; default just the
+    document), as the recorded request says — otherwise its bytes are not
+    attributable and nothing is stored. RDF sends no `content-disposition`, so
+    `original_filename` (the detail's `nazwaPliku`) names a single-document
+    file in the sidecar.
     """
-    response = _checked(
-        lambda: browser.download(krs, document_ref), lambda r: [r], breaker
-    )
+    expected = list(bundle) if bundle else [document_ref]
+    response = _checked(lambda: browser.download(krs, document_ref), lambda r: [r], breaker)
+    requested = _requested_refs(response)
+    if requested != expected:
+        raise PermanentSourceError(
+            f"download for {document_ref} covers {requested!r}, expected {expected!r}; "
+            "bytes not attributable"
+        )
     record = _store_raw(
         store,
         response,
         ingestion_run_id=ingestion_run_id,
         fetched_at=clock(),
         browser=browser,
-        original_filename=original_filename,
+        original_filename=original_filename if len(expected) == 1 else None,
     )
-    return A3Download(krs=krs, document_ref=document_ref, raw_fetch=record)
+    return A3Download(krs=krs, document_refs=expected, raw_fetch=record)
+
+
+def _requested_refs(response: RdfResponse) -> object:
+    try:
+        return json.loads(response.request_body or b"null")
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return response.request_body
 
 
 def retrieve_document(
@@ -1213,15 +1281,16 @@ def retrieve_document(
     on_download: Callable[[A3Download], None],
     clock: Callable[[], datetime] = lambda: datetime.now(UTC),
 ) -> None:
-    """Settle one pending document: its detail if missing, then its bytes if in scope.
+    """Settle one pending document: its detail if owed, then its file if in scope.
 
     Each step is handed to its callback (which records and commits it) as soon
     as it succeeds, so a failed download never loses the detail fetched before
     it. The detail's own type id decides the download scope; a list code that
-    disagrees with it is a shape change, not something to guess around.
+    disagrees with it is a shape change, not something to guess around. A
+    correction is downloaded through the document it corrects.
     """
-    type_id, file_name = pending.rdf_type_id, pending.file_name
-    if type_id is None:
+    type_id, file_name, bundle = pending.rdf_type_id, pending.file_name, pending.bundle
+    if pending.needs_detail:
         fetched = fetch_filing_detail(
             pending.krs,
             pending.document_ref,
@@ -1238,16 +1307,18 @@ def retrieve_document(
                 f"detail type {fetched.detail.rdf_type_id}"
             )
         type_id, file_name = fetched.detail.rdf_type_id, fetched.detail.file_name
+        bundle = fetched.detail.correction_refs
     if type_id not in document_types.download_codes or pending.downloaded:
         return
     on_download(
         download_filing(
             pending.krs,
-            pending.document_ref,
+            pending.download_ref,
             browser=browser,
             store=store,
             ingestion_run_id=ingestion_run_id,
             breaker=breaker,
+            bundle=bundle,
             original_filename=file_name,
             clock=clock,
         )

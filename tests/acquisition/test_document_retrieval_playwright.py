@@ -135,7 +135,7 @@ async function toggle(tr, id) {
     '<button type="button" class="submission">Pokaż zgłoszenie</button>' +
     '</app-szczegoly-dokumentu></td>';
   row.querySelector(".download").onclick = async () => {
-    const blob = await (await post("dokumenty/tresc", [id])).blob();
+    const blob = await (await post("dokumenty/tresc", ids)).blob();  // with its corrections
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob); a.download = "document.zip"; a.click();
   };
@@ -353,8 +353,10 @@ def test_expand_navigates_pages_and_download_reuses_the_expanded_row(base_url: s
     assert detail.correction_refs == [CORRECTED, "doc-03-korekta=="]
     assert detail.file_name == f"{CORRECTED}.xml"
     assert document.body == _zip(CORRECTED)
+    assert list(view.related) == ["doc-03-korekta=="]
+    assert json.loads(view.related["doc-03-korekta=="].body)["identyfikator"] == "doc-03-korekta=="
     assert document.request_body is not None
-    assert json.loads(document.request_body) == [CORRECTED]
+    assert json.loads(document.request_body) == [CORRECTED, "doc-03-korekta=="]
 
 
 def test_download_without_expanding_first_expands_the_row(base_url: str):
