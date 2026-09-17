@@ -139,9 +139,30 @@ CREATE TABLE IF NOT EXISTS filing_index (
 - [x] `document_retrieval.py`, `FilingBrowser` Protocol, Playwright + fake implementations, `filing_index` manifest table, and Dagster assets implemented and tested.
 - [x] `make check` green (ruff, pyright, pytest — no network).
 - [x] `make test-integration` green with `make dev-up` (2026-09-16: 17 passed, including the Playwright loopback tests).
-- [ ] Dagster run materializes `filing_index` and `raw_filing_documents` against compose services for the 17-entity seed; document counts and any quarantine rows recorded in this plan's close-out, matching plan 0002's format.
-- [ ] Re-materializing adds no new raw objects or manifest rows (idempotence, invariant 5).
-- [ ] `README.md` and `CLAUDE.md` updated to reflect Phase 1 completion.
+- [x] Dagster run materializes `filing_index` and `raw_filing_documents` against compose services for the 17-entity seed; document counts and any quarantine rows recorded in this plan's close-out, matching plan 0002's format. *Met through `rdf_manual_import` (interim route above), not the Playwright assets, which stay blocked by the CAPTCHA.*
+- [x] Re-materializing adds no new raw objects or manifest rows (idempotence, invariant 5).
+- [x] `README.md` and `CLAUDE.md` updated to reflect Phase 1 completion.
+
+## Close-out (2026-09-17)
+
+- **Route.** All 17 seed entities were captured by hand as HAR files (2026-09-16 and 2026-09-17, 6 import runs) and imported by `rdf_manual_import`. The Playwright assets `filing_index` / `raw_filing_documents` were not run live again after the CAPTCHA; their code and tests stay green.
+- **Verification, on the existing compose volumes** (not fresh ones, because the HAR imports are the data of record).
+  - `make check`: ruff clean, pyright 0 errors, 109 passed. `make test-integration`: 24 passed. Counts were unchanged after the tests too.
+  - State after the imports. Row counts were:
+    - `universe_candidates` 17
+    - `entity_master` 17
+    - `quarantine` 0
+    - `entity_reconciliation_log` 0
+    - `filing_index` 538 (17 entities; 530 live, 8 deleted in RDF; 9 correction rows)
+    - `raw_documents` 469 (48 from GUS BIR1, 421 from RDF)
+    - `raw_document_fetches` 489 (51 BIR1, 438 RDF)
+
+    MinIO held 946 objects: 473 documents plus 473 sidecars. The 4 documents without a `raw_documents` row are the probe notebook's saved responses (`source: rdf_probe`, 2026-09-16), which the notebook stores without a manifest row by design.
+  - **Coverage.** Every live type-18 statement (annual financial statement, incl. corrections) has its detail and its file: 131 of 131. 3 pre-2018 type-1 statements (KRS `0000070294`) were downloaded before pre-2018 filings were put out of v1 scope. Other document types (3, 4, 19, 20, 2, 5, and the remaining type 1) are indexed from the list only, with no detail; that means no `submission_date` yet for 404 rows. Their details are optional in the capture procedure and not needed for Phase 2.
+  - Re-run (Dagster run `c5e379a5`, `universe_candidates` + `entity_master` + `rdf_manual_import` over all 17 HARs): 0 candidates without an A2 outcome, and every file reported nothing indexed, downloaded, or missing. All counts above, and the MinIO object count, were identical.
+- **No live quarantine rows.** Every seed entity is in RDF with filings, so `rdf_entity_not_found` / `no_rdf_filings` are covered only by the fixture tests.
+- **Short histories.** `0000070294` lists only 4 documents (periods to 2018); `0000225354`, `0000386777` (to 2022) and `0000397658` (to 2021) stop filing early. That fits their distress hints or silent exit, and is left for A4/F to label, not treated as a capture gap.
+- **Still open.** Automated RDF access at scale needs a new decision (ADR 0007 options a/b). The HAR files in `.cache/rdf_inbox/` hold session data and should be deleted per the README once no longer needed for re-imports.
 
 ## Next plan
 
