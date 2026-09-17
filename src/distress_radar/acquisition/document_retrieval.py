@@ -87,7 +87,8 @@ from distress_radar.acquisition.models import (
     RdfDocumentStatus,
     RdfDocumentTypes,
 )
-from distress_radar.acquisition.raw_store import ObjectStore, RawDocumentMeta, put_raw
+from distress_radar.acquisition.raw_store import ObjectStore, RawDocumentMeta, put_raw, sha256_hex
+from distress_radar.acquisition.redaction import REDACTION_VERSION, RedactionError, redact_download
 
 if TYPE_CHECKING:
     from playwright.sync_api import (
@@ -1074,7 +1075,18 @@ def _store_raw(
     fetched_at: datetime,
     browser: FilingBrowser,
     original_filename: str | None = None,
+    redact: bool = False,
 ) -> RawFetchRecord:
+    body = response.body
+    redaction_version = received_sha256 = None
+    if redact:
+        try:
+            redacted = redact_download(body)
+        except RedactionError as exc:
+            raise PermanentSourceError(f"{response.url}: cannot redact download: {exc}") from exc
+        if redacted.changed:
+            redaction_version, received_sha256 = REDACTION_VERSION, sha256_hex(body)
+            body = redacted.data
     disposition = response.headers.get("content-disposition", "")
     filename = re.search(r'filename\*?=(?:UTF-8\'\')?"?([^";]+)"?', disposition, re.IGNORECASE)
     meta = RawDocumentMeta(
@@ -1087,9 +1099,11 @@ def _store_raw(
         original_filename=filename.group(1) if filename is not None else original_filename,
         fetch_tier=browser.fetch_tier,
         browser_version=browser.browser_version,
+        redaction_version=redaction_version,
+        received_sha256=received_sha256,
     )
-    digest = put_raw(store, response.body, meta)
-    return RawFetchRecord(sha256=digest, byte_size=len(response.body), meta=meta)
+    digest = put_raw(store, body, meta)
+    return RawFetchRecord(sha256=digest, byte_size=len(body), meta=meta)
 
 
 def _quarantine(
@@ -1234,7 +1248,10 @@ def download_filing(
     original_filename: str | None = None,
     clock: Callable[[], datetime] = lambda: datetime.now(UTC),
 ) -> A3Download:
-    """Download a listed document and store the file unmodified. Contents are not read.
+    """Download a listed document and store it. Contents are read only to redact.
+
+    Signatures and other natural-person data are removed before the file is
+    hashed and stored (invariant 6, ADR 0009); nothing else is changed.
 
     RDF delivers a document together with its corrections, so the file must
     cover exactly `bundle` (the detail's `correction_refs`; default just the
@@ -1258,6 +1275,7 @@ def download_filing(
         fetched_at=clock(),
         browser=browser,
         original_filename=original_filename if len(expected) == 1 else None,
+        redact=True,
     )
     return A3Download(krs=krs, document_refs=expected, raw_fetch=record)
 

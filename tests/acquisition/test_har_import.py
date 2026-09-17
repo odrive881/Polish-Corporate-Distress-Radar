@@ -414,7 +414,7 @@ def test_flow_over_a_capture_records_manual_tier_and_capture_time():
     assert "set-cookie" not in sidecar["http_headers"]
 
 
-@pytest.mark.skipif(not RECORDED_HAR.exists(), reason="recorded HAR is gitignored")
+@pytest.mark.skipif(not RECORDED_HAR.exists(), reason="recorded HAR is not kept (ADR 0009)")
 def test_recorded_har_has_detail_and_download_but_only_one_list_page():
     browser = HarFilingBrowser(HarCapture.from_har(RECORDED_HAR.read_bytes()))
 

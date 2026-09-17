@@ -24,3 +24,25 @@ Findings from live verification (web search + page fetches, September 2026):
 - No change to A3 (acquisition) design — this ADR is about structure *content*, not the retrieval mechanism (see ADR 0004 for that).
 
 **Sources:** [ksiegowosc.blog — Nowe struktury logiczne sprawozdań finansowych sporządzanych od stycznia 2026 roku](https://ksiegowosc.blog/2025/11/17/nowe-struktury-logiczne-sprawozdan-finansowych-sporzadzanych-od-stycznia-2026-roku/), [taxpoint.pl — Nowe struktury logiczne a realia systemu RDF](https://www.taxpoint.pl/blog/nowe-struktury-logiczne-sprawozdan-finansowych-a-realia-systemu-rdf), [PIBR — Ważna zmiana - nowe struktury logiczne](https://www.pibr.org.pl/pl/aktualnosci/2601,Wazna-zmiana-nowe-struktury-logiczne), [podatki.gov.pl — e-Sprawozdania Finansowe](https://www.podatki.gov.pl/e-sprawozdania-finansowe), and direct inspection of `tests/fixtures/neobis_001.xml`.
+
+## Addendum, 2026-09-17: the structures as vendored (plan 0004 step A)
+
+The official XSDs for every structure the Phase 1 seed uses were downloaded, with everything they import, and vendored under `config/xsd/` (51 files; `catalog.yaml` records each URL and SHA-256). What they settle:
+
+- **`JednostkaInna` is the full form.** Its root documentation reads "ZAKRES INFORMACJI WYKAZYWANYCH W SPRAWOZDANIU FINANSOWYM, O KTÓRYM MOWA W ART. 45 USTAWY, DLA JEDNOSTEK INNYCH NIŻ BANKI, ZAKŁADY UBEZPIECZEŃ I ZAKŁADY REASEKURACJI": the UoR Annex 1 statement for ordinary companies. It is not an atypical case. It is what 13 of the 17 seed entities file.
+- **A version is identified by `kodSystemowy` + `wersjaSchemy`, not by namespace.** The header fixes both, e.g. `SFJINZ (1)` / `1-2`. Schemas 1-0 (October 2018) and 1-2 share the namespace dated `2018/07/09`. Schema 1-3, used for most FY2024 statements, has its own namespace dated `2025/01/01`. The CRWDE templates (13817 full, 13821 micro) are `SFJINZ (2)` / `SFJMIZ (2)`, `1-0E`. In total the MF publishes 18 `Jednostka{Inna,Mala,Mikro}` × {złoty, thousands} × {1-0, 1-2, 1-3} schemas, plus the CRWDE templates.
+- **The unit is part of the structure.** `…WZlotych` and `…WTysiacach` are separate schemas (`SFJINZ` vs `SFJINT`), with root `JednostkaInna` vs `JednostkaInnaWTys`. Thousands use integer amounts. The statement bodies are otherwise identical.
+- **The full-form statutory line items are identical in every version** (1-0, 1-2, 1-3, wariant 2, and the thousands twins): 148 balance-sheet, 98 income-statement, 55 equity-changes and 119 cash-flow elements with the same paths. The differences:
+  - Wariant 2 narrowed six income-statement lines from "towary i materiały" to "towary". Sales of materials moved out, so these are distinct facts (`.R2025` codes).
+  - Schema 1-0 gave the cash-flow section headings A/B/C amounts that the UoR template does not have. Most filers wrote 0.00 there.
+- **Amount columns:**
+  - `KwotaA`: at the end of the current year.
+  - `KwotaB`: at the end of the prior year.
+  - `KwotaB1`: restated comparatives for the prior year ("przekształcone dane porównawcze").
+  - `KwotaC` appears only in the additional tax information, not in the four statements.
+- **Filers can add their own lines** (`PozycjaUszczegolawiajaca_N`) between the statutory children of most elements. Seed filers use them for real extra components, for "of which" breakdowns, and (in one case) for a whole old-format profit chain. Plan 0004 captures them as one `….USER` fact per element.
+- **Not in the XML:**
+  - Average employment has no structured field.
+  - The notes are attached files (`Plik`).
+
+This closes the open question in the Consequences above. Mapping specs are named by form, namespace year and schema version (`full-2018-v1-2`, `full-2025-w2-v1-0`), not `full-2026-v1`.

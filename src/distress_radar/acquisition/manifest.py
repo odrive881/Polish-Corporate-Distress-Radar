@@ -11,6 +11,7 @@ the transaction (a Dagster asset commits once per materialization).
 from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
+from datetime import datetime
 from typing import Any, LiteralString
 
 from psycopg import Connection, sql
@@ -54,6 +55,15 @@ SCHEMA_DDL: tuple[LiteralString, ...] = (
         ingestion_run_id  text NOT NULL,
         source            text NOT NULL,
         PRIMARY KEY (sha256, source_url, ingestion_run_id)
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS raw_redactions (
+        received_sha256    text PRIMARY KEY,
+        redacted_sha256    text NOT NULL REFERENCES raw_documents (sha256),
+        redaction_version  text NOT NULL,
+        redacted_at        timestamptz NOT NULL,
+        ingestion_run_id   text NOT NULL
     )
     """,
     """
@@ -172,6 +182,39 @@ def insert_raw_fetch(conn: Connection, record: RawFetchRecord) -> None:
         ON CONFLICT DO NOTHING
         """,
         (record.sha256, meta.source_url, meta.fetched_at, meta.ingestion_run_id, meta.source),
+    )
+    if meta.redaction_version is not None and meta.received_sha256 is not None:
+        insert_redaction(
+            conn,
+            received_sha256=meta.received_sha256,
+            redacted_sha256=record.sha256,
+            redaction_version=meta.redaction_version,
+            redacted_at=meta.fetched_at,
+            ingestion_run_id=meta.ingestion_run_id,
+        )
+
+
+def insert_redaction(
+    conn: Connection,
+    *,
+    received_sha256: str,
+    redacted_sha256: str,
+    redaction_version: str,
+    redacted_at: datetime,
+    ingestion_run_id: str,
+) -> None:
+    """Log that a received file was stored only in redacted form (ADR 0009).
+
+    The received hash identifies bytes that were never stored; it is not personal data.
+    """
+    conn.execute(
+        """
+        INSERT INTO raw_redactions
+            (received_sha256, redacted_sha256, redaction_version, redacted_at, ingestion_run_id)
+        VALUES (%s, %s, %s, %s, %s)
+        ON CONFLICT DO NOTHING
+        """,
+        (received_sha256, redacted_sha256, redaction_version, redacted_at, ingestion_run_id),
     )
 
 

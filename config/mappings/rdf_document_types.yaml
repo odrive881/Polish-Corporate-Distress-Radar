@@ -37,6 +37,9 @@ types:
     canonical: auditor_report
     download: false
   "20":
+    # Possible future employment source for size classification (data_inventory §8):
+    # not downloaded in v1. Distressed seed entities file it late or never; micro
+    # (and some small) entities are exempt, so a gap is not always a lapse.
     name: Sprawozdanie z działalności
     canonical: management_report
     download: false

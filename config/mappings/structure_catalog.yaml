@@ -1,0 +1,89 @@
+# Structure versions C1 recognises but does not map yet (plan 0004, decision 7).
+#
+# A document matching one of these is recorded as `not_yet_mapped` and skipped;
+# it is not quarantined, because nothing is wrong with it. A document matching
+# neither this list nor a spec in this directory is quarantined as
+# `unknown_structure_version`. Every entry's XSD is vendored in `config/xsd/`;
+# system codes and schema versions were read from those XSDs (fixed values).
+# Move an entry out of here when its spec is written (Phase 3).
+versions:
+  - root_namespace: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2025/01/01/JednostkaInnaWZlotych"
+    root_name: JednostkaInna
+    kod_systemowy: "SFJINZ (1)"
+    wersja_schemy: "1-3"
+    xsd: "https://www.gov.pl/static/finanse/SF/DefinicjeTypySprawozdaniaFinansowe/2024/10/24/JednostkaInnaWZlotych(1)_v1-3.xsd"
+  - root_namespace: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaInnaWTysiacach"
+    root_name: JednostkaInnaWTys
+    kod_systemowy: "SFJINT (1)"
+    wersja_schemy: "1-0E"
+    xsd: "https://www.mf.gov.pl/documents/764034/6464789/JednostkaInnaWTysiacach(1)_v1-0.xsd"
+  - root_namespace: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2025/01/01/JednostkaInnaWTysiacach"
+    root_name: JednostkaInnaWTys
+    kod_systemowy: "SFJINT (1)"
+    wersja_schemy: "1-3"
+    xsd: "https://www.gov.pl/static/finanse/SF/DefinicjeTypySprawozdaniaFinansowe/2024/10/24/JednostkaInnaWTysiacach(1)_v1-3.xsd"
+  - root_namespace: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaMalaWZlotych"
+    root_name: JednostkaMala
+    kod_systemowy: "SFJMAZ (1)"
+    wersja_schemy: "1-0E"
+    xsd: "https://www.mf.gov.pl/documents/764034/6464789/JednostkaMalaWZlotych(1)_v1-0.xsd"
+  - root_namespace: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaMalaWZlotych"
+    root_name: JednostkaMala
+    kod_systemowy: "SFJMAZ (1)"
+    wersja_schemy: "1-2"
+    xsd: "https://www.gov.pl/documents/2034621/2182793/JednostkaMalaWZlotych(1)_v1-2.xsd"
+  - root_namespace: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2025/01/01/JednostkaMalaWZlotych"
+    root_name: JednostkaMala
+    kod_systemowy: "SFJMAZ (1)"
+    wersja_schemy: "1-3"
+    xsd: "https://www.gov.pl/static/finanse/SF/DefinicjeTypySprawozdaniaFinansowe/2024/10/24/JednostkaMalaWZlotych(1)_v1-3.xsd"
+  - root_namespace: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaMalaWTysiacach"
+    root_name: JednostkaMalaWTys
+    kod_systemowy: "SFJMAT (1)"
+    wersja_schemy: "1-0E"
+    xsd: "https://www.mf.gov.pl/documents/764034/6464789/JednostkaMalaWTysiacach(1)_v1-0.xsd"
+  - root_namespace: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaMalaWTysiacach"
+    root_name: JednostkaMalaWTys
+    kod_systemowy: "SFJMAT (1)"
+    wersja_schemy: "1-2"
+    xsd: "https://www.gov.pl/documents/2034621/2182793/JednostkaMalaWTysiacach(1)_v1-2.xsd"
+  - root_namespace: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2025/01/01/JednostkaMalaWTysiacach"
+    root_name: JednostkaMalaWTys
+    kod_systemowy: "SFJMAT (1)"
+    wersja_schemy: "1-3"
+    xsd: "https://www.gov.pl/static/finanse/SF/DefinicjeTypySprawozdaniaFinansowe/2024/10/24/JednostkaMalaWTysiacach(1)_v1-3.xsd"
+  - root_namespace: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaMikroWZlotych"
+    root_name: JednostkaMikro
+    kod_systemowy: "SFJMIZ (1)"
+    wersja_schemy: "1-0E"
+    xsd: "https://www.mf.gov.pl/documents/764034/6464789/JednostkaMikroWZlotych(1)_v1-0.xsd"
+  - root_namespace: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaMikroWZlotych"
+    root_name: JednostkaMikro
+    kod_systemowy: "SFJMIZ (1)"
+    wersja_schemy: "1-2"
+    xsd: "https://www.gov.pl/documents/2034621/2182793/JednostkaMikroWZlotych(1)_v1-2.xsd"
+  - root_namespace: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2025/01/01/JednostkaMikroWZlotych"
+    root_name: JednostkaMikro
+    kod_systemowy: "SFJMIZ (1)"
+    wersja_schemy: "1-3"
+    xsd: "https://www.gov.pl/static/finanse/SF/DefinicjeTypySprawozdaniaFinansowe/2024/10/24/JednostkaMikroWZlotych(1)_v1-3.xsd"
+  - root_namespace: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaMikroWTysiacach"
+    root_name: JednostkaMikroWTys
+    kod_systemowy: "SFJMIT (1)"
+    wersja_schemy: "1-0E"
+    xsd: "https://www.mf.gov.pl/documents/764034/6464789/JednostkaMikroWTysiacach(1)_v1-0.xsd"
+  - root_namespace: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaMikroWTysiacach"
+    root_name: JednostkaMikroWTys
+    kod_systemowy: "SFJMIT (1)"
+    wersja_schemy: "1-2"
+    xsd: "https://www.gov.pl/documents/2034621/2182793/JednostkaMikroWTysiacach(1)_v1-2.xsd"
+  - root_namespace: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2025/01/01/JednostkaMikroWTysiacach"
+    root_name: JednostkaMikroWTys
+    kod_systemowy: "SFJMIT (1)"
+    wersja_schemy: "1-3"
+    xsd: "https://www.gov.pl/static/finanse/SF/DefinicjeTypySprawozdaniaFinansowe/2024/10/24/JednostkaMikroWTysiacach(1)_v1-3.xsd"
+  - root_namespace: "http://crd.gov.pl/wzor/2025/08/12/13821/"
+    root_name: Dokument
+    kod_systemowy: "SFJMIZ (2)"
+    wersja_schemy: "1-0E"
+    xsd: "http://crd.gov.pl/wzor/2025/08/12/13821/schemat.xsd"

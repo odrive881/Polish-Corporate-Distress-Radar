@@ -162,7 +162,8 @@ CREATE TABLE IF NOT EXISTS filing_index (
   - Re-run (Dagster run `c5e379a5`, `universe_candidates` + `entity_master` + `rdf_manual_import` over all 17 HARs): 0 candidates without an A2 outcome, and every file reported nothing indexed, downloaded, or missing. All counts above, and the MinIO object count, were identical.
 - **No live quarantine rows.** Every seed entity is in RDF with filings, so `rdf_entity_not_found` / `no_rdf_filings` are covered only by the fixture tests.
 - **Short histories.** `0000070294` lists only 4 documents (periods to 2018); `0000225354`, `0000386777` (to 2022) and `0000397658` (to 2021) stop filing early. That fits their distress hints or silent exit, and is left for A4/F to label, not treated as a capture gap.
-- **Still open.** Automated RDF access at scale needs a new decision (ADR 0007 options a/b). The HAR files in `.cache/rdf_inbox/` hold session data and should be deleted per the README once no longer needed for re-imports.
+- **Still open.** Automated RDF access at scale needs a new decision (ADR 0007 options a/b).
+- **Captures deleted (2026-09-17).** The HAR files in `.cache/rdf_inbox/` and the step-A HAR under `tests/fixtures/rdf/` held session data and the documents as filed, so they were deleted once imported (ADR 0009). Re-importing any of the 17 entities means capturing again.
 
 ## Next plan
 

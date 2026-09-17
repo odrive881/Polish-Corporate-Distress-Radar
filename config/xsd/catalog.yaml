@@ -1,0 +1,173 @@
+# Official Ministry of Finance / CRWDE XSDs, mirrored unmodified (plan 0004 step A).
+#
+# Each key is the schemaLocation URL as documents and schemas cite it; `path` is
+# relative to this directory (host + URL path). Validation resolves every URL
+# through this catalog and never goes to the network. Fetched 2026-09-17 by
+# following xsd:import/include from each root below; `sha256` is of the bytes
+# as downloaded. To refresh: re-fetch, compare hashes, and record changes in
+# ADR 0005.
+fetched_on: 2026-09-17
+schemas:
+  "http://crd.gov.pl/wzor/2025/08/07/13817/schemat.xsd":
+    path: "crd.gov.pl/wzor/2025/08/07/13817/schemat.xsd"
+    sha256: ee69992d4416f08c53e6b7ccd0d66350adc8ee1b5539d8e1ac8d900ec0e515bd
+  "http://crd.gov.pl/wzor/2025/08/12/13821/schemat.xsd":
+    path: "crd.gov.pl/wzor/2025/08/12/13821/schemat.xsd"
+    sha256: eb20e39ca85aafc30d2367fcec00ec224854a791f0095d56d2cd99963cd9ec22
+  "http://crd.gov.pl/xml/schematy/adres/2009/11/09/adres.xsd":
+    path: "crd.gov.pl/xml/schematy/adres/2009/11/09/adres.xsd"
+    sha256: 4e09bc5931caba664bc11060e4d23296554af79ff0c56eb42f413be3a4a3a443
+  "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2016/01/25/eD/DefinicjeTypy/ElementarneTypyDanych_v4-0E.xsd":
+    path: "crd.gov.pl/xml/schematy/dziedzinowe/mf/2016/01/25/eD/DefinicjeTypy/ElementarneTypyDanych_v4-0E.xsd"
+    sha256: f755041536245044d113306a7611c1a44a7f6a1024a00cf11ec05973b11bf039
+  "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2016/01/25/eD/DefinicjeTypy/KodyKrajow_v4-1E.xsd":
+    path: "crd.gov.pl/xml/schematy/dziedzinowe/mf/2016/01/25/eD/DefinicjeTypy/KodyKrajow_v4-1E.xsd"
+    sha256: 02275945cbdbca7b3f92e6d6ef034987ccd029b73a2c0d015294a2872e141d28
+  "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2016/01/25/eD/DefinicjeTypy/KodyUrzedowSkarbowych_v4-0E.xsd":
+    path: "crd.gov.pl/xml/schematy/dziedzinowe/mf/2016/01/25/eD/DefinicjeTypy/KodyUrzedowSkarbowych_v4-0E.xsd"
+    sha256: f12b96a080f32cf1b07e42764680c3c3983433e516342c50060b9738d671bc0a
+  "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2016/01/25/eD/DefinicjeTypy/StrukturyDanych_v4-0E.xsd":
+    path: "crd.gov.pl/xml/schematy/dziedzinowe/mf/2016/01/25/eD/DefinicjeTypy/StrukturyDanych_v4-0E.xsd"
+    sha256: a552ffb48be94a6825e4633f32fbed49e0b9f7684a987798ea80f19dbb640dbc
+  "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2018/02/01/eD/KodyPKD/KodyPKD_v2-0E.xsd":
+    path: "crd.gov.pl/xml/schematy/dziedzinowe/mf/2018/02/01/eD/KodyPKD/KodyPKD_v2-0E.xsd"
+    sha256: 1ddbef3feecc4a5b17a96cf2bf531d8cd1a8680d1c9858089171f2c6ddf6d1be
+    final_url: "http://crd.gov.pl/wps/PA_E2_PI/zalacznik_oi/zalacznik_oi_1563"
+  "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2021/08/18/eD/KodyPKD/KodyPKD_v3-0E.xsd":
+    path: "crd.gov.pl/xml/schematy/dziedzinowe/mf/2021/08/18/eD/KodyPKD/KodyPKD_v3-0E.xsd"
+    sha256: 98ec0252fdb6363075df6d330902549a943a00442a63cd0601a07ee1406b7ffb
+    final_url: "http://crd.gov.pl/wps/PA_E2_PI/zalacznik_oi/zalacznik_oi_2384"
+  "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/09/13/eD/DefinicjeTypy/StrukturyDanych_v12-0E.xsd":
+    path: "crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/09/13/eD/DefinicjeTypy/StrukturyDanych_v12-0E.xsd"
+    sha256: 01c45f7515f46cfa9bec843feef1409c126af3bee4d4e25f0325ae6323a9d512
+    final_url: "http://crd.gov.pl/wps/PA_E2_PI/zalacznik_oi/zalacznik_oi_3417"
+  "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2023/09/06/eD/KodyKrajow/KodyKrajow_v13-0E.xsd":
+    path: "crd.gov.pl/xml/schematy/dziedzinowe/mf/2023/09/06/eD/KodyKrajow/KodyKrajow_v13-0E.xsd"
+    sha256: 447efc6e1a84de71d433666c60635856b8e01f090e5eedb3410b1afe545f8117
+    final_url: "http://crd.gov.pl/wps/PA_E2_PI/zalacznik_oi/zalacznik_oi_3001"
+  "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2025/01/01/eD/KodyCECHKRAJOW/KodyCechKrajowWaluty_v6-0E.xsd":
+    path: "crd.gov.pl/xml/schematy/dziedzinowe/mf/2025/01/01/eD/KodyCECHKRAJOW/KodyCechKrajowWaluty_v6-0E.xsd"
+    sha256: 215199738d3fa6e551319e07f62f8491dba551626628da692f9c25c1715f1507
+    final_url: "http://crd.gov.pl/wps/PA_E2_PI/zalacznik_oi/zalacznik_oi_3360"
+  "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2025/01/01/eD/KodyPKD/KodyPKD_v4-0E.xsd":
+    path: "crd.gov.pl/xml/schematy/dziedzinowe/mf/2025/01/01/eD/KodyPKD/KodyPKD_v4-0E.xsd"
+    sha256: e34cfb13eabe3bb70c402ddc00999fbf928161b4ef522eddedcc6121d89044a6
+    final_url: "http://crd.gov.pl/wps/PA_E2_PI/zalacznik_oi/zalacznik_oi_3359"
+  "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2025/07/31/eD/JednostkaInnaStruktury/JednostkaInnaStrukturyDanychSprFin_v2-0E.xsd":
+    path: "crd.gov.pl/xml/schematy/dziedzinowe/mf/2025/07/31/eD/JednostkaInnaStruktury/JednostkaInnaStrukturyDanychSprFin_v2-0E.xsd"
+    sha256: a0077b666d9737670ac5dbdd3cb65083a9e27207bf6d1369a2e176562a4adee5
+    final_url: "http://crd.gov.pl/wps/PA_E2_PI/zalacznik_oi/zalacznik_oi_3436"
+  "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2025/07/31/eD/JednostkaMalaStruktury/JednostkaMalaStrukturyDanychSprFin_v2-0E.xsd":
+    path: "crd.gov.pl/xml/schematy/dziedzinowe/mf/2025/07/31/eD/JednostkaMalaStruktury/JednostkaMalaStrukturyDanychSprFin_v2-0E.xsd"
+    sha256: a599651a7d5d324b95c6fd13d4c1d0531552064f623e3bad712bdf5e7e929da1
+    final_url: "http://crd.gov.pl/wps/PA_E2_PI/zalacznik_oi/zalacznik_oi_3437"
+  "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2025/07/31/eD/JednostkaMikroStruktury/JednostkaMikroStrukturyDanychSprFin_v2-0E.xsd":
+    path: "crd.gov.pl/xml/schematy/dziedzinowe/mf/2025/07/31/eD/JednostkaMikroStruktury/JednostkaMikroStrukturyDanychSprFin_v2-0E.xsd"
+    sha256: 7fce74c846c53af8b978890fa5afb2f4bc10bca332be2c1411eecf28af2ad1b2
+    final_url: "http://crd.gov.pl/wps/PA_E2_PI/zalacznik_oi/zalacznik_oi_3438"
+  "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2025/07/31/eD/StrukturyDanychSprFin/StrukturyDanychSprFin_v2-0E.xsd":
+    path: "crd.gov.pl/xml/schematy/dziedzinowe/mf/2025/07/31/eD/StrukturyDanychSprFin/StrukturyDanychSprFin_v2-0E.xsd"
+    sha256: cbec85e7f791d9dfa0b0086b2ff5d0fac7684f75fb9e5a9d46af19ad9f19e8a5
+    final_url: "http://crd.gov.pl/wps/PA_E2_PI/zalacznik_oi/zalacznik_oi_3523"
+  "http://crd.gov.pl/xml/schematy/instytucja/2009/11/16/instytucja.xsd":
+    path: "crd.gov.pl/xml/schematy/instytucja/2009/11/16/instytucja.xsd"
+    sha256: 9ac928bc1c91449e14cf4c9c04e8e2ea616e393e4cf47cc9691f6ad028f93ca3
+  "http://crd.gov.pl/xml/schematy/meta/2009/11/16/meta.xsd":
+    path: "crd.gov.pl/xml/schematy/meta/2009/11/16/meta.xsd"
+    sha256: fe9e92f38474318a3891313bd427f14b415f7ded295c88eaec3d010b2e41884e
+  "http://crd.gov.pl/xml/schematy/osoba/2009/11/16/osoba.xsd":
+    path: "crd.gov.pl/xml/schematy/osoba/2009/11/16/osoba.xsd"
+    sha256: 98ddc0fc996380f0f1b7077fe0d5247638393d9e8f2faa504178e4d019a351f6
+  "http://crd.gov.pl/xml/schematy/struktura/2009/11/16/struktura.xsd":
+    path: "crd.gov.pl/xml/schematy/struktura/2009/11/16/struktura.xsd"
+    sha256: 43357b41167c34efb3780fccdb68030bce75de9a9b8fb0ff0ed9092cf6b878c6
+  "http://crd.gov.pl/xml/schematy/zewnetrzne/2008/05/09/CountryCode.xsd":
+    path: "crd.gov.pl/xml/schematy/zewnetrzne/2008/05/09/CountryCode.xsd"
+    sha256: bda9c6135f36fa70b7f395d58c71eaaaebbb078f607762b6bf42981b5d57c365
+  "https://www.gov.pl/documents/2034621/2182793/JednostkaInnaStrukturyDanychSprFin_v1-2.xsd":
+    path: "www.gov.pl/documents/2034621/2182793/JednostkaInnaStrukturyDanychSprFin_v1-2.xsd"
+    sha256: 28fadb2d77b86a459b4a7c48734516357c6040a51c9d31b3569d04a30566557d
+  "https://www.gov.pl/documents/2034621/2182793/JednostkaInnaWTysiacach(1)_v1-2.xsd":
+    path: "www.gov.pl/documents/2034621/2182793/JednostkaInnaWTysiacach(1)_v1-2.xsd"
+    sha256: c38b34e736dbb54516b08f2e6f2993ea7e29bd333f30065881bc1120cebbfc74
+  "https://www.gov.pl/documents/2034621/2182793/JednostkaInnaWZlotych(1)_v1-2.xsd":
+    path: "www.gov.pl/documents/2034621/2182793/JednostkaInnaWZlotych(1)_v1-2.xsd"
+    sha256: e28992eb3fb1a2944d5b5b32dc6df40b3375b33c772a8235d04576101b9417cb
+  "https://www.gov.pl/documents/2034621/2182793/JednostkaMalaStrukturyDanychSprFin_v1-2.xsd":
+    path: "www.gov.pl/documents/2034621/2182793/JednostkaMalaStrukturyDanychSprFin_v1-2.xsd"
+    sha256: ab144598f9fe4515ded3fdd10ef704807a3c12f6affd5bf48f2e965517a30a4a
+  "https://www.gov.pl/documents/2034621/2182793/JednostkaMalaWTysiacach(1)_v1-2.xsd":
+    path: "www.gov.pl/documents/2034621/2182793/JednostkaMalaWTysiacach(1)_v1-2.xsd"
+    sha256: 8b0908e5f93b8c6721f3f8840c7519cb921b4206ddea104973745b92a55578bb
+  "https://www.gov.pl/documents/2034621/2182793/JednostkaMalaWZlotych(1)_v1-2.xsd":
+    path: "www.gov.pl/documents/2034621/2182793/JednostkaMalaWZlotych(1)_v1-2.xsd"
+    sha256: d5b25fdd4c2c582f9dac99e298b1edd99d4ec70f990ab7028e38abdfda2677b8
+  "https://www.gov.pl/documents/2034621/2182793/JednostkaMikroStrukturyDanychSprFin_v1-2.xsd":
+    path: "www.gov.pl/documents/2034621/2182793/JednostkaMikroStrukturyDanychSprFin_v1-2.xsd"
+    sha256: 2bf2d51dac06a6688f5f695736980c1c08985d37a0ce620d241e27f633d79dcf
+  "https://www.gov.pl/documents/2034621/2182793/JednostkaMikroWTysiacach(1)_v1-2.xsd":
+    path: "www.gov.pl/documents/2034621/2182793/JednostkaMikroWTysiacach(1)_v1-2.xsd"
+    sha256: 09151d2e52ba43c6c8616a3a39f01966ea61c3e0cb9100567caf5a6104bcc516
+  "https://www.gov.pl/documents/2034621/2182793/JednostkaMikroWZlotych(1)_v1-2.xsd":
+    path: "www.gov.pl/documents/2034621/2182793/JednostkaMikroWZlotych(1)_v1-2.xsd"
+    sha256: c76892c349a5d2a32e4938d85dcafff9fbaf1558d81a4bce41f55fb7f44eb798
+  "https://www.gov.pl/documents/2034621/2182793/StrukturyDanychSprFin_v1-2.xsd":
+    path: "www.gov.pl/documents/2034621/2182793/StrukturyDanychSprFin_v1-2.xsd"
+    sha256: 581907f6c14992ea0aabef4efaf55d77ac40e2aea94d77a099e7564a3fb6ea58
+  "https://www.gov.pl/static/finanse/SF/DefinicjeTypySprawozdaniaFinansowe/2024/10/24/JednostkaInnaStrukturyDanychSprFin_v1-3.xsd":
+    path: "www.gov.pl/static/finanse/SF/DefinicjeTypySprawozdaniaFinansowe/2024/10/24/JednostkaInnaStrukturyDanychSprFin_v1-3.xsd"
+    sha256: 60b25f05e76407621ea28fadaa9811bf57c866eb5977b8a4f89c349cc63338ca
+  "https://www.gov.pl/static/finanse/SF/DefinicjeTypySprawozdaniaFinansowe/2024/10/24/JednostkaInnaWTysiacach(1)_v1-3.xsd":
+    path: "www.gov.pl/static/finanse/SF/DefinicjeTypySprawozdaniaFinansowe/2024/10/24/JednostkaInnaWTysiacach(1)_v1-3.xsd"
+    sha256: 31cd84a10bb89cfe6dda90334c6c6faafe666ceed3c29d7cc6023c6e6d1a6026
+  "https://www.gov.pl/static/finanse/SF/DefinicjeTypySprawozdaniaFinansowe/2024/10/24/JednostkaInnaWZlotych(1)_v1-3.xsd":
+    path: "www.gov.pl/static/finanse/SF/DefinicjeTypySprawozdaniaFinansowe/2024/10/24/JednostkaInnaWZlotych(1)_v1-3.xsd"
+    sha256: 2b9c342dded84a3272ed84173326653f152a29430361b687ae576d2b2f59a7a4
+  "https://www.gov.pl/static/finanse/SF/DefinicjeTypySprawozdaniaFinansowe/2024/10/24/JednostkaMalaStrukturyDanychSprFin_v1-3.xsd":
+    path: "www.gov.pl/static/finanse/SF/DefinicjeTypySprawozdaniaFinansowe/2024/10/24/JednostkaMalaStrukturyDanychSprFin_v1-3.xsd"
+    sha256: b298406d0d67db7866688b973b565b70dad355d6b3ee67ea23e80d2321a2a4cf
+  "https://www.gov.pl/static/finanse/SF/DefinicjeTypySprawozdaniaFinansowe/2024/10/24/JednostkaMalaWTysiacach(1)_v1-3.xsd":
+    path: "www.gov.pl/static/finanse/SF/DefinicjeTypySprawozdaniaFinansowe/2024/10/24/JednostkaMalaWTysiacach(1)_v1-3.xsd"
+    sha256: 4fc91d0bc775c923ea0533a320d80f6b8821ae222a13aa7326dec4a5bdfdb534
+  "https://www.gov.pl/static/finanse/SF/DefinicjeTypySprawozdaniaFinansowe/2024/10/24/JednostkaMalaWZlotych(1)_v1-3.xsd":
+    path: "www.gov.pl/static/finanse/SF/DefinicjeTypySprawozdaniaFinansowe/2024/10/24/JednostkaMalaWZlotych(1)_v1-3.xsd"
+    sha256: 68d152be136b801452dc47953909e7c50b4ed6458290d6aa203d0556a0f71c43
+  "https://www.gov.pl/static/finanse/SF/DefinicjeTypySprawozdaniaFinansowe/2024/10/24/JednostkaMikroStrukturyDanychSprFin_v1-3.xsd":
+    path: "www.gov.pl/static/finanse/SF/DefinicjeTypySprawozdaniaFinansowe/2024/10/24/JednostkaMikroStrukturyDanychSprFin_v1-3.xsd"
+    sha256: a8d6ac5ea8284ce149f59fcf725a8ca040d9523ecd73bee485d993c284ab3498
+  "https://www.gov.pl/static/finanse/SF/DefinicjeTypySprawozdaniaFinansowe/2024/10/24/JednostkaMikroWTysiacach(1)_v1-3.xsd":
+    path: "www.gov.pl/static/finanse/SF/DefinicjeTypySprawozdaniaFinansowe/2024/10/24/JednostkaMikroWTysiacach(1)_v1-3.xsd"
+    sha256: 8c342af4617d7e6b9c0cff84dab803cc650ed39abcdbd5bd706810689bc9a778
+  "https://www.gov.pl/static/finanse/SF/DefinicjeTypySprawozdaniaFinansowe/2024/10/24/JednostkaMikroWZlotych(1)_v1-3.xsd":
+    path: "www.gov.pl/static/finanse/SF/DefinicjeTypySprawozdaniaFinansowe/2024/10/24/JednostkaMikroWZlotych(1)_v1-3.xsd"
+    sha256: ac122b83e7e0c145b3602904de2b907d1f4c63fadfd33d45f6c7257a71964793
+  "https://www.mf.gov.pl/documents/764034/6464789/JednostkaInnaStrukturyDanychSprFin_v1-0.xsd":
+    path: "www.mf.gov.pl/documents/764034/6464789/JednostkaInnaStrukturyDanychSprFin_v1-0.xsd"
+    sha256: 80a98a5d78f4b13f84cf4d0e50b0f553f92128c43d4873730159d24b590095c6
+  "https://www.mf.gov.pl/documents/764034/6464789/JednostkaInnaWTysiacach(1)_v1-0.xsd":
+    path: "www.mf.gov.pl/documents/764034/6464789/JednostkaInnaWTysiacach(1)_v1-0.xsd"
+    sha256: 4f22dc79c37d12610611a9e0778218877ed1eb9843bdcebce8adbba665248484
+  "https://www.mf.gov.pl/documents/764034/6464789/JednostkaInnaWZlotych(1)_v1-0.xsd":
+    path: "www.mf.gov.pl/documents/764034/6464789/JednostkaInnaWZlotych(1)_v1-0.xsd"
+    sha256: 2cbbfda95372fbaaf9b91f05ecd399dbc772502f4028490fd2d7412a445bfa9f
+  "https://www.mf.gov.pl/documents/764034/6464789/JednostkaMalaStrukturyDanychSprFin_v1-0.xsd":
+    path: "www.mf.gov.pl/documents/764034/6464789/JednostkaMalaStrukturyDanychSprFin_v1-0.xsd"
+    sha256: 601bc7f2751da38f2bf7f797544de649455ff17be61d1f1f015df1e664b39348
+  "https://www.mf.gov.pl/documents/764034/6464789/JednostkaMalaWTysiacach(1)_v1-0.xsd":
+    path: "www.mf.gov.pl/documents/764034/6464789/JednostkaMalaWTysiacach(1)_v1-0.xsd"
+    sha256: 05415c48f1ad57791817ae6a5b2d1cb1ca82cc9c670f66d90c1692f2e9ddc4cb
+  "https://www.mf.gov.pl/documents/764034/6464789/JednostkaMalaWZlotych(1)_v1-0.xsd":
+    path: "www.mf.gov.pl/documents/764034/6464789/JednostkaMalaWZlotych(1)_v1-0.xsd"
+    sha256: c40defde69756f8263e022a069001e39defc9a028ecdf00492da8fe8c5ca4542
+  "https://www.mf.gov.pl/documents/764034/6464789/JednostkaMikroStrukturyDanychSprFin_v1-0.xsd":
+    path: "www.mf.gov.pl/documents/764034/6464789/JednostkaMikroStrukturyDanychSprFin_v1-0.xsd"
+    sha256: 8f0557983f502245c9787eb4ba108401cf7bbcb617e14c40abece7003623c440
+  "https://www.mf.gov.pl/documents/764034/6464789/JednostkaMikroWTysiacach(1)_v1-0.xsd":
+    path: "www.mf.gov.pl/documents/764034/6464789/JednostkaMikroWTysiacach(1)_v1-0.xsd"
+    sha256: 20378ee59a503bed76a5ecc8902e2455cac89b8d96f6be80483eee5937f9a1d1
+  "https://www.mf.gov.pl/documents/764034/6464789/JednostkaMikroWZlotych(1)_v1-0.xsd":
+    path: "www.mf.gov.pl/documents/764034/6464789/JednostkaMikroWZlotych(1)_v1-0.xsd"
+    sha256: 50f0d4282f6007ebd6218a5d8785b9089274b814f77f9f8461bdd6a4e857daab
+  "https://www.mf.gov.pl/documents/764034/6464789/StrukturyDanychSprFin_v1-0.xsd":
+    path: "www.mf.gov.pl/documents/764034/6464789/StrukturyDanychSprFin_v1-0.xsd"
+    sha256: 12d1be2c2fa5b4549c3a0d44b35427e88dab572b991a3d403eaaa40930bbeafd

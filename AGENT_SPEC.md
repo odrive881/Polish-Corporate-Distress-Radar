@@ -19,11 +19,11 @@ It ingests statutory financial statements (XML and PDF) filed by KRS-registered 
 Violating any of these is a build failure, not a code-review comment.
 
 1. **Point-in-time correctness.** A feature computed for `as_of_date` may only use data whose `known_from <= as_of_date`. Enforced by a blocking test (§9.1). No exceptions, including for "obviously static" reference data.
-2. **Raw immutability.** Downloaded bytes are written to the object store unmodified, content-addressed, and never overwritten or deleted. All parsing reads from the object store, never from the network.
+2. **Raw immutability.** Downloaded bytes are written to the object store unmodified, content-addressed, and never overwritten or deleted. All parsing reads from the object store, never from the network. The one exception is invariant 6's redaction: filed documents have signer data removed before hashing (ADR 0009). The ADR 0009 migration is the only code that deletes raw objects.
 3. **Full lineage.** Every canonical fact carries the source document hash, the source element path, and the ingestion run id. A fact that cannot name its source is a bug.
 4. **No silent data loss.** Records failing validation go to a quarantine table with a reason code. Never drop, never impute to make a check pass.
 5. **Idempotence.** Every stage produces identical output from identical input. Re-running a stage is always safe.
-6. **Legal entities only.** Natural persons are never ingested or stored, including from insolvency registers which contain consumer bankruptcies. Filter at the acquisition boundary.
+6. **Legal entities only.** Natural persons are never ingested or stored, including from insolvency registers which contain consumer bankruptcies. Filter at the acquisition boundary. This includes the signatures on filed documents (names, certificates, PESEL numbers), which `acquisition/redaction.py` strips before storing (ADR 0009).
 7. **Versioned statutory config.** Size thresholds, KSH tripwire ratios, and procedure taxonomies live in `config/statutory/` as dated YAML. Never hardcode them in Python or SQL.
 
 ---
@@ -92,6 +92,8 @@ Polish statements come in variants that are **not** losslessly interchangeable:
 
 Statements declare amounts in złoty or thousands of złoty. Normalise everything to złoty at parse time. A missing unit conversion silently corrupts the warehouse — assert the declared unit is present and recognised, and quarantine the document if not.
 
+In the Ministry of Finance XML structures the unit is not a separate field: it is part of the structure itself (`JednostkaInnaWZlotych` vs `…WTysiacach`, with the `KodSprawozdania` header saying which). Each structure spec maps that header value to a multiplier (plan 0004).
+
 ### 4.3 Accounting identity checks
 
 Run on every parsed statement. Tolerance: absolute difference ≤ 1 currency unit (rounding), configurable.
@@ -103,6 +105,8 @@ Run on every parsed statement. Tolerance: absolute difference ≤ 1 currency uni
 | `profit_ties` | income statement net result == balance sheet net result line |
 | `cashflow_ties` | net cash movement == closing cash − opening cash |
 | `prior_year_consistency` | prior-year column matches the previously filed current-year column; mismatch emits a row into `restatement_events`, not a failure |
+
+Grading (plan 0004): a statement file is `quarantined` when a tie fails in the current-year column, or a current-year subtotal is off by more than 1% of its total assets. Every other failure grades it `warn`: immaterial subtotal gaps, and anything confined to the prior-year columns, whose authority is the earlier filing. A cash difference exactly explained by the reported exchange-rate effect on cash passes `cashflow_ties`. Sums include the filer's own extra lines (`PozycjaUszczegolawiajaca_N`), except under "w tym" (of which) lines.
 
 ### 4.4 Size classification
 
@@ -165,10 +169,12 @@ These names are canonical. `PROJECT_OVERVIEW.md` refers to the same datasets and
 | `value` | decimal(20,2) | Always złoty |
 | `statement_type` | enum | `balance_sheet`, `income_statement`, `cash_flow`, `equity_changes` |
 | `variant` | enum | `comparative`, `calculation`, `direct`, `indirect`, `n/a` |
-| `column` | enum | `current_year`, `prior_year` |
+| `column` | enum | `current_year`, `prior_year`, `prior_year_restated` (restated comparatives, `KwotaB1`) |
 | `structure_version` | str | Detected XML structure version |
 | `source_document_hash` | str | SHA-256, joins to `raw_documents` |
-| `source_element_path` | str | XPath |
+| `source_member` | str | Path from the stored download to the statement file, e.g. `zip:SF.xml` or `zip:SF.xades>ds:Object[2]>base64`. A download can hold a statement and its correction (plan 0004) |
+| `document_ref` | str | RDF document id (`filing_index.document_ref`); tells a statement from its correction |
+| `source_element_path` | str | XPath (namespace prefixes from the structure spec). For a filer's own extra lines, summed into one `….USER` fact, an XPath union of every contributing element |
 | `known_from` | date | Filing submission date |
 | `ingestion_run_id` | str | |
 | `quality_grade` | enum | `pass`, `warn`, `quarantined` |
@@ -191,9 +197,9 @@ Computed per §4.4. Never sourced from a registry.
 
 ### `restatement_events`
 
-`krs`, `fiscal_year`, `line_item`, `originally_reported_value`, `restated_value`, `original_document_hash`, `restating_document_hash`, `known_from`.
+`krs`, `fiscal_year`, `period_start`, `period_end`, `line_item`, `restated_column` (`prior_year` \| `prior_year_restated`), `originally_reported_value`, `restated_value`, `original_document_hash`, `original_source_member`, `original_document_ref`, `restating_document_hash`, `restating_source_member`, `restating_document_ref`, `known_from`.
 
-Emitted by the `prior_year_consistency` check (§4.3). A restatement is a finding, not a validation failure.
+Emitted by the `prior_year_consistency` check (§4.3). A restatement is a finding, not a validation failure. The earlier filing is found by period adjacency (its period ends the day before the restating one starts), not by `fiscal_year - 1`, and must have been public no later than the restating one. Only files graded `pass` or `warn` take part.
 
 ### `outcome_labels`
 
@@ -251,7 +257,7 @@ Requirements:
 
 ### C — Structural decoding
 
-**C1 — Version detection and validation.** Detect structure version from XML namespace URI plus root element. Never from filename. Validate against the official XSD for that version. Validation failure is recorded as a finding and the document is quarantined, not discarded.
+**C1 — Version detection and validation.** First unwrap the stored download (a ZIP, possibly holding signature containers: enveloping or base64 XAdES, ePUAP envelopes) into its statement files, and tie each to its `filing_index` row. Detect structure version from XML namespace URI plus root element, plus the `KodSprawozdania` header's `kodSystemowy` and `wersjaSchemy`: MF schemas 1-0 and 1-2 share a namespace. Never from filename. Validate against the official XSD for that version, vendored under `config/xsd/` and resolved offline. Validation failure is recorded as a finding and the document is quarantined, not discarded. PDF statements are routed to C3; versions recognised but not yet mapped (`config/mappings/structure_catalog.yaml`) are recorded and skipped.
 
 **C2 — Canonical mapping.** Declarative specs in `config/mappings/structures/<version>.yaml`:
 
@@ -269,6 +275,8 @@ mappings:
 ```
 
 Engine reads the spec, extracts via lxml XPath, normalises units, and emits long-format rows in Polars. Mapping logic lives in data, not code.
+
+As built (plan 0004): statement structures that declare the same statutory elements share one body file (`config/mappings/structures/bodies/`, element paths plus the hierarchy the identity checks walk), and each version spec binds namespaces, header paths, unit, amount columns and code overrides to it.
 
 CI tests: every known structure version has a spec; every spec's `canonical` targets exist in the canonical chart; every spec marked `required: true` resolves against at least one golden fixture document.
 

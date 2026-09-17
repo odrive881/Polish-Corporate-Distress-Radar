@@ -1,0 +1,336 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xsd:schema xmlns:adr="http://crd.gov.pl/xml/schematy/adres/2009/11/09/" xmlns:oso="http://crd.gov.pl/xml/schematy/osoba/2009/11/16/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="http://crd.gov.pl/xml/schematy/osoba/2009/11/16/" elementFormDefault="qualified" attributeFormDefault="unqualified" version="0.3">
+	<xsd:import namespace="http://crd.gov.pl/xml/schematy/adres/2009/11/09/" schemaLocation="http://crd.gov.pl/xml/schematy/adres/2009/11/09/adres.xsd"/>
+	<xsd:annotation>
+		<xsd:documentation>Schemat podstawowy danych osobowych.
+		</xsd:documentation>
+		<xsd:documentation>Autor: Portal Interoperacyjności.</xsd:documentation>
+	</xsd:annotation>
+	<xsd:element name="Osoba" type="oso:OsobaTyp">
+		<xsd:annotation>
+			<xsd:documentation>Osoba</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:complexType name="OsobaTyp">
+		<xsd:annotation>
+			<xsd:documentation>Osoba</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element ref="oso:IdOsoby" minOccurs="0"/>
+			<xsd:group ref="oso:ImieNazwiskoGrupa"/>
+			<xsd:element ref="adr:Adres" minOccurs="0"/>
+			<xsd:element ref="adr:Kontakt" minOccurs="0"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:group name="ImieNazwiskoGrupa">
+		<xsd:sequence>
+			<xsd:element ref="oso:Imie"/>
+			<xsd:element ref="oso:ImieDrugie" minOccurs="0"/>
+			<xsd:element ref="oso:Nazwisko" maxOccurs="3"/>
+		</xsd:sequence>
+	</xsd:group>
+	<xsd:element name="IdOsoby" type="oso:IdOsobyTyp">
+		<xsd:annotation>
+			<xsd:documentation>Identyfikator osoby
+			</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:complexType name="IdOsobyTyp">
+		<xsd:annotation>
+			<xsd:documentation>Identyfikator osoby
+			</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element ref="oso:PESEL" minOccurs="0"/>
+			<xsd:element ref="oso:NIP" minOccurs="0"/>
+			<xsd:element ref="oso:InnyIdentyfikator" minOccurs="0" maxOccurs="unbounded"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:element name="PESEL" type="oso:PESELTyp">
+		<xsd:annotation>
+			<xsd:documentation>Numer PESEL</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="PESELTyp">
+		<xsd:annotation>
+			<xsd:documentation>Numer PESEL</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:pattern value="|\d{11}"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="NIP" type="oso:NIPTyp">
+		<xsd:annotation>
+			<xsd:documentation>Numer NIP</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="NIPTyp">
+		<xsd:annotation>
+			<xsd:documentation>Numer NIP</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:pattern value="|\d{10}"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="InnyIdentyfikator" type="oso:InnyIdentyfikatorTyp">
+		<xsd:annotation>
+			<xsd:documentation>Inny identyfikator osoby</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:complexType name="InnyIdentyfikatorTyp">
+		<xsd:annotation>
+			<xsd:documentation>Inny identyfikator osoby</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="TypIdentyfikatora" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation>Typ identyfikatora</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="WartoscIdentyfikatora" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation>Wartość identyfikatora
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:element name="Imie" type="oso:ImieTyp">
+		<xsd:annotation>
+			<xsd:documentation>Imię</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:element name="ImieDrugie" type="oso:ImieTyp">
+		<xsd:annotation>
+			<xsd:documentation>Drugie imię</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:element name="ImieOjca" type="oso:ImieTyp">
+		<xsd:annotation>
+			<xsd:documentation>Imię ojca</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:element name="ImieMatki" type="oso:ImieTyp">
+		<xsd:annotation>
+			<xsd:documentation>Imię matki</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="ImieTyp">
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="30"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="Nazwisko" type="oso:NazwiskoTyp">
+		<xsd:annotation>
+			<xsd:documentation>Nazwisko</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:element name="NazwiskoRodowe" type="oso:NazwiskoTyp">
+		<xsd:annotation>
+			<xsd:documentation>Nazwisko rodowe</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:element name="NazwiskoRodoweOjca" type="oso:NazwiskoTyp">
+		<xsd:annotation>
+			<xsd:documentation>Nazwisko rodowe ojca</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:element name="NazwiskoRodoweMatki" type="oso:NazwiskoTyp">
+		<xsd:annotation>
+			<xsd:documentation>Nazwisko rodowe matki</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:element name="NazwiskoPoprzednie" type="oso:NazwiskoTyp">
+		<xsd:annotation>
+			<xsd:documentation>Nazwisko poprzednie</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:complexType name="NazwiskoTyp">
+		<xsd:simpleContent>
+			<xsd:extension base="oso:CzlonNazwiskaTyp">
+				<xsd:attribute name="rodzajCzlonu" type="oso:rodzajCzlonuTyp" use="optional"/>
+			</xsd:extension>
+		</xsd:simpleContent>
+	</xsd:complexType>
+	<xsd:simpleType name="CzlonNazwiskaTyp">
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="40"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="rodzajCzlonuTyp">
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="pierwszy"/>
+			<xsd:enumeration value="drugi"/>
+			<xsd:enumeration value="trzeci"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="MiejsceUrodzenia" type="oso:MiejsceUrodzeniaTyp">
+		<xsd:annotation>
+			<xsd:documentation>Miejsce urodzenia</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="MiejsceUrodzeniaTyp">
+		<xsd:annotation>
+			<xsd:documentation>Miejsce urodzenia</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="25"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="DataUrodzenia" type="xsd:date">
+		<xsd:annotation>
+			<xsd:documentation>Data urodzenia</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:element name="Plec" type="oso:PlecTyp">
+		<xsd:annotation>
+			<xsd:documentation>Płeć</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="PlecTyp">
+		<xsd:annotation>
+			<xsd:documentation>Płeć</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="K"/>
+			<xsd:enumeration value="M"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="RodzajDowoduTozsamosci" type="oso:RodzajDowoduTozsamosciTyp">
+		<xsd:annotation>
+			<xsd:documentation>Rodzaj dowodu tożsamości</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="RodzajDowoduTozsamosciTyp">
+		<xsd:annotation>
+			<xsd:documentation>Rodzaj dowodu tożsamości</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="dowód osobisty"/>
+			<xsd:enumeration value="paszport"/>
+			<xsd:enumeration value="prawo jazdy"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="NrDowoduTozsamosci" type="oso:NrDowoduTozsamosciTyp">
+		<xsd:annotation>
+			<xsd:documentation>Nr dowodu tożsamości</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="NrDowoduTozsamosciTyp">
+		<xsd:annotation>
+			<xsd:documentation>Nr dowodu tożsamości</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="25"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="DataWydaniaDowoduTozsamosci" type="xsd:date">
+		<xsd:annotation>
+			<xsd:documentation>Data wydania dowodu tożsamości
+			</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:element name="Obywatelstwo" type="oso:ObywatelstwoTyp">
+		<xsd:annotation>
+			<xsd:documentation>Obywatelstwo</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="ObywatelstwoTyp">
+		<xsd:annotation>
+			<xsd:documentation>Obywatelstwo</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="25"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="Narodowosc" type="oso:NarodowoscTyp">
+		<xsd:annotation>
+			<xsd:documentation>Narodowość</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="NarodowoscTyp">
+		<xsd:annotation>
+			<xsd:documentation>Narodowość</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="50"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="StopienPokrewienstwa" type="oso:StopienPokrewienstwaTyp">
+		<xsd:annotation>
+			<xsd:documentation>Stopień pokrewieństwa</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="StopienPokrewienstwaTyp">
+		<xsd:annotation>
+			<xsd:documentation>Stopień pokrewieństwa</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="100"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="StanCywilny" type="oso:StanCywilnyTyp">
+		<xsd:annotation>
+			<xsd:documentation>Stan cywilny</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="StanCywilnyTyp">
+		<xsd:annotation>
+			<xsd:documentation>Stan cywilny</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="kawaler/panna"/>
+			<xsd:enumeration value="żonaty/zamężna"/>
+			<xsd:enumeration value="wdowiec/wdowa"/>
+			<xsd:enumeration value="rozwiedziony/rozwiedziona"/>
+			<xsd:enumeration value="wolny/wolna"/>
+			<xsd:enumeration value="separowany/separowana"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="WyksztalceniePoziom" type="oso:WyksztalceniePoziomTyp">
+		<xsd:annotation>
+			<xsd:documentation>Poziom wykształcenia</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="WyksztalceniePoziomTyp">
+		<xsd:annotation>
+			<xsd:documentation>Poziom wykształcenia</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="wyższe"/>
+			<xsd:enumeration value="policealne"/>
+			<xsd:enumeration value="średnie"/>
+			<xsd:enumeration value="zasadnicze zawodowe"/>
+			<xsd:enumeration value="gimnazjalne"/>
+			<xsd:enumeration value="podstawowe"/>
+			<xsd:enumeration value="niepełne podstawowe"/>
+			<xsd:enumeration value="nie podlega obowiązkowi szkolnemu"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="WyksztalcenieOpis" type="oso:WyksztalcenieOpisTyp">
+		<xsd:annotation>
+			<xsd:documentation>Opis wykształcenia</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="WyksztalcenieOpisTyp">
+		<xsd:annotation>
+			<xsd:documentation>Opis wykształcenia</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="2000"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="Zawod" type="oso:ZawodTyp">
+		<xsd:annotation>
+			<xsd:documentation>Zawód</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="ZawodTyp">
+		<xsd:annotation>
+			<xsd:documentation>Zawód</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="100"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+</xsd:schema>

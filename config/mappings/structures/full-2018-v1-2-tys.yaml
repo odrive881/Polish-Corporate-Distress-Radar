@@ -1,0 +1,45 @@
+# UoR Annex 1 (full form), MF structure JednostkaInnaWTysiacach (amounts in
+# thousands of złoty), schema 1-2. No seed document uses it; it is mapped so the
+# unit normalisation (AGENT_SPEC §4.2) runs end to end against a real schema.
+# Plan 0004. Line items come from the shared body; this file binds a document
+# version to it (AGENT_SPEC §6C2).
+structure_version: full-2018-v1-2-tys
+form: full
+body: jednostka_inna
+# C1 detection: root element + the KodSprawozdania system code and schema
+# version. The namespace alone is not enough: schemas 1-0 and 1-2 share it.
+detect:
+  root_namespace: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaInnaWTysiacach"
+  root_name: JednostkaInnaWTys
+  kod_systemowy: "SFJINT (1)"
+  wersja_schemy: "1-2"
+xsd: "https://www.gov.pl/documents/2034621/2182793/JednostkaInnaWTysiacach(1)_v1-2.xsd"
+effective_from: null  # not published with the schema; detection does not use it
+effective_to: null
+namespaces:
+  tns: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaInnaWTysiacach"
+  jin: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaInnaStruktury"
+  dtsf: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/DefinicjeTypySprawozdaniaFinansowe/"
+# XPath from the document root to the element holding Naglowek and the statements.
+statement_root: "/tns:JednostkaInnaWTys"
+header:
+  kod_sprawozdania: "tns:Naglowek/jin:KodSprawozdania"
+  period_start: "tns:Naglowek/dtsf:OkresOd"
+  period_end: "tns:Naglowek/dtsf:OkresDo"
+# The unit is fixed by the structure (AGENT_SPEC §4.2): KodSprawozdania's text
+# must be one of these, and amounts are multiplied by the value.
+unit:
+  SprFinJednostkaInnaWTysiacach: 1000
+statements:
+  Bilans: "tns:Bilans"
+  RZiS: "tns:RZiS"
+  ZestZmianWKapitale: "tns:ZestZmianWKapitale"
+  RachPrzeplywow: "tns:RachPrzeplywow"
+# Line items live in the `jin` namespace, amounts in `dtsf`.
+item_namespace: jin
+amount_namespace: dtsf
+columns:
+  KwotaA: current_year
+  KwotaB: prior_year
+  KwotaB1: prior_year_restated
+code_overrides: {}

@@ -2,7 +2,7 @@
 
 A batch data platform that estimates the probability a Polish company enters bankruptcy, restructuring, or liquidation within 12 and 24 months, built from statutory financial filings, registry history, and insolvency registers.
 
-**Status:** Phase 1 complete (`docs/plans/0003-a3-rdf-document-retrieval.md`, close-out 2026-09-17): shared acquisition base, content-addressed raw store (MinIO) and manifest (Postgres), a 17-entity hand-picked seed universe, GUS BIR1 identity validation, and RDF filing acquisition, all wired as Dagster assets. All 131 annual financial statements (2018 onwards, corrections included) for the seed are stored with their submission dates, in `filing_index`. The automated Playwright tier is built and tested but blocked: RDF served it an hCaptcha (`docs/adr/0007-rdf-access-probe-results.md`), so documents are captured by hand as HAR files and imported by `rdf_manual_import` (§ "Manual RDF capture"). Automated access at scale is an open decision. Next is Phase 2, parsing the statements into `financial_statements_canonical`; parsing is still the prototype XML parser with a golden-fixture harness.
+**Status:** Phase 2 complete (`docs/plans/0004-phase-2-canonical-parsing-identities.md`, close-out 2026-09-17). The full-form Ministry of Finance statements (schemas 1-0 and 1-2, the 2025 CRWDE wariant 2, and the thousands-of-złoty twin) are parsed from the stored downloads into `financial_statements_canonical`: Parquet under `WAREHOUSE_DIR` (ADR 0008), with full lineage and a `quality_grade` from the accounting identity checks, which run as Dagster asset checks. `restatement_events` holds prior-year differences. For the 17-entity seed that is 81 statements: 46 pass, 14 warn, 21 quarantined for genuine filing defects. Small- and micro-form structures (49 seed statements) and the PDF tier are Phase 3. Phase 1 (acquisition) is complete; RDF documents are captured by hand as HAR files (§ "Manual RDF capture") because RDF serves automated browsers a CAPTCHA (ADR 0007).
 
 ## Where to start
 
@@ -57,7 +57,7 @@ Use Chrome or Edge on Windows, at a normal pace (about 3 downloads a minute, the
 6. In the Network tab, click the download-arrow icon (**Export HAR (sanitized)…**) and save the file into `.cache/rdf_inbox/` in the repo (on Windows: `C:\Users\PC\Desktop\LARGE_pipeline\.cache\rdf_inbox\`), e.g. `2026-09-16_0000209396.har`. The files the browser saved to Downloads are not needed: the recording holds the same bytes.
 7. Import: `uv run dagster asset materialize -m dagster_defs.definitions --select rdf_manual_import`. The run's `missing_documents` metadata lists statements that still need a capture (not expanded, or not downloaded). Re-capture just those and import again. Importing a file twice adds nothing.
 
-Recordings are gitignored (`*.har`, `.cache/`). They contain session data, so delete them once imported. Only the company must already be in `entity_master` (A2); other KRS numbers are skipped with a warning. `RDF_MANUAL_INBOX` moves the inbox elsewhere.
+Recordings are gitignored (`*.har`, `.cache/`). They contain session data and the documents *as filed*, including signatories' names and PESEL numbers, so delete them once imported. The import stores only redacted copies (ADR 0009). Only the company must already be in `entity_master` (A2); other KRS numbers are skipped with a warning. `RDF_MANUAL_INBOX` moves the inbox elsewhere.
 
 ## What not to build
 

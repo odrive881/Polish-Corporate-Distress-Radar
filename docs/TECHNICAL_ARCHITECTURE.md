@@ -27,7 +27,7 @@ Ten million rows of line items. A few gigabytes of Parquet at most. This fits in
 
 | Source of complexity | Why it is hard |
 |---|---|
-| **Schema heterogeneity** | 10+ Ministry of Finance XML structure versions across micro/small/full forms and the 2026 generation, each needing versioned, tested mappings to one canonical model |
+| **Schema heterogeneity** | 10+ Ministry of Finance XML structure versions across micro/small/full forms and the generation for fiscal years from 2025 (ADR 0005), each needing versioned, tested mappings to one canonical model |
 | **Bitemporality** | Every fact has a fiscal period *and* a public availability date. Getting point-in-time correctness right, and proving it with automated leakage tests, is the core engineering claim |
 | **Statutory logic as code** | Accounting-law size thresholds, KSH Art. 233 tripwires, and restructuring procedure taxonomies all change over time and must be versioned configuration, not constants |
 | **Two reporting variants** | Comparative vs. calculation income statement, direct vs. indirect cash flow — there is no lossless single mapping, so the canonical model needs deliberate design |
@@ -639,5 +639,5 @@ Put this table in the README. Deliberate, justified omissions read as seniority;
 Three things in this document rest on a fast-moving landscape and should be checked at the start of phase 0:
 
 1. **RDF's rebuilt platform** went live in February 2026. Confirm the current document formats, access patterns, and terms of use directly rather than assuming continuity with the previous portal.
-2. **The 2026 generation of Ministry of Finance XML structures** applies to statements prepared from 1 January 2026. Confirm the published XSDs and which entity types they cover.
+2. **The new generation of Ministry of Finance XML structures** applies to financial statements for fiscal years beginning on or after 1 January 2025 (corrected in ADR 0005). Confirmed, XSDs vendored in `config/xsd/` (plan 0004).
 3. **DuckDB's Iceberg write support** has historically trailed its read support. If you choose Iceberg over plain Parquet, verify the current state first.

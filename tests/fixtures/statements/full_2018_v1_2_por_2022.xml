@@ -1,0 +1,269 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<tns:JednostkaInna xmlns:dtsf="http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/DefinicjeTypySprawozdaniaFinansowe/" xmlns:etd="http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2016/01/25/eD/DefinicjeTypy/" xmlns:jin="http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaInnaStruktury" xmlns:tns="http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaInnaWZlotych" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaInnaWZlotych https://www.gov.pl/documents/2034621/2182793/JednostkaInnaWZlotych(1)_v1-2.xsd"><!-- Sprawozdanie sporządzono za pomocą https://sprawozdanie-finansowe.com.pl --><tns:Naglowek><dtsf:OkresOd>2022-01-01</dtsf:OkresOd><dtsf:OkresDo>2022-12-31</dtsf:OkresDo><dtsf:DataSporzadzenia>2023-06-30</dtsf:DataSporzadzenia><jin:KodSprawozdania kodSystemowy="SFJINZ (1)" wersjaSchemy="1-2">SprFinJednostkaInnaWZlotych</jin:KodSprawozdania><jin:WariantSprawozdania>1</jin:WariantSprawozdania></tns:Naglowek><tns:WprowadzenieDoSprawozdaniaFinansowego><tns:P_1><tns:P_1A><dtsf:NazwaFirmy>Firma Budowlana Granit Spółka z ograniczoną odpowiedzialnością</dtsf:NazwaFirmy><dtsf:Siedziba><dtsf:Wojewodztwo>pomorskie</dtsf:Wojewodztwo><dtsf:Powiat>kartuski</dtsf:Powiat><dtsf:Gmina>Kartuzy</dtsf:Gmina><dtsf:Miejscowosc>Kartuzy</dtsf:Miejscowosc></dtsf:Siedziba></tns:P_1A><tns:P_1B><dtsf:Adres><dtsf:KodKraju>PL</dtsf:KodKraju><dtsf:Wojewodztwo>pomorskie</dtsf:Wojewodztwo><dtsf:Powiat>kartuski</dtsf:Powiat><dtsf:Gmina>Kartuzy</dtsf:Gmina><dtsf:Ulica>Osiedle Zielone Wzgórze</dtsf:Ulica><dtsf:NrDomu>6</dtsf:NrDomu><dtsf:Miejscowosc>Kartuzy</dtsf:Miejscowosc><dtsf:KodPocztowy>83-300</dtsf:KodPocztowy><dtsf:Poczta>Kartuzy</dtsf:Poczta></dtsf:Adres></tns:P_1B><tns:P_1C><dtsf:KodPKD>4120Z</dtsf:KodPKD></tns:P_1C><tns:P_1D>5892013083</tns:P_1D><tns:P_1E>0000498679</tns:P_1E></tns:P_1><tns:P_3><dtsf:DataOd>2022-01-01</dtsf:DataOd><dtsf:DataDo>2022-12-31</dtsf:DataDo></tns:P_3><tns:P_4>false</tns:P_4><tns:P_5><tns:P_5A>true</tns:P_5A><tns:P_5B>true</tns:P_5B></tns:P_5><tns:P_7><tns:P_7A>Wartości niematerialne i prawne
+===============================
+Za wartości niematerialne i prawne uznaje się nabyte, nadające się do
+gospodarczego wykorzystania w dniu przyjęcia do użytkowania na okres powyżej roku
+o wartości powyżej 10.000 zł:
+
+  1. autorskie prawa majątkowe, koncesje,
+
+  2. prawa do wynalazków, patentów, znaków towarowych, wzorów użytkowych lub
+    zdobniczych,
+
+  3. know-how,
+
+  4. nabyte na potrzeby firmy licencje do programów komputerowych o przewidywanym
+    okresie użytkowania dłuższym niż rok, wykorzystywane na potrzeby związane z
+    prowadzoną działalnością.
+
+Wycena bilansowa następuje według cen nabycia pomniejszona o odpisy
+amortyzacyjne, a także o odpisy z tytułu trwałej utraty wartości, z zastosowaniem
+art. 34 ust.3, oraz art. 33 ustawy o rachunkowości.</tns:P_7A><tns:P_7A>Rzeczowe aktywa trwałe
+======================
+Do środków trwałych zalicza się rzeczowe aktywa trwałe o przewidywanym okresie
+ekonomicznej użyteczności dłuższym niż rok, kompletne, zdatne do użytku i
+przeznaczone na potrzeby firmy lub do oddania w używanie na podstawie najmu,
+dzierżawy, leasingu lub innej umowy o podobnym charakterze, są to w
+szczególności:
+
+  1. nieruchomości - w tym grunty, prawo wieczystego użytkowania gruntów, budowle
+    i budynki, a także będącą odrębną własnością lokale, spółdzielcze
+    własnościowe prawo do lokalu mieszkalnego oraz spółdzielcze prawo do lokalu
+    użytkowego,
+
+  2. maszyny, urządzenia, środki transportu i inne rzeczy,
+
+  3. ulepszenia w obcych środkach trwałych,
+
+  4. obce środki trwałe używane na podstawie umowy najmu, dzierżawy, leasingu lub
+    innej umowy o podobnym charakterze, jeżeli zgodnie z odrębnymi przepisami
+    środki te mogą być zaliczone do składników majątkowych firmy.
+
+Składniki majątkowe, których cena nabycia lub koszt wytworzenia są niższe od
+kwoty wymienionej w ustawie o podatku dochodowym od osób prawnych, lecz okres
+użytkowania wynosi co najmniej 1 rok zalicza się do środków trwałych o niskiej
+wartości. Składniki majątkowe do kwoty 10.000,00 zł, okres użytkowania wynosi
+poniżej roku są zaliczane według decyzji Zarządu do kosztów zużycia materiałów.
+Środki transportu obejmowane są ewidencją bez względu na wartość.
+
+Składników majątkowych o wartości przekraczającej kwotę określoną powyżej lecz ze
+względu na przewidywany okres użytkowania równy lub krótszy niż 1 rok nie zalicza
+się do środków trwałych, a do kosztów materiałów.
+
+Nie stanowią środków trwałych nieruchomości, które nie są użytkowane do
+działalności gospodarczej, lecz zostały nabyte lub wytworzone w celu osiągnięcia
+korzyści ekonomicznych wynikających z przyrostu ich wartości, uzyskania z nich
+przychodów lub innych pożytków.
+
+Wycena bilansowa następuje według cen nabycia pomniejszona o odpisy
+amortyzacyjne, a także o odpisy z tytułu trwałej utraty wartości z zastosowaniem
+art. 31 oraz 32 ustawy o rachunkowości.</tns:P_7A><tns:P_7A>Środki trwałe w budowie
+=======================
+Wycena następuje według zasad określonych w artykule 28 ustęp 8 ustawy o
+rachunkowości.
+
+Ewidencja prowadzona jest w wysokości ogółu kosztów pozostających w bezpośrednim
+związku z ich nabyciem lub wytworzeniem, pomniejszonych o odpisy z tytułu trwałej
+utraty wartości.</tns:P_7A><tns:P_7A>Rzeczowe składniki aktywów obrotowych
+=====================================
+Wycena następuje według cen nabycia lub kosztów wytworzenia nie wyższych od cen
+ich sprzedaży netto na dzień bilansowy.</tns:P_7A><tns:P_7A>Długoterminowe rozliczenia międzyokresowe
+=========================================
+Aktywa na odroczony podatek dochodowy aktualizowane są nie rzadziej niż na na
+koniec okresu sprawozdawczego.</tns:P_7A><tns:P_7A>Zapasy materiałów i surowców, towarów handlowych
+================================================
+Wycena następuje według cen zakupu, pomniejszona o odpisy aktualizujące.</tns:P_7A><tns:P_7A>Należności krótkoterminowe
+==========================
+Do należności krótkoterminowych zalicza się te, których okres spłaty na dzień
+bilansowy jest krótszy niż 1 rok.
+
+Należności krótkoterminowe wycenia się w ciągu roku obrotowego w wartości
+nominalnej, a na dzień bilansowy w kwocie wymagającej zapłaty, z zachowaniem
+wymogów wyceny wskazanych w art. 30 ustawy o rachunkowości.
+
+Należności wykazuje się w sprawozdaniu finansowym w wartości netto (pomniejszonej
+o odpisy aktualizujące). Odpisy aktualizujące tworzy się w stosunku do
+kontrahentów, którzy nie gwarantują spłat swoich zobowiązań.</tns:P_7A><tns:P_7A>Środki pieniężne
+================
+Środki pieniężne obejmują środki pieniężne krajowe w gotówce i na rachunku
+bankowym.
+
+Środki pieniężne w walucie polskiej są wyceniane w ciągu roku obrotowego i na
+dzień bilansowy w wartości nominalnej.
+
+Odsetki od środków pieniężnych na rachunku bankowym wykazywane są jako przychody
+finansowe.
+
+Środki pieniężne w walutach obcych zgromadzonych na rachunkach bankowych są
+wyceniane w ciągu roku obrotowego i na dzień bilansowy w wartości nominalnej z
+zachowaniem wymogów wskazanych w art. 30 ustawy o rachunkowości.
+
+Wartość środków pieniężnych zgromadzonych na rachunkach (walutowych) wycenia się
+po kursie, po którym nastąpił jej zakup, jednak w wysokości nie wyższej od
+średniego kursu ogłoszonego na dzień wyceny dla danej waluty przez Narodowy Bank
+Polski w ostatnim dniu roboczym przed końcem roku.</tns:P_7A><tns:P_7A>Krótkoterminowe rozliczenia międzyokresowe
+==========================================
+Wycena następuje według cen zakupu usług w ratach przypadających na okresy
+następne, lub innych kosztach dotyczących okresów następnych.</tns:P_7A><tns:P_7A>Kapitał własny
+==============
+Kapitał podstawowy stanowi wartość zasobów wniesionych przy rozpoczęciu
+działalności gospodarczej jak również do kapitałów własnych zaliczane są
+niepodzielone zyski i niepokryte straty z lat ubiegłych.
+
+Niepodzielony wynik finansowy z lat ubiegłych obejmuje nierozliczony do dnia
+sporządzenia sprawozdania finansowego zysk, lub niepokrytą stratę, a także
+korekty i błędy wyników finansowych z lat poprzednich.
+
+Wynik finansowy netto roku obrotowego stanowi zysk/stratę wynikającą z rachunku
+zysków i strat.
+
+W ciągu roku obrotowego i na dzień bilansowy kapitały własne wycenia się w
+wartości nominalnej.</tns:P_7A><tns:P_7A>Rezerwy
+=======
+Wykazuje się w sprawozdaniu w uzasadnionej, wiarygodnie oszacowanej wartości.</tns:P_7A><tns:P_7A>Zobowiązania z tytułu kredytów i pożyczek
+=========================================
+Zobowiązania wykazywane są w ciągu roku obrotowego w wartości nominalnej, a na
+dzień bilansowy wyceniane są w kwocie wymagającej zapłaty z uwzględnieniem kursu
+walut.</tns:P_7A><tns:P_7A>Zobowiązania długo i krótkoterminowe
+====================================
+Zobowiązania wycenia się w kwocie wymagającej zapłaty za wyjątkiem zobowiązań
+finansowych, które mogą być wyceniane według skorygowanej ceny nabycia, a jeżeli
+Jednostka przeznacza je do sprzedaży w okresie do 3 miesięcy, to według wartości
+rynkowej lub inaczej określonej wartości godziwej.
+
+Zobowiązania długoterminowe są to zobowiązania, których okres spłaty na dzień
+bilansowy jest dłuższy niż 1 rok.
+
+Zobowiązania krótkoterminowe są to zobowiązania, których okres spłaty na dzień
+bilansowy jest krótszy niż 1 rok.
+
+Zobowiązania wykazywane są w ciągu roku obrotowego w wartości nominalnej, a na
+dzień bilansowy wyceniane są w kwocie wymagającej zapłaty.</tns:P_7A><tns:P_7A>Inne rozliczenia międzyokresowe
+===============================
+Jednostka dokonuje czynnych rozliczeń międzyokresowych kosztów, jeżeli dotyczą
+one przyszłych okresów sprawozdawczych. Jednostka dokonuje biernych rozliczeń
+międzyokresowych kosztów w wysokości prawdopodobnych zobowiązań przypadających na
+bieżący okres sprawozdawczy, wynikających w szczególności:
+
+  1. ze świadczeń wykonanych na rzecz jednostki przez kontrahentów Jednostki, a
+    kwotę zobowiązania można oszacować w sposób wiarygodny;
+
+  2. z obowiązku wykonania, związanych z bieżącą działalnością, przyszłych
+    świadczeń na rzecz pracowników, w tym świadczeń emerytalnych, a także
+    przyszłych świadczeń wobec nieznanych osób, których kwotę można oszacować w
+    sposób wiarygodny, mimo że data powstania zobowiązania nie jest jeszcze
+    znana, w tym z tytułu napraw gwarancyjnych i rękojmi za sprzedane produkty
+    długotrwałego użytku.
+
+Zobowiązania ujęte, jako bierne rozliczenia międzyokresowe i zasady ustalania ich
+wysokości powinny wynikać z uznanych zwyczajów handlowych.
+
+Rozliczenia międzyokresowe przychodów, dokonywane z zachowaniem zasady
+ostrożności, obejmują w szczególności:
+
+  1. równowartość otrzymanych lub należnych od kontrahentów środków z tytułu
+    świadczeń, których wykonanie nastąpi w następnych okresach sprawozdawczych;
+
+  2. środki pieniężne otrzymane na sfinansowanie nabycia lub wytworzenia środków
+    trwałych, w tym także środków trwałych w budowie oraz prac rozwojowych,
+    jeżeli stosownie do innych ustaw nie zwiększają one kapitałów (funduszy)
+    własnych. Zaliczone do rozliczeń międzyokresowych przychodów kwoty zwiększają
+    stopniowo pozostałe przychody operacyjne, równolegle do odpisów
+    amortyzacyjnych lub umorzeniowych od środków trwałych lub kosztów prac
+    rozwojowych sfinansowanych z tych źródeł;
+
+  3. ujemną wartość firmy, o której mowa w art. 33 ust. 4 i art. 44b ust. 11.
+
+Wskazane powyżej zasady stosuje się odpowiednio do przyjętych nieodpłatnie, w tym
+także w drodze darowizny, środków trwałych w budowie, środków trwałych oraz
+wartości niematerialnych i prawnych.</tns:P_7A><tns:P_7A>Ujęcie w księgach aktywów finansowych
+=====================================
+Zasady wyceny następują według zasad wskazanych w art. 35 ustawy o rachunkowości.</tns:P_7A><tns:P_7A>Instrumenty finansowe
+=====================
+Zasady wyceny następują według zasad wskazanych w art. 35a ustawy o
+rachunkowości.</tns:P_7A><tns:P_7B>Przychody i zyski
+=================
+Wycena następuje według zasad określonych w artykule 28 ustęp 5 ustawy o
+rachunkowości.
+
+Do przychodów zalicza się równowartość sprzedanych w okresie sprawozdawczym dóbr
+i usług, przychody spowodowane sprzedażą środków trwałych, otrzymane
+odszkodowania, darowizny, umorzone zobowiązania oraz naliczone odsetki za
+nieterminowe regulowanie należności, zrealizowane dodatnie różnice kursowe.
+
+Przychody ze sprzedaży dóbr i usług wyceniane są według cen umownych.
+
+Pozostałe przychody operacyjne wyceniane są w wysokości faktycznie otrzymanych
+lub spodziewanych wpływów ze sprzedaży środków trwałych, rozwiązanie rezerw
+utworzonych w poprzednich okresach sprawozdawczych itp.
+
+Przychody finansowe wyceniane są w wysokości faktycznie otrzymanej lub w
+wysokości spodziewanych wpływów z operacji finansowych.</tns:P_7B><tns:P_7B>Koszty i straty
+===============
+Wycena następuje według zasad określonych w artykule 28 ustęp 3, 4 i 4a ustawy o
+rachunkowości.
+
+Kosztami uzyskania przychodów są wszystkie koszty poniesione w celu osiągnięcia
+przychodów z zachowaniem zasady współmierności przychodów i kosztów ich
+uzyskania, oraz skutki finansowe zdarzeń powstających niepowtarzalnie poza
+normalną działalnością Jednostki.
+
+Do kosztów uzyskania przychodów zalicza się koszt wytworzenia sprzedanych lub
+przekazanych w okresie sprawozdawczy dóbr i usług, koszty ogólnego zarządu i
+koszty sprzedaży, wartość netto sprzedanych bądź zlikwidowanych środków trwałych,
+zapłacone odszkodowania, straty losowe, przekazane darowizny, umorzone
+należności, naliczone odsetki za nieterminowe regulowanie zobowiązań, ujemne
+różnice kursowe.
+
+Koszty uzyskania przychodów wyceniane są w wysokości faktycznie poniesionych
+wydatków i strat. W przypadku tworzenia rezerw na świadczenia przyjęte przez
+Jednostkę, nie będące jeszcze zobowiązaniami oraz prawdopodobne koszty, ich
+wartość ustala się w wysokości wynikającej z kalkulacji wstępnej, w kwocie
+przypadającej na bieżący okres sprawozdawczy.</tns:P_7B><tns:P_7B>Rachunek zysków i strat
+=======================
+Rachunek zysków i strat sporządzany jest w układzie porównawczym.</tns:P_7B><tns:P_7C>Sposób sporządzania sprawozdania finansowego
+============================================
+* Sprawozdanie finansowe sporządzane jest na podstawie rzetelnie prowadzonych
+    ksiąg rachunkowych za rok obrotowy ze stanem na ostatni dzień roku
+    obrotowego.
+
+  * Dane liczbowe wykazuje się w złotych i w groszach.
+
+  * Sprawozdanie finansowe sporządzane jest w języku polskim.</tns:P_7C><tns:P_7D>Polityka (zasady) rachunkowości
+===============================
+Spółka posiada politykę rachunkowości wprowadzoną w styczniu 2014 roku.
+
+Polityka rachunkowości ma na celu przedstawienie obowiązujących w Firmie:
+
+  * ogólnych zasad prowadzenia ksiąg rachunkowych,
+
+  * metod wyceny aktywów i pasywów oraz ustalenia wyniku finansowego,
+
+  * sposobu prowadzenia ksiąg rachunkowych, w tym:
+
+zakładowego planu kont,
+
+wykazu zbiorów danych tworzących księgi rachunkowe na komputerowych nośnikach
+danych,
+
+opisu systemu przetwarzania danych (systemu informatycznego),
+
+  * zasad rozliczania przychodów i kosztów,
+
+  * systemu służącego ochronie danych ( w tym dowodów księgowych, ksiąg
+    rachunkowych i innych dokumentów stanowiących podstawę dokonanych w nich
+    zapisów).</tns:P_7D><tns:P_7D>Zasada ustalania sposobu istotności
+===================================
+Stosując przepisy ustawy Spółka kieruje się zasadą istotności. Informacje
+wykazywane w sprawozdaniu finansowym należy uznać za istotne, gdy ich pominięcie
+lub zniekształcenie może wpływać na decyzje podejmowane na ich podstawie przez
+użytkowników tych sprawozdań. Nie można uznać poszczególnych pozycji za
+nieistotne, jeżeli wszystkie nieistotne pozycje o podobnym charakterze łącznie
+uznaje się za istotne.</tns:P_7D><tns:P_7D>Trwała utrata wartości
+======================
+Trwała utrata wartości zachodzi wtedy, gdy istnieje duże prawdopodobieństwo, że
+kontrolowany przez Spółkę składnik aktywów nie przyniesie w przyszłości w
+znaczącej części lub w całości przewidywanych korzyści ekonomicznych. Uzasadnia
+to dokonanie odpisu aktualizującego doprowadzającego wartość składnika aktywów
+wynikającą z ksiąg rachunkowych do ceny sprzedaży netto, a w przypadku jej braku
+– do ustalonej w inny sposób wartości godziwej.</tns:P_7D></tns:P_7></tns:WprowadzenieDoSprawozdaniaFinansowego><tns:Bilans><jin:Aktywa><dtsf:KwotaA>39402504.45</dtsf:KwotaA><dtsf:KwotaB>32207210.66</dtsf:KwotaB><jin:Aktywa_A><dtsf:KwotaA>26638503.64</dtsf:KwotaA><dtsf:KwotaB>21227219.79</dtsf:KwotaB><jin:Aktywa_A_II><dtsf:KwotaA>24224123.64</dtsf:KwotaA><dtsf:KwotaB>19196417.79</dtsf:KwotaB><jin:Aktywa_A_II_1><dtsf:KwotaA>24154944.14</dtsf:KwotaA><dtsf:KwotaB>19123897.47</dtsf:KwotaB><jin:Aktywa_A_II_1_B><dtsf:KwotaA>38836.00</dtsf:KwotaA><dtsf:KwotaB>41230.00</dtsf:KwotaB></jin:Aktywa_A_II_1_B><jin:Aktywa_A_II_1_C><dtsf:KwotaA>11734794.77</dtsf:KwotaA><dtsf:KwotaB>10881871.35</dtsf:KwotaB></jin:Aktywa_A_II_1_C><jin:Aktywa_A_II_1_D><dtsf:KwotaA>7698034.23</dtsf:KwotaA><dtsf:KwotaB>4929329.71</dtsf:KwotaB></jin:Aktywa_A_II_1_D><jin:Aktywa_A_II_1_E><dtsf:KwotaA>4683279.14</dtsf:KwotaA><dtsf:KwotaB>3271466.41</dtsf:KwotaB></jin:Aktywa_A_II_1_E></jin:Aktywa_A_II_1><jin:Aktywa_A_II_2><dtsf:KwotaA>69179.50</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:Aktywa_A_II_2><jin:Aktywa_A_II_3><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>72520.32</dtsf:KwotaB></jin:Aktywa_A_II_3></jin:Aktywa_A_II><jin:Aktywa_A_V><dtsf:KwotaA>2414380.00</dtsf:KwotaA><dtsf:KwotaB>2030802.00</dtsf:KwotaB><jin:Aktywa_A_V_1><dtsf:KwotaA>2414380.00</dtsf:KwotaA><dtsf:KwotaB>2030802.00</dtsf:KwotaB></jin:Aktywa_A_V_1></jin:Aktywa_A_V></jin:Aktywa_A><jin:Aktywa_B><dtsf:KwotaA>12764000.81</dtsf:KwotaA><dtsf:KwotaB>10979990.87</dtsf:KwotaB><jin:Aktywa_B_I><dtsf:KwotaA>2350.00</dtsf:KwotaA><dtsf:KwotaB>4532.52</dtsf:KwotaB><jin:Aktywa_B_I_4><dtsf:KwotaA>2350.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:Aktywa_B_I_4><jin:Aktywa_B_I_5><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>4532.52</dtsf:KwotaB></jin:Aktywa_B_I_5></jin:Aktywa_B_I><jin:Aktywa_B_II><dtsf:KwotaA>12663310.56</dtsf:KwotaA><dtsf:KwotaB>10428238.55</dtsf:KwotaB><jin:Aktywa_B_II_1><dtsf:KwotaA>12190450.59</dtsf:KwotaA><dtsf:KwotaB>10372074.63</dtsf:KwotaB><jin:Aktywa_B_II_1_A><dtsf:KwotaA>12190450.59</dtsf:KwotaA><dtsf:KwotaB>10372074.63</dtsf:KwotaB><jin:Aktywa_B_II_1_A_1><dtsf:KwotaA>12190450.59</dtsf:KwotaA><dtsf:KwotaB>10372074.63</dtsf:KwotaB></jin:Aktywa_B_II_1_A_1></jin:Aktywa_B_II_1_A></jin:Aktywa_B_II_1><jin:Aktywa_B_II_3><dtsf:KwotaA>472859.97</dtsf:KwotaA><dtsf:KwotaB>56163.92</dtsf:KwotaB><jin:Aktywa_B_II_3_A><dtsf:KwotaA>472859.97</dtsf:KwotaA><dtsf:KwotaB>56163.92</dtsf:KwotaB><jin:Aktywa_B_II_3_A_1><dtsf:KwotaA>472859.97</dtsf:KwotaA><dtsf:KwotaB>56163.92</dtsf:KwotaB></jin:Aktywa_B_II_3_A_1></jin:Aktywa_B_II_3_A></jin:Aktywa_B_II_3></jin:Aktywa_B_II><jin:Aktywa_B_III><dtsf:KwotaA>20649.82</dtsf:KwotaA><dtsf:KwotaB>475562.80</dtsf:KwotaB><jin:Aktywa_B_III_1><dtsf:KwotaA>20649.82</dtsf:KwotaA><dtsf:KwotaB>475562.80</dtsf:KwotaB><jin:Aktywa_B_III_1_C><dtsf:KwotaA>20649.82</dtsf:KwotaA><dtsf:KwotaB>475562.80</dtsf:KwotaB><jin:Aktywa_B_III_1_C_1><dtsf:KwotaA>20649.82</dtsf:KwotaA><dtsf:KwotaB>475562.80</dtsf:KwotaB></jin:Aktywa_B_III_1_C_1></jin:Aktywa_B_III_1_C></jin:Aktywa_B_III_1></jin:Aktywa_B_III><jin:Aktywa_B_IV><dtsf:KwotaA>77690.43</dtsf:KwotaA><dtsf:KwotaB>71657.00</dtsf:KwotaB></jin:Aktywa_B_IV></jin:Aktywa_B></jin:Aktywa><jin:Pasywa><dtsf:KwotaA>39402504.45</dtsf:KwotaA><dtsf:KwotaB>32207210.66</dtsf:KwotaB><jin:Pasywa_A><dtsf:KwotaA>6457381.67</dtsf:KwotaA><dtsf:KwotaB>5693858.83</dtsf:KwotaB><jin:Pasywa_A_I><dtsf:KwotaA>50000.00</dtsf:KwotaA><dtsf:KwotaB>50000.00</dtsf:KwotaB></jin:Pasywa_A_I><jin:Pasywa_A_II><dtsf:KwotaA>5643858.83</dtsf:KwotaA><dtsf:KwotaB>3497902.45</dtsf:KwotaB></jin:Pasywa_A_II><jin:Pasywa_A_VI><dtsf:KwotaA>763522.84</dtsf:KwotaA><dtsf:KwotaB>2145956.38</dtsf:KwotaB></jin:Pasywa_A_VI></jin:Pasywa_A><jin:Pasywa_B><dtsf:KwotaA>32945122.78</dtsf:KwotaA><dtsf:KwotaB>26513351.83</dtsf:KwotaB><jin:Pasywa_B_I><dtsf:KwotaA>3703648.00</dtsf:KwotaA><dtsf:KwotaB>2816955.00</dtsf:KwotaB><jin:Pasywa_B_I_1><dtsf:KwotaA>3703648.00</dtsf:KwotaA><dtsf:KwotaB>2816955.00</dtsf:KwotaB></jin:Pasywa_B_I_1></jin:Pasywa_B_I><jin:Pasywa_B_II><dtsf:KwotaA>10681687.52</dtsf:KwotaA><dtsf:KwotaB>9134048.67</dtsf:KwotaB><jin:Pasywa_B_II_3><dtsf:KwotaA>10681687.52</dtsf:KwotaA><dtsf:KwotaB>9134048.67</dtsf:KwotaB><jin:Pasywa_B_II_3_A><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>364897.91</dtsf:KwotaB></jin:Pasywa_B_II_3_A><jin:Pasywa_B_II_3_C><dtsf:KwotaA>10681687.52</dtsf:KwotaA><dtsf:KwotaB>8769150.76</dtsf:KwotaB></jin:Pasywa_B_II_3_C></jin:Pasywa_B_II_3></jin:Pasywa_B_II><jin:Pasywa_B_III><dtsf:KwotaA>18559787.26</dtsf:KwotaA><dtsf:KwotaB>14561778.97</dtsf:KwotaB><jin:Pasywa_B_III_1><dtsf:KwotaA>43862.39</dtsf:KwotaA><dtsf:KwotaB>6083.67</dtsf:KwotaB><jin:Pasywa_B_III_1_A><dtsf:KwotaA>43862.39</dtsf:KwotaA><dtsf:KwotaB>6083.67</dtsf:KwotaB><jin:Pasywa_B_III_1_A_1><dtsf:KwotaA>43862.39</dtsf:KwotaA><dtsf:KwotaB>6083.67</dtsf:KwotaB></jin:Pasywa_B_III_1_A_1></jin:Pasywa_B_III_1_A></jin:Pasywa_B_III_1><jin:Pasywa_B_III_3><dtsf:KwotaA>18515924.87</dtsf:KwotaA><dtsf:KwotaB>14555695.30</dtsf:KwotaB><jin:Pasywa_B_III_3_A><dtsf:KwotaA>382514.23</dtsf:KwotaA><dtsf:KwotaB>625539.24</dtsf:KwotaB></jin:Pasywa_B_III_3_A><jin:Pasywa_B_III_3_C><dtsf:KwotaA>3612766.40</dtsf:KwotaA><dtsf:KwotaB>2543921.05</dtsf:KwotaB></jin:Pasywa_B_III_3_C><jin:Pasywa_B_III_3_D><dtsf:KwotaA>14262176.98</dtsf:KwotaA><dtsf:KwotaB>11259867.58</dtsf:KwotaB><jin:Pasywa_B_III_3_D_1><dtsf:KwotaA>14262176.98</dtsf:KwotaA><dtsf:KwotaB>11259867.58</dtsf:KwotaB></jin:Pasywa_B_III_3_D_1></jin:Pasywa_B_III_3_D><jin:Pasywa_B_III_3_G><dtsf:KwotaA>184303.44</dtsf:KwotaA><dtsf:KwotaB>126367.43</dtsf:KwotaB></jin:Pasywa_B_III_3_G><jin:Pasywa_B_III_3_H><dtsf:KwotaA>69591.81</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:Pasywa_B_III_3_H><jin:Pasywa_B_III_3_I><dtsf:KwotaA>4572.01</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:Pasywa_B_III_3_I></jin:Pasywa_B_III_3></jin:Pasywa_B_III><jin:Pasywa_B_IV><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>569.19</dtsf:KwotaB><jin:Pasywa_B_IV_2><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>569.19</dtsf:KwotaB><jin:Pasywa_B_IV_2_2><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>569.19</dtsf:KwotaB></jin:Pasywa_B_IV_2_2></jin:Pasywa_B_IV_2></jin:Pasywa_B_IV></jin:Pasywa_B></jin:Pasywa></tns:Bilans><tns:RZiS><jin:RZiSPor><jin:A><dtsf:KwotaA>90443667.85</dtsf:KwotaA><dtsf:KwotaB>73463582.19</dtsf:KwotaB><jin:A_I><dtsf:KwotaA>85019739.60</dtsf:KwotaA><dtsf:KwotaB>68885950.41</dtsf:KwotaB></jin:A_I><jin:A_IV><dtsf:KwotaA>5423928.25</dtsf:KwotaA><dtsf:KwotaB>4577631.78</dtsf:KwotaB></jin:A_IV></jin:A><jin:B><dtsf:KwotaA>88267613.48</dtsf:KwotaA><dtsf:KwotaB>72099350.41</dtsf:KwotaB><jin:B_I><dtsf:KwotaA>4349731.51</dtsf:KwotaA><dtsf:KwotaB>3369371.38</dtsf:KwotaB></jin:B_I><jin:B_II><dtsf:KwotaA>1745176.16</dtsf:KwotaA><dtsf:KwotaB>1173672.83</dtsf:KwotaB></jin:B_II><jin:B_III><dtsf:KwotaA>74718038.57</dtsf:KwotaA><dtsf:KwotaB>61548074.45</dtsf:KwotaB></jin:B_III><jin:B_IV><dtsf:KwotaA>6732.75</dtsf:KwotaA><dtsf:KwotaB>3648.25</dtsf:KwotaB></jin:B_IV><jin:B_V><dtsf:KwotaA>1213605.76</dtsf:KwotaA><dtsf:KwotaB>864933.75</dtsf:KwotaB></jin:B_V><jin:B_VI><dtsf:KwotaA>368855.41</dtsf:KwotaA><dtsf:KwotaB>272419.20</dtsf:KwotaB><jin:B_VI_1><dtsf:KwotaA>71444.19</dtsf:KwotaA><dtsf:KwotaB>76639.79</dtsf:KwotaB></jin:B_VI_1></jin:B_VI><jin:B_VII><dtsf:KwotaA>449061.97</dtsf:KwotaA><dtsf:KwotaB>295295.69</dtsf:KwotaB></jin:B_VII><jin:B_VIII><dtsf:KwotaA>5416411.35</dtsf:KwotaA><dtsf:KwotaB>4571934.86</dtsf:KwotaB></jin:B_VIII></jin:B><jin:C><dtsf:KwotaA>2176054.37</dtsf:KwotaA><dtsf:KwotaB>1364231.78</dtsf:KwotaB></jin:C><jin:D><dtsf:KwotaA>591359.97</dtsf:KwotaA><dtsf:KwotaB>1733451.21</dtsf:KwotaB><jin:D_I><dtsf:KwotaA>42384.75</dtsf:KwotaA><dtsf:KwotaB>75516.67</dtsf:KwotaB></jin:D_I><jin:D_IV><dtsf:KwotaA>548975.22</dtsf:KwotaA><dtsf:KwotaB>1657934.54</dtsf:KwotaB></jin:D_IV></jin:D><jin:E><dtsf:KwotaA>279579.49</dtsf:KwotaA><dtsf:KwotaB>34230.21</dtsf:KwotaB><jin:E_III><dtsf:KwotaA>279579.49</dtsf:KwotaA><dtsf:KwotaB>34230.21</dtsf:KwotaB></jin:E_III></jin:E><jin:F><dtsf:KwotaA>2487834.85</dtsf:KwotaA><dtsf:KwotaB>3063452.78</dtsf:KwotaB></jin:F><jin:H><dtsf:KwotaA>1019530.01</dtsf:KwotaA><dtsf:KwotaB>543353.40</dtsf:KwotaB><jin:H_I><dtsf:KwotaA>985030.01</dtsf:KwotaA><dtsf:KwotaB>516353.40</dtsf:KwotaB></jin:H_I><jin:H_IV><dtsf:KwotaA>34500.00</dtsf:KwotaA><dtsf:KwotaB>27000.00</dtsf:KwotaB></jin:H_IV></jin:H><jin:I><dtsf:KwotaA>1468304.84</dtsf:KwotaA><dtsf:KwotaB>2520099.38</dtsf:KwotaB></jin:I><jin:J><dtsf:KwotaA>704782.00</dtsf:KwotaA><dtsf:KwotaB>374143.00</dtsf:KwotaB></jin:J><jin:L><dtsf:KwotaA>763522.84</dtsf:KwotaA><dtsf:KwotaB>2145956.38</dtsf:KwotaB></jin:L></jin:RZiSPor></tns:RZiS><tns:ZestZmianWKapitale><jin:I><dtsf:KwotaA>5693858.83</dtsf:KwotaA><dtsf:KwotaB>3547902.45</dtsf:KwotaB></jin:I><jin:IA><dtsf:KwotaA>5693858.83</dtsf:KwotaA><dtsf:KwotaB>3547902.45</dtsf:KwotaB><jin:IA_1><dtsf:KwotaA>50000.00</dtsf:KwotaA><dtsf:KwotaB>50000.00</dtsf:KwotaB><jin:IA_1_2><dtsf:KwotaA>50000.00</dtsf:KwotaA><dtsf:KwotaB>50000.00</dtsf:KwotaB></jin:IA_1_2></jin:IA_1><jin:IA_2><dtsf:KwotaA>3497902.45</dtsf:KwotaA><dtsf:KwotaB>2312713.17</dtsf:KwotaB><jin:IA_2_1><dtsf:KwotaA>2145956.38</dtsf:KwotaA><dtsf:KwotaB>1185189.28</dtsf:KwotaB><jin:IA_2_1_A><dtsf:KwotaA>2145956.38</dtsf:KwotaA><dtsf:KwotaB>1185189.28</dtsf:KwotaB><jin:IA_2_1_A_2><dtsf:KwotaA>2145956.38</dtsf:KwotaA><dtsf:KwotaB>1185189.28</dtsf:KwotaB></jin:IA_2_1_A_2></jin:IA_2_1_A></jin:IA_2_1><jin:IA_2_2><dtsf:KwotaA>5643858.83</dtsf:KwotaA><dtsf:KwotaB>3497902.45</dtsf:KwotaB></jin:IA_2_2></jin:IA_2><jin:IA_4><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB><jin:IA_4_1><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB><jin:IA_4_1_A><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB><dtsf:PozycjaUszczegolawiajaca><dtsf:NazwaPozycji>przeznaczenia na fundusz rezerwowy</dtsf:NazwaPozycji><dtsf:KwotyPozycji><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></dtsf:KwotyPozycji></dtsf:PozycjaUszczegolawiajaca></jin:IA_4_1_A></jin:IA_4_1></jin:IA_4><jin:IA_5><dtsf:KwotaA>2145956.38</dtsf:KwotaA><dtsf:KwotaB>1185189.28</dtsf:KwotaB><jin:IA_5_1><dtsf:KwotaA>2145956.38</dtsf:KwotaA><dtsf:KwotaB>1185189.28</dtsf:KwotaB></jin:IA_5_1><jin:IA_5_2><dtsf:KwotaA>2145956.38</dtsf:KwotaA><dtsf:KwotaB>1185189.28</dtsf:KwotaB><jin:IA_5_2_B><dtsf:KwotaA>2145956.38</dtsf:KwotaA><dtsf:KwotaB>1185189.28</dtsf:KwotaB><dtsf:PozycjaUszczegolawiajaca><dtsf:NazwaPozycji>przeniesienie zysku na kapitał zapasowy</dtsf:NazwaPozycji><dtsf:KwotyPozycji><dtsf:KwotaA>2145956.38</dtsf:KwotaA><dtsf:KwotaB>1185189.28</dtsf:KwotaB></dtsf:KwotyPozycji></dtsf:PozycjaUszczegolawiajaca></jin:IA_5_2_B></jin:IA_5_2><jin:IA_5_5><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB><jin:IA_5_5_A><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB><jin:PozycjaUszczegolawiajaca_2><dtsf:NazwaPozycji>zwiększenie rezerwy z tytułu rezerw emerytalnych za lata ubiegłe</dtsf:NazwaPozycji><dtsf:KwotyPozycji><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></dtsf:KwotyPozycji></jin:PozycjaUszczegolawiajaca_2></jin:IA_5_5_A></jin:IA_5_5></jin:IA_5><jin:IA_6><dtsf:KwotaA>763522.84</dtsf:KwotaA><dtsf:KwotaB>2145956.38</dtsf:KwotaB><jin:IA_6_A><dtsf:KwotaA>763522.84</dtsf:KwotaA><dtsf:KwotaB>2145956.38</dtsf:KwotaB></jin:IA_6_A></jin:IA_6></jin:IA><jin:II><dtsf:KwotaA>6457381.67</dtsf:KwotaA><dtsf:KwotaB>5693858.83</dtsf:KwotaB></jin:II><jin:III><dtsf:KwotaA>6457381.67</dtsf:KwotaA><dtsf:KwotaB>5693858.83</dtsf:KwotaB></jin:III></tns:ZestZmianWKapitale><tns:RachPrzeplywow><jin:PrzeplywyPosr><jin:A><jin:A_I><dtsf:KwotaA>763522.84</dtsf:KwotaA><dtsf:KwotaB>2145956.38</dtsf:KwotaB></jin:A_I><jin:A_II><dtsf:KwotaA>6728187.61</dtsf:KwotaA><dtsf:KwotaB>3038735.99</dtsf:KwotaB><jin:A_II_1><dtsf:KwotaA>4349731.51</dtsf:KwotaA><dtsf:KwotaB>3369371.38</dtsf:KwotaB></jin:A_II_1><jin:A_II_3><dtsf:KwotaA>985030.01</dtsf:KwotaA><dtsf:KwotaB>425666.58</dtsf:KwotaB></jin:A_II_3><jin:A_II_4><dtsf:KwotaA>-42384.75</dtsf:KwotaA><dtsf:KwotaB>-73173.36</dtsf:KwotaB></jin:A_II_4><jin:A_II_5><dtsf:KwotaA>886693.00</dtsf:KwotaA><dtsf:KwotaB>375340.00</dtsf:KwotaB></jin:A_II_5><jin:A_II_6><dtsf:KwotaA>2182.52</dtsf:KwotaA><dtsf:KwotaB>4532.52</dtsf:KwotaB></jin:A_II_6><jin:A_II_7><dtsf:KwotaA>-2235072.01</dtsf:KwotaA><dtsf:KwotaB>-1515440.52</dtsf:KwotaB></jin:A_II_7><jin:A_II_8><dtsf:KwotaA>3172187.95</dtsf:KwotaA><dtsf:KwotaB>686996.80</dtsf:KwotaB></jin:A_II_8><jin:A_II_9><dtsf:KwotaA>-390180.62</dtsf:KwotaA><dtsf:KwotaB>-234557.41</dtsf:KwotaB></jin:A_II_9></jin:A_II><jin:A_III><dtsf:KwotaA>7491710.45</dtsf:KwotaA><dtsf:KwotaB>5184692.37</dtsf:KwotaB></jin:A_III></jin:A><jin:B><jin:B_I><dtsf:KwotaA>112500.00</dtsf:KwotaA><dtsf:KwotaB>266666.67</dtsf:KwotaB><jin:B_I_1><dtsf:KwotaA>112500.00</dtsf:KwotaA><dtsf:KwotaB>266666.67</dtsf:KwotaB></jin:B_I_1></jin:B_I><jin:B_II><dtsf:KwotaA>2317966.01</dtsf:KwotaA><dtsf:KwotaB>1400385.23</dtsf:KwotaB><jin:B_II_1><dtsf:KwotaA>2317966.01</dtsf:KwotaA><dtsf:KwotaB>1400385.23</dtsf:KwotaB></jin:B_II_1></jin:B_II><jin:B_III><dtsf:KwotaA>-2205466.01</dtsf:KwotaA><dtsf:KwotaB>-1133718.56</dtsf:KwotaB></jin:B_III></jin:B><jin:C><jin:C_I><dtsf:KwotaA>17616.33</dtsf:KwotaA><dtsf:KwotaB>50.00</dtsf:KwotaB><jin:C_I_2><dtsf:KwotaA>17616.33</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:C_I_2><jin:C_I_4><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>50.00</dtsf:KwotaB></jin:C_I_4></jin:C_I><jin:C_II><dtsf:KwotaA>5758773.75</dtsf:KwotaA><dtsf:KwotaB>3746338.23</dtsf:KwotaB><jin:C_II_4><dtsf:KwotaA>625539.25</dtsf:KwotaA><dtsf:KwotaB>260641.35</dtsf:KwotaB></jin:C_II_4><jin:C_II_7><dtsf:KwotaA>4148204.49</dtsf:KwotaA><dtsf:KwotaB>3060030.30</dtsf:KwotaB></jin:C_II_7><jin:C_II_8><dtsf:KwotaA>985030.01</dtsf:KwotaA><dtsf:KwotaB>425666.58</dtsf:KwotaB></jin:C_II_8></jin:C_II><jin:C_III><dtsf:KwotaA>-5741157.42</dtsf:KwotaA><dtsf:KwotaB>-3746288.23</dtsf:KwotaB></jin:C_III></jin:C><jin:D><dtsf:KwotaA>-454912.98</dtsf:KwotaA><dtsf:KwotaB>304685.58</dtsf:KwotaB></jin:D><jin:E><dtsf:KwotaA>-454912.98</dtsf:KwotaA><dtsf:KwotaB>304685.58</dtsf:KwotaB></jin:E><jin:F><dtsf:KwotaA>475562.80</dtsf:KwotaA><dtsf:KwotaB>170877.22</dtsf:KwotaB></jin:F><jin:G><dtsf:KwotaA>20649.82</dtsf:KwotaA><dtsf:KwotaB>475562.80</dtsf:KwotaB></jin:G></jin:PrzeplywyPosr></tns:RachPrzeplywow><tns:DodatkoweInformacjeIObjasnieniaJednostkaInna><tns:DodatkoweInformacjeIObjasnienia><dtsf:Opis>Dodatkowe informacje (noty)</dtsf:Opis><dtsf:Plik><dtsf:Nazwa>notes.pdf</dtsf:Nazwa><dtsf:Zawartosc>bm90ZXMgcmVtb3ZlZCBmcm9tIGZpeHR1cmU=</dtsf:Zawartosc></dtsf:Plik></tns:DodatkoweInformacjeIObjasnienia><tns:InformacjaDodatkowaDotyczacaPodatkuDochodowego><dtsf:P_ID_1><dtsf:RB>1468304.84</dtsf:RB></dtsf:P_ID_1><dtsf:P_ID_2><dtsf:Kwota><dtsf:RB><dtsf:KwotaA>0.00</dtsf:KwotaA></dtsf:RB></dtsf:Kwota></dtsf:P_ID_2><dtsf:P_ID_3><dtsf:Kwota><dtsf:RB><dtsf:KwotaA>0.00</dtsf:KwotaA></dtsf:RB></dtsf:Kwota></dtsf:P_ID_3><dtsf:P_ID_4><dtsf:Kwota><dtsf:RB><dtsf:KwotaA>0.00</dtsf:KwotaA></dtsf:RB></dtsf:Kwota></dtsf:P_ID_4><dtsf:P_ID_5><dtsf:Kwota><dtsf:RB><dtsf:KwotaA>3720223.06</dtsf:KwotaA></dtsf:RB></dtsf:Kwota><dtsf:PozycjaUzytkownika><dtsf:NazwaPozycji>Amortyzacja środków trwałych w leasingu</dtsf:NazwaPozycji><dtsf:Kwoty><dtsf:RB><dtsf:Kwota><dtsf:KwotaA>2724091.18</dtsf:KwotaA></dtsf:Kwota><dtsf:PodstawaPrawna><dtsf:Art>16</dtsf:Art></dtsf:PodstawaPrawna></dtsf:RB></dtsf:Kwoty></dtsf:PozycjaUzytkownika><dtsf:PozycjaUzytkownika><dtsf:NazwaPozycji>Paliwo</dtsf:NazwaPozycji><dtsf:Kwoty><dtsf:RB><dtsf:Kwota><dtsf:KwotaA>193583.86</dtsf:KwotaA></dtsf:Kwota><dtsf:PodstawaPrawna><dtsf:Art>16</dtsf:Art></dtsf:PodstawaPrawna></dtsf:RB></dtsf:Kwoty></dtsf:PozycjaUzytkownika><dtsf:PozycjaUzytkownika><dtsf:NazwaPozycji>Materiały</dtsf:NazwaPozycji><dtsf:Kwoty><dtsf:RB><dtsf:Kwota><dtsf:KwotaA>54158.39</dtsf:KwotaA></dtsf:Kwota><dtsf:PodstawaPrawna><dtsf:Art>16</dtsf:Art></dtsf:PodstawaPrawna></dtsf:RB></dtsf:Kwoty></dtsf:PozycjaUzytkownika><dtsf:PozycjaUzytkownika><dtsf:NazwaPozycji>Usługi</dtsf:NazwaPozycji><dtsf:Kwoty><dtsf:RB><dtsf:Kwota><dtsf:KwotaA>43315.82</dtsf:KwotaA></dtsf:Kwota><dtsf:PodstawaPrawna><dtsf:Art>16</dtsf:Art></dtsf:PodstawaPrawna></dtsf:RB></dtsf:Kwoty></dtsf:PozycjaUzytkownika><dtsf:PozycjaUzytkownika><dtsf:NazwaPozycji>Podatek VAT</dtsf:NazwaPozycji><dtsf:Kwoty><dtsf:RB><dtsf:Kwota><dtsf:KwotaA>1840.24</dtsf:KwotaA></dtsf:Kwota><dtsf:PodstawaPrawna><dtsf:Art>16</dtsf:Art></dtsf:PodstawaPrawna></dtsf:RB></dtsf:Kwoty></dtsf:PozycjaUzytkownika><dtsf:PozycjaUzytkownika><dtsf:NazwaPozycji>Inne koszty utrzymania pojazdów</dtsf:NazwaPozycji><dtsf:Kwoty><dtsf:RB><dtsf:Kwota><dtsf:KwotaA>2800.73</dtsf:KwotaA></dtsf:Kwota><dtsf:PodstawaPrawna><dtsf:Art>16</dtsf:Art></dtsf:PodstawaPrawna></dtsf:RB></dtsf:Kwoty></dtsf:PozycjaUzytkownika><dtsf:PozycjaUzytkownika><dtsf:NazwaPozycji>Ubezpieczenie</dtsf:NazwaPozycji><dtsf:Kwoty><dtsf:RB><dtsf:Kwota><dtsf:KwotaA>76842.90</dtsf:KwotaA></dtsf:Kwota><dtsf:PodstawaPrawna><dtsf:Art>16</dtsf:Art></dtsf:PodstawaPrawna></dtsf:RB></dtsf:Kwoty></dtsf:PozycjaUzytkownika><dtsf:PozycjaUzytkownika><dtsf:NazwaPozycji>Pozostałe koszty</dtsf:NazwaPozycji><dtsf:Kwoty><dtsf:RB><dtsf:Kwota><dtsf:KwotaA>10785.29</dtsf:KwotaA></dtsf:Kwota><dtsf:PodstawaPrawna><dtsf:Art>16</dtsf:Art></dtsf:PodstawaPrawna></dtsf:RB></dtsf:Kwoty></dtsf:PozycjaUzytkownika><dtsf:PozycjaUzytkownika><dtsf:NazwaPozycji>Odsetki budżetowe</dtsf:NazwaPozycji><dtsf:Kwoty><dtsf:RB><dtsf:Kwota><dtsf:KwotaA>38.78</dtsf:KwotaA></dtsf:Kwota><dtsf:PodstawaPrawna><dtsf:Art>16</dtsf:Art></dtsf:PodstawaPrawna></dtsf:RB></dtsf:Kwoty></dtsf:PozycjaUzytkownika><dtsf:PozycjaUzytkownika><dtsf:NazwaPozycji>Odsetki od leasingu operacyjnego</dtsf:NazwaPozycji><dtsf:Kwoty><dtsf:RB><dtsf:Kwota><dtsf:KwotaA>612765.87</dtsf:KwotaA></dtsf:Kwota><dtsf:PodstawaPrawna><dtsf:Art>16</dtsf:Art></dtsf:PodstawaPrawna></dtsf:RB></dtsf:Kwoty></dtsf:PozycjaUzytkownika></dtsf:P_ID_5><dtsf:P_ID_6><dtsf:Kwota><dtsf:RB><dtsf:KwotaA>34301.04</dtsf:KwotaA></dtsf:RB></dtsf:Kwota><dtsf:PozycjaUzytkownika><dtsf:NazwaPozycji>Składki ZUS od pracodawcy z listy płac za m-c 11.2022 do opłacenia w m-cu 01.2023</dtsf:NazwaPozycji><dtsf:Kwoty><dtsf:RB><dtsf:Kwota><dtsf:KwotaA>17208.29</dtsf:KwotaA></dtsf:Kwota><dtsf:PodstawaPrawna><dtsf:Art>16</dtsf:Art></dtsf:PodstawaPrawna></dtsf:RB></dtsf:Kwoty></dtsf:PozycjaUzytkownika><dtsf:PozycjaUzytkownika><dtsf:NazwaPozycji>Składki ZUS od pracodawcy z listy płac za m-c 12.2022 do opłacenia w m-cu 02.2023</dtsf:NazwaPozycji><dtsf:Kwoty><dtsf:RB><dtsf:Kwota><dtsf:KwotaA>17092.75</dtsf:KwotaA></dtsf:Kwota><dtsf:PodstawaPrawna><dtsf:Art>16</dtsf:Art></dtsf:PodstawaPrawna></dtsf:RB></dtsf:Kwoty></dtsf:PozycjaUzytkownika></dtsf:P_ID_6><dtsf:P_ID_7><dtsf:Kwota><dtsf:RB><dtsf:KwotaA>25645.73</dtsf:KwotaA></dtsf:RB></dtsf:Kwota><dtsf:PozycjaUzytkownika><dtsf:NazwaPozycji>Składki ZUS od pracodawcy z listy płac za m-c 11.2021 do opłacenia w m-cu 01.2022</dtsf:NazwaPozycji><dtsf:Kwoty><dtsf:RB><dtsf:Kwota><dtsf:KwotaA>13037.64</dtsf:KwotaA></dtsf:Kwota><dtsf:PodstawaPrawna><dtsf:Art>16</dtsf:Art></dtsf:PodstawaPrawna></dtsf:RB></dtsf:Kwoty></dtsf:PozycjaUzytkownika><dtsf:PozycjaUzytkownika><dtsf:NazwaPozycji>Składki ZUS od pracodawcy z listy płac za m-c 12.2021 do opłacenia w m-cu 01.2022</dtsf:NazwaPozycji><dtsf:Kwoty><dtsf:RB><dtsf:Kwota><dtsf:KwotaA>12608.09</dtsf:KwotaA></dtsf:Kwota><dtsf:PodstawaPrawna><dtsf:Art>16</dtsf:Art></dtsf:PodstawaPrawna></dtsf:RB></dtsf:Kwoty></dtsf:PozycjaUzytkownika></dtsf:P_ID_7><dtsf:P_ID_8><dtsf:Kwota><dtsf:RB><dtsf:KwotaA>0.00</dtsf:KwotaA></dtsf:RB></dtsf:Kwota></dtsf:P_ID_8><dtsf:P_ID_9><dtsf:Kwota><dtsf:RB><dtsf:KwotaA>-4135779.24</dtsf:KwotaA></dtsf:RB></dtsf:Kwota><dtsf:PozycjaUzytkownika><dtsf:NazwaPozycji>Opłaty z tytułu leasingu operacyjnego w ujęciu podatkowym</dtsf:NazwaPozycji><dtsf:Kwoty><dtsf:RB><dtsf:Kwota><dtsf:KwotaA>-4135779.24</dtsf:KwotaA></dtsf:Kwota><dtsf:PodstawaPrawna><dtsf:Art>16</dtsf:Art></dtsf:PodstawaPrawna></dtsf:RB></dtsf:Kwoty></dtsf:PozycjaUzytkownika></dtsf:P_ID_9><dtsf:P_ID_10><dtsf:RB>1061403.97</dtsf:RB></dtsf:P_ID_10><dtsf:P_ID_11><dtsf:RB>201667.00</dtsf:RB></dtsf:P_ID_11></tns:InformacjaDodatkowaDotyczacaPodatkuDochodowego></tns:DodatkoweInformacjeIObjasnieniaJednostkaInna></tns:JednostkaInna>

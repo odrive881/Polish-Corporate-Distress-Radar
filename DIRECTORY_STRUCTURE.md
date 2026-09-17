@@ -60,11 +60,15 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │   ├── canonical_chart.yaml       # the canonical chart of accounts
 │   │   ├── pkd_crosswalk.yaml         # PKD 2007 <-> PKD 2025
 │   │   ├── rdf_document_types.yaml    # observed RDF document types, A3 download scope
+│   │   ├── structure_catalog.yaml     # versions recognised but not mapped yet
 │   │   └── structures/                # one file per XML structure version
-│   │       ├── full-2018-v1.yaml
-│   │       ├── small-2018-v1.yaml
-│   │       ├── micro-2018-v1.yaml
-│   │       └── full-2026-v1.yaml
+│   │       ├── bodies/                # statutory element paths shared by versions
+│   │       │   └── jednostka_inna.yaml
+│   │       ├── full-2018-v1-0.yaml
+│   │       ├── full-2018-v1-2.yaml
+│   │       ├── full-2018-v1-2-tys.yaml
+│   │       └── full-2025-w2-v1-0.yaml # small-*/micro-* follow in Phase 3
+│   ├── xsd/                           # official MF/CRWDE XSDs, vendored (catalog.yaml)
 │   └── statutory/
 │       ├── size_thresholds.yaml       # accounting-law size class thresholds, dated
 │       ├── ksh_tripwires.yaml         # Art. 233 / Art. 397 ratios, dated
@@ -138,14 +142,23 @@ src/distress_radar/
 │   ├── universe_discovery.py    # A1
 │   ├── regon_client.py          # A2 — zeep SOAP wrapper, session/token handling
 │   ├── document_retrieval.py    # A3
+│   ├── har_import.py            # A3, manual tier (HAR captures)
+│   ├── redaction.py             # invariant 6: strip signer data before storing (ADR 0009)
+│   ├── redaction_migration.py   # one-off replacement of unredacted stored files
 │   ├── legal_events.py          # A4
 │   └── reference_data.py        # A5
 │
 ├── parsing/
+│   ├── containers.py            # C1 — unwrap stored downloads (ZIP, signature envelopes)
 │   ├── version_detection.py     # C1
-│   ├── xsd_validation.py        # C1
+│   ├── xsd_validation.py        # C1 — offline, against config/xsd/
+│   ├── xsd_inventory.py         # statutory line items an XSD declares (coverage tests)
 │   ├── canonical_schema.py      # typed canonical chart, mirrors config/mappings/canonical_chart.yaml
 │   ├── mapping_engine.py        # C2 — reads config/mappings/structures/*.yaml
+│   ├── statements.py            # C1 + C2 for one stored download, no I/O
+│   ├── accounting_identities.py # E2 — identity rules and grading, pure functions
+│   ├── contracts.py             # E1 — Pandera schemas for C2 output
+│   ├── manifest.py              # parsed_documents (Postgres)
 │   └── pdf/
 │       ├── router.py            # C3 tier selection
 │       ├── pymupdf_extractor.py
@@ -181,6 +194,8 @@ src/distress_radar/
 ```
 
 Subfolder names match the stage groups in `AGENT_SPEC.md` §6 exactly (acquisition = A, parsing = C, extraction = G, features = H, models = I, api = J). This is intentional and must be preserved: an agent implementing a stage should never need to guess which folder it belongs in.
+
+Two modules sit at the package root because every stage uses them: `settings.py` (typed runtime settings from the environment) and `warehouse.py` (derived Parquet datasets under `WAREHOUSE_DIR`, ADR 0008).
 
 ---
 

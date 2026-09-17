@@ -1,0 +1,578 @@
+# Canonical chart of line items (AGENT_SPEC §5 `line_item`), plan 0004.
+#
+# Codes follow the statutory numbering of UoR Annex 1 (the MF `JednostkaInna`
+# structures), which is identical in every full-form schema version from v1-0
+# (2018) to wariant 2 (2025). Prefixes: BS.ASSETS / BS.EQUITY_LIABILITIES
+# (bilans), IS.COMP / IS.CALC (RZiS, comparative / calculation variant), EQ
+# (zestawienie zmian w kapitale), CF.IND / CF.DIR (cash flow, indirect / direct).
+# A `.J` segment is the statutory "of which: related parties" line.
+#
+# `.R2025` codes: wariant 2 narrowed these items from goods *and materials* to
+# goods only (sales of materials moved out). They are distinct facts, never
+# merged with the pre-2025 code they replace (`replaces`).
+#
+# `role` tags the totals the accounting identity checks read (§4.3).
+# The hierarchy (parents, "of which" lines, computed-line formulas) belongs to
+# each statement structure, not to the vocabulary: see
+# `config/mappings/structures/bodies/`.
+#
+# Bootstrapped 2026-09-17 from JednostkaInnaStrukturyDanychSprFin_v1-2.xsd
+# (labels are the XSD documentation, verbatim, except the six CF.*.A/B/C
+# headings, which v1-2 has no amounts for; their note is ours); edit by hand
+# from here on.
+version: 1
+items:
+  - {code: BS.ASSETS, statement_type: balance_sheet, variant: "n/a", label_pl: "Aktywa razem", role: total_assets}
+  - {code: BS.ASSETS.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Aktywa razem"}
+  - {code: BS.ASSETS.A, statement_type: balance_sheet, variant: "n/a", label_pl: "Aktywa trwałe"}
+  - {code: BS.ASSETS.A.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Aktywa trwałe"}
+  - {code: BS.ASSETS.A.I, statement_type: balance_sheet, variant: "n/a", label_pl: "Wartości niematerialne i prawne"}
+  - {code: BS.ASSETS.A.I.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Wartości niematerialne i prawne"}
+  - {code: BS.ASSETS.A.I.1, statement_type: balance_sheet, variant: "n/a", label_pl: "Koszty zakończonych prac rozwojowych"}
+  - {code: BS.ASSETS.A.I.2, statement_type: balance_sheet, variant: "n/a", label_pl: "Wartość firmy"}
+  - {code: BS.ASSETS.A.I.3, statement_type: balance_sheet, variant: "n/a", label_pl: "Inne wartości niematerialne i prawne"}
+  - {code: BS.ASSETS.A.I.4, statement_type: balance_sheet, variant: "n/a", label_pl: "Zaliczki na wartości niematerialne i prawne"}
+  - {code: BS.ASSETS.A.II, statement_type: balance_sheet, variant: "n/a", label_pl: "Rzeczowe aktywa trwałe"}
+  - {code: BS.ASSETS.A.II.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Rzeczowe aktywa trwałe"}
+  - {code: BS.ASSETS.A.II.1, statement_type: balance_sheet, variant: "n/a", label_pl: "Środki trwałe"}
+  - {code: BS.ASSETS.A.II.1.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Środki trwałe"}
+  - {code: BS.ASSETS.A.II.1.A, statement_type: balance_sheet, variant: "n/a", label_pl: "grunty (w tym prawo użytkowania wieczystego gruntu)"}
+  - {code: BS.ASSETS.A.II.1.B, statement_type: balance_sheet, variant: "n/a", label_pl: "budynki, lokale, prawa do lokali i obiekty inżynierii lądowej i wodnej"}
+  - {code: BS.ASSETS.A.II.1.C, statement_type: balance_sheet, variant: "n/a", label_pl: "urządzenia techniczne i maszyny"}
+  - {code: BS.ASSETS.A.II.1.D, statement_type: balance_sheet, variant: "n/a", label_pl: "środki transportu"}
+  - {code: BS.ASSETS.A.II.1.E, statement_type: balance_sheet, variant: "n/a", label_pl: "inne środki trwałe"}
+  - {code: BS.ASSETS.A.II.2, statement_type: balance_sheet, variant: "n/a", label_pl: "Środki trwałe w budowie"}
+  - {code: BS.ASSETS.A.II.3, statement_type: balance_sheet, variant: "n/a", label_pl: "Zaliczki na środki trwałe w budowie"}
+  - {code: BS.ASSETS.A.III, statement_type: balance_sheet, variant: "n/a", label_pl: "Należności długoterminowe"}
+  - {code: BS.ASSETS.A.III.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Należności długoterminowe"}
+  - {code: BS.ASSETS.A.III.1, statement_type: balance_sheet, variant: "n/a", label_pl: "Od jednostek powiązanych"}
+  - {code: BS.ASSETS.A.III.2, statement_type: balance_sheet, variant: "n/a", label_pl: "Od pozostałych jednostek, w których jednostka posiada zaangażowanie w kapitale"}
+  - {code: BS.ASSETS.A.III.3, statement_type: balance_sheet, variant: "n/a", label_pl: "Od pozostałych jednostek"}
+  - {code: BS.ASSETS.A.IV, statement_type: balance_sheet, variant: "n/a", label_pl: "Inwestycje długoterminowe"}
+  - {code: BS.ASSETS.A.IV.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Inwestycje długoterminowe"}
+  - {code: BS.ASSETS.A.IV.1, statement_type: balance_sheet, variant: "n/a", label_pl: "Nieruchomości"}
+  - {code: BS.ASSETS.A.IV.2, statement_type: balance_sheet, variant: "n/a", label_pl: "Wartości niematerialne i prawne"}
+  - {code: BS.ASSETS.A.IV.3, statement_type: balance_sheet, variant: "n/a", label_pl: "Długoterminowe aktywa finansowe"}
+  - {code: BS.ASSETS.A.IV.3.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Długoterminowe aktywa finansowe"}
+  - {code: BS.ASSETS.A.IV.3.A, statement_type: balance_sheet, variant: "n/a", label_pl: "w jednostkach powiązanych"}
+  - {code: BS.ASSETS.A.IV.3.A.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): w jednostkach powiązanych"}
+  - {code: BS.ASSETS.A.IV.3.A.1, statement_type: balance_sheet, variant: "n/a", label_pl: "– udziały lub akcje"}
+  - {code: BS.ASSETS.A.IV.3.A.2, statement_type: balance_sheet, variant: "n/a", label_pl: "– inne papiery wartościowe"}
+  - {code: BS.ASSETS.A.IV.3.A.3, statement_type: balance_sheet, variant: "n/a", label_pl: "– udzielone pożyczki"}
+  - {code: BS.ASSETS.A.IV.3.A.4, statement_type: balance_sheet, variant: "n/a", label_pl: "– inne długoterminowe aktywa finansowe"}
+  - {code: BS.ASSETS.A.IV.3.B, statement_type: balance_sheet, variant: "n/a", label_pl: "w pozostałych jednostkach, w których jednostka posiada zaangażowanie w kapitale"}
+  - {code: BS.ASSETS.A.IV.3.B.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): w pozostałych jednostkach, w których jednostka posiada zaangażowanie w kapitale"}
+  - {code: BS.ASSETS.A.IV.3.B.1, statement_type: balance_sheet, variant: "n/a", label_pl: "– udziały lub akcje"}
+  - {code: BS.ASSETS.A.IV.3.B.2, statement_type: balance_sheet, variant: "n/a", label_pl: "– inne papiery wartościowe"}
+  - {code: BS.ASSETS.A.IV.3.B.3, statement_type: balance_sheet, variant: "n/a", label_pl: "– udzielone pożyczki"}
+  - {code: BS.ASSETS.A.IV.3.B.4, statement_type: balance_sheet, variant: "n/a", label_pl: "– inne długoterminowe aktywa finansowe"}
+  - {code: BS.ASSETS.A.IV.3.C, statement_type: balance_sheet, variant: "n/a", label_pl: "w pozostałych jednostkach"}
+  - {code: BS.ASSETS.A.IV.3.C.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): w pozostałych jednostkach"}
+  - {code: BS.ASSETS.A.IV.3.C.1, statement_type: balance_sheet, variant: "n/a", label_pl: "– udziały lub akcje"}
+  - {code: BS.ASSETS.A.IV.3.C.2, statement_type: balance_sheet, variant: "n/a", label_pl: "– inne papiery wartościowe"}
+  - {code: BS.ASSETS.A.IV.3.C.3, statement_type: balance_sheet, variant: "n/a", label_pl: "– udzielone pożyczki"}
+  - {code: BS.ASSETS.A.IV.3.C.4, statement_type: balance_sheet, variant: "n/a", label_pl: "– inne długoterminowe aktywa finansowe"}
+  - {code: BS.ASSETS.A.IV.4, statement_type: balance_sheet, variant: "n/a", label_pl: "Inne inwestycje długoterminowe"}
+  - {code: BS.ASSETS.A.V, statement_type: balance_sheet, variant: "n/a", label_pl: "Długoterminowe rozliczenia międzyokresowe"}
+  - {code: BS.ASSETS.A.V.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Długoterminowe rozliczenia międzyokresowe"}
+  - {code: BS.ASSETS.A.V.1, statement_type: balance_sheet, variant: "n/a", label_pl: "Aktywa z tytułu odroczonego podatku dochodowego"}
+  - {code: BS.ASSETS.A.V.2, statement_type: balance_sheet, variant: "n/a", label_pl: "Inne rozliczenia międzyokresowe"}
+  - {code: BS.ASSETS.B, statement_type: balance_sheet, variant: "n/a", label_pl: "Aktywa obrotowe"}
+  - {code: BS.ASSETS.B.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Aktywa obrotowe"}
+  - {code: BS.ASSETS.B.I, statement_type: balance_sheet, variant: "n/a", label_pl: "Zapasy"}
+  - {code: BS.ASSETS.B.I.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Zapasy"}
+  - {code: BS.ASSETS.B.I.1, statement_type: balance_sheet, variant: "n/a", label_pl: "Materiały"}
+  - {code: BS.ASSETS.B.I.2, statement_type: balance_sheet, variant: "n/a", label_pl: "Półprodukty i produkty w toku"}
+  - {code: BS.ASSETS.B.I.3, statement_type: balance_sheet, variant: "n/a", label_pl: "Produkty gotowe"}
+  - {code: BS.ASSETS.B.I.4, statement_type: balance_sheet, variant: "n/a", label_pl: "Towary"}
+  - {code: BS.ASSETS.B.I.5, statement_type: balance_sheet, variant: "n/a", label_pl: "Zaliczki na dostawy i usługi"}
+  - {code: BS.ASSETS.B.II, statement_type: balance_sheet, variant: "n/a", label_pl: "Należności krótkoterminowe"}
+  - {code: BS.ASSETS.B.II.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Należności krótkoterminowe"}
+  - {code: BS.ASSETS.B.II.1, statement_type: balance_sheet, variant: "n/a", label_pl: "Należności od jednostek powiązanych"}
+  - {code: BS.ASSETS.B.II.1.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Należności od jednostek powiązanych"}
+  - {code: BS.ASSETS.B.II.1.A, statement_type: balance_sheet, variant: "n/a", label_pl: "z tytułu dostaw i usług, o okresie spłaty:"}
+  - {code: BS.ASSETS.B.II.1.A.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): z tytułu dostaw i usług, o okresie spłaty:"}
+  - {code: BS.ASSETS.B.II.1.A.1, statement_type: balance_sheet, variant: "n/a", label_pl: "– do 12 miesięcy"}
+  - {code: BS.ASSETS.B.II.1.A.2, statement_type: balance_sheet, variant: "n/a", label_pl: "– powyżej 12 miesięcy"}
+  - {code: BS.ASSETS.B.II.1.B, statement_type: balance_sheet, variant: "n/a", label_pl: "inne"}
+  - {code: BS.ASSETS.B.II.2, statement_type: balance_sheet, variant: "n/a", label_pl: "Należności od pozostałych jednostek, w których jednostka posiada zaangażowanie w kapitale"}
+  - {code: BS.ASSETS.B.II.2.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Należności od pozostałych jednostek, w których jednostka posiada zaangażowanie w kapitale"}
+  - {code: BS.ASSETS.B.II.2.A, statement_type: balance_sheet, variant: "n/a", label_pl: "z tytułu dostaw i usług, o okresie spłaty:"}
+  - {code: BS.ASSETS.B.II.2.A.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): z tytułu dostaw i usług, o okresie spłaty:"}
+  - {code: BS.ASSETS.B.II.2.A.1, statement_type: balance_sheet, variant: "n/a", label_pl: "– do 12 miesięcy"}
+  - {code: BS.ASSETS.B.II.2.A.2, statement_type: balance_sheet, variant: "n/a", label_pl: "– powyżej 12 miesięcy"}
+  - {code: BS.ASSETS.B.II.2.B, statement_type: balance_sheet, variant: "n/a", label_pl: "inne"}
+  - {code: BS.ASSETS.B.II.3, statement_type: balance_sheet, variant: "n/a", label_pl: "Należności od pozostałych jednostek"}
+  - {code: BS.ASSETS.B.II.3.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Należności od pozostałych jednostek"}
+  - {code: BS.ASSETS.B.II.3.A, statement_type: balance_sheet, variant: "n/a", label_pl: "z tytułu dostaw i usług, o okresie spłaty:"}
+  - {code: BS.ASSETS.B.II.3.A.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): z tytułu dostaw i usług, o okresie spłaty:"}
+  - {code: BS.ASSETS.B.II.3.A.1, statement_type: balance_sheet, variant: "n/a", label_pl: "– do 12 miesięcy"}
+  - {code: BS.ASSETS.B.II.3.A.2, statement_type: balance_sheet, variant: "n/a", label_pl: "– powyżej 12 miesięcy"}
+  - {code: BS.ASSETS.B.II.3.B, statement_type: balance_sheet, variant: "n/a", label_pl: "z tytułu podatków, dotacji, ceł, ubezpieczeń społecznych i zdrowotnych oraz innych tytułów publicznoprawnych"}
+  - {code: BS.ASSETS.B.II.3.C, statement_type: balance_sheet, variant: "n/a", label_pl: "inne"}
+  - {code: BS.ASSETS.B.II.3.D, statement_type: balance_sheet, variant: "n/a", label_pl: "dochodzone na drodze sądowej"}
+  - {code: BS.ASSETS.B.III, statement_type: balance_sheet, variant: "n/a", label_pl: "Inwestycje krótkoterminowe"}
+  - {code: BS.ASSETS.B.III.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Inwestycje krótkoterminowe"}
+  - {code: BS.ASSETS.B.III.1, statement_type: balance_sheet, variant: "n/a", label_pl: "Krótkoterminowe aktywa finansowe"}
+  - {code: BS.ASSETS.B.III.1.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Krótkoterminowe aktywa finansowe"}
+  - {code: BS.ASSETS.B.III.1.A, statement_type: balance_sheet, variant: "n/a", label_pl: "w jednostkach powiązanych"}
+  - {code: BS.ASSETS.B.III.1.A.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): w jednostkach powiązanych"}
+  - {code: BS.ASSETS.B.III.1.A.1, statement_type: balance_sheet, variant: "n/a", label_pl: "– udziały lub akcje"}
+  - {code: BS.ASSETS.B.III.1.A.2, statement_type: balance_sheet, variant: "n/a", label_pl: "– inne papiery wartościowe"}
+  - {code: BS.ASSETS.B.III.1.A.3, statement_type: balance_sheet, variant: "n/a", label_pl: "– udzielone pożyczki"}
+  - {code: BS.ASSETS.B.III.1.A.4, statement_type: balance_sheet, variant: "n/a", label_pl: "– inne krótkoterminowe aktywa finansowe"}
+  - {code: BS.ASSETS.B.III.1.B, statement_type: balance_sheet, variant: "n/a", label_pl: "w pozostałych jednostkach"}
+  - {code: BS.ASSETS.B.III.1.B.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): w pozostałych jednostkach"}
+  - {code: BS.ASSETS.B.III.1.B.1, statement_type: balance_sheet, variant: "n/a", label_pl: "– udziały lub akcje"}
+  - {code: BS.ASSETS.B.III.1.B.2, statement_type: balance_sheet, variant: "n/a", label_pl: "– inne papiery wartościowe"}
+  - {code: BS.ASSETS.B.III.1.B.3, statement_type: balance_sheet, variant: "n/a", label_pl: "– udzielone pożyczki"}
+  - {code: BS.ASSETS.B.III.1.B.4, statement_type: balance_sheet, variant: "n/a", label_pl: "– inne krótkoterminowe aktywa finansowe"}
+  - {code: BS.ASSETS.B.III.1.C, statement_type: balance_sheet, variant: "n/a", label_pl: "Środki pieniężne i inne aktywa pieniężne"}
+  - {code: BS.ASSETS.B.III.1.C.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Środki pieniężne i inne aktywa pieniężne"}
+  - {code: BS.ASSETS.B.III.1.C.1, statement_type: balance_sheet, variant: "n/a", label_pl: "– środki pieniężne w kasie i na rachunkach"}
+  - {code: BS.ASSETS.B.III.1.C.2, statement_type: balance_sheet, variant: "n/a", label_pl: "– inne środki pieniężne"}
+  - {code: BS.ASSETS.B.III.1.C.3, statement_type: balance_sheet, variant: "n/a", label_pl: "– inne aktywa pieniężne"}
+  - {code: BS.ASSETS.B.III.2, statement_type: balance_sheet, variant: "n/a", label_pl: "Inne inwestycje krótkoterminowe"}
+  - {code: BS.ASSETS.B.IV, statement_type: balance_sheet, variant: "n/a", label_pl: "Krótkoterminowe rozliczenia międzyokresowe"}
+  - {code: BS.ASSETS.C, statement_type: balance_sheet, variant: "n/a", label_pl: "Należne wpłaty na kapitał (fundusz) podstawowy"}
+  - {code: BS.ASSETS.D, statement_type: balance_sheet, variant: "n/a", label_pl: "Udziały (akcje) własne"}
+  - {code: BS.EQUITY_LIABILITIES, statement_type: balance_sheet, variant: "n/a", label_pl: "Pasywa razem", role: total_equity_and_liabilities}
+  - {code: BS.EQUITY_LIABILITIES.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Pasywa razem"}
+  - {code: BS.EQUITY_LIABILITIES.A, statement_type: balance_sheet, variant: "n/a", label_pl: "Kapitał (fundusz) własny", role: total_equity}
+  - {code: BS.EQUITY_LIABILITIES.A.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Kapitał (fundusz) własny"}
+  - {code: BS.EQUITY_LIABILITIES.A.I, statement_type: balance_sheet, variant: "n/a", label_pl: "Kapitał (fundusz) podstawowy"}
+  - {code: BS.EQUITY_LIABILITIES.A.II, statement_type: balance_sheet, variant: "n/a", label_pl: "Kapitał (fundusz) zapasowy, w tym:"}
+  - {code: BS.EQUITY_LIABILITIES.A.II.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Kapitał (fundusz) zapasowy, w tym:"}
+  - {code: BS.EQUITY_LIABILITIES.A.II.1, statement_type: balance_sheet, variant: "n/a", label_pl: "– nadwyżka wartości sprzedaży (wartości emisyjnej) nad wartością nominalną udziałów (akcji)"}
+  - {code: BS.EQUITY_LIABILITIES.A.III, statement_type: balance_sheet, variant: "n/a", label_pl: "Kapitał (fundusz) z aktualizacji wyceny, w tym:"}
+  - {code: BS.EQUITY_LIABILITIES.A.III.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Kapitał (fundusz) z aktualizacji wyceny, w tym:"}
+  - {code: BS.EQUITY_LIABILITIES.A.III.1, statement_type: balance_sheet, variant: "n/a", label_pl: "– z tytułu aktualizacji wartości godziwej"}
+  - {code: BS.EQUITY_LIABILITIES.A.IV, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozostałe kapitały (fundusze) rezerwowe, w tym:"}
+  - {code: BS.EQUITY_LIABILITIES.A.IV.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Pozostałe kapitały (fundusze) rezerwowe, w tym:"}
+  - {code: BS.EQUITY_LIABILITIES.A.IV.1, statement_type: balance_sheet, variant: "n/a", label_pl: "– tworzone zgodnie z umową (statutem) spółki"}
+  - {code: BS.EQUITY_LIABILITIES.A.IV.2, statement_type: balance_sheet, variant: "n/a", label_pl: "– na udziały (akcje) własne"}
+  - {code: BS.EQUITY_LIABILITIES.A.V, statement_type: balance_sheet, variant: "n/a", label_pl: "Zysk (strata) z lat ubiegłych"}
+  - {code: BS.EQUITY_LIABILITIES.A.VI, statement_type: balance_sheet, variant: "n/a", label_pl: "Zysk (strata) netto", role: net_result_balance_sheet}
+  - {code: BS.EQUITY_LIABILITIES.A.VII, statement_type: balance_sheet, variant: "n/a", label_pl: "Odpisy z zysku netto w ciągu roku obrotowego (wielkość ujemna)"}
+  - {code: BS.EQUITY_LIABILITIES.B, statement_type: balance_sheet, variant: "n/a", label_pl: "Zobowiązania i rezerwy na zobowiązania", role: total_liabilities_and_provisions}
+  - {code: BS.EQUITY_LIABILITIES.B.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Zobowiązania i rezerwy na zobowiązania"}
+  - {code: BS.EQUITY_LIABILITIES.B.I, statement_type: balance_sheet, variant: "n/a", label_pl: "Rezerwy na zobowiązania"}
+  - {code: BS.EQUITY_LIABILITIES.B.I.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Rezerwy na zobowiązania"}
+  - {code: BS.EQUITY_LIABILITIES.B.I.1, statement_type: balance_sheet, variant: "n/a", label_pl: "Rezerwa z tytułu odroczonego podatku dochodowego"}
+  - {code: BS.EQUITY_LIABILITIES.B.I.2, statement_type: balance_sheet, variant: "n/a", label_pl: "Rezerwa na świadczenia emerytalne i podobne"}
+  - {code: BS.EQUITY_LIABILITIES.B.I.2.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Rezerwa na świadczenia emerytalne i podobne"}
+  - {code: BS.EQUITY_LIABILITIES.B.I.2.1, statement_type: balance_sheet, variant: "n/a", label_pl: "– długoterminowa"}
+  - {code: BS.EQUITY_LIABILITIES.B.I.2.2, statement_type: balance_sheet, variant: "n/a", label_pl: "– krótkoterminowa"}
+  - {code: BS.EQUITY_LIABILITIES.B.I.3, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozostałe rezerwy"}
+  - {code: BS.EQUITY_LIABILITIES.B.I.3.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Pozostałe rezerwy"}
+  - {code: BS.EQUITY_LIABILITIES.B.I.3.1, statement_type: balance_sheet, variant: "n/a", label_pl: "– długoterminowe"}
+  - {code: BS.EQUITY_LIABILITIES.B.I.3.2, statement_type: balance_sheet, variant: "n/a", label_pl: "– krótkoterminowe"}
+  - {code: BS.EQUITY_LIABILITIES.B.II, statement_type: balance_sheet, variant: "n/a", label_pl: "Zobowiązania długoterminowe"}
+  - {code: BS.EQUITY_LIABILITIES.B.II.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Zobowiązania długoterminowe"}
+  - {code: BS.EQUITY_LIABILITIES.B.II.1, statement_type: balance_sheet, variant: "n/a", label_pl: "Wobec jednostek powiązanych"}
+  - {code: BS.EQUITY_LIABILITIES.B.II.2, statement_type: balance_sheet, variant: "n/a", label_pl: "Wobec pozostałych jednostek, w których jednostka posiada zaangażowanie w kapitale"}
+  - {code: BS.EQUITY_LIABILITIES.B.II.3, statement_type: balance_sheet, variant: "n/a", label_pl: "Wobec pozostałych jednostek"}
+  - {code: BS.EQUITY_LIABILITIES.B.II.3.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Wobec pozostałych jednostek"}
+  - {code: BS.EQUITY_LIABILITIES.B.II.3.A, statement_type: balance_sheet, variant: "n/a", label_pl: "kredyty i pożyczki"}
+  - {code: BS.EQUITY_LIABILITIES.B.II.3.B, statement_type: balance_sheet, variant: "n/a", label_pl: "z tytułu emisji dłużnych papierów wartościowych"}
+  - {code: BS.EQUITY_LIABILITIES.B.II.3.C, statement_type: balance_sheet, variant: "n/a", label_pl: "inne zobowiązania finansowe"}
+  - {code: BS.EQUITY_LIABILITIES.B.II.3.D, statement_type: balance_sheet, variant: "n/a", label_pl: "zobowiązania wekslowe"}
+  - {code: BS.EQUITY_LIABILITIES.B.II.3.E, statement_type: balance_sheet, variant: "n/a", label_pl: "inne"}
+  - {code: BS.EQUITY_LIABILITIES.B.III, statement_type: balance_sheet, variant: "n/a", label_pl: "Zobowiązania krótkoterminowe"}
+  - {code: BS.EQUITY_LIABILITIES.B.III.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Zobowiązania krótkoterminowe"}
+  - {code: BS.EQUITY_LIABILITIES.B.III.1, statement_type: balance_sheet, variant: "n/a", label_pl: "Zobowiązania wobec jednostek powiązanych"}
+  - {code: BS.EQUITY_LIABILITIES.B.III.1.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Zobowiązania wobec jednostek powiązanych"}
+  - {code: BS.EQUITY_LIABILITIES.B.III.1.A, statement_type: balance_sheet, variant: "n/a", label_pl: "z tytułu dostaw i usług, o okresie wymagalności:"}
+  - {code: BS.EQUITY_LIABILITIES.B.III.1.A.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): z tytułu dostaw i usług, o okresie wymagalności:"}
+  - {code: BS.EQUITY_LIABILITIES.B.III.1.A.1, statement_type: balance_sheet, variant: "n/a", label_pl: "– do 12 miesięcy"}
+  - {code: BS.EQUITY_LIABILITIES.B.III.1.A.2, statement_type: balance_sheet, variant: "n/a", label_pl: "– powyżej 12 miesięcy"}
+  - {code: BS.EQUITY_LIABILITIES.B.III.1.B, statement_type: balance_sheet, variant: "n/a", label_pl: "inne"}
+  - {code: BS.EQUITY_LIABILITIES.B.III.2, statement_type: balance_sheet, variant: "n/a", label_pl: "Zobowiązania wobec pozostałych jednostek, w których jednostka posiada zaangażowanie w kapitale"}
+  - {code: BS.EQUITY_LIABILITIES.B.III.2.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Zobowiązania wobec pozostałych jednostek, w których jednostka posiada zaangażowanie w kapitale"}
+  - {code: BS.EQUITY_LIABILITIES.B.III.2.A, statement_type: balance_sheet, variant: "n/a", label_pl: "z tytułu dostaw i usług, o okresie wymagalności:"}
+  - {code: BS.EQUITY_LIABILITIES.B.III.2.A.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): z tytułu dostaw i usług, o okresie wymagalności:"}
+  - {code: BS.EQUITY_LIABILITIES.B.III.2.A.1, statement_type: balance_sheet, variant: "n/a", label_pl: "– do 12 miesięcy"}
+  - {code: BS.EQUITY_LIABILITIES.B.III.2.A.2, statement_type: balance_sheet, variant: "n/a", label_pl: "– powyżej 12 miesięcy"}
+  - {code: BS.EQUITY_LIABILITIES.B.III.2.B, statement_type: balance_sheet, variant: "n/a", label_pl: "inne"}
+  - {code: BS.EQUITY_LIABILITIES.B.III.3, statement_type: balance_sheet, variant: "n/a", label_pl: "Zobowiązania wobec pozostałych jednostek"}
+  - {code: BS.EQUITY_LIABILITIES.B.III.3.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Zobowiązania wobec pozostałych jednostek"}
+  - {code: BS.EQUITY_LIABILITIES.B.III.3.A, statement_type: balance_sheet, variant: "n/a", label_pl: "kredyty i pożyczki"}
+  - {code: BS.EQUITY_LIABILITIES.B.III.3.B, statement_type: balance_sheet, variant: "n/a", label_pl: "z tytułu emisji dłużnych papierów wartościowych"}
+  - {code: BS.EQUITY_LIABILITIES.B.III.3.C, statement_type: balance_sheet, variant: "n/a", label_pl: "inne zobowiązania finansowe"}
+  - {code: BS.EQUITY_LIABILITIES.B.III.3.D, statement_type: balance_sheet, variant: "n/a", label_pl: "z tytułu dostaw i usług, o okresie wymagalności:"}
+  - {code: BS.EQUITY_LIABILITIES.B.III.3.D.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): z tytułu dostaw i usług, o okresie wymagalności:"}
+  - {code: BS.EQUITY_LIABILITIES.B.III.3.D.1, statement_type: balance_sheet, variant: "n/a", label_pl: "– do 12 miesięcy"}
+  - {code: BS.EQUITY_LIABILITIES.B.III.3.D.2, statement_type: balance_sheet, variant: "n/a", label_pl: "– powyżej 12 miesięcy"}
+  - {code: BS.EQUITY_LIABILITIES.B.III.3.E, statement_type: balance_sheet, variant: "n/a", label_pl: "zaliczki otrzymane na dostawy i usługi"}
+  - {code: BS.EQUITY_LIABILITIES.B.III.3.F, statement_type: balance_sheet, variant: "n/a", label_pl: "zobowiązania wekslowe"}
+  - {code: BS.EQUITY_LIABILITIES.B.III.3.G, statement_type: balance_sheet, variant: "n/a", label_pl: "z tytułu podatków, ceł, ubezpieczeń społecznych i zdrowotnych oraz innych tytułów publicznoprawnych"}
+  - {code: BS.EQUITY_LIABILITIES.B.III.3.H, statement_type: balance_sheet, variant: "n/a", label_pl: "z tytułu wynagrodzeń"}
+  - {code: BS.EQUITY_LIABILITIES.B.III.3.I, statement_type: balance_sheet, variant: "n/a", label_pl: "inne"}
+  - {code: BS.EQUITY_LIABILITIES.B.III.4, statement_type: balance_sheet, variant: "n/a", label_pl: "Fundusze specjalne"}
+  - {code: BS.EQUITY_LIABILITIES.B.IV, statement_type: balance_sheet, variant: "n/a", label_pl: "Rozliczenia międzyokresowe"}
+  - {code: BS.EQUITY_LIABILITIES.B.IV.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Rozliczenia międzyokresowe"}
+  - {code: BS.EQUITY_LIABILITIES.B.IV.1, statement_type: balance_sheet, variant: "n/a", label_pl: "Ujemna wartość firmy"}
+  - {code: BS.EQUITY_LIABILITIES.B.IV.2, statement_type: balance_sheet, variant: "n/a", label_pl: "Inne rozliczenia międzyokresowe"}
+  - {code: BS.EQUITY_LIABILITIES.B.IV.2.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Inne rozliczenia międzyokresowe"}
+  - {code: BS.EQUITY_LIABILITIES.B.IV.2.1, statement_type: balance_sheet, variant: "n/a", label_pl: "– długoterminowe"}
+  - {code: BS.EQUITY_LIABILITIES.B.IV.2.2, statement_type: balance_sheet, variant: "n/a", label_pl: "– krótkoterminowe"}
+  - {code: IS.CALC.USER, statement_type: income_statement, variant: "calculation", label_pl: "Pozycje uszczegóławiające jednostki (suma): Rachunek zysków i strat (wariant kalkulacyjny)"}
+  - {code: IS.CALC.A, statement_type: income_statement, variant: "calculation", label_pl: "Przychody netto ze sprzedaży produktów, towarów i materiałów, w tym:"}
+  - {code: IS.CALC.A.USER, statement_type: income_statement, variant: "calculation", label_pl: "Pozycje uszczegóławiające jednostki (suma): Przychody netto ze sprzedaży produktów, towarów i materiałów, w tym:"}
+  - {code: IS.CALC.A.R2025, statement_type: income_statement, variant: "calculation", label_pl: "Przychody netto ze sprzedaży produktów i towarów, w tym:", replaces: IS.CALC.A}
+  - {code: IS.CALC.A.R2025.USER, statement_type: income_statement, variant: "calculation", label_pl: "Pozycje uszczegóławiające jednostki (suma): Przychody netto ze sprzedaży produktów i towarów, w tym:", replaces: IS.CALC.A.USER}
+  - {code: IS.CALC.A.J, statement_type: income_statement, variant: "calculation", label_pl: "– od jednostek powiązanych"}
+  - {code: IS.CALC.A.I, statement_type: income_statement, variant: "calculation", label_pl: "Przychody netto ze sprzedaży produktów"}
+  - {code: IS.CALC.A.II, statement_type: income_statement, variant: "calculation", label_pl: "Przychody netto ze sprzedaży towarów i materiałów"}
+  - {code: IS.CALC.A.II.R2025, statement_type: income_statement, variant: "calculation", label_pl: "Przychody netto ze sprzedaży towarów", replaces: IS.CALC.A.II}
+  - {code: IS.CALC.B, statement_type: income_statement, variant: "calculation", label_pl: "Koszty sprzedanych produktów, towarów i materiałów, w tym:"}
+  - {code: IS.CALC.B.USER, statement_type: income_statement, variant: "calculation", label_pl: "Pozycje uszczegóławiające jednostki (suma): Koszty sprzedanych produktów, towarów i materiałów, w tym:"}
+  - {code: IS.CALC.B.R2025, statement_type: income_statement, variant: "calculation", label_pl: "Koszty sprzedanych produktów i towarów, w tym:", replaces: IS.CALC.B}
+  - {code: IS.CALC.B.R2025.USER, statement_type: income_statement, variant: "calculation", label_pl: "Pozycje uszczegóławiające jednostki (suma): Koszty sprzedanych produktów i towarów, w tym:", replaces: IS.CALC.B.USER}
+  - {code: IS.CALC.B.J, statement_type: income_statement, variant: "calculation", label_pl: "– jednostkom powiązanym"}
+  - {code: IS.CALC.B.I, statement_type: income_statement, variant: "calculation", label_pl: "Koszt wytworzenia sprzedanych produktów"}
+  - {code: IS.CALC.B.II, statement_type: income_statement, variant: "calculation", label_pl: "Wartość sprzedanych towarów i materiałów"}
+  - {code: IS.CALC.B.II.R2025, statement_type: income_statement, variant: "calculation", label_pl: "Wartość sprzedanych towarów", replaces: IS.CALC.B.II}
+  - {code: IS.CALC.C, statement_type: income_statement, variant: "calculation", label_pl: "Zysk (strata) brutto ze sprzedaży (A–B)"}
+  - {code: IS.CALC.D, statement_type: income_statement, variant: "calculation", label_pl: "Koszty sprzedaży"}
+  - {code: IS.CALC.E, statement_type: income_statement, variant: "calculation", label_pl: "Koszty ogólnego zarządu"}
+  - {code: IS.CALC.F, statement_type: income_statement, variant: "calculation", label_pl: "Zysk (strata) ze sprzedaży (C–D–E)"}
+  - {code: IS.CALC.G, statement_type: income_statement, variant: "calculation", label_pl: "Pozostałe przychody operacyjne"}
+  - {code: IS.CALC.G.USER, statement_type: income_statement, variant: "calculation", label_pl: "Pozycje uszczegóławiające jednostki (suma): Pozostałe przychody operacyjne"}
+  - {code: IS.CALC.G.I, statement_type: income_statement, variant: "calculation", label_pl: "Zysk z tytułu rozchodu niefinansowych aktywów trwałych"}
+  - {code: IS.CALC.G.II, statement_type: income_statement, variant: "calculation", label_pl: "Dotacje"}
+  - {code: IS.CALC.G.III, statement_type: income_statement, variant: "calculation", label_pl: "Aktualizacja wartości aktywów niefinansowych"}
+  - {code: IS.CALC.G.IV, statement_type: income_statement, variant: "calculation", label_pl: "Inne przychody operacyjne"}
+  - {code: IS.CALC.H, statement_type: income_statement, variant: "calculation", label_pl: "Pozostałe koszty operacyjne"}
+  - {code: IS.CALC.H.USER, statement_type: income_statement, variant: "calculation", label_pl: "Pozycje uszczegóławiające jednostki (suma): Pozostałe koszty operacyjne"}
+  - {code: IS.CALC.H.I, statement_type: income_statement, variant: "calculation", label_pl: "Strata z tytułu rozchodu niefinansowych aktywów trwałych"}
+  - {code: IS.CALC.H.II, statement_type: income_statement, variant: "calculation", label_pl: "Aktualizacja wartości aktywów niefinansowych"}
+  - {code: IS.CALC.H.III, statement_type: income_statement, variant: "calculation", label_pl: "Inne koszty operacyjne"}
+  - {code: IS.CALC.I, statement_type: income_statement, variant: "calculation", label_pl: "Zysk (strata) z działalności operacyjnej (F+G–H)"}
+  - {code: IS.CALC.J, statement_type: income_statement, variant: "calculation", label_pl: "Przychody finansowe"}
+  - {code: IS.CALC.J.USER, statement_type: income_statement, variant: "calculation", label_pl: "Pozycje uszczegóławiające jednostki (suma): Przychody finansowe"}
+  - {code: IS.CALC.J.I, statement_type: income_statement, variant: "calculation", label_pl: "Dywidendy i udziały w zyskach, w tym:"}
+  - {code: IS.CALC.J.I.USER, statement_type: income_statement, variant: "calculation", label_pl: "Pozycje uszczegóławiające jednostki (suma): Dywidendy i udziały w zyskach, w tym:"}
+  - {code: IS.CALC.J.I.A, statement_type: income_statement, variant: "calculation", label_pl: "od jednostek powiązanych, w tym:"}
+  - {code: IS.CALC.J.I.A.USER, statement_type: income_statement, variant: "calculation", label_pl: "Pozycje uszczegóławiające jednostki (suma): od jednostek powiązanych, w tym:"}
+  - {code: IS.CALC.J.I.A.1, statement_type: income_statement, variant: "calculation", label_pl: "– w których jednostka posiada zaangażowanie w kapitale"}
+  - {code: IS.CALC.J.I.B, statement_type: income_statement, variant: "calculation", label_pl: "od jednostek pozostałych, w tym:"}
+  - {code: IS.CALC.J.I.B.USER, statement_type: income_statement, variant: "calculation", label_pl: "Pozycje uszczegóławiające jednostki (suma): od jednostek pozostałych, w tym:"}
+  - {code: IS.CALC.J.I.B.1, statement_type: income_statement, variant: "calculation", label_pl: "– w których jednostka posiada zaangażowanie w kapitale"}
+  - {code: IS.CALC.J.II, statement_type: income_statement, variant: "calculation", label_pl: "Odsetki, w tym:"}
+  - {code: IS.CALC.J.II.USER, statement_type: income_statement, variant: "calculation", label_pl: "Pozycje uszczegóławiające jednostki (suma): Odsetki, w tym:"}
+  - {code: IS.CALC.J.II.J, statement_type: income_statement, variant: "calculation", label_pl: "– od jednostek powiązanych"}
+  - {code: IS.CALC.J.III, statement_type: income_statement, variant: "calculation", label_pl: "Zysk z tytułu rozchodu aktywów finansowych, w tym:"}
+  - {code: IS.CALC.J.III.USER, statement_type: income_statement, variant: "calculation", label_pl: "Pozycje uszczegóławiające jednostki (suma): Zysk z tytułu rozchodu aktywów finansowych, w tym:"}
+  - {code: IS.CALC.J.III.J, statement_type: income_statement, variant: "calculation", label_pl: "– w jednostkach powiązanych"}
+  - {code: IS.CALC.J.IV, statement_type: income_statement, variant: "calculation", label_pl: "Aktualizacja wartości aktywów finansowych"}
+  - {code: IS.CALC.J.V, statement_type: income_statement, variant: "calculation", label_pl: "Inne"}
+  - {code: IS.CALC.K, statement_type: income_statement, variant: "calculation", label_pl: "Koszty finansowe"}
+  - {code: IS.CALC.K.USER, statement_type: income_statement, variant: "calculation", label_pl: "Pozycje uszczegóławiające jednostki (suma): Koszty finansowe"}
+  - {code: IS.CALC.K.I, statement_type: income_statement, variant: "calculation", label_pl: "Odsetki, w tym:"}
+  - {code: IS.CALC.K.I.USER, statement_type: income_statement, variant: "calculation", label_pl: "Pozycje uszczegóławiające jednostki (suma): Odsetki, w tym:"}
+  - {code: IS.CALC.K.I.J, statement_type: income_statement, variant: "calculation", label_pl: "– dla jednostek powiązanych"}
+  - {code: IS.CALC.K.II, statement_type: income_statement, variant: "calculation", label_pl: "Strata z tytułu rozchodu aktywów finansowych, w tym:"}
+  - {code: IS.CALC.K.II.USER, statement_type: income_statement, variant: "calculation", label_pl: "Pozycje uszczegóławiające jednostki (suma): Strata z tytułu rozchodu aktywów finansowych, w tym:"}
+  - {code: IS.CALC.K.II.J, statement_type: income_statement, variant: "calculation", label_pl: "– w jednostkach powiązanych"}
+  - {code: IS.CALC.K.III, statement_type: income_statement, variant: "calculation", label_pl: "Aktualizacja wartości aktywów finansowych"}
+  - {code: IS.CALC.K.IV, statement_type: income_statement, variant: "calculation", label_pl: "Inne"}
+  - {code: IS.CALC.L, statement_type: income_statement, variant: "calculation", label_pl: "Zysk (strata) brutto (I+J–K)"}
+  - {code: IS.CALC.M, statement_type: income_statement, variant: "calculation", label_pl: "Podatek dochodowy"}
+  - {code: IS.CALC.N, statement_type: income_statement, variant: "calculation", label_pl: "Pozostałe obowiązkowe zmniejszenia zysku (zwiększenia straty)"}
+  - {code: IS.CALC.O, statement_type: income_statement, variant: "calculation", label_pl: "Zysk (strata) netto (L–M–N)", role: net_result}
+  - {code: IS.COMP.USER, statement_type: income_statement, variant: "comparative", label_pl: "Pozycje uszczegóławiające jednostki (suma): Rachunek zysków i strat (wariant porównawczy)"}
+  - {code: IS.COMP.A, statement_type: income_statement, variant: "comparative", label_pl: "Przychody netto ze sprzedaży i zrównane z nimi, w tym:"}
+  - {code: IS.COMP.A.USER, statement_type: income_statement, variant: "comparative", label_pl: "Pozycje uszczegóławiające jednostki (suma): Przychody netto ze sprzedaży i zrównane z nimi, w tym:"}
+  - {code: IS.COMP.A.J, statement_type: income_statement, variant: "comparative", label_pl: "– od jednostek powiązanych"}
+  - {code: IS.COMP.A.I, statement_type: income_statement, variant: "comparative", label_pl: "Przychody netto ze sprzedaży produktów"}
+  - {code: IS.COMP.A.II, statement_type: income_statement, variant: "comparative", label_pl: "Zmiana stanu produktów (zwiększenie – wartość dodatnia, zmniejszenie – wartość ujemna)"}
+  - {code: IS.COMP.A.III, statement_type: income_statement, variant: "comparative", label_pl: "Koszt wytworzenia produktów na własne potrzeby jednostki"}
+  - {code: IS.COMP.A.IV, statement_type: income_statement, variant: "comparative", label_pl: "Przychody netto ze sprzedaży towarów i materiałów"}
+  - {code: IS.COMP.A.IV.R2025, statement_type: income_statement, variant: "comparative", label_pl: "Przychody netto ze sprzedaży towarów", replaces: IS.COMP.A.IV}
+  - {code: IS.COMP.B, statement_type: income_statement, variant: "comparative", label_pl: "Koszty działalności operacyjnej"}
+  - {code: IS.COMP.B.USER, statement_type: income_statement, variant: "comparative", label_pl: "Pozycje uszczegóławiające jednostki (suma): Koszty działalności operacyjnej"}
+  - {code: IS.COMP.B.I, statement_type: income_statement, variant: "comparative", label_pl: "Amortyzacja"}
+  - {code: IS.COMP.B.II, statement_type: income_statement, variant: "comparative", label_pl: "Zużycie materiałów i energii"}
+  - {code: IS.COMP.B.III, statement_type: income_statement, variant: "comparative", label_pl: "Usługi obce"}
+  - {code: IS.COMP.B.IV, statement_type: income_statement, variant: "comparative", label_pl: "Podatki i opłaty, w tym:"}
+  - {code: IS.COMP.B.IV.USER, statement_type: income_statement, variant: "comparative", label_pl: "Pozycje uszczegóławiające jednostki (suma): Podatki i opłaty, w tym:"}
+  - {code: IS.COMP.B.IV.1, statement_type: income_statement, variant: "comparative", label_pl: "– podatek akcyzowy"}
+  - {code: IS.COMP.B.V, statement_type: income_statement, variant: "comparative", label_pl: "Wynagrodzenia"}
+  - {code: IS.COMP.B.VI, statement_type: income_statement, variant: "comparative", label_pl: "Ubezpieczenia społeczne i inne świadczenia, w tym:"}
+  - {code: IS.COMP.B.VI.USER, statement_type: income_statement, variant: "comparative", label_pl: "Pozycje uszczegóławiające jednostki (suma): Ubezpieczenia społeczne i inne świadczenia, w tym:"}
+  - {code: IS.COMP.B.VI.1, statement_type: income_statement, variant: "comparative", label_pl: "– emerytalne"}
+  - {code: IS.COMP.B.VII, statement_type: income_statement, variant: "comparative", label_pl: "Pozostałe koszty rodzajowe"}
+  - {code: IS.COMP.B.VIII, statement_type: income_statement, variant: "comparative", label_pl: "Wartość sprzedanych towarów i materiałów"}
+  - {code: IS.COMP.B.VIII.R2025, statement_type: income_statement, variant: "comparative", label_pl: "Wartość sprzedanych towarów", replaces: IS.COMP.B.VIII}
+  - {code: IS.COMP.C, statement_type: income_statement, variant: "comparative", label_pl: "Zysk (strata) ze sprzedaży (A–B)"}
+  - {code: IS.COMP.D, statement_type: income_statement, variant: "comparative", label_pl: "Pozostałe przychody operacyjne"}
+  - {code: IS.COMP.D.USER, statement_type: income_statement, variant: "comparative", label_pl: "Pozycje uszczegóławiające jednostki (suma): Pozostałe przychody operacyjne"}
+  - {code: IS.COMP.D.I, statement_type: income_statement, variant: "comparative", label_pl: "Zysk z tytułu rozchodu niefinansowych aktywów trwałych"}
+  - {code: IS.COMP.D.II, statement_type: income_statement, variant: "comparative", label_pl: "Dotacje"}
+  - {code: IS.COMP.D.III, statement_type: income_statement, variant: "comparative", label_pl: "Aktualizacja wartości aktywów niefinansowych"}
+  - {code: IS.COMP.D.IV, statement_type: income_statement, variant: "comparative", label_pl: "Inne przychody operacyjne"}
+  - {code: IS.COMP.E, statement_type: income_statement, variant: "comparative", label_pl: "Pozostałe koszty operacyjne"}
+  - {code: IS.COMP.E.USER, statement_type: income_statement, variant: "comparative", label_pl: "Pozycje uszczegóławiające jednostki (suma): Pozostałe koszty operacyjne"}
+  - {code: IS.COMP.E.I, statement_type: income_statement, variant: "comparative", label_pl: "Strata z tytułu rozchodu niefinansowych aktywów trwałych"}
+  - {code: IS.COMP.E.II, statement_type: income_statement, variant: "comparative", label_pl: "Aktualizacja wartości aktywów niefinansowych"}
+  - {code: IS.COMP.E.III, statement_type: income_statement, variant: "comparative", label_pl: "Inne koszty operacyjne"}
+  - {code: IS.COMP.F, statement_type: income_statement, variant: "comparative", label_pl: "Zysk (strata) z działalności operacyjnej (C+D–E)"}
+  - {code: IS.COMP.G, statement_type: income_statement, variant: "comparative", label_pl: "Przychody finansowe"}
+  - {code: IS.COMP.G.USER, statement_type: income_statement, variant: "comparative", label_pl: "Pozycje uszczegóławiające jednostki (suma): Przychody finansowe"}
+  - {code: IS.COMP.G.I, statement_type: income_statement, variant: "comparative", label_pl: "Dywidendy i udziały w zyskach, w tym:"}
+  - {code: IS.COMP.G.I.USER, statement_type: income_statement, variant: "comparative", label_pl: "Pozycje uszczegóławiające jednostki (suma): Dywidendy i udziały w zyskach, w tym:"}
+  - {code: IS.COMP.G.I.A, statement_type: income_statement, variant: "comparative", label_pl: "Od jednostek powiązanych, w tym:"}
+  - {code: IS.COMP.G.I.A.USER, statement_type: income_statement, variant: "comparative", label_pl: "Pozycje uszczegóławiające jednostki (suma): Od jednostek powiązanych, w tym:"}
+  - {code: IS.COMP.G.I.A.1, statement_type: income_statement, variant: "comparative", label_pl: "– w których jednostka posiada zaangażowanie w kapitale"}
+  - {code: IS.COMP.G.I.B, statement_type: income_statement, variant: "comparative", label_pl: "Od jednostek pozostałych, w tym:"}
+  - {code: IS.COMP.G.I.B.USER, statement_type: income_statement, variant: "comparative", label_pl: "Pozycje uszczegóławiające jednostki (suma): Od jednostek pozostałych, w tym:"}
+  - {code: IS.COMP.G.I.B.1, statement_type: income_statement, variant: "comparative", label_pl: "– w których jednostka posiada zaangażowanie w kapitale"}
+  - {code: IS.COMP.G.II, statement_type: income_statement, variant: "comparative", label_pl: "Odsetki, w tym:"}
+  - {code: IS.COMP.G.II.USER, statement_type: income_statement, variant: "comparative", label_pl: "Pozycje uszczegóławiające jednostki (suma): Odsetki, w tym:"}
+  - {code: IS.COMP.G.II.J, statement_type: income_statement, variant: "comparative", label_pl: "– od jednostek powiązanych"}
+  - {code: IS.COMP.G.III, statement_type: income_statement, variant: "comparative", label_pl: "Zysk z tytułu rozchodu aktywów finansowych, w tym:"}
+  - {code: IS.COMP.G.III.USER, statement_type: income_statement, variant: "comparative", label_pl: "Pozycje uszczegóławiające jednostki (suma): Zysk z tytułu rozchodu aktywów finansowych, w tym:"}
+  - {code: IS.COMP.G.III.J, statement_type: income_statement, variant: "comparative", label_pl: "– w jednostkach powiązanych"}
+  - {code: IS.COMP.G.IV, statement_type: income_statement, variant: "comparative", label_pl: "Aktualizacja wartości aktywów finansowych"}
+  - {code: IS.COMP.G.V, statement_type: income_statement, variant: "comparative", label_pl: "Inne"}
+  - {code: IS.COMP.H, statement_type: income_statement, variant: "comparative", label_pl: "Koszty finansowe"}
+  - {code: IS.COMP.H.USER, statement_type: income_statement, variant: "comparative", label_pl: "Pozycje uszczegóławiające jednostki (suma): Koszty finansowe"}
+  - {code: IS.COMP.H.I, statement_type: income_statement, variant: "comparative", label_pl: "Odsetki, w tym:"}
+  - {code: IS.COMP.H.I.USER, statement_type: income_statement, variant: "comparative", label_pl: "Pozycje uszczegóławiające jednostki (suma): Odsetki, w tym:"}
+  - {code: IS.COMP.H.I.J, statement_type: income_statement, variant: "comparative", label_pl: "– dla jednostek powiązanych"}
+  - {code: IS.COMP.H.II, statement_type: income_statement, variant: "comparative", label_pl: "Strata z tytułu rozchodu aktywów finansowych, w tym:"}
+  - {code: IS.COMP.H.II.USER, statement_type: income_statement, variant: "comparative", label_pl: "Pozycje uszczegóławiające jednostki (suma): Strata z tytułu rozchodu aktywów finansowych, w tym:"}
+  - {code: IS.COMP.H.II.J, statement_type: income_statement, variant: "comparative", label_pl: "– w jednostkach powiązanych"}
+  - {code: IS.COMP.H.III, statement_type: income_statement, variant: "comparative", label_pl: "Aktualizacja wartości aktywów finansowych"}
+  - {code: IS.COMP.H.IV, statement_type: income_statement, variant: "comparative", label_pl: "Inne"}
+  - {code: IS.COMP.I, statement_type: income_statement, variant: "comparative", label_pl: "Zysk (strata) brutto (F+G–H)"}
+  - {code: IS.COMP.J, statement_type: income_statement, variant: "comparative", label_pl: "Podatek dochodowy"}
+  - {code: IS.COMP.K, statement_type: income_statement, variant: "comparative", label_pl: "Pozostałe obowiązkowe zmniejszenia zysku (zwiększenia straty)"}
+  - {code: IS.COMP.L, statement_type: income_statement, variant: "comparative", label_pl: "Zysk (strata) netto (I–J–K)", role: net_result}
+  - {code: EQ.I, statement_type: equity_changes, variant: "n/a", label_pl: "Kapitał (fundusz) własny na początek okresu (BO)"}
+  - {code: EQ.I.USER, statement_type: equity_changes, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Kapitał (fundusz) własny na początek okresu (BO)"}
+  - {code: EQ.I.1, statement_type: equity_changes, variant: "n/a", label_pl: "– zmiany przyjętych zasad (polityki) rachunkowości"}
+  - {code: EQ.I.2, statement_type: equity_changes, variant: "n/a", label_pl: "– korekty błędów"}
+  - {code: EQ.IA, statement_type: equity_changes, variant: "n/a", label_pl: "Kapitał (fundusz) własny na początek okresu (BO), po korektach"}
+  - {code: EQ.IA.USER, statement_type: equity_changes, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Kapitał (fundusz) własny na początek okresu (BO), po korektach"}
+  - {code: EQ.IA.1, statement_type: equity_changes, variant: "n/a", label_pl: "Kapitał (fundusz) podstawowy na początek okresu"}
+  - {code: EQ.IA.1.USER, statement_type: equity_changes, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Kapitał (fundusz) podstawowy na początek okresu"}
+  - {code: EQ.IA.1.1, statement_type: equity_changes, variant: "n/a", label_pl: "Zmiany kapitału (funduszu) podstawowego"}
+  - {code: EQ.IA.1.1.USER, statement_type: equity_changes, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Zmiany kapitału (funduszu) podstawowego"}
+  - {code: EQ.IA.1.1.A, statement_type: equity_changes, variant: "n/a", label_pl: "zwiększenie (z tytułu)"}
+  - {code: EQ.IA.1.1.A.USER, statement_type: equity_changes, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): zwiększenie (z tytułu)"}
+  - {code: EQ.IA.1.1.A.1, statement_type: equity_changes, variant: "n/a", label_pl: "– wydania udziałów (emisji akcji)"}
+  - {code: EQ.IA.1.1.B, statement_type: equity_changes, variant: "n/a", label_pl: "zmniejszenie (z tytułu)"}
+  - {code: EQ.IA.1.1.B.USER, statement_type: equity_changes, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): zmniejszenie (z tytułu)"}
+  - {code: EQ.IA.1.1.B.1, statement_type: equity_changes, variant: "n/a", label_pl: "– umorzenia udziałów (akcji)"}
+  - {code: EQ.IA.1.2, statement_type: equity_changes, variant: "n/a", label_pl: "Kapitał (fundusz) podstawowy na koniec okresu"}
+  - {code: EQ.IA.2, statement_type: equity_changes, variant: "n/a", label_pl: "Kapitał (fundusz) zapasowy na początek okresu"}
+  - {code: EQ.IA.2.USER, statement_type: equity_changes, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Kapitał (fundusz) zapasowy na początek okresu"}
+  - {code: EQ.IA.2.1, statement_type: equity_changes, variant: "n/a", label_pl: "Zmiany kapitału (funduszu) zapasowego"}
+  - {code: EQ.IA.2.1.USER, statement_type: equity_changes, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Zmiany kapitału (funduszu) zapasowego"}
+  - {code: EQ.IA.2.1.A, statement_type: equity_changes, variant: "n/a", label_pl: "zwiększenie (z tytułu)"}
+  - {code: EQ.IA.2.1.A.USER, statement_type: equity_changes, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): zwiększenie (z tytułu)"}
+  - {code: EQ.IA.2.1.A.1, statement_type: equity_changes, variant: "n/a", label_pl: "– emisji akcji powyżej wartości nominalnej"}
+  - {code: EQ.IA.2.1.A.2, statement_type: equity_changes, variant: "n/a", label_pl: "– podziału zysku (ustawowo)"}
+  - {code: EQ.IA.2.1.A.3, statement_type: equity_changes, variant: "n/a", label_pl: "– podziału zysku (ponad wymaganą ustawowo minimalną wartość)"}
+  - {code: EQ.IA.2.1.B, statement_type: equity_changes, variant: "n/a", label_pl: "zmniejszenie (z tytułu)"}
+  - {code: EQ.IA.2.1.B.USER, statement_type: equity_changes, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): zmniejszenie (z tytułu)"}
+  - {code: EQ.IA.2.1.B.1, statement_type: equity_changes, variant: "n/a", label_pl: "– pokrycia straty"}
+  - {code: EQ.IA.2.2, statement_type: equity_changes, variant: "n/a", label_pl: "Stan kapitału (funduszu) zapasowego na koniec okresu"}
+  - {code: EQ.IA.3, statement_type: equity_changes, variant: "n/a", label_pl: "Kapitał (fundusz) z aktualizacji wyceny na początek okresu – zmiany przyjętych zasad (polityki) rachunkowości"}
+  - {code: EQ.IA.3.USER, statement_type: equity_changes, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Kapitał (fundusz) z aktualizacji wyceny na początek okresu – zmiany przyjętych zasad (polityki) rachunkowości"}
+  - {code: EQ.IA.3.1, statement_type: equity_changes, variant: "n/a", label_pl: "Zmiany kapitału (funduszu) z aktualizacji wyceny"}
+  - {code: EQ.IA.3.1.USER, statement_type: equity_changes, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Zmiany kapitału (funduszu) z aktualizacji wyceny"}
+  - {code: EQ.IA.3.1.A, statement_type: equity_changes, variant: "n/a", label_pl: "zwiększenie (z tytułu)"}
+  - {code: EQ.IA.3.1.B, statement_type: equity_changes, variant: "n/a", label_pl: "zmniejszenie (z tytułu)"}
+  - {code: EQ.IA.3.1.B.USER, statement_type: equity_changes, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): zmniejszenie (z tytułu)"}
+  - {code: EQ.IA.3.1.B.1, statement_type: equity_changes, variant: "n/a", label_pl: "– zbycia środków trwałych"}
+  - {code: EQ.IA.3.2, statement_type: equity_changes, variant: "n/a", label_pl: "Kapitał (fundusz) z aktualizacji wyceny na koniec okresu"}
+  - {code: EQ.IA.4, statement_type: equity_changes, variant: "n/a", label_pl: "Pozostałe kapitały (fundusze) rezerwowe na początek okresu"}
+  - {code: EQ.IA.4.USER, statement_type: equity_changes, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Pozostałe kapitały (fundusze) rezerwowe na początek okresu"}
+  - {code: EQ.IA.4.1, statement_type: equity_changes, variant: "n/a", label_pl: "Zmiany pozostałych kapitałów (funduszy) rezerwowych"}
+  - {code: EQ.IA.4.1.USER, statement_type: equity_changes, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Zmiany pozostałych kapitałów (funduszy) rezerwowych"}
+  - {code: EQ.IA.4.1.A, statement_type: equity_changes, variant: "n/a", label_pl: "zwiększenie (z tytułu)"}
+  - {code: EQ.IA.4.1.B, statement_type: equity_changes, variant: "n/a", label_pl: "zmniejszenie (z tytułu)"}
+  - {code: EQ.IA.4.2, statement_type: equity_changes, variant: "n/a", label_pl: "Pozostałe kapitały (fundusze) rezerwowe na koniec okresu"}
+  - {code: EQ.IA.5, statement_type: equity_changes, variant: "n/a", label_pl: "Zysk (strata) z lat ubiegłych na początek okresu"}
+  - {code: EQ.IA.5.USER, statement_type: equity_changes, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Zysk (strata) z lat ubiegłych na początek okresu"}
+  - {code: EQ.IA.5.1, statement_type: equity_changes, variant: "n/a", label_pl: "Zysk z lat ubiegłych na początek okresu"}
+  - {code: EQ.IA.5.1.USER, statement_type: equity_changes, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Zysk z lat ubiegłych na początek okresu"}
+  - {code: EQ.IA.5.1.1, statement_type: equity_changes, variant: "n/a", label_pl: "– zmiany przyjętych zasad (polityki) rachunkowości"}
+  - {code: EQ.IA.5.1.2, statement_type: equity_changes, variant: "n/a", label_pl: "– korekty błędów"}
+  - {code: EQ.IA.5.2, statement_type: equity_changes, variant: "n/a", label_pl: "Zysk z lat ubiegłych na początek okresu, po korektach"}
+  - {code: EQ.IA.5.2.USER, statement_type: equity_changes, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Zysk z lat ubiegłych na początek okresu, po korektach"}
+  - {code: EQ.IA.5.2.A, statement_type: equity_changes, variant: "n/a", label_pl: "zwiększenie (z tytułu)"}
+  - {code: EQ.IA.5.2.A.USER, statement_type: equity_changes, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): zwiększenie (z tytułu)"}
+  - {code: EQ.IA.5.2.A.1, statement_type: equity_changes, variant: "n/a", label_pl: "– podziału zysku z lat ubiegłych"}
+  - {code: EQ.IA.5.2.B, statement_type: equity_changes, variant: "n/a", label_pl: "zmniejszenie (z tytułu)"}
+  - {code: EQ.IA.5.3, statement_type: equity_changes, variant: "n/a", label_pl: "Zysk z lat ubiegłych na koniec okresu"}
+  - {code: EQ.IA.5.4, statement_type: equity_changes, variant: "n/a", label_pl: "Strata z lat ubiegłych na początek okresu"}
+  - {code: EQ.IA.5.4.USER, statement_type: equity_changes, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Strata z lat ubiegłych na początek okresu"}
+  - {code: EQ.IA.5.4.1, statement_type: equity_changes, variant: "n/a", label_pl: "– zmiany przyjętych zasad (polityki) rachunkowości"}
+  - {code: EQ.IA.5.4.2, statement_type: equity_changes, variant: "n/a", label_pl: "– korekty błędów"}
+  - {code: EQ.IA.5.5, statement_type: equity_changes, variant: "n/a", label_pl: "Strata z lat ubiegłych na początek okresu, po korektach"}
+  - {code: EQ.IA.5.5.USER, statement_type: equity_changes, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Strata z lat ubiegłych na początek okresu, po korektach"}
+  - {code: EQ.IA.5.5.A, statement_type: equity_changes, variant: "n/a", label_pl: "zwiększenie (z tytułu)"}
+  - {code: EQ.IA.5.5.A.USER, statement_type: equity_changes, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): zwiększenie (z tytułu)"}
+  - {code: EQ.IA.5.5.A.1, statement_type: equity_changes, variant: "n/a", label_pl: "– przeniesienia straty z lat ubiegłych do pokrycia"}
+  - {code: EQ.IA.5.5.B, statement_type: equity_changes, variant: "n/a", label_pl: "zmniejszenie (z tytułu)"}
+  - {code: EQ.IA.5.6, statement_type: equity_changes, variant: "n/a", label_pl: "Strata z lat ubiegłych na koniec okresu"}
+  - {code: EQ.IA.5.7, statement_type: equity_changes, variant: "n/a", label_pl: "Zysk (strata) z lat ubiegłych na koniec okresu"}
+  - {code: EQ.IA.6, statement_type: equity_changes, variant: "n/a", label_pl: "Wynik netto"}
+  - {code: EQ.IA.6.USER, statement_type: equity_changes, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Wynik netto"}
+  - {code: EQ.IA.6.A, statement_type: equity_changes, variant: "n/a", label_pl: "zysk netto"}
+  - {code: EQ.IA.6.B, statement_type: equity_changes, variant: "n/a", label_pl: "strata netto"}
+  - {code: EQ.IA.6.C, statement_type: equity_changes, variant: "n/a", label_pl: "odpisy z zysku"}
+  - {code: EQ.II, statement_type: equity_changes, variant: "n/a", label_pl: "Kapitał (fundusz) własny na koniec okresu (BZ)"}
+  - {code: EQ.III, statement_type: equity_changes, variant: "n/a", label_pl: "Kapitał (fundusz) własny, po uwzględnieniu proponowanego podziału zysku (pokrycia straty)"}
+  - {code: CF.DIR.USER, statement_type: cash_flow, variant: "direct", label_pl: "Pozycje uszczegóławiające jednostki (suma): Rachunek przepływów pieniężnych (metoda bezpośrednia)"}
+  - {code: CF.DIR.A, statement_type: cash_flow, variant: "direct", label_pl: "Przepływy środków pieniężnych z działalności operacyjnej (nagłówek; kwota tylko w schemacie 1-0, niestatutowa)"}
+  - {code: CF.DIR.A.USER, statement_type: cash_flow, variant: "direct", label_pl: "Pozycje uszczegóławiające jednostki (suma): Przepływy środków pieniężnych z działalności operacyjnej"}
+  - {code: CF.DIR.A.I, statement_type: cash_flow, variant: "direct", label_pl: "Wpływy"}
+  - {code: CF.DIR.A.I.USER, statement_type: cash_flow, variant: "direct", label_pl: "Pozycje uszczegóławiające jednostki (suma): Wpływy"}
+  - {code: CF.DIR.A.I.1, statement_type: cash_flow, variant: "direct", label_pl: "Sprzedaż"}
+  - {code: CF.DIR.A.I.2, statement_type: cash_flow, variant: "direct", label_pl: "Inne wpływy z działalności operacyjnej"}
+  - {code: CF.DIR.A.II, statement_type: cash_flow, variant: "direct", label_pl: "Wydatki"}
+  - {code: CF.DIR.A.II.USER, statement_type: cash_flow, variant: "direct", label_pl: "Pozycje uszczegóławiające jednostki (suma): Wydatki"}
+  - {code: CF.DIR.A.II.1, statement_type: cash_flow, variant: "direct", label_pl: "Dostawy i usługi"}
+  - {code: CF.DIR.A.II.2, statement_type: cash_flow, variant: "direct", label_pl: "Wynagrodzenia netto"}
+  - {code: CF.DIR.A.II.3, statement_type: cash_flow, variant: "direct", label_pl: "Ubezpieczenia społeczne i zdrowotne oraz inne świadczenia"}
+  - {code: CF.DIR.A.II.4, statement_type: cash_flow, variant: "direct", label_pl: "Podatki i opłaty o charakterze publicznoprawnym"}
+  - {code: CF.DIR.A.II.5, statement_type: cash_flow, variant: "direct", label_pl: "Inne wydatki operacyjne"}
+  - {code: CF.DIR.A.III, statement_type: cash_flow, variant: "direct", label_pl: "Przepływy pieniężne netto z działalności operacyjnej (I–II)"}
+  - {code: CF.DIR.B, statement_type: cash_flow, variant: "direct", label_pl: "Przepływy środków pieniężnych z działalności inwestycyjnej (nagłówek; kwota tylko w schemacie 1-0, niestatutowa)"}
+  - {code: CF.DIR.B.USER, statement_type: cash_flow, variant: "direct", label_pl: "Pozycje uszczegóławiające jednostki (suma): Przepływy środków pieniężnych z działalności inwestycyjnej"}
+  - {code: CF.DIR.B.I, statement_type: cash_flow, variant: "direct", label_pl: "Wpływy"}
+  - {code: CF.DIR.B.I.USER, statement_type: cash_flow, variant: "direct", label_pl: "Pozycje uszczegóławiające jednostki (suma): Wpływy"}
+  - {code: CF.DIR.B.I.1, statement_type: cash_flow, variant: "direct", label_pl: "Zbycie wartości niematerialnych i prawnych oraz rzeczowych aktywów trwałych"}
+  - {code: CF.DIR.B.I.2, statement_type: cash_flow, variant: "direct", label_pl: "Zbycie inwestycji w nieruchomości oraz wartości niematerialne i prawne"}
+  - {code: CF.DIR.B.I.3, statement_type: cash_flow, variant: "direct", label_pl: "Z aktywów finansowych, w tym:"}
+  - {code: CF.DIR.B.I.3.USER, statement_type: cash_flow, variant: "direct", label_pl: "Pozycje uszczegóławiające jednostki (suma): Z aktywów finansowych, w tym:"}
+  - {code: CF.DIR.B.I.3.A, statement_type: cash_flow, variant: "direct", label_pl: "w jednostkach powiązanych"}
+  - {code: CF.DIR.B.I.3.B, statement_type: cash_flow, variant: "direct", label_pl: "w pozostałych jednostkach"}
+  - {code: CF.DIR.B.I.3.B.USER, statement_type: cash_flow, variant: "direct", label_pl: "Pozycje uszczegóławiające jednostki (suma): w pozostałych jednostkach"}
+  - {code: CF.DIR.B.I.3.B.1, statement_type: cash_flow, variant: "direct", label_pl: "– zbycie aktywów finansowych"}
+  - {code: CF.DIR.B.I.3.B.2, statement_type: cash_flow, variant: "direct", label_pl: "– dywidendy i udziały w zyskach"}
+  - {code: CF.DIR.B.I.3.B.3, statement_type: cash_flow, variant: "direct", label_pl: "– spłata udzielonych pożyczek długoterminowych"}
+  - {code: CF.DIR.B.I.3.B.4, statement_type: cash_flow, variant: "direct", label_pl: "– odsetki"}
+  - {code: CF.DIR.B.I.3.B.5, statement_type: cash_flow, variant: "direct", label_pl: "– inne wpływy z aktywów finansowych"}
+  - {code: CF.DIR.B.I.4, statement_type: cash_flow, variant: "direct", label_pl: "Inne wpływy inwestycyjne"}
+  - {code: CF.DIR.B.II, statement_type: cash_flow, variant: "direct", label_pl: "Wydatki"}
+  - {code: CF.DIR.B.II.USER, statement_type: cash_flow, variant: "direct", label_pl: "Pozycje uszczegóławiające jednostki (suma): Wydatki"}
+  - {code: CF.DIR.B.II.1, statement_type: cash_flow, variant: "direct", label_pl: "Nabycie wartości niematerialnych i prawnych oraz rzeczowych aktywów trwałych"}
+  - {code: CF.DIR.B.II.2, statement_type: cash_flow, variant: "direct", label_pl: "Inwestycje w nieruchomości oraz wartości niematerialne i prawne"}
+  - {code: CF.DIR.B.II.3, statement_type: cash_flow, variant: "direct", label_pl: "Na aktywa finansowe, w tym:"}
+  - {code: CF.DIR.B.II.3.USER, statement_type: cash_flow, variant: "direct", label_pl: "Pozycje uszczegóławiające jednostki (suma): Na aktywa finansowe, w tym:"}
+  - {code: CF.DIR.B.II.3.A, statement_type: cash_flow, variant: "direct", label_pl: "w jednostkach powiązanych"}
+  - {code: CF.DIR.B.II.3.B, statement_type: cash_flow, variant: "direct", label_pl: "w pozostałych jednostkach"}
+  - {code: CF.DIR.B.II.3.B.USER, statement_type: cash_flow, variant: "direct", label_pl: "Pozycje uszczegóławiające jednostki (suma): w pozostałych jednostkach"}
+  - {code: CF.DIR.B.II.3.B.1, statement_type: cash_flow, variant: "direct", label_pl: "– nabycie aktywów finansowych"}
+  - {code: CF.DIR.B.II.3.B.2, statement_type: cash_flow, variant: "direct", label_pl: "– udzielone pożyczki długoterminowe"}
+  - {code: CF.DIR.B.II.4, statement_type: cash_flow, variant: "direct", label_pl: "Inne wydatki inwestycyjne"}
+  - {code: CF.DIR.B.III, statement_type: cash_flow, variant: "direct", label_pl: "Przepływy pieniężne netto z działalności inwestycyjnej (I–II)"}
+  - {code: CF.DIR.C, statement_type: cash_flow, variant: "direct", label_pl: "Przepływy środków pieniężnych z działalności finansowej (nagłówek; kwota tylko w schemacie 1-0, niestatutowa)"}
+  - {code: CF.DIR.C.USER, statement_type: cash_flow, variant: "direct", label_pl: "Pozycje uszczegóławiające jednostki (suma): Przepływy środków pieniężnych z działalności finansowej"}
+  - {code: CF.DIR.C.I, statement_type: cash_flow, variant: "direct", label_pl: "Wpływy"}
+  - {code: CF.DIR.C.I.USER, statement_type: cash_flow, variant: "direct", label_pl: "Pozycje uszczegóławiające jednostki (suma): Wpływy"}
+  - {code: CF.DIR.C.I.1, statement_type: cash_flow, variant: "direct", label_pl: "Wpływy netto z wydania udziałów (emisji akcji) i innych instrumentów kapitałowych oraz dopłat do kapitału"}
+  - {code: CF.DIR.C.I.2, statement_type: cash_flow, variant: "direct", label_pl: "Kredyty i pożyczki"}
+  - {code: CF.DIR.C.I.3, statement_type: cash_flow, variant: "direct", label_pl: "Emisja dłużnych papierów wartościowych"}
+  - {code: CF.DIR.C.I.4, statement_type: cash_flow, variant: "direct", label_pl: "Inne wpływy finansowe"}
+  - {code: CF.DIR.C.II, statement_type: cash_flow, variant: "direct", label_pl: "Wydatki"}
+  - {code: CF.DIR.C.II.USER, statement_type: cash_flow, variant: "direct", label_pl: "Pozycje uszczegóławiające jednostki (suma): Wydatki"}
+  - {code: CF.DIR.C.II.1, statement_type: cash_flow, variant: "direct", label_pl: "Nabycie udziałów (akcji) własnych"}
+  - {code: CF.DIR.C.II.2, statement_type: cash_flow, variant: "direct", label_pl: "Dywidendy i inne wypłaty na rzecz właścicieli"}
+  - {code: CF.DIR.C.II.3, statement_type: cash_flow, variant: "direct", label_pl: "Inne, niż wypłaty na rzecz właścicieli, wydatki z tytułu podziału zysku"}
+  - {code: CF.DIR.C.II.4, statement_type: cash_flow, variant: "direct", label_pl: "Spłaty kredytów i pożyczek"}
+  - {code: CF.DIR.C.II.5, statement_type: cash_flow, variant: "direct", label_pl: "Wykup dłużnych papierów wartościowych"}
+  - {code: CF.DIR.C.II.6, statement_type: cash_flow, variant: "direct", label_pl: "Z tytułu innych zobowiązań finansowych"}
+  - {code: CF.DIR.C.II.7, statement_type: cash_flow, variant: "direct", label_pl: "Płatności zobowiązań z tytułu umów leasingu finansowego"}
+  - {code: CF.DIR.C.II.8, statement_type: cash_flow, variant: "direct", label_pl: "Odsetki"}
+  - {code: CF.DIR.C.II.9, statement_type: cash_flow, variant: "direct", label_pl: "Inne wydatki finansowe"}
+  - {code: CF.DIR.C.III, statement_type: cash_flow, variant: "direct", label_pl: "Przepływy pieniężne netto z działalności finansowej (I–II)"}
+  - {code: CF.DIR.D, statement_type: cash_flow, variant: "direct", label_pl: "Przepływy pieniężne netto, razem (A.III±B.III±C.III)", role: net_cash_flow}
+  - {code: CF.DIR.E, statement_type: cash_flow, variant: "direct", label_pl: "Bilansowa zmiana stanu środków pieniężnych, w tym:"}
+  - {code: CF.DIR.E.USER, statement_type: cash_flow, variant: "direct", label_pl: "Pozycje uszczegóławiające jednostki (suma): Bilansowa zmiana stanu środków pieniężnych, w tym:"}
+  - {code: CF.DIR.E.1, statement_type: cash_flow, variant: "direct", label_pl: "– zmiana stanu środków pieniężnych z tytułu różnic kursowych", role: cash_fx_effect}
+  - {code: CF.DIR.F, statement_type: cash_flow, variant: "direct", label_pl: "Środki pieniężne na początek okresu", role: cash_opening}
+  - {code: CF.DIR.G, statement_type: cash_flow, variant: "direct", label_pl: "Środki pieniężne na koniec okresu (F±D), w tym:", role: cash_closing}
+  - {code: CF.DIR.G.USER, statement_type: cash_flow, variant: "direct", label_pl: "Pozycje uszczegóławiające jednostki (suma): Środki pieniężne na koniec okresu (F±D), w tym:"}
+  - {code: CF.DIR.G.1, statement_type: cash_flow, variant: "direct", label_pl: "– o ograniczonej możliwości dysponowania"}
+  - {code: CF.IND.USER, statement_type: cash_flow, variant: "indirect", label_pl: "Pozycje uszczegóławiające jednostki (suma): Rachunek przepływów pieniężnych (metoda pośrednia)"}
+  - {code: CF.IND.A, statement_type: cash_flow, variant: "indirect", label_pl: "Przepływy środków pieniężnych z działalności operacyjnej (nagłówek; kwota tylko w schemacie 1-0, niestatutowa)"}
+  - {code: CF.IND.A.USER, statement_type: cash_flow, variant: "indirect", label_pl: "Pozycje uszczegóławiające jednostki (suma): Przepływy środków pieniężnych z działalności operacyjnej"}
+  - {code: CF.IND.A.I, statement_type: cash_flow, variant: "indirect", label_pl: "Zysk (strata) netto"}
+  - {code: CF.IND.A.II, statement_type: cash_flow, variant: "indirect", label_pl: "Korekty razem"}
+  - {code: CF.IND.A.II.USER, statement_type: cash_flow, variant: "indirect", label_pl: "Pozycje uszczegóławiające jednostki (suma): Korekty razem"}
+  - {code: CF.IND.A.II.1, statement_type: cash_flow, variant: "indirect", label_pl: "Amortyzacja"}
+  - {code: CF.IND.A.II.2, statement_type: cash_flow, variant: "indirect", label_pl: "Zyski (straty) z tytułu różnic kursowych"}
+  - {code: CF.IND.A.II.3, statement_type: cash_flow, variant: "indirect", label_pl: "Odsetki i udziały w zyskach (dywidendy)"}
+  - {code: CF.IND.A.II.4, statement_type: cash_flow, variant: "indirect", label_pl: "Zysk (strata) z działalności inwestycyjnej"}
+  - {code: CF.IND.A.II.5, statement_type: cash_flow, variant: "indirect", label_pl: "Zmiana stanu rezerw"}
+  - {code: CF.IND.A.II.6, statement_type: cash_flow, variant: "indirect", label_pl: "Zmiana stanu zapasów"}
+  - {code: CF.IND.A.II.7, statement_type: cash_flow, variant: "indirect", label_pl: "Zmiana stanu należności"}
+  - {code: CF.IND.A.II.8, statement_type: cash_flow, variant: "indirect", label_pl: "Zmiana stanu zobowiązań krótkoterminowych, z wyjątkiem pożyczek i kredytów"}
+  - {code: CF.IND.A.II.9, statement_type: cash_flow, variant: "indirect", label_pl: "Zmiana stanu rozliczeń międzyokresowych"}
+  - {code: CF.IND.A.II.10, statement_type: cash_flow, variant: "indirect", label_pl: "Inne korekty"}
+  - {code: CF.IND.A.III, statement_type: cash_flow, variant: "indirect", label_pl: "Przepływy pieniężne netto z działalności operacyjnej (I±II)"}
+  - {code: CF.IND.B, statement_type: cash_flow, variant: "indirect", label_pl: "Przepływy środków pieniężnych z działalności inwestycyjnej (nagłówek; kwota tylko w schemacie 1-0, niestatutowa)"}
+  - {code: CF.IND.B.USER, statement_type: cash_flow, variant: "indirect", label_pl: "Pozycje uszczegóławiające jednostki (suma): Przepływy środków pieniężnych z działalności inwestycyjnej"}
+  - {code: CF.IND.B.I, statement_type: cash_flow, variant: "indirect", label_pl: "Wpływy"}
+  - {code: CF.IND.B.I.USER, statement_type: cash_flow, variant: "indirect", label_pl: "Pozycje uszczegóławiające jednostki (suma): Wpływy"}
+  - {code: CF.IND.B.I.1, statement_type: cash_flow, variant: "indirect", label_pl: "Zbycie wartości niematerialnych i prawnych oraz rzeczowych aktywów trwałych"}
+  - {code: CF.IND.B.I.2, statement_type: cash_flow, variant: "indirect", label_pl: "Zbycie inwestycji w nieruchomości oraz wartości niematerialne i prawne"}
+  - {code: CF.IND.B.I.3, statement_type: cash_flow, variant: "indirect", label_pl: "Z aktywów finansowych, w tym:"}
+  - {code: CF.IND.B.I.3.USER, statement_type: cash_flow, variant: "indirect", label_pl: "Pozycje uszczegóławiające jednostki (suma): Z aktywów finansowych, w tym:"}
+  - {code: CF.IND.B.I.3.A, statement_type: cash_flow, variant: "indirect", label_pl: "w jednostkach powiązanych"}
+  - {code: CF.IND.B.I.3.B, statement_type: cash_flow, variant: "indirect", label_pl: "w pozostałych jednostkach"}
+  - {code: CF.IND.B.I.3.B.USER, statement_type: cash_flow, variant: "indirect", label_pl: "Pozycje uszczegóławiające jednostki (suma): w pozostałych jednostkach"}
+  - {code: CF.IND.B.I.3.B.1, statement_type: cash_flow, variant: "indirect", label_pl: "– zbycie aktywów finansowych"}
+  - {code: CF.IND.B.I.3.B.2, statement_type: cash_flow, variant: "indirect", label_pl: "– dywidendy i udziały w zyskach"}
+  - {code: CF.IND.B.I.3.B.3, statement_type: cash_flow, variant: "indirect", label_pl: "– spłata udzielonych pożyczek długoterminowych"}
+  - {code: CF.IND.B.I.3.B.4, statement_type: cash_flow, variant: "indirect", label_pl: "– odsetki"}
+  - {code: CF.IND.B.I.3.B.5, statement_type: cash_flow, variant: "indirect", label_pl: "– inne wpływy z aktywów finansowych"}
+  - {code: CF.IND.B.I.4, statement_type: cash_flow, variant: "indirect", label_pl: "Inne wpływy inwestycyjne"}
+  - {code: CF.IND.B.II, statement_type: cash_flow, variant: "indirect", label_pl: "Wydatki"}
+  - {code: CF.IND.B.II.USER, statement_type: cash_flow, variant: "indirect", label_pl: "Pozycje uszczegóławiające jednostki (suma): Wydatki"}
+  - {code: CF.IND.B.II.1, statement_type: cash_flow, variant: "indirect", label_pl: "Nabycie wartości niematerialnych i prawnych oraz rzeczowych aktywów trwałych"}
+  - {code: CF.IND.B.II.2, statement_type: cash_flow, variant: "indirect", label_pl: "Inwestycje w nieruchomości oraz wartości niematerialne i prawne"}
+  - {code: CF.IND.B.II.3, statement_type: cash_flow, variant: "indirect", label_pl: "Na aktywa finansowe, w tym:"}
+  - {code: CF.IND.B.II.3.USER, statement_type: cash_flow, variant: "indirect", label_pl: "Pozycje uszczegóławiające jednostki (suma): Na aktywa finansowe, w tym:"}
+  - {code: CF.IND.B.II.3.A, statement_type: cash_flow, variant: "indirect", label_pl: "w jednostkach powiązanych"}
+  - {code: CF.IND.B.II.3.B, statement_type: cash_flow, variant: "indirect", label_pl: "w pozostałych jednostkach"}
+  - {code: CF.IND.B.II.3.B.USER, statement_type: cash_flow, variant: "indirect", label_pl: "Pozycje uszczegóławiające jednostki (suma): w pozostałych jednostkach"}
+  - {code: CF.IND.B.II.3.B.1, statement_type: cash_flow, variant: "indirect", label_pl: "– nabycie aktywów finansowych"}
+  - {code: CF.IND.B.II.3.B.2, statement_type: cash_flow, variant: "indirect", label_pl: "– udzielone pożyczki długoterminowe"}
+  - {code: CF.IND.B.II.4, statement_type: cash_flow, variant: "indirect", label_pl: "Inne wydatki inwestycyjne"}
+  - {code: CF.IND.B.III, statement_type: cash_flow, variant: "indirect", label_pl: "Przepływy pieniężne netto z działalności inwestycyjnej (I–II)"}
+  - {code: CF.IND.C, statement_type: cash_flow, variant: "indirect", label_pl: "Przepływy środków pieniężnych z działalności finansowej (nagłówek; kwota tylko w schemacie 1-0, niestatutowa)"}
+  - {code: CF.IND.C.USER, statement_type: cash_flow, variant: "indirect", label_pl: "Pozycje uszczegóławiające jednostki (suma): Przepływy środków pieniężnych z działalności finansowej"}
+  - {code: CF.IND.C.I, statement_type: cash_flow, variant: "indirect", label_pl: "Wpływy"}
+  - {code: CF.IND.C.I.USER, statement_type: cash_flow, variant: "indirect", label_pl: "Pozycje uszczegóławiające jednostki (suma): Wpływy"}
+  - {code: CF.IND.C.I.1, statement_type: cash_flow, variant: "indirect", label_pl: "Wpływy netto z wydania udziałów (emisji akcji) i innych instrumentów kapitałowych oraz dopłat do kapitału"}
+  - {code: CF.IND.C.I.2, statement_type: cash_flow, variant: "indirect", label_pl: "Kredyty i pożyczki"}
+  - {code: CF.IND.C.I.3, statement_type: cash_flow, variant: "indirect", label_pl: "Emisja dłużnych papierów wartościowych"}
+  - {code: CF.IND.C.I.4, statement_type: cash_flow, variant: "indirect", label_pl: "Inne wpływy finansowe"}
+  - {code: CF.IND.C.II, statement_type: cash_flow, variant: "indirect", label_pl: "Wydatki"}
+  - {code: CF.IND.C.II.USER, statement_type: cash_flow, variant: "indirect", label_pl: "Pozycje uszczegóławiające jednostki (suma): Wydatki"}
+  - {code: CF.IND.C.II.1, statement_type: cash_flow, variant: "indirect", label_pl: "Nabycie udziałów (akcji) własnych"}
+  - {code: CF.IND.C.II.2, statement_type: cash_flow, variant: "indirect", label_pl: "Dywidendy i inne wypłaty na rzecz właścicieli"}
+  - {code: CF.IND.C.II.3, statement_type: cash_flow, variant: "indirect", label_pl: "Inne, niż wypłaty na rzecz właścicieli, wydatki z tytułu podziału zysku"}
+  - {code: CF.IND.C.II.4, statement_type: cash_flow, variant: "indirect", label_pl: "Spłaty kredytów i pożyczek"}
+  - {code: CF.IND.C.II.5, statement_type: cash_flow, variant: "indirect", label_pl: "Wykup dłużnych papierów wartościowych"}
+  - {code: CF.IND.C.II.6, statement_type: cash_flow, variant: "indirect", label_pl: "Z tytułu innych zobowiązań finansowych"}
+  - {code: CF.IND.C.II.7, statement_type: cash_flow, variant: "indirect", label_pl: "Płatności zobowiązań z tytułu umów leasingu finansowego"}
+  - {code: CF.IND.C.II.8, statement_type: cash_flow, variant: "indirect", label_pl: "Odsetki"}
+  - {code: CF.IND.C.II.9, statement_type: cash_flow, variant: "indirect", label_pl: "Inne wydatki finansowe"}
+  - {code: CF.IND.C.III, statement_type: cash_flow, variant: "indirect", label_pl: "Przepływy pieniężne netto z działalności finansowej (I–II)"}
+  - {code: CF.IND.D, statement_type: cash_flow, variant: "indirect", label_pl: "Przepływy pieniężne netto razem (A.III±B.III±C.III)", role: net_cash_flow}
+  - {code: CF.IND.E, statement_type: cash_flow, variant: "indirect", label_pl: "Bilansowa zmiana stanu środków pieniężnych, w tym:"}
+  - {code: CF.IND.E.USER, statement_type: cash_flow, variant: "indirect", label_pl: "Pozycje uszczegóławiające jednostki (suma): Bilansowa zmiana stanu środków pieniężnych, w tym:"}
+  - {code: CF.IND.E.1, statement_type: cash_flow, variant: "indirect", label_pl: "– zmiana stanu środków pieniężnych z tytułu różnic kursowych", role: cash_fx_effect}
+  - {code: CF.IND.F, statement_type: cash_flow, variant: "indirect", label_pl: "Środki pieniężne na początek okresu", role: cash_opening}
+  - {code: CF.IND.G, statement_type: cash_flow, variant: "indirect", label_pl: "Środki pieniężne na koniec okresu (F±D), w tym:", role: cash_closing}
+  - {code: CF.IND.G.USER, statement_type: cash_flow, variant: "indirect", label_pl: "Pozycje uszczegóławiające jednostki (suma): Środki pieniężne na koniec okresu (F±D), w tym:"}
+  - {code: CF.IND.G.1, statement_type: cash_flow, variant: "indirect", label_pl: "– o ograniczonej możliwości dysponowania"}

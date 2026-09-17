@@ -1,0 +1,47 @@
+# UoR Annex 1 (full form), CRWDE template 13817: JednostkaInnaWZlotych, wariant 2,
+# schema 1-0E. Applies to fiscal years beginning on or after 2025-01-01 (ADR 0005).
+# Plan 0004. The statement sits inside a CRWDE `Dokument` envelope, and six
+# income-statement items narrowed from goods and materials to goods only
+# (`code_overrides`, see canonical_chart.yaml `.R2025`).
+structure_version: full-2025-w2-v1-0
+form: full
+body: jednostka_inna
+detect:
+  root_namespace: "http://crd.gov.pl/wzor/2025/08/07/13817/"
+  root_name: Dokument
+  kod_systemowy: "SFJINZ (2)"
+  wersja_schemy: "1-0E"
+xsd: "http://crd.gov.pl/wzor/2025/08/07/13817/schemat.xsd"
+effective_from: 2025-01-01  # fiscal-year start, ADR 0005
+effective_to: null
+namespaces:
+  tns: "http://crd.gov.pl/wzor/2025/08/07/13817/"
+  jin: "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2025/07/31/eD/JednostkaInnaStruktury/"
+  dtsf: "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2025/07/31/eD/StrukturyDanychSprFin/"
+statement_root: "/tns:Dokument/tns:TrescDokumentu/tns:JednostkaInna"
+header:
+  kod_sprawozdania: "tns:Naglowek/jin:KodSprawozdania"
+  period_start: "tns:Naglowek/dtsf:OkresOd"
+  period_end: "tns:Naglowek/dtsf:OkresDo"
+unit:
+  SprFinJednostkaInnaWZlotych: 1
+statements:
+  Bilans: "tns:Bilans"
+  RZiS: "tns:RZiS"
+  ZestZmianWKapitale: "tns:ZestZmianWKapitale"
+  RachPrzeplywow: "tns:RachPrzeplywow"
+item_namespace: jin
+amount_namespace: dtsf
+columns:
+  KwotaA: current_year
+  KwotaB: prior_year
+  KwotaB1: prior_year_restated
+code_overrides:
+  IS.CALC.A: IS.CALC.A.R2025
+  IS.CALC.A.USER: IS.CALC.A.R2025.USER
+  IS.CALC.A.II: IS.CALC.A.II.R2025
+  IS.CALC.B: IS.CALC.B.R2025
+  IS.CALC.B.USER: IS.CALC.B.R2025.USER
+  IS.CALC.B.II: IS.CALC.B.II.R2025
+  IS.COMP.A.IV: IS.COMP.A.IV.R2025
+  IS.COMP.B.VIII: IS.COMP.B.VIII.R2025

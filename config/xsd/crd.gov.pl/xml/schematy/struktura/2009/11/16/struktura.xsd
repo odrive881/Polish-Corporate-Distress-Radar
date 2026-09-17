@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--  -->
+<xsd:schema xmlns:meta="http://crd.gov.pl/xml/schematy/meta/2009/11/16/"
+            xmlns:str="http://crd.gov.pl/xml/schematy/struktura/2009/11/16/"
+            xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
+            targetNamespace="http://crd.gov.pl/xml/schematy/struktura/2009/11/16/"
+            elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<xsd:import namespace="http://crd.gov.pl/xml/schematy/meta/2009/11/16/" schemaLocation="http://crd.gov.pl/xml/schematy/meta/2009/11/16/meta.xsd"/>
+	<xsd:annotation>
+		<xsd:documentation>Opis: Plik XML Schema opisuje podstawowe typy danych w przestrzeni nazw http://crd.gov.pl/xml/schematy/struktura/2009/11/16/ Status dokumentu: wersja robocza Autor: Zespół projektowy ePUAP Data stworzenia: 2008/01/01 Historia zmian: v.0.1 2008/01/01 Utworzenie dokumentu v.0.2 2008/09/01 Aktualizacja przestrzeni nazw</xsd:documentation>
+	</xsd:annotation>
+	<xsd:element name="CID" type="str:CIDTyp">
+		<xsd:annotation>
+			<xsd:documentation>Identyfikator korelacyjny służący do budowania relacji pomiędzy dokumentami np. w przypadku gdy są wymieniane asynchronicznie. W szczególnych przypadkach w jednym dokumencie może być więcej niż jeden identyfikator korelacyjny</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="CIDTyp">
+		<xsd:annotation>
+			<xsd:documentation>Identyfikator korelacyjny służący do budowania relacji pomiędzy dokumentami np. w przypadku gdy są wymieniane asynchronicznie. W szczególnych przypadkach w jednym dokumencie może być więcej niż jeden identyfikator korelacyjny</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="60"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="DaneDokumentu" type="str:DaneDokumentuTyp">
+		<xsd:annotation>
+			<xsd:documentation>Struktura bloku DaneDokumentu</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:complexType name="DaneDokumentuTyp">
+		<xsd:annotation>
+			<xsd:documentation>Struktura bloku DaneDokumentu</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element ref="str:Naglowek" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Element Nagłówek zawiera podstawowe informacje związane z rodzajem dokumentu.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element ref="meta:Data" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>W bloku DaneDokumentu mogą wystąpić różne typy daty, np. data utworzenia dokumentu, itp.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element ref="str:Adresaci" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>W bloku znajduje się jeden lub więcej podmiotów (podmiot to Osoba lub Instytucja). Jako adresat rozumiany jest podmiot do którego kierowany jest dokument.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element ref="meta:Tworcy" minOccurs="0">
+					<xsd:annotation>
+					<xsd:documentation>W bloku znajduje się jeden lub więcej podmiotów (podmiot to Osoba lub Instytucja). Twórcą określany jest podmiot odpowiedzialny za treść dokumentu,z podaniem jego roli w procesie tworzenia lub akceptacji dokumentu.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element ref="str:Nadawcy" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>W bloku znajduje się jeden lub więcej podmiotów (podmiot to Osoba lub Instytucja). Jako nadawca rozumiany jest podmiot, od którego pochodzi dokument.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:element name="Naglowek" type="str:NaglowekTyp">
+		<xsd:annotation>
+			<xsd:documentation>Element Nagłówek zawiera podstawowe informacje związane z rodzajem dokumentu (nazwa dokumentu oraz identyfikatory)</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:complexType name="NaglowekTyp">
+		<xsd:annotation>
+			<xsd:documentation>Definicja typu NagłowekTyp określa strukturę nagłówka</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="NazwaDokumentu" type="xsd:string"/>
+			<xsd:element ref="meta:Identyfikator" minOccurs="0" maxOccurs="unbounded"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:element name="Adresaci" type="str:AdresaciTyp">
+		<xsd:annotation>
+			<xsd:documentation>W bloku Adresaci znajduje się jeden lub więcej podmiotów (podmiot to Osoba lub Instytucja). Jako adresat rozumiany jest podmiot do którego kierowany jest dokument.</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:complexType name="AdresaciTyp">
+		<xsd:annotation>
+			<xsd:documentation>Definicja typu AdresaciTyp określa strukturę elementu Adresaci</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element ref="meta:Podmiot" maxOccurs="unbounded"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:element name="Nadawcy" type="str:NadawcyTyp">
+		<xsd:annotation>
+			<xsd:documentation>W bloku Nadawcy znajduje się jeden lub więcej podmiotów (podmiot to Osoba lub Instytucja). Jako Nadawca rozumiany jest podmiot który jest nadawcą (wysyłającym) dokument.</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:complexType name="NadawcyTyp">
+		<xsd:annotation>
+			<xsd:documentation>Definicja typu NadawcyTyp określa strukturę elementu Nadawcy</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element ref="meta:Podmiot" maxOccurs="unbounded"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:element name="TrescDokumentu" type="str:TrescDokumentuTyp">
+		<xsd:annotation>
+			<xsd:documentation>Struktura bloku TrescDokumentu</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:complexType name="TrescDokumentuTyp" abstract="true">
+		<xsd:annotation>
+			<xsd:documentation>Struktura bloku TrescDokumentu</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="rodzaj" type="str:rodzajTyp" use="optional"/>
+		<xsd:attribute name="format" type="str:formatTyp" use="required"/>
+		<xsd:attribute name="kodowanie" type="str:kodowanieTyp" use="required"/>
+	</xsd:complexType>
+	<xsd:simpleType name="rodzajTyp">
+		<xsd:annotation>
+			<xsd:documentation>Rodzaj - oznacza rodzaj zawartości umieszczonej w TrescDokumentu, decyzja - oznacza decyzje zgodnie z KPA Dział II rozdział 7 (jest tworzona przez jednostki administracji) wniosek - oznacza wniosek lub podanie (żądania, wyjaśnienia, odwołania, zażalenia) zgodnie z KPA Dział II rozdział 1 (jest tworzony przez Interesantów , inne podmioty oraz jednostki administracji) pismo - oznacza dokument powstający w ramach procedury administracyjnej (definicja określająca pismo co do którego autor ma wątpliwości do jakiej grupy go zaklasyfikować) inny - oznacza dowolny rodzaj dokumentu</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="decyzja"/>
+			<xsd:enumeration value="wniosek"/>
+			<xsd:enumeration value="pismo"/>
+			<xsd:enumeration value="inny"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="formatTyp">
+		<xsd:annotation>
+			<xsd:documentation>Format pliku opisany zgodny z RFC 2045 http://tools.ietf.org/html/rfc2045 lista przykładowych zawartości dostępna na stronie http://www.iana.org/assignments/media-types/ dla pliku graficznego gif zawartość = image/gif dla dokumentu pdf zawartość = application/pdf dla dokumentu xml zawartość = text/xml lub text/xml; charset="utf-8"</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="90"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="kodowanieTyp">
+		<xsd:annotation>
+			<xsd:documentation>base64 - oznacza że w elemencie zawartość zostanie umieszczona zakodowana w base64 zawartość pliku lub danych XML URI - oznacza że w elemencie zawartość będzie umieszczony odnośnik do pliku z zawartością np "skan.jpg" lub "/załączniki/skan.jpg" lub "http://jakisadresurl.pl/skan.jpg" XML - oznacza że w elemencie zawartość będzie umieszczona tekstowa zawartość XML</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="base64"/>
+			<xsd:enumeration value="URI"/>
+			<xsd:enumeration value="XML"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="OpisDokumentu" type="str:OpisDokumentuTyp">
+		<xsd:annotation>
+			<xsd:documentation>Struktura bloku OpisDokumentu</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:complexType name="OpisDokumentuTyp">
+		<xsd:annotation>
+			<xsd:documentation>Definicja typu OpisDokumentuTyp określa strukturę elementu OpisDokumentu</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element ref="str:CID" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Identyfikator korelacyjny służący do budowania relacji pomiędzy dokumentami np. w przypadku gdy są wymieniane asynchronicznie. W szczególnych przypadkach w jednym dokumencie może być więcej niż jeden identyfikator korelacyjny</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element ref="meta:Data" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>W bloku OpisDokumentu mogą wystąpić różne typy daty, np. data utworzenia dokumentu, itp.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element ref="meta:Identyfikator" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Element Identyfikator zawiera różne identyfikatory nadane dla danego dokumentu</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element ref="meta:Dostep" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Element określa dostęp do dokumentu w którym sie znajduje</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element ref="meta:Grupowanie" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Element używany do grupowania dokumentów według różnych atrybutów</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element ref="meta:Status" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Element określający status dokumentu</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element ref="meta:RodzajDokumentu" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Element określający rodzaj dokumentu</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element ref="meta:Relacja" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Element określający relacje pomiędzy danym dokumentem a innymi dokumentami</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element ref="meta:Jezyk" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Określa język danego dokumentu</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element ref="meta:Kwalifikacja" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Określa Kwalifikacje</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element ref="meta:OpisDokumentu" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Opis dokumentu zgodnie z (NES)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element ref="meta:Uprawnienia" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Uprawnienia zgodnie z (NES)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:element name="Zalaczniki" type="str:ZalacznikiTyp">
+		<xsd:annotation>
+			<xsd:documentation>Załączniki</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:complexType name="ZalacznikiTyp">
+		<xsd:annotation>
+			<xsd:documentation>Struktura bloku Zalaczniki</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element ref="str:Zalacznik" minOccurs="0" maxOccurs="unbounded"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:element name="Zalacznik" type="str:ZalacznikTyp">
+		<xsd:annotation>
+			<xsd:documentation>Załącznik</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:complexType name="ZalacznikTyp">
+		<xsd:annotation>
+			<xsd:documentation>Struktura Załącznika</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="DaneZalacznika" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation>Zawartość załącznika jest uzależniona od wartości atrybutu kodowanie: dla URI - w ZawartoscZalacznika zostanie umieszczony URL do pliku załącznika dla base64 - w ZawartoscZalacznika zostanie umieszczona zakodowana w Base64 zawartość załącznika</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="OpisZalacznika" type="xsd:string" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Opis Załącznika</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="rodzajZalacznika" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Rodzaj załącznika - np. "oswiadczenie"</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="format" type="str:formatTyp" use="required"/>
+		<xsd:attribute name="kodowanie" type="str:ZalacznikKodowanieTyp" use="required"/>
+		<xsd:attribute name="nazwaPliku" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Nazwa Pliku załącznika</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+	</xsd:complexType>
+	<xsd:simpleType name="ZalacznikKodowanieTyp">
+		<xsd:restriction base="str:kodowanieTyp">
+			<xsd:enumeration value="URI"/>
+			<xsd:enumeration value="base64"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="NumerDokumentu" type="str:Tekst65Typ">
+		<xsd:annotation>
+			<xsd:documentation>Numer dokumentu</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="Tekst10Typ">
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="10"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="Tekst65Typ">
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="65"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="Tekst200Typ">
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="200"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="Tekst2000Typ">
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="2000"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="Tekst10000Typ">
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="10000"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="TakNieTyp">
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="Tak"/>
+			<xsd:enumeration value="Nie"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+</xsd:schema>

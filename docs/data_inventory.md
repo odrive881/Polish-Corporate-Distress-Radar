@@ -50,11 +50,13 @@ All documents in this section come from the Repozytorium Dokumentów Finansowych
 
 | Structure | Mapping spec | Req. | Spec ref | Status |
 |---|---|---|---|---|
-| Full form (UoR Annex 1) | `config/mappings/structures/full-2018-v1.yaml` | required | DIR §1; SPEC §6C | spec not written |
-| Small / simplified form | `small-2018-v1.yaml` | required | DIR §1; SPEC §4.1 | spec not written; **no fixture** |
-| Micro form | `micro-2018-v1.yaml` | required (entities can switch form between years) | DIR §1; SPEC §4.1 | spec not written; **no fixture** |
-| New generation, fiscal years starting ≥ 2025-01-01 (CRWDE "wariant 2 / wersja 1-0E") | `full-2026-v1.yaml` (and small/micro counterparts if they exist) | required | ADR 0005; SPEC §11.2 | fixture `tests/fixtures/neobis_001.xml` |
-| Any other historical structure versions (the spec expects 10+ in total) | one YAML per version | required | TECH_ARCH §1.2 | to be enumerated in C1 |
+| Full form (UoR Annex 1, `JednostkaInna`), schemas 1-0 and 1-2 | `full-2018-v1-0.yaml`, `full-2018-v1-2.yaml` | required | DIR §1; SPEC §6C | **mapped** (plan 0004); golden fixtures in `tests/fixtures/statements/` |
+| Full form in thousands of złoty, schema 1-2 | `full-2018-v1-2-tys.yaml` | required | SPEC §4.2 | **mapped**; no seed filing uses it, tested with a synthetic document |
+| Full form, schema 1-3 (FY2024, namespace dated 2025-01-01) | — | required | ADR 0005 addendum | catalogued, not mapped (Phase 3); same line items as 1-2 |
+| New generation, fiscal years starting ≥ 2025-01-01 (CRWDE template 13817, "wariant 2 / wersja 1-0E") | `full-2025-w2-v1-0.yaml` | required | ADR 0005; SPEC §11.2 | **mapped**; fixtures `neobis_001.xml`, `statements/full_2025_w2_kalk_2025.xml` |
+| Small / simplified form (`JednostkaMala`), schemas 1-0, 1-2, 1-3 | `small-*.yaml` | required | DIR §1; SPEC §4.1 | catalogued, not mapped (Phase 3); 30 seed statements |
+| Micro form (`JednostkaMikro`), schemas 1-0, 1-2, 1-3, CRWDE template 13821 | `micro-*.yaml` | required (entities can switch form between years) | DIR §1; SPEC §4.1 | catalogued, not mapped (Phase 3); 12 seed statements |
+| Thousands-of-złoty twins of every form | one YAML per version | required | SPEC §4.2 | XSDs vendored and catalogued; none seen in the seed |
 
 Every XML statement must yield these components:
 
@@ -67,7 +69,7 @@ Every XML statement must yield these components:
 | Current-year **and** prior-year columns | dane za rok bieżący / poprzedni | both captured | `prior_year_consistency` check → `restatement_events` |
 | Declared unit | PLN / tys. PLN | normalise to złoty; quarantine if missing | all monetary values (SPEC §4.2) |
 | Average employment | przeciętne zatrudnienie | — | size classification (SPEC §4.4) |
-| Official XSD for the structure version | — | — | C1 validation (SPEC §6C) |
+| Official XSD for the structure version | — | — | C1 validation (SPEC §6C) — **collected**: 51 files in `config/xsd/` with `catalog.yaml` (URL, SHA-256), 2026-09-17 |
 
 ### 2.3 Annual financial statement — PDF / scans
 
@@ -125,7 +127,7 @@ The spec forbids bulk enumeration of any source. Acquisition is per entity, seed
 | Sector financial aggregates (construction) | GUS BDL (JSON) | A5 | raw → Parquet | macro / sector features, dashboards | required | SPEC §6H | not started |
 | Regional indicators by voivodeship | GUS BDL | A5 | raw → Parquet | regional features, heatmaps | required | SPEC §6H; OVERVIEW stage 12 | not started |
 | Eurostat series | Eurostat | A5 | raw → Parquet | macro context | optional | TECH_ARCH §3 A5 | not started |
-| Official MF XSD schemas, one per structure version | Ministry of Finance | C1 | committed reference files | XSD validation | required | SPEC §6C1 | not collected |
+| Official MF XSD schemas, one per structure version | Ministry of Finance | C1 | committed reference files | XSD validation | required | SPEC §6C1 | collected (`config/xsd/`, plan 0004) |
 | UoR size-class thresholds (balance sheet total, revenue, average employment; multi-year rule), dated | Ustawa o rachunkowości | E / H | `config/statutory/size_thresholds.yaml` | `entity_size_class_history` | required | SPEC §4.4 | not written |
 | KSH tripwire ratios: Art. 233 (sp. z o.o., ½ share capital), Art. 397 (S.A., ⅓ share capital), dated | Kodeks spółek handlowych | H | `config/statutory/ksh_tripwires.yaml` | tripwire features, `tripwire_triggered` alerts | required | SPEC §4.5 | not written |
 | Insolvency / restructuring procedure taxonomy, dated | Prawo upadłościowe, Prawo restrukturyzacyjne, COVID-era acts | F | `config/statutory/procedure_taxonomy.yaml` | `outcome_labels` | required | SPEC §4.6 | not written |
@@ -138,7 +140,7 @@ The spec forbids bulk enumeration of any source. Acquisition is per entity, seed
 
 | Item | Location | Req. | Spec ref | Status |
 |---|---|---|---|---|
-| Golden XML statements, at least one per structure version, each resolving every `required: true` mapping | `tests/fixtures/` | required | SPEC §6C2, §9.2 | only the 2025+ generation (`neobis_001.xml`); **pre-2025 fixture missing** |
+| Golden XML statements, at least one per structure version, each resolving every `required: true` mapping | `tests/fixtures/` | required | SPEC §6C2, §9.2 | one or more per mapped version (`tests/fixtures/statements/`); none yet for small/micro |
 | Known-bad statements that must be quarantined (unbalanced, missing unit) | `tests/fixtures/` | required | SPEC §9.2 | missing |
 | Statement declared in thousands of złoty | `tests/fixtures/` | required | SPEC §9.2 | missing |
 | One comparative and one calculation income-statement filing | `tests/fixtures/` | required | SPEC §9.2 | missing |
@@ -178,8 +180,17 @@ The spec forbids bulk enumeration of any source. Acquisition is per entity, seed
 
 1. **RDF access rests on an informal confirmation** (ADR 0007). KRS support allowed 3 requests/minute verbally, and could not promise how the WAF reacts. Re-run the probe notebook before any backfill.
 2. **No source named for average employment.** SPEC §4.4 needs it for size classification, but no spec says which field or document provides it. Confirm during C2 which structures carry it (e.g. in the additional information).
-3. **No pre-2025-generation XML fixture**, so older structure versions have no C2 coverage (CLAUDE.md, ADR 0005).
+3. ~~**No pre-2025-generation XML fixture.**~~ Resolved in plan 0004: golden fixtures for schemas 1-0 and 1-2. Small and micro forms still have none.
 4. **No LLM provider or key** in `.env.example`, yet C3 and G2 both need one.
 5. **Terms of use unconfirmed** for KRS, KRZ, MSiG and any aggregator (SPEC §11.3).
-6. **Full list of MF structure versions not enumerated.** TECH_ARCH says there are 10+, but DIRECTORY_STRUCTURE only names four.
-7. **Stale wording:** `docs/PROJECT_OVERVIEW.md` stage 4 and `docs/TECHNICAL_ARCHITECTURE.md` §1.2 and §8 still say the new structures apply "from 2026". ADR 0005 corrects this to fiscal years beginning on or after 1 January 2025.
+6. ~~**Full list of MF structure versions not enumerated.**~~ Enumerated in plan 0004: 20 (form × unit × schema 1-0/1-2/1-3, plus CRWDE templates 13817 and 13821), listed in `config/mappings/structures/` and `structure_catalog.yaml`.
+7. ~~**Stale wording** about structures applying "from 2026".~~ Fixed in plan 0004.
+8. **Average employment has no structured source.** No MF structure carries it as a field.
+   - **Possible source (owner, 2026-09-17): the management report** (*Sprawozdanie zarządu / Sprawozdanie z działalności*, RDF types 20 and 5), which states employment and can be downloaded from RDF like the statements. It is noted for future use and **probably out of v1 scope**.
+   - **Caveat: coverage is worst exactly where it matters.** In the 17-entity seed, all 9 companies with a distress hint file these reports years late (last one for 2018–2020) or not at all. 6 of the other 8 are current through 2025.
+   - **Candidate feature:** a management-report gap could be a filing-behaviour signal alongside the statement gaps (SPEC §6H).
+   - **Why it may be a false correlation:** micro entities are exempt from the report, and small entities can be under UoR art. 49. So a missing report is not always a lapse; e.g. `0000041651` files micro-form statements and has no reports since 2017. Any such feature must be conditioned on the entity's size class.
+   - **Until decided,** size classification (§4.4) needs another route: employment from the attached notes (C3/G), or GUS employment bands as a proxy.
+9. **RDF's `czyMSR` flag (`filing_index.is_ifrs`) is unreliable.** 29 seed statements flagged IFRS are UoR structures. Never route on it.
+10. ~~**Raw downloads contain natural persons' data.**~~ Decided 2026-09-17: signer data is redacted at acquisition, before hashing, and stored files were replaced (ADR 0009). Residual: free text in notes, and signatories' first names in some uploaded file names.
+11. **Notes and user-defined breakdowns are not captured yet.** Attached notes (`Plik`, base64 PDFs/docs) wait for C3/G. Breakdowns of a single line (`PozycjaUszczegolawiajaca` inside a leaf, `Podpozycja`) are skipped because the line's total is already a fact.

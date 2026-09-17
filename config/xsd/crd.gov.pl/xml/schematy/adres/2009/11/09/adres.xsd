@@ -1,0 +1,338 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xsd:schema xmlns:iso3166="http://www.unece.org/etrades/unedocs/repository/codelists/xml/CountryCode.xsd" xmlns:adr="http://crd.gov.pl/xml/schematy/adres/2009/11/09/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="http://crd.gov.pl/xml/schematy/adres/2009/11/09/" elementFormDefault="qualified" attributeFormDefault="unqualified" version="0.5">
+	<xsd:import namespace="http://www.unece.org/etrades/unedocs/repository/codelists/xml/CountryCode.xsd" schemaLocation="http://crd.gov.pl/xml/schematy/zewnetrzne/2008/05/09/CountryCode.xsd"/>
+	<xsd:annotation>
+		<xsd:documentation>Schemat podstawowy danych adresowych i
+			kontaktowych.</xsd:documentation>
+		<xsd:documentation>Autor: Portal Interoperacyjności.</xsd:documentation>
+	</xsd:annotation>
+	<xsd:element name="Adres" type="adr:AdresTyp">
+		<xsd:annotation>
+			<xsd:documentation>Adres</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:complexType name="AdresTyp">
+		<xsd:annotation>
+			<xsd:documentation>Adres uniwersalny</xsd:documentation>
+		</xsd:annotation>
+		<xsd:group ref="adr:AdresGrupa"/>
+	</xsd:complexType>
+	<xsd:group name="AdresGrupa">
+		<xsd:sequence>
+			<xsd:element ref="adr:KodPocztowy" minOccurs="0"/>
+			<xsd:element ref="adr:Poczta" minOccurs="0"/>
+			<xsd:element ref="adr:Miejscowosc" minOccurs="0"/>
+			<xsd:element ref="adr:Ulica" minOccurs="0"/>
+			<xsd:element ref="adr:Budynek" minOccurs="0"/>
+			<xsd:element ref="adr:Lokal" minOccurs="0"/>
+			<xsd:element ref="adr:SkrytkaPocztowa" minOccurs="0"/>
+			<xsd:element ref="adr:Kraj" minOccurs="0"/>
+			<xsd:element ref="adr:TERC" minOccurs="0"/>
+			<xsd:element ref="adr:SIMC" minOccurs="0"/>
+			<xsd:element ref="adr:ULIC" minOccurs="0"/>
+			<xsd:element ref="adr:Wojewodztwo" minOccurs="0"/>
+			<xsd:element ref="adr:Powiat" minOccurs="0"/>
+			<xsd:element ref="adr:Gmina" minOccurs="0"/>
+			<xsd:element ref="adr:Uwagi" minOccurs="0"/>
+		</xsd:sequence>
+	</xsd:group>
+	<xsd:element name="KodPocztowy" type="adr:KodPocztowyTyp">
+		<xsd:annotation>
+			<xsd:documentation>Kod pocztowy</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="KodPocztowyTyp">
+		<xsd:restriction base="xsd:string">
+			<xsd:minLength value="0"/>
+			<xsd:maxLength value="10"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="Poczta" type="adr:PocztaTyp">
+		<xsd:annotation>
+			<xsd:documentation>Poczta</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="PocztaTyp">
+		<xsd:annotation>
+			<xsd:documentation>Poczta</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="56"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="Miejscowosc" type="adr:MiejscowoscTyp">
+		<xsd:annotation>
+			<xsd:documentation>Miejscowość</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="MiejscowoscTyp">
+		<xsd:annotation>
+			<xsd:documentation>Miejscowość</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="56"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="Ulica" type="adr:UlicaTyp">
+		<xsd:annotation>
+			<xsd:documentation>Ulica</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:complexType name="UlicaTyp">
+		<xsd:annotation>
+			<xsd:documentation>Ulica</xsd:documentation>
+		</xsd:annotation>
+		<xsd:simpleContent>
+			<xsd:extension base="adr:NazwaUlicyTyp">
+				<xsd:attribute name="rodzajUlicy" type="adr:rodzajUlicyTyp" use="optional"/>
+			</xsd:extension>
+		</xsd:simpleContent>
+	</xsd:complexType>
+	<xsd:simpleType name="rodzajUlicyTyp">
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="ulica"/>
+			<xsd:enumeration value="plac"/>
+			<xsd:enumeration value="rondo"/>
+			<xsd:enumeration value="aleja"/>
+			<xsd:enumeration value="skwer"/>
+			<xsd:enumeration value="inna"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="NazwaUlicyTyp">
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="65"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="Budynek" type="adr:BudynekTyp">
+		<xsd:annotation>
+			<xsd:documentation>Nr budynku</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="BudynekTyp">
+		<xsd:annotation>
+			<xsd:documentation>Nr budynku</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="9"/>
+			<xsd:pattern value="\S{0,4}|\S{0,4}/\S{0,4}"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="Lokal" type="adr:LokalTyp">
+		<xsd:annotation>
+			<xsd:documentation>Nr lokalu</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="LokalTyp">
+		<xsd:annotation>
+			<xsd:documentation>Nr lokalu</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="10"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="SkrytkaPocztowa" type="adr:SkrytkaPocztowaTyp">
+		<xsd:annotation>
+			<xsd:documentation>Nr skrytki pocztowej</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="SkrytkaPocztowaTyp">
+		<xsd:annotation>
+			<xsd:documentation>Nr skrytki pocztowej</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="10"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="Kraj" type="adr:KrajTyp">
+		<xsd:annotation>
+			<xsd:documentation>Kod kraju</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="KrajTyp">
+		<xsd:annotation>
+			<xsd:documentation>Kod kraju</xsd:documentation>
+		</xsd:annotation>
+		<xsd:union memberTypes="iso3166:CountryCoded">
+			<xsd:simpleType>
+				<xsd:restriction base="xsd:string">
+					<xsd:maxLength value="0"/>
+				</xsd:restriction>
+			</xsd:simpleType>
+		</xsd:union>
+	</xsd:simpleType>
+	<xsd:element name="TERC" type="adr:TERCTyp">
+		<xsd:annotation>
+			<xsd:documentation>Kod GUS TERC</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="TERCTyp">
+		<xsd:annotation>
+			<xsd:documentation>Kod GUS TERC</xsd:documentation>
+			<xsd:documentation>Pole przechowuje 7 cyfrowy identyfikator
+				jednostki podziału administracyjnego GUS TERC10. </xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="7"/>
+			<xsd:pattern value="|\d{2}|\d{4}|\d{6}|\d{7}"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="SIMC" type="adr:SIMCTyp">
+		<xsd:annotation>
+			<xsd:documentation>Kod GUS SIMC</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="SIMCTyp">
+		<xsd:annotation>
+			<xsd:documentation>Kod GUS SIMC</xsd:documentation>
+			<xsd:documentation>Pole przechowuje 7 cyfrowy identyfikator
+				miejscowości GUS SIMC10. </xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="7"/>
+			<xsd:pattern value="|\d{7}"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="ULIC" type="adr:ULICTyp">
+		<xsd:annotation>
+			<xsd:documentation>Kod GUS ULIC</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="ULICTyp">
+		<xsd:annotation>
+			<xsd:documentation>Kod GUS ULIC</xsd:documentation>
+			<xsd:documentation>Pole przechowuje 5 cyfrowy identyfikator ulicy
+				GUS ULIC. </xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="5"/>
+			<xsd:pattern value="|\d{5}"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="Wojewodztwo" type="adr:WojewodztwoTyp">
+		<xsd:annotation>
+			<xsd:documentation>Województwo</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="WojewodztwoTyp">
+		<xsd:annotation>
+			<xsd:documentation>Województwo</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="36"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="Powiat" type="adr:PowiatTyp">
+		<xsd:annotation>
+			<xsd:documentation>Powiat</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="PowiatTyp">
+		<xsd:annotation>
+			<xsd:documentation>Powiat</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="36"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="Gmina" type="adr:GminaTyp">
+		<xsd:annotation>
+			<xsd:documentation>Gmina</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="GminaTyp">
+		<xsd:annotation>
+			<xsd:documentation>Gmina</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="36"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="Uwagi" type="adr:UwagiTyp">
+		<xsd:annotation>
+			<xsd:documentation>Dodatkowe uwagi</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="UwagiTyp">
+		<xsd:annotation>
+			<xsd:documentation>Dodatkowe uwagi</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="80"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="Kontakt" type="adr:KontaktTyp">
+		<xsd:annotation>
+			<xsd:documentation>Kontakt</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:complexType name="KontaktTyp">
+		<xsd:annotation>
+			<xsd:documentation>Kontakt</xsd:documentation>
+		</xsd:annotation>
+		<xsd:choice minOccurs="0" maxOccurs="unbounded">
+			<xsd:element ref="adr:Telefon"/>
+			<xsd:element ref="adr:Faks"/>
+			<xsd:element ref="adr:Email"/>
+			<xsd:element ref="adr:URIKontakt"/>
+			<xsd:element ref="adr:InnyKontakt"/>
+		</xsd:choice>
+	</xsd:complexType>
+	<xsd:element name="Telefon" type="adr:TelefonTyp">
+		<xsd:annotation>
+			<xsd:documentation>Telefon</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="TelefonTyp">
+		<xsd:annotation>
+			<xsd:documentation>Telefon</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="40"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="Faks" type="adr:FaksTyp">
+		<xsd:annotation>
+			<xsd:documentation>Faks</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="FaksTyp">
+		<xsd:annotation>
+			<xsd:documentation>Faks</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="40"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="Email" type="adr:EmailTyp">
+		<xsd:annotation>
+			<xsd:documentation>E-mail</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="EmailTyp">
+		<xsd:annotation>
+			<xsd:documentation>E-mail</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="50"/>
+			<xsd:pattern value="|([0-9a-zA-Z]+[\-._+&amp;])*[0-9a-zA-Z]+@([\-0-9a-zA-Z]+[.])+[a-zA-Z]{2,6}"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="URIKontakt" type="xsd:anyURI">
+		<xsd:annotation>
+			<xsd:documentation>Kontakt URI</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:element name="InnyKontakt" type="adr:InnyKontaktTyp">
+		<xsd:annotation>
+			<xsd:documentation>Inny kontakt</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="InnyKontaktTyp">
+		<xsd:annotation>
+			<xsd:documentation>Inny kontakt</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="40"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+</xsd:schema>

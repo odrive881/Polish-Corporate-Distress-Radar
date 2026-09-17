@@ -12,10 +12,17 @@ One manual session in an ordinary browser, at human pace, on
 - **HAR captured:** 2026-09-15: search → filing list → expand the 2025 annual statement → "Pobierz dokumenty"
 - **DOM captured:** 2026-09-16: `<app-root>` outerHTML of the result list and of an expanded row
 
-The HAR itself (`rdf-przegladarka_ms_gov_pl.cleaned.har`) is **not committed** (`*.har`
-is gitignored): it is 9 MB of scripts, fonts, and a full filing. Its Imperva bot-check
+The HAR itself (`rdf-przegladarka_ms_gov_pl.cleaned.har`) was never committed (`*.har`
+is gitignored): it was 9 MB of scripts, fonts, and a full filing. Its Imperva bot-check
 entry (which carried a `reese84` token) was deleted and its cookies stripped.
-`notebooks/exploration/rdf_har_extract.py` turns it into the JSON files below.
+`notebooks/exploration/rdf_har_extract.py` turns such a capture into the JSON files below.
+
+**The capture was deleted on 2026-09-17** (ADR 0009): a filing as filed carries its
+signatories' PESEL numbers, and this project stores no natural persons. The JSON and HTML
+fixtures here are extracts that carry none. The one test that replayed the HAR
+(`test_har_import.py::test_recorded_har_has_detail_and_download_but_only_one_list_page`)
+is guarded by
+`skipif(not RECORDED_HAR.exists())` and skips; reviving it needs a fresh capture.
 
 ## RDF API, as the SPA calls it
 
@@ -44,3 +51,5 @@ All under `https://rdf-przegladarka.ms.gov.pl/services/rdf/przegladarka-dokument
 | `entity_not_found_synthetic.json` | **Synthetic.** Same shape as `entity_found.json` with `czyPodmiotZnaleziony: false`; an unknown-KRS response has not been recorded. |
 | `filing_list_empty_synthetic.json` | **Synthetic.** Same shape as the recorded list, with no documents. |
 | `waf_block_page_synthetic.html` | **Synthetic.** Written to match the Imperva Incapsula block page ADR 0007's probe observed (`_Incapsula_Resource` iframe, "Request unsuccessful. Incapsula incident ID"); every identifier zeroed. Not a recorded response. |
+
+**Personal data (ADR 0009):** the gitignored HAR here holds one downloaded statement as filed, signatures included. Keep it local and never commit it. Delete it when it is no longer needed. The committed JSON/HTML fixtures carry no personal data.

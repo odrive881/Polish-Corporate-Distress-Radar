@@ -122,7 +122,7 @@ Stage-by-stage implementation plans live in `docs/plans/`, one numbered `.md` fi
 
 **What happens:**
 
-- The parser detects each XML file's structure and version, covering the full-form statements, the simplified statements available to small entities, and the new generation of structures that applies to financial years starting in 2026.
+- The parser detects each XML file's structure and version, covering the full-form statements, the simplified statements available to small entities, and the new generation of structures that applies to financial years beginning on or after 1 January 2025 (ADR 0005).
 - Each structure-version is mapped to a **canonical chart of line items** through versioned, tested mapping tables.
 - The parser handles known reporting variations:
   - Amounts reported in złoty versus thousands of złoty, normalized to one unit.

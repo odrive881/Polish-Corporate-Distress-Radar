@@ -19,6 +19,11 @@ dependencies = [
     "pyyaml>=6.0",
     "psycopg[binary,pool]>=3.2",
     "playwright>=1.47",
+    "polars>=1.20",
+    "xmlschema>=3.4",
+    "pandera[polars]>=0.22",
+    "duckdb>=1.1",
+    "pymupdf>=1.24",
 ]
 
 [project.optional-dependencies]

@@ -78,7 +78,7 @@ class UniverseCandidate(_Frozen):
 
 # --- Quarantine (Postgres landing table, ADR 0006) -------------------------------------------
 
-QuarantineStage = Literal["A1", "A2", "A3"]
+QuarantineStage = Literal["A1", "A2", "A3", "C1", "C2", "E2"]
 
 
 class QuarantineRecord(_Frozen):

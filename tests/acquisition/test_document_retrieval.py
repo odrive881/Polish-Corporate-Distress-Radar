@@ -48,6 +48,7 @@ from distress_radar.acquisition.raw_store import (
     sha256_hex,
     sidecar_key,
 )
+from distress_radar.acquisition.redaction import REDACTION_VERSION, personal_data_markers
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "rdf"
 WAF_PAGE = (FIXTURES / "waf_block_page_synthetic.html").read_bytes()
@@ -154,6 +155,7 @@ class FakeFilingBrowser:
         }
         self.related = {CORRECTION_REF: _correction_detail()}
         self.bundles = {ORIGINAL_REF: BUNDLE}
+        self.download_body = DOCUMENT_ZIP
 
     def open_filing_list(self, krs: str) -> FilingListing:
         self.calls.append(("list", krs))
@@ -192,7 +194,7 @@ class FakeFilingBrowser:
                 "content-type": "application/octet-stream",
                 "set-cookie": "visid_incap_1=secret; incap_ses_1=secret",
             },
-            body=DOCUMENT_ZIP,
+            body=self.download_body,
             request_body=json.dumps(self.bundles.get(document_ref, [document_ref])).encode(),
         )
 
@@ -576,6 +578,66 @@ def test_download_stores_bytes_unmodified_without_session_cookies():
     assert sidecar["original_filename"] == "sprawozdanie.xml"  # RDF sends no content-disposition
     assert "set-cookie" not in sidecar["http_headers"]
     assert "incap" not in json.dumps(sidecar)
+
+
+SIGNED_ZIP = _zip(
+    {
+        "sprawozdanie.xml": (
+            b"<?xml version='1.0'?><JednostkaInna xmlns='urn:sf'><Bilans>1.00</Bilans>"
+            b"<ds:Signature xmlns:ds='http://www.w3.org/2000/09/xmldsig#'>"
+            b"<DaneZPOsobyFizycznej><PESEL>00000000000</PESEL></DaneZPOsobyFizycznej>"
+            b"</ds:Signature></JednostkaInna>"
+        )
+    }
+)
+
+
+def test_download_is_stored_only_in_redacted_form():
+    store = InMemoryObjectStore()
+    browser = FakeFilingBrowser()
+    browser.download_body = SIGNED_ZIP
+
+    download = download_filing(
+        KRS,
+        STATEMENT_REF,
+        browser=browser,
+        store=store,
+        ingestion_run_id="run-1",
+        breaker=CircuitBreaker(),
+        clock=lambda: NOW,
+    )
+
+    stored = store.get(raw_key(download.raw_fetch.sha256))
+    assert download.raw_fetch.sha256 != sha256_hex(SIGNED_ZIP)
+    assert b"PESEL" not in stored and personal_data_markers(stored) == []
+    assert b"<Bilans>1.00</Bilans>" in zipfile.ZipFile(io.BytesIO(stored)).read("sprawozdanie.xml")
+    assert not any(b"PESEL" in data for data in store.objects.values())
+    sidecar = json.loads(store.get(sidecar_key(download.raw_fetch.sha256)))
+    assert sidecar["redaction_version"] == REDACTION_VERSION
+    assert sidecar["received_sha256"] == sha256_hex(SIGNED_ZIP)
+    assert download.raw_fetch.meta.received_sha256 == sha256_hex(SIGNED_ZIP)
+
+
+def test_download_that_cannot_be_redacted_stores_nothing():
+    store = InMemoryObjectStore()
+    browser = FakeFilingBrowser()
+    browser.download_body = _zip(
+        {"only.xades": b"<Signatures><ds:Signature xmlns:ds='http://www.w3.org/2000/09/xmldsig#'>"
+         b"<ds:Object Encoding='http://www.w3.org/2000/09/xmldsig#base64'>@@@</ds:Object>"
+         b"</ds:Signature></Signatures>"}
+    )
+
+    with pytest.raises(PermanentSourceError, match="cannot redact"):
+        download_filing(
+            KRS,
+            STATEMENT_REF,
+            browser=browser,
+            store=store,
+            ingestion_run_id="run-1",
+            breaker=CircuitBreaker(),
+            clock=lambda: NOW,
+        )
+    assert store.objects == {}
 
 
 def test_waf_page_on_download_is_blocked():

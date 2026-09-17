@@ -14,3 +14,8 @@ Polish accounting and legal terms used in the data and the code. Keep the Polish
 | **KSH** | Kodeks spółek handlowych | Commercial Companies Code; source of the Art. 233/397 loss tripwires |
 | **PKD** | Polska Klasyfikacja Działalności | Activity classification code (sector). 2007 and 2025 versions — cross-walk, don't assume stability |
 | **sp. z o.o.** | Spółka z ograniczoną odpowiedzialnością | Limited liability company — the v1 legal form scope |
+| **Jednostka Inna / Mała / Mikro** | jednostka inna, mała, mikro | The three MF statement structures: full form (UoR Annex 1), small entities' simplified form, micro entities' form |
+| **KwotaA / KwotaB / KwotaB1** | kwota | Amount columns: current year, prior year, restated prior-year comparatives (`column` in the canonical table) |
+| **Pozycja uszczegóławiająca** | pozycja uszczegóławiająca | A filer's own extra line inside a statement; captured as `….USER` totals |
+| **Wariant porównawczy / kalkulacyjny** | rachunek zysków i strat | Income statement by nature (comparative) or by function (calculation) |
+| **CRWDE** | Centralne Repozytorium Wzorów Dokumentów Elektronicznych | Government repository of e-document templates; publishes the 2025 statement structures |

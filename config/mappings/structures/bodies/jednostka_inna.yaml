@@ -1,0 +1,474 @@
+# Shared body of the full-form (UoR Annex 1, `JednostkaInna`) statements, plan 0004.
+#
+# Every JednostkaInna schema version (v1-0, v1-2, v1-3, wariant 2) and its
+# thousands twin declares these statutory elements identically, so the
+# structure specs in `config/mappings/structures/` share this file and bind
+# the namespaces. `path` is the element's local-name path below the statement
+# element (`Bilans`, `RZiS`, ...); `code` is its canonical chart code.
+#
+# - `section: true`: a header with no amounts of its own (not a fact).
+# - `header: true`: a section heading that schema 1-0 gave amounts (cash-flow
+#   A/B/C) although the UoR template has none there; schema 1-2 dropped them.
+#   Kept as filed facts where present (most filers wrote 0.00, some the section
+#   total), but never checked: they are not statutory lines.
+# - `of_which: true`: a "w tym" breakdown line; excluded from its parent's sum.
+# - `required: true`: a document without it is quarantined (`required_item_missing`).
+# - A parent with amounts must equal the sum of its non-`of_which` children
+#   that carry amounts (`subtotals_consistent`), except where `formulas` below
+#   define it, and except the statements listed in `no_subtotal_check`.
+# - `user_code`: where the element declares interleaved user-defined lines
+#   (`PozycjaUszczegolawiajaca_N`), their amounts are summed per column into
+#   one fact with this code. It counts towards the element's own subtotal,
+#   unless `user_of_which: true` (the element is a "w tym" line, so extra
+#   lines under it are breakdowns). Breakdowns of a single line
+#   (`PozycjaUszczegolawiajaca` inside a leaf, `Podpozycja`) are not captured:
+#   they only detail an amount that is already a fact.
+# - `formulas`: computed lines, `code: [[sign, code], ...]`, checked the same way.
+#
+# Bootstrapped 2026-09-17 from JednostkaInnaStrukturyDanychSprFin_v1-2.xsd; the
+# coverage test checks it still lists every statutory element of each mapped XSD.
+body: jednostka_inna
+no_subtotal_check: [ZestZmianWKapitale]  # opening + changes = closing, not a sum of children
+formulas:
+  IS.COMP.C: [[1, IS.COMP.A], [-1, IS.COMP.B]]
+  IS.COMP.F: [[1, IS.COMP.C], [1, IS.COMP.D], [-1, IS.COMP.E]]
+  IS.COMP.I: [[1, IS.COMP.F], [1, IS.COMP.G], [-1, IS.COMP.H]]
+  IS.COMP.L: [[1, IS.COMP.I], [-1, IS.COMP.J], [-1, IS.COMP.K]]
+  IS.CALC.C: [[1, IS.CALC.A], [-1, IS.CALC.B]]
+  IS.CALC.F: [[1, IS.CALC.C], [-1, IS.CALC.D], [-1, IS.CALC.E]]
+  IS.CALC.I: [[1, IS.CALC.F], [1, IS.CALC.G], [-1, IS.CALC.H]]
+  IS.CALC.L: [[1, IS.CALC.I], [1, IS.CALC.J], [-1, IS.CALC.K]]
+  IS.CALC.O: [[1, IS.CALC.L], [-1, IS.CALC.M], [-1, IS.CALC.N]]
+  CF.IND.A.III: [[1, CF.IND.A.I], [1, CF.IND.A.II]]
+  CF.IND.B.III: [[1, CF.IND.B.I], [-1, CF.IND.B.II]]
+  CF.IND.C.III: [[1, CF.IND.C.I], [-1, CF.IND.C.II]]
+  CF.IND.D: [[1, CF.IND.A.III], [1, CF.IND.B.III], [1, CF.IND.C.III]]
+  CF.DIR.A.III: [[1, CF.DIR.A.I], [-1, CF.DIR.A.II]]
+  CF.DIR.B.III: [[1, CF.DIR.B.I], [-1, CF.DIR.B.II]]
+  CF.DIR.C.III: [[1, CF.DIR.C.I], [-1, CF.DIR.C.II]]
+  CF.DIR.D: [[1, CF.DIR.A.III], [1, CF.DIR.B.III], [1, CF.DIR.C.III]]
+statements:
+  Bilans:
+    - {path: "Aktywa", code: BS.ASSETS, required: true, user_code: BS.ASSETS.USER}
+    - {path: "Aktywa/Aktywa_A", code: BS.ASSETS.A, user_code: BS.ASSETS.A.USER}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_I", code: BS.ASSETS.A.I, user_code: BS.ASSETS.A.I.USER}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_I/Aktywa_A_I_1", code: BS.ASSETS.A.I.1}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_I/Aktywa_A_I_2", code: BS.ASSETS.A.I.2}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_I/Aktywa_A_I_3", code: BS.ASSETS.A.I.3}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_I/Aktywa_A_I_4", code: BS.ASSETS.A.I.4}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_II", code: BS.ASSETS.A.II, user_code: BS.ASSETS.A.II.USER}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_II/Aktywa_A_II_1", code: BS.ASSETS.A.II.1, user_code: BS.ASSETS.A.II.1.USER}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_II/Aktywa_A_II_1/Aktywa_A_II_1_A", code: BS.ASSETS.A.II.1.A}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_II/Aktywa_A_II_1/Aktywa_A_II_1_B", code: BS.ASSETS.A.II.1.B}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_II/Aktywa_A_II_1/Aktywa_A_II_1_C", code: BS.ASSETS.A.II.1.C}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_II/Aktywa_A_II_1/Aktywa_A_II_1_D", code: BS.ASSETS.A.II.1.D}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_II/Aktywa_A_II_1/Aktywa_A_II_1_E", code: BS.ASSETS.A.II.1.E}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_II/Aktywa_A_II_2", code: BS.ASSETS.A.II.2}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_II/Aktywa_A_II_3", code: BS.ASSETS.A.II.3}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_III", code: BS.ASSETS.A.III, user_code: BS.ASSETS.A.III.USER}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_III/Aktywa_A_III_1", code: BS.ASSETS.A.III.1}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_III/Aktywa_A_III_2", code: BS.ASSETS.A.III.2}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_III/Aktywa_A_III_3", code: BS.ASSETS.A.III.3}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_IV", code: BS.ASSETS.A.IV, user_code: BS.ASSETS.A.IV.USER}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_IV/Aktywa_A_IV_1", code: BS.ASSETS.A.IV.1}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_IV/Aktywa_A_IV_2", code: BS.ASSETS.A.IV.2}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_IV/Aktywa_A_IV_3", code: BS.ASSETS.A.IV.3, user_code: BS.ASSETS.A.IV.3.USER}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_IV/Aktywa_A_IV_3/Aktywa_A_IV_3_A", code: BS.ASSETS.A.IV.3.A, user_code: BS.ASSETS.A.IV.3.A.USER}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_IV/Aktywa_A_IV_3/Aktywa_A_IV_3_A/Aktywa_A_IV_3_A_1", code: BS.ASSETS.A.IV.3.A.1}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_IV/Aktywa_A_IV_3/Aktywa_A_IV_3_A/Aktywa_A_IV_3_A_2", code: BS.ASSETS.A.IV.3.A.2}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_IV/Aktywa_A_IV_3/Aktywa_A_IV_3_A/Aktywa_A_IV_3_A_3", code: BS.ASSETS.A.IV.3.A.3}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_IV/Aktywa_A_IV_3/Aktywa_A_IV_3_A/Aktywa_A_IV_3_A_4", code: BS.ASSETS.A.IV.3.A.4}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_IV/Aktywa_A_IV_3/Aktywa_A_IV_3_B", code: BS.ASSETS.A.IV.3.B, user_code: BS.ASSETS.A.IV.3.B.USER}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_IV/Aktywa_A_IV_3/Aktywa_A_IV_3_B/Aktywa_A_IV_3_B_1", code: BS.ASSETS.A.IV.3.B.1}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_IV/Aktywa_A_IV_3/Aktywa_A_IV_3_B/Aktywa_A_IV_3_B_2", code: BS.ASSETS.A.IV.3.B.2}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_IV/Aktywa_A_IV_3/Aktywa_A_IV_3_B/Aktywa_A_IV_3_B_3", code: BS.ASSETS.A.IV.3.B.3}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_IV/Aktywa_A_IV_3/Aktywa_A_IV_3_B/Aktywa_A_IV_3_B_4", code: BS.ASSETS.A.IV.3.B.4}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_IV/Aktywa_A_IV_3/Aktywa_A_IV_3_C", code: BS.ASSETS.A.IV.3.C, user_code: BS.ASSETS.A.IV.3.C.USER}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_IV/Aktywa_A_IV_3/Aktywa_A_IV_3_C/Aktywa_A_IV_3_C_1", code: BS.ASSETS.A.IV.3.C.1}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_IV/Aktywa_A_IV_3/Aktywa_A_IV_3_C/Aktywa_A_IV_3_C_2", code: BS.ASSETS.A.IV.3.C.2}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_IV/Aktywa_A_IV_3/Aktywa_A_IV_3_C/Aktywa_A_IV_3_C_3", code: BS.ASSETS.A.IV.3.C.3}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_IV/Aktywa_A_IV_3/Aktywa_A_IV_3_C/Aktywa_A_IV_3_C_4", code: BS.ASSETS.A.IV.3.C.4}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_IV/Aktywa_A_IV_4", code: BS.ASSETS.A.IV.4}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_V", code: BS.ASSETS.A.V, user_code: BS.ASSETS.A.V.USER}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_V/Aktywa_A_V_1", code: BS.ASSETS.A.V.1}
+    - {path: "Aktywa/Aktywa_A/Aktywa_A_V/Aktywa_A_V_2", code: BS.ASSETS.A.V.2}
+    - {path: "Aktywa/Aktywa_B", code: BS.ASSETS.B, user_code: BS.ASSETS.B.USER}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_I", code: BS.ASSETS.B.I, user_code: BS.ASSETS.B.I.USER}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_I/Aktywa_B_I_1", code: BS.ASSETS.B.I.1}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_I/Aktywa_B_I_2", code: BS.ASSETS.B.I.2}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_I/Aktywa_B_I_3", code: BS.ASSETS.B.I.3}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_I/Aktywa_B_I_4", code: BS.ASSETS.B.I.4}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_I/Aktywa_B_I_5", code: BS.ASSETS.B.I.5}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_II", code: BS.ASSETS.B.II, user_code: BS.ASSETS.B.II.USER}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_II/Aktywa_B_II_1", code: BS.ASSETS.B.II.1, user_code: BS.ASSETS.B.II.1.USER}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_II/Aktywa_B_II_1/Aktywa_B_II_1_A", code: BS.ASSETS.B.II.1.A, user_code: BS.ASSETS.B.II.1.A.USER}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_II/Aktywa_B_II_1/Aktywa_B_II_1_A/Aktywa_B_II_1_A_1", code: BS.ASSETS.B.II.1.A.1}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_II/Aktywa_B_II_1/Aktywa_B_II_1_A/Aktywa_B_II_1_A_2", code: BS.ASSETS.B.II.1.A.2}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_II/Aktywa_B_II_1/Aktywa_B_II_1_B", code: BS.ASSETS.B.II.1.B}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_II/Aktywa_B_II_2", code: BS.ASSETS.B.II.2, user_code: BS.ASSETS.B.II.2.USER}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_II/Aktywa_B_II_2/Aktywa_B_II_2_A", code: BS.ASSETS.B.II.2.A, user_code: BS.ASSETS.B.II.2.A.USER}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_II/Aktywa_B_II_2/Aktywa_B_II_2_A/Aktywa_B_II_2_A_1", code: BS.ASSETS.B.II.2.A.1}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_II/Aktywa_B_II_2/Aktywa_B_II_2_A/Aktywa_B_II_2_A_2", code: BS.ASSETS.B.II.2.A.2}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_II/Aktywa_B_II_2/Aktywa_B_II_2_B", code: BS.ASSETS.B.II.2.B}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_II/Aktywa_B_II_3", code: BS.ASSETS.B.II.3, user_code: BS.ASSETS.B.II.3.USER}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_II/Aktywa_B_II_3/Aktywa_B_II_3_A", code: BS.ASSETS.B.II.3.A, user_code: BS.ASSETS.B.II.3.A.USER}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_II/Aktywa_B_II_3/Aktywa_B_II_3_A/Aktywa_B_II_3_A_1", code: BS.ASSETS.B.II.3.A.1}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_II/Aktywa_B_II_3/Aktywa_B_II_3_A/Aktywa_B_II_3_A_2", code: BS.ASSETS.B.II.3.A.2}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_II/Aktywa_B_II_3/Aktywa_B_II_3_B", code: BS.ASSETS.B.II.3.B}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_II/Aktywa_B_II_3/Aktywa_B_II_3_C", code: BS.ASSETS.B.II.3.C}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_II/Aktywa_B_II_3/Aktywa_B_II_3_D", code: BS.ASSETS.B.II.3.D}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_III", code: BS.ASSETS.B.III, user_code: BS.ASSETS.B.III.USER}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_III/Aktywa_B_III_1", code: BS.ASSETS.B.III.1, user_code: BS.ASSETS.B.III.1.USER}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_III/Aktywa_B_III_1/Aktywa_B_III_1_A", code: BS.ASSETS.B.III.1.A, user_code: BS.ASSETS.B.III.1.A.USER}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_III/Aktywa_B_III_1/Aktywa_B_III_1_A/Aktywa_B_III_1_A_1", code: BS.ASSETS.B.III.1.A.1}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_III/Aktywa_B_III_1/Aktywa_B_III_1_A/Aktywa_B_III_1_A_2", code: BS.ASSETS.B.III.1.A.2}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_III/Aktywa_B_III_1/Aktywa_B_III_1_A/Aktywa_B_III_1_A_3", code: BS.ASSETS.B.III.1.A.3}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_III/Aktywa_B_III_1/Aktywa_B_III_1_A/Aktywa_B_III_1_A_4", code: BS.ASSETS.B.III.1.A.4}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_III/Aktywa_B_III_1/Aktywa_B_III_1_B", code: BS.ASSETS.B.III.1.B, user_code: BS.ASSETS.B.III.1.B.USER}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_III/Aktywa_B_III_1/Aktywa_B_III_1_B/Aktywa_B_III_1_B_1", code: BS.ASSETS.B.III.1.B.1}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_III/Aktywa_B_III_1/Aktywa_B_III_1_B/Aktywa_B_III_1_B_2", code: BS.ASSETS.B.III.1.B.2}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_III/Aktywa_B_III_1/Aktywa_B_III_1_B/Aktywa_B_III_1_B_3", code: BS.ASSETS.B.III.1.B.3}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_III/Aktywa_B_III_1/Aktywa_B_III_1_B/Aktywa_B_III_1_B_4", code: BS.ASSETS.B.III.1.B.4}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_III/Aktywa_B_III_1/Aktywa_B_III_1_C", code: BS.ASSETS.B.III.1.C, user_code: BS.ASSETS.B.III.1.C.USER}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_III/Aktywa_B_III_1/Aktywa_B_III_1_C/Aktywa_B_III_1_C_1", code: BS.ASSETS.B.III.1.C.1}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_III/Aktywa_B_III_1/Aktywa_B_III_1_C/Aktywa_B_III_1_C_2", code: BS.ASSETS.B.III.1.C.2}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_III/Aktywa_B_III_1/Aktywa_B_III_1_C/Aktywa_B_III_1_C_3", code: BS.ASSETS.B.III.1.C.3}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_III/Aktywa_B_III_2", code: BS.ASSETS.B.III.2}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_IV", code: BS.ASSETS.B.IV}
+    - {path: "Aktywa/Aktywa_C", code: BS.ASSETS.C}
+    - {path: "Aktywa/Aktywa_D", code: BS.ASSETS.D}
+    - {path: "Pasywa", code: BS.EQUITY_LIABILITIES, required: true, user_code: BS.EQUITY_LIABILITIES.USER}
+    - {path: "Pasywa/Pasywa_A", code: BS.EQUITY_LIABILITIES.A, required: true, user_code: BS.EQUITY_LIABILITIES.A.USER}
+    - {path: "Pasywa/Pasywa_A/Pasywa_A_I", code: BS.EQUITY_LIABILITIES.A.I}
+    - {path: "Pasywa/Pasywa_A/Pasywa_A_II", code: BS.EQUITY_LIABILITIES.A.II, user_code: BS.EQUITY_LIABILITIES.A.II.USER, user_of_which: true}
+    - {path: "Pasywa/Pasywa_A/Pasywa_A_II/Pasywa_A_II_1", code: BS.EQUITY_LIABILITIES.A.II.1, of_which: true}
+    - {path: "Pasywa/Pasywa_A/Pasywa_A_III", code: BS.EQUITY_LIABILITIES.A.III, user_code: BS.EQUITY_LIABILITIES.A.III.USER, user_of_which: true}
+    - {path: "Pasywa/Pasywa_A/Pasywa_A_III/Pasywa_A_III_1", code: BS.EQUITY_LIABILITIES.A.III.1, of_which: true}
+    - {path: "Pasywa/Pasywa_A/Pasywa_A_IV", code: BS.EQUITY_LIABILITIES.A.IV, user_code: BS.EQUITY_LIABILITIES.A.IV.USER, user_of_which: true}
+    - {path: "Pasywa/Pasywa_A/Pasywa_A_IV/Pasywa_A_IV_1", code: BS.EQUITY_LIABILITIES.A.IV.1, of_which: true}
+    - {path: "Pasywa/Pasywa_A/Pasywa_A_IV/Pasywa_A_IV_2", code: BS.EQUITY_LIABILITIES.A.IV.2, of_which: true}
+    - {path: "Pasywa/Pasywa_A/Pasywa_A_V", code: BS.EQUITY_LIABILITIES.A.V}
+    - {path: "Pasywa/Pasywa_A/Pasywa_A_VI", code: BS.EQUITY_LIABILITIES.A.VI}
+    - {path: "Pasywa/Pasywa_A/Pasywa_A_VII", code: BS.EQUITY_LIABILITIES.A.VII}
+    - {path: "Pasywa/Pasywa_B", code: BS.EQUITY_LIABILITIES.B, required: true, user_code: BS.EQUITY_LIABILITIES.B.USER}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_I", code: BS.EQUITY_LIABILITIES.B.I, user_code: BS.EQUITY_LIABILITIES.B.I.USER}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_I/Pasywa_B_I_1", code: BS.EQUITY_LIABILITIES.B.I.1}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_I/Pasywa_B_I_2", code: BS.EQUITY_LIABILITIES.B.I.2, user_code: BS.EQUITY_LIABILITIES.B.I.2.USER}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_I/Pasywa_B_I_2/Pasywa_B_I_2_1", code: BS.EQUITY_LIABILITIES.B.I.2.1}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_I/Pasywa_B_I_2/Pasywa_B_I_2_2", code: BS.EQUITY_LIABILITIES.B.I.2.2}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_I/Pasywa_B_I_3", code: BS.EQUITY_LIABILITIES.B.I.3, user_code: BS.EQUITY_LIABILITIES.B.I.3.USER}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_I/Pasywa_B_I_3/Pasywa_B_I_3_1", code: BS.EQUITY_LIABILITIES.B.I.3.1}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_I/Pasywa_B_I_3/Pasywa_B_I_3_2", code: BS.EQUITY_LIABILITIES.B.I.3.2}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_II", code: BS.EQUITY_LIABILITIES.B.II, user_code: BS.EQUITY_LIABILITIES.B.II.USER}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_II/Pasywa_B_II_1", code: BS.EQUITY_LIABILITIES.B.II.1}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_II/Pasywa_B_II_2", code: BS.EQUITY_LIABILITIES.B.II.2}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_II/Pasywa_B_II_3", code: BS.EQUITY_LIABILITIES.B.II.3, user_code: BS.EQUITY_LIABILITIES.B.II.3.USER}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_II/Pasywa_B_II_3/Pasywa_B_II_3_A", code: BS.EQUITY_LIABILITIES.B.II.3.A}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_II/Pasywa_B_II_3/Pasywa_B_II_3_B", code: BS.EQUITY_LIABILITIES.B.II.3.B}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_II/Pasywa_B_II_3/Pasywa_B_II_3_C", code: BS.EQUITY_LIABILITIES.B.II.3.C}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_II/Pasywa_B_II_3/Pasywa_B_II_3_D", code: BS.EQUITY_LIABILITIES.B.II.3.D}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_II/Pasywa_B_II_3/Pasywa_B_II_3_E", code: BS.EQUITY_LIABILITIES.B.II.3.E}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_III", code: BS.EQUITY_LIABILITIES.B.III, user_code: BS.EQUITY_LIABILITIES.B.III.USER}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_III/Pasywa_B_III_1", code: BS.EQUITY_LIABILITIES.B.III.1, user_code: BS.EQUITY_LIABILITIES.B.III.1.USER}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_III/Pasywa_B_III_1/Pasywa_B_III_1_A", code: BS.EQUITY_LIABILITIES.B.III.1.A, user_code: BS.EQUITY_LIABILITIES.B.III.1.A.USER}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_III/Pasywa_B_III_1/Pasywa_B_III_1_A/Pasywa_B_III_1_A_1", code: BS.EQUITY_LIABILITIES.B.III.1.A.1}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_III/Pasywa_B_III_1/Pasywa_B_III_1_A/Pasywa_B_III_1_A_2", code: BS.EQUITY_LIABILITIES.B.III.1.A.2}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_III/Pasywa_B_III_1/Pasywa_B_III_1_B", code: BS.EQUITY_LIABILITIES.B.III.1.B}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_III/Pasywa_B_III_2", code: BS.EQUITY_LIABILITIES.B.III.2, user_code: BS.EQUITY_LIABILITIES.B.III.2.USER}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_III/Pasywa_B_III_2/Pasywa_B_III_2_A", code: BS.EQUITY_LIABILITIES.B.III.2.A, user_code: BS.EQUITY_LIABILITIES.B.III.2.A.USER}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_III/Pasywa_B_III_2/Pasywa_B_III_2_A/Pasywa_B_III_2_A_1", code: BS.EQUITY_LIABILITIES.B.III.2.A.1}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_III/Pasywa_B_III_2/Pasywa_B_III_2_A/Pasywa_B_III_2_A_2", code: BS.EQUITY_LIABILITIES.B.III.2.A.2}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_III/Pasywa_B_III_2/Pasywa_B_III_2_B", code: BS.EQUITY_LIABILITIES.B.III.2.B}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_III/Pasywa_B_III_3", code: BS.EQUITY_LIABILITIES.B.III.3, user_code: BS.EQUITY_LIABILITIES.B.III.3.USER}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_III/Pasywa_B_III_3/Pasywa_B_III_3_A", code: BS.EQUITY_LIABILITIES.B.III.3.A}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_III/Pasywa_B_III_3/Pasywa_B_III_3_B", code: BS.EQUITY_LIABILITIES.B.III.3.B}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_III/Pasywa_B_III_3/Pasywa_B_III_3_C", code: BS.EQUITY_LIABILITIES.B.III.3.C}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_III/Pasywa_B_III_3/Pasywa_B_III_3_D", code: BS.EQUITY_LIABILITIES.B.III.3.D, user_code: BS.EQUITY_LIABILITIES.B.III.3.D.USER}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_III/Pasywa_B_III_3/Pasywa_B_III_3_D/Pasywa_B_III_3_D_1", code: BS.EQUITY_LIABILITIES.B.III.3.D.1}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_III/Pasywa_B_III_3/Pasywa_B_III_3_D/Pasywa_B_III_3_D_2", code: BS.EQUITY_LIABILITIES.B.III.3.D.2}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_III/Pasywa_B_III_3/Pasywa_B_III_3_E", code: BS.EQUITY_LIABILITIES.B.III.3.E}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_III/Pasywa_B_III_3/Pasywa_B_III_3_F", code: BS.EQUITY_LIABILITIES.B.III.3.F}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_III/Pasywa_B_III_3/Pasywa_B_III_3_G", code: BS.EQUITY_LIABILITIES.B.III.3.G}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_III/Pasywa_B_III_3/Pasywa_B_III_3_H", code: BS.EQUITY_LIABILITIES.B.III.3.H}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_III/Pasywa_B_III_3/Pasywa_B_III_3_I", code: BS.EQUITY_LIABILITIES.B.III.3.I}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_III/Pasywa_B_III_4", code: BS.EQUITY_LIABILITIES.B.III.4}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_IV", code: BS.EQUITY_LIABILITIES.B.IV, user_code: BS.EQUITY_LIABILITIES.B.IV.USER}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_IV/Pasywa_B_IV_1", code: BS.EQUITY_LIABILITIES.B.IV.1}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_IV/Pasywa_B_IV_2", code: BS.EQUITY_LIABILITIES.B.IV.2, user_code: BS.EQUITY_LIABILITIES.B.IV.2.USER}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_IV/Pasywa_B_IV_2/Pasywa_B_IV_2_1", code: BS.EQUITY_LIABILITIES.B.IV.2.1}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_IV/Pasywa_B_IV_2/Pasywa_B_IV_2_2", code: BS.EQUITY_LIABILITIES.B.IV.2.2}
+  RZiS:
+    - {path: "RZiSKalk", section: true, user_code: IS.CALC.USER}
+    - {path: "RZiSKalk/A", code: IS.CALC.A, user_code: IS.CALC.A.USER, user_of_which: true}
+    - {path: "RZiSKalk/A/A_J", code: IS.CALC.A.J, of_which: true}
+    - {path: "RZiSKalk/A/A_I", code: IS.CALC.A.I}
+    - {path: "RZiSKalk/A/A_II", code: IS.CALC.A.II}
+    - {path: "RZiSKalk/B", code: IS.CALC.B, user_code: IS.CALC.B.USER, user_of_which: true}
+    - {path: "RZiSKalk/B/B_J", code: IS.CALC.B.J, of_which: true}
+    - {path: "RZiSKalk/B/B_I", code: IS.CALC.B.I}
+    - {path: "RZiSKalk/B/B_II", code: IS.CALC.B.II}
+    - {path: "RZiSKalk/C", code: IS.CALC.C}
+    - {path: "RZiSKalk/D", code: IS.CALC.D}
+    - {path: "RZiSKalk/E", code: IS.CALC.E}
+    - {path: "RZiSKalk/F", code: IS.CALC.F}
+    - {path: "RZiSKalk/G", code: IS.CALC.G, user_code: IS.CALC.G.USER}
+    - {path: "RZiSKalk/G/G_I", code: IS.CALC.G.I}
+    - {path: "RZiSKalk/G/G_II", code: IS.CALC.G.II}
+    - {path: "RZiSKalk/G/G_III", code: IS.CALC.G.III}
+    - {path: "RZiSKalk/G/G_IV", code: IS.CALC.G.IV}
+    - {path: "RZiSKalk/H", code: IS.CALC.H, user_code: IS.CALC.H.USER}
+    - {path: "RZiSKalk/H/H_I", code: IS.CALC.H.I}
+    - {path: "RZiSKalk/H/H_II", code: IS.CALC.H.II}
+    - {path: "RZiSKalk/H/H_III", code: IS.CALC.H.III}
+    - {path: "RZiSKalk/I", code: IS.CALC.I}
+    - {path: "RZiSKalk/J", code: IS.CALC.J, user_code: IS.CALC.J.USER}
+    - {path: "RZiSKalk/J/J_I", code: IS.CALC.J.I, user_code: IS.CALC.J.I.USER, user_of_which: true}
+    - {path: "RZiSKalk/J/J_I/J_I_A", code: IS.CALC.J.I.A, user_code: IS.CALC.J.I.A.USER, user_of_which: true}
+    - {path: "RZiSKalk/J/J_I/J_I_A/J_I_A_1", code: IS.CALC.J.I.A.1, of_which: true}
+    - {path: "RZiSKalk/J/J_I/J_I_B", code: IS.CALC.J.I.B, user_code: IS.CALC.J.I.B.USER, user_of_which: true}
+    - {path: "RZiSKalk/J/J_I/J_I_B/J_I_B_1", code: IS.CALC.J.I.B.1, of_which: true}
+    - {path: "RZiSKalk/J/J_II", code: IS.CALC.J.II, user_code: IS.CALC.J.II.USER, user_of_which: true}
+    - {path: "RZiSKalk/J/J_II/J_II_J", code: IS.CALC.J.II.J, of_which: true}
+    - {path: "RZiSKalk/J/J_III", code: IS.CALC.J.III, user_code: IS.CALC.J.III.USER, user_of_which: true}
+    - {path: "RZiSKalk/J/J_III/J_III_J", code: IS.CALC.J.III.J, of_which: true}
+    - {path: "RZiSKalk/J/J_IV", code: IS.CALC.J.IV}
+    - {path: "RZiSKalk/J/J_V", code: IS.CALC.J.V}
+    - {path: "RZiSKalk/K", code: IS.CALC.K, user_code: IS.CALC.K.USER}
+    - {path: "RZiSKalk/K/K_I", code: IS.CALC.K.I, user_code: IS.CALC.K.I.USER, user_of_which: true}
+    - {path: "RZiSKalk/K/K_I/K_I_J", code: IS.CALC.K.I.J, of_which: true}
+    - {path: "RZiSKalk/K/K_II", code: IS.CALC.K.II, user_code: IS.CALC.K.II.USER, user_of_which: true}
+    - {path: "RZiSKalk/K/K_II/K_II_J", code: IS.CALC.K.II.J, of_which: true}
+    - {path: "RZiSKalk/K/K_III", code: IS.CALC.K.III}
+    - {path: "RZiSKalk/K/K_IV", code: IS.CALC.K.IV}
+    - {path: "RZiSKalk/L", code: IS.CALC.L}
+    - {path: "RZiSKalk/M", code: IS.CALC.M}
+    - {path: "RZiSKalk/N", code: IS.CALC.N}
+    - {path: "RZiSKalk/O", code: IS.CALC.O}
+    - {path: "RZiSPor", section: true, user_code: IS.COMP.USER}
+    - {path: "RZiSPor/A", code: IS.COMP.A, user_code: IS.COMP.A.USER, user_of_which: true}
+    - {path: "RZiSPor/A/A_J", code: IS.COMP.A.J, of_which: true}
+    - {path: "RZiSPor/A/A_I", code: IS.COMP.A.I}
+    - {path: "RZiSPor/A/A_II", code: IS.COMP.A.II}
+    - {path: "RZiSPor/A/A_III", code: IS.COMP.A.III}
+    - {path: "RZiSPor/A/A_IV", code: IS.COMP.A.IV}
+    - {path: "RZiSPor/B", code: IS.COMP.B, user_code: IS.COMP.B.USER}
+    - {path: "RZiSPor/B/B_I", code: IS.COMP.B.I}
+    - {path: "RZiSPor/B/B_II", code: IS.COMP.B.II}
+    - {path: "RZiSPor/B/B_III", code: IS.COMP.B.III}
+    - {path: "RZiSPor/B/B_IV", code: IS.COMP.B.IV, user_code: IS.COMP.B.IV.USER, user_of_which: true}
+    - {path: "RZiSPor/B/B_IV/B_IV_1", code: IS.COMP.B.IV.1, of_which: true}
+    - {path: "RZiSPor/B/B_V", code: IS.COMP.B.V}
+    - {path: "RZiSPor/B/B_VI", code: IS.COMP.B.VI, user_code: IS.COMP.B.VI.USER, user_of_which: true}
+    - {path: "RZiSPor/B/B_VI/B_VI_1", code: IS.COMP.B.VI.1, of_which: true}
+    - {path: "RZiSPor/B/B_VII", code: IS.COMP.B.VII}
+    - {path: "RZiSPor/B/B_VIII", code: IS.COMP.B.VIII}
+    - {path: "RZiSPor/C", code: IS.COMP.C}
+    - {path: "RZiSPor/D", code: IS.COMP.D, user_code: IS.COMP.D.USER}
+    - {path: "RZiSPor/D/D_I", code: IS.COMP.D.I}
+    - {path: "RZiSPor/D/D_II", code: IS.COMP.D.II}
+    - {path: "RZiSPor/D/D_III", code: IS.COMP.D.III}
+    - {path: "RZiSPor/D/D_IV", code: IS.COMP.D.IV}
+    - {path: "RZiSPor/E", code: IS.COMP.E, user_code: IS.COMP.E.USER}
+    - {path: "RZiSPor/E/E_I", code: IS.COMP.E.I}
+    - {path: "RZiSPor/E/E_II", code: IS.COMP.E.II}
+    - {path: "RZiSPor/E/E_III", code: IS.COMP.E.III}
+    - {path: "RZiSPor/F", code: IS.COMP.F}
+    - {path: "RZiSPor/G", code: IS.COMP.G, user_code: IS.COMP.G.USER}
+    - {path: "RZiSPor/G/G_I", code: IS.COMP.G.I, user_code: IS.COMP.G.I.USER, user_of_which: true}
+    - {path: "RZiSPor/G/G_I/G_I_A", code: IS.COMP.G.I.A, user_code: IS.COMP.G.I.A.USER, user_of_which: true}
+    - {path: "RZiSPor/G/G_I/G_I_A/G_I_A_1", code: IS.COMP.G.I.A.1, of_which: true}
+    - {path: "RZiSPor/G/G_I/G_I_B", code: IS.COMP.G.I.B, user_code: IS.COMP.G.I.B.USER, user_of_which: true}
+    - {path: "RZiSPor/G/G_I/G_I_B/G_I_B_1", code: IS.COMP.G.I.B.1, of_which: true}
+    - {path: "RZiSPor/G/G_II", code: IS.COMP.G.II, user_code: IS.COMP.G.II.USER, user_of_which: true}
+    - {path: "RZiSPor/G/G_II/G_II_J", code: IS.COMP.G.II.J, of_which: true}
+    - {path: "RZiSPor/G/G_III", code: IS.COMP.G.III, user_code: IS.COMP.G.III.USER, user_of_which: true}
+    - {path: "RZiSPor/G/G_III/G_III_J", code: IS.COMP.G.III.J, of_which: true}
+    - {path: "RZiSPor/G/G_IV", code: IS.COMP.G.IV}
+    - {path: "RZiSPor/G/G_V", code: IS.COMP.G.V}
+    - {path: "RZiSPor/H", code: IS.COMP.H, user_code: IS.COMP.H.USER}
+    - {path: "RZiSPor/H/H_I", code: IS.COMP.H.I, user_code: IS.COMP.H.I.USER, user_of_which: true}
+    - {path: "RZiSPor/H/H_I/H_I_J", code: IS.COMP.H.I.J, of_which: true}
+    - {path: "RZiSPor/H/H_II", code: IS.COMP.H.II, user_code: IS.COMP.H.II.USER, user_of_which: true}
+    - {path: "RZiSPor/H/H_II/H_II_J", code: IS.COMP.H.II.J, of_which: true}
+    - {path: "RZiSPor/H/H_III", code: IS.COMP.H.III}
+    - {path: "RZiSPor/H/H_IV", code: IS.COMP.H.IV}
+    - {path: "RZiSPor/I", code: IS.COMP.I}
+    - {path: "RZiSPor/J", code: IS.COMP.J}
+    - {path: "RZiSPor/K", code: IS.COMP.K}
+    - {path: "RZiSPor/L", code: IS.COMP.L}
+  ZestZmianWKapitale:
+    - {path: "I", code: EQ.I, user_code: EQ.I.USER}
+    - {path: "I/I_1", code: EQ.I.1}
+    - {path: "I/I_2", code: EQ.I.2}
+    - {path: "IA", code: EQ.IA, user_code: EQ.IA.USER}
+    - {path: "IA/IA_1", code: EQ.IA.1, user_code: EQ.IA.1.USER}
+    - {path: "IA/IA_1/IA_1_1", code: EQ.IA.1.1, user_code: EQ.IA.1.1.USER}
+    - {path: "IA/IA_1/IA_1_1/IA_1_1_A", code: EQ.IA.1.1.A, user_code: EQ.IA.1.1.A.USER}
+    - {path: "IA/IA_1/IA_1_1/IA_1_1_A/IA_1_1_A_1", code: EQ.IA.1.1.A.1}
+    - {path: "IA/IA_1/IA_1_1/IA_1_1_B", code: EQ.IA.1.1.B, user_code: EQ.IA.1.1.B.USER}
+    - {path: "IA/IA_1/IA_1_1/IA_1_1_B/IA_1_1_B_1", code: EQ.IA.1.1.B.1}
+    - {path: "IA/IA_1/IA_1_2", code: EQ.IA.1.2}
+    - {path: "IA/IA_2", code: EQ.IA.2, user_code: EQ.IA.2.USER}
+    - {path: "IA/IA_2/IA_2_1", code: EQ.IA.2.1, user_code: EQ.IA.2.1.USER}
+    - {path: "IA/IA_2/IA_2_1/IA_2_1_A", code: EQ.IA.2.1.A, user_code: EQ.IA.2.1.A.USER}
+    - {path: "IA/IA_2/IA_2_1/IA_2_1_A/IA_2_1_A_1", code: EQ.IA.2.1.A.1}
+    - {path: "IA/IA_2/IA_2_1/IA_2_1_A/IA_2_1_A_2", code: EQ.IA.2.1.A.2}
+    - {path: "IA/IA_2/IA_2_1/IA_2_1_A/IA_2_1_A_3", code: EQ.IA.2.1.A.3}
+    - {path: "IA/IA_2/IA_2_1/IA_2_1_B", code: EQ.IA.2.1.B, user_code: EQ.IA.2.1.B.USER}
+    - {path: "IA/IA_2/IA_2_1/IA_2_1_B/IA_2_1_B_1", code: EQ.IA.2.1.B.1}
+    - {path: "IA/IA_2/IA_2_2", code: EQ.IA.2.2}
+    - {path: "IA/IA_3", code: EQ.IA.3, user_code: EQ.IA.3.USER}
+    - {path: "IA/IA_3/IA_3_1", code: EQ.IA.3.1, user_code: EQ.IA.3.1.USER}
+    - {path: "IA/IA_3/IA_3_1/IA_3_1_A", code: EQ.IA.3.1.A}
+    - {path: "IA/IA_3/IA_3_1/IA_3_1_B", code: EQ.IA.3.1.B, user_code: EQ.IA.3.1.B.USER}
+    - {path: "IA/IA_3/IA_3_1/IA_3_1_B/IA_3_1_B_1", code: EQ.IA.3.1.B.1}
+    - {path: "IA/IA_3/IA_3_2", code: EQ.IA.3.2}
+    - {path: "IA/IA_4", code: EQ.IA.4, user_code: EQ.IA.4.USER}
+    - {path: "IA/IA_4/IA_4_1", code: EQ.IA.4.1, user_code: EQ.IA.4.1.USER}
+    - {path: "IA/IA_4/IA_4_1/IA_4_1_A", code: EQ.IA.4.1.A}
+    - {path: "IA/IA_4/IA_4_1/IA_4_1_B", code: EQ.IA.4.1.B}
+    - {path: "IA/IA_4/IA_4_2", code: EQ.IA.4.2}
+    - {path: "IA/IA_5", code: EQ.IA.5, user_code: EQ.IA.5.USER}
+    - {path: "IA/IA_5/IA_5_1", code: EQ.IA.5.1, user_code: EQ.IA.5.1.USER}
+    - {path: "IA/IA_5/IA_5_1/IA_5_1_1", code: EQ.IA.5.1.1}
+    - {path: "IA/IA_5/IA_5_1/IA_5_1_2", code: EQ.IA.5.1.2}
+    - {path: "IA/IA_5/IA_5_2", code: EQ.IA.5.2, user_code: EQ.IA.5.2.USER}
+    - {path: "IA/IA_5/IA_5_2/IA_5_2_A", code: EQ.IA.5.2.A, user_code: EQ.IA.5.2.A.USER}
+    - {path: "IA/IA_5/IA_5_2/IA_5_2_A/IA_5_2_A_1", code: EQ.IA.5.2.A.1}
+    - {path: "IA/IA_5/IA_5_2/IA_5_2_B", code: EQ.IA.5.2.B}
+    - {path: "IA/IA_5/IA_5_3", code: EQ.IA.5.3}
+    - {path: "IA/IA_5/IA_5_4", code: EQ.IA.5.4, user_code: EQ.IA.5.4.USER}
+    - {path: "IA/IA_5/IA_5_4/IA_5_4_1", code: EQ.IA.5.4.1}
+    - {path: "IA/IA_5/IA_5_4/IA_5_4_2", code: EQ.IA.5.4.2}
+    - {path: "IA/IA_5/IA_5_5", code: EQ.IA.5.5, user_code: EQ.IA.5.5.USER}
+    - {path: "IA/IA_5/IA_5_5/IA_5_5_A", code: EQ.IA.5.5.A, user_code: EQ.IA.5.5.A.USER}
+    - {path: "IA/IA_5/IA_5_5/IA_5_5_A/IA_5_5_A_1", code: EQ.IA.5.5.A.1}
+    - {path: "IA/IA_5/IA_5_5/IA_5_5_B", code: EQ.IA.5.5.B}
+    - {path: "IA/IA_5/IA_5_6", code: EQ.IA.5.6}
+    - {path: "IA/IA_5/IA_5_7", code: EQ.IA.5.7}
+    - {path: "IA/IA_6", code: EQ.IA.6, user_code: EQ.IA.6.USER}
+    - {path: "IA/IA_6/IA_6_A", code: EQ.IA.6.A}
+    - {path: "IA/IA_6/IA_6_B", code: EQ.IA.6.B}
+    - {path: "IA/IA_6/IA_6_C", code: EQ.IA.6.C}
+    - {path: "II", code: EQ.II}
+    - {path: "III", code: EQ.III}
+  RachPrzeplywow:
+    - {path: "PrzeplywyBezp", section: true, user_code: CF.DIR.USER}
+    - {path: "PrzeplywyBezp/A", code: CF.DIR.A, header: true, user_code: CF.DIR.A.USER}
+    - {path: "PrzeplywyBezp/A/A_I", code: CF.DIR.A.I, user_code: CF.DIR.A.I.USER}
+    - {path: "PrzeplywyBezp/A/A_I/A_I_1", code: CF.DIR.A.I.1}
+    - {path: "PrzeplywyBezp/A/A_I/A_I_2", code: CF.DIR.A.I.2}
+    - {path: "PrzeplywyBezp/A/A_II", code: CF.DIR.A.II, user_code: CF.DIR.A.II.USER}
+    - {path: "PrzeplywyBezp/A/A_II/A_II_1", code: CF.DIR.A.II.1}
+    - {path: "PrzeplywyBezp/A/A_II/A_II_2", code: CF.DIR.A.II.2}
+    - {path: "PrzeplywyBezp/A/A_II/A_II_3", code: CF.DIR.A.II.3}
+    - {path: "PrzeplywyBezp/A/A_II/A_II_4", code: CF.DIR.A.II.4}
+    - {path: "PrzeplywyBezp/A/A_II/A_II_5", code: CF.DIR.A.II.5}
+    - {path: "PrzeplywyBezp/A/A_III", code: CF.DIR.A.III}
+    - {path: "PrzeplywyBezp/B", code: CF.DIR.B, header: true, user_code: CF.DIR.B.USER}
+    - {path: "PrzeplywyBezp/B/B_I", code: CF.DIR.B.I, user_code: CF.DIR.B.I.USER}
+    - {path: "PrzeplywyBezp/B/B_I/B_I_1", code: CF.DIR.B.I.1}
+    - {path: "PrzeplywyBezp/B/B_I/B_I_2", code: CF.DIR.B.I.2}
+    - {path: "PrzeplywyBezp/B/B_I/B_I_3", code: CF.DIR.B.I.3, user_code: CF.DIR.B.I.3.USER, user_of_which: true}
+    - {path: "PrzeplywyBezp/B/B_I/B_I_3/B_I_3_A", code: CF.DIR.B.I.3.A}
+    - {path: "PrzeplywyBezp/B/B_I/B_I_3/B_I_3_B", code: CF.DIR.B.I.3.B, user_code: CF.DIR.B.I.3.B.USER}
+    - {path: "PrzeplywyBezp/B/B_I/B_I_3/B_I_3_B/B_I_3_B_1", code: CF.DIR.B.I.3.B.1}
+    - {path: "PrzeplywyBezp/B/B_I/B_I_3/B_I_3_B/B_I_3_B_2", code: CF.DIR.B.I.3.B.2}
+    - {path: "PrzeplywyBezp/B/B_I/B_I_3/B_I_3_B/B_I_3_B_3", code: CF.DIR.B.I.3.B.3}
+    - {path: "PrzeplywyBezp/B/B_I/B_I_3/B_I_3_B/B_I_3_B_4", code: CF.DIR.B.I.3.B.4}
+    - {path: "PrzeplywyBezp/B/B_I/B_I_3/B_I_3_B/B_I_3_B_5", code: CF.DIR.B.I.3.B.5}
+    - {path: "PrzeplywyBezp/B/B_I/B_I_4", code: CF.DIR.B.I.4}
+    - {path: "PrzeplywyBezp/B/B_II", code: CF.DIR.B.II, user_code: CF.DIR.B.II.USER}
+    - {path: "PrzeplywyBezp/B/B_II/B_II_1", code: CF.DIR.B.II.1}
+    - {path: "PrzeplywyBezp/B/B_II/B_II_2", code: CF.DIR.B.II.2}
+    - {path: "PrzeplywyBezp/B/B_II/B_II_3", code: CF.DIR.B.II.3, user_code: CF.DIR.B.II.3.USER, user_of_which: true}
+    - {path: "PrzeplywyBezp/B/B_II/B_II_3/B_II_3_A", code: CF.DIR.B.II.3.A}
+    - {path: "PrzeplywyBezp/B/B_II/B_II_3/B_II_3_B", code: CF.DIR.B.II.3.B, user_code: CF.DIR.B.II.3.B.USER}
+    - {path: "PrzeplywyBezp/B/B_II/B_II_3/B_II_3_B/B_II_3_B_1", code: CF.DIR.B.II.3.B.1}
+    - {path: "PrzeplywyBezp/B/B_II/B_II_3/B_II_3_B/B_II_3_B_2", code: CF.DIR.B.II.3.B.2}
+    - {path: "PrzeplywyBezp/B/B_II/B_II_4", code: CF.DIR.B.II.4}
+    - {path: "PrzeplywyBezp/B/B_III", code: CF.DIR.B.III}
+    - {path: "PrzeplywyBezp/C", code: CF.DIR.C, header: true, user_code: CF.DIR.C.USER}
+    - {path: "PrzeplywyBezp/C/C_I", code: CF.DIR.C.I, user_code: CF.DIR.C.I.USER}
+    - {path: "PrzeplywyBezp/C/C_I/C_I_1", code: CF.DIR.C.I.1}
+    - {path: "PrzeplywyBezp/C/C_I/C_I_2", code: CF.DIR.C.I.2}
+    - {path: "PrzeplywyBezp/C/C_I/C_I_3", code: CF.DIR.C.I.3}
+    - {path: "PrzeplywyBezp/C/C_I/C_I_4", code: CF.DIR.C.I.4}
+    - {path: "PrzeplywyBezp/C/C_II", code: CF.DIR.C.II, user_code: CF.DIR.C.II.USER}
+    - {path: "PrzeplywyBezp/C/C_II/C_II_1", code: CF.DIR.C.II.1}
+    - {path: "PrzeplywyBezp/C/C_II/C_II_2", code: CF.DIR.C.II.2}
+    - {path: "PrzeplywyBezp/C/C_II/C_II_3", code: CF.DIR.C.II.3}
+    - {path: "PrzeplywyBezp/C/C_II/C_II_4", code: CF.DIR.C.II.4}
+    - {path: "PrzeplywyBezp/C/C_II/C_II_5", code: CF.DIR.C.II.5}
+    - {path: "PrzeplywyBezp/C/C_II/C_II_6", code: CF.DIR.C.II.6}
+    - {path: "PrzeplywyBezp/C/C_II/C_II_7", code: CF.DIR.C.II.7}
+    - {path: "PrzeplywyBezp/C/C_II/C_II_8", code: CF.DIR.C.II.8}
+    - {path: "PrzeplywyBezp/C/C_II/C_II_9", code: CF.DIR.C.II.9}
+    - {path: "PrzeplywyBezp/C/C_III", code: CF.DIR.C.III}
+    - {path: "PrzeplywyBezp/D", code: CF.DIR.D}
+    - {path: "PrzeplywyBezp/E", code: CF.DIR.E, user_code: CF.DIR.E.USER, user_of_which: true}
+    - {path: "PrzeplywyBezp/E/E_1", code: CF.DIR.E.1, of_which: true}
+    - {path: "PrzeplywyBezp/F", code: CF.DIR.F}
+    - {path: "PrzeplywyBezp/G", code: CF.DIR.G, user_code: CF.DIR.G.USER, user_of_which: true}
+    - {path: "PrzeplywyBezp/G/G_1", code: CF.DIR.G.1, of_which: true}
+    - {path: "PrzeplywyPosr", section: true, user_code: CF.IND.USER}
+    - {path: "PrzeplywyPosr/A", code: CF.IND.A, header: true, user_code: CF.IND.A.USER}
+    - {path: "PrzeplywyPosr/A/A_I", code: CF.IND.A.I}
+    - {path: "PrzeplywyPosr/A/A_II", code: CF.IND.A.II, user_code: CF.IND.A.II.USER}
+    - {path: "PrzeplywyPosr/A/A_II/A_II_1", code: CF.IND.A.II.1}
+    - {path: "PrzeplywyPosr/A/A_II/A_II_2", code: CF.IND.A.II.2}
+    - {path: "PrzeplywyPosr/A/A_II/A_II_3", code: CF.IND.A.II.3}
+    - {path: "PrzeplywyPosr/A/A_II/A_II_4", code: CF.IND.A.II.4}
+    - {path: "PrzeplywyPosr/A/A_II/A_II_5", code: CF.IND.A.II.5}
+    - {path: "PrzeplywyPosr/A/A_II/A_II_6", code: CF.IND.A.II.6}
+    - {path: "PrzeplywyPosr/A/A_II/A_II_7", code: CF.IND.A.II.7}
+    - {path: "PrzeplywyPosr/A/A_II/A_II_8", code: CF.IND.A.II.8}
+    - {path: "PrzeplywyPosr/A/A_II/A_II_9", code: CF.IND.A.II.9}
+    - {path: "PrzeplywyPosr/A/A_II/A_II_10", code: CF.IND.A.II.10}
+    - {path: "PrzeplywyPosr/A/A_III", code: CF.IND.A.III}
+    - {path: "PrzeplywyPosr/B", code: CF.IND.B, header: true, user_code: CF.IND.B.USER}
+    - {path: "PrzeplywyPosr/B/B_I", code: CF.IND.B.I, user_code: CF.IND.B.I.USER}
+    - {path: "PrzeplywyPosr/B/B_I/B_I_1", code: CF.IND.B.I.1}
+    - {path: "PrzeplywyPosr/B/B_I/B_I_2", code: CF.IND.B.I.2}
+    - {path: "PrzeplywyPosr/B/B_I/B_I_3", code: CF.IND.B.I.3, user_code: CF.IND.B.I.3.USER, user_of_which: true}
+    - {path: "PrzeplywyPosr/B/B_I/B_I_3/B_I_3_A", code: CF.IND.B.I.3.A}
+    - {path: "PrzeplywyPosr/B/B_I/B_I_3/B_I_3_B", code: CF.IND.B.I.3.B, user_code: CF.IND.B.I.3.B.USER}
+    - {path: "PrzeplywyPosr/B/B_I/B_I_3/B_I_3_B/B_I_3_B_1", code: CF.IND.B.I.3.B.1}
+    - {path: "PrzeplywyPosr/B/B_I/B_I_3/B_I_3_B/B_I_3_B_2", code: CF.IND.B.I.3.B.2}
+    - {path: "PrzeplywyPosr/B/B_I/B_I_3/B_I_3_B/B_I_3_B_3", code: CF.IND.B.I.3.B.3}
+    - {path: "PrzeplywyPosr/B/B_I/B_I_3/B_I_3_B/B_I_3_B_4", code: CF.IND.B.I.3.B.4}
+    - {path: "PrzeplywyPosr/B/B_I/B_I_3/B_I_3_B/B_I_3_B_5", code: CF.IND.B.I.3.B.5}
+    - {path: "PrzeplywyPosr/B/B_I/B_I_4", code: CF.IND.B.I.4}
+    - {path: "PrzeplywyPosr/B/B_II", code: CF.IND.B.II, user_code: CF.IND.B.II.USER}
+    - {path: "PrzeplywyPosr/B/B_II/B_II_1", code: CF.IND.B.II.1}
+    - {path: "PrzeplywyPosr/B/B_II/B_II_2", code: CF.IND.B.II.2}
+    - {path: "PrzeplywyPosr/B/B_II/B_II_3", code: CF.IND.B.II.3, user_code: CF.IND.B.II.3.USER, user_of_which: true}
+    - {path: "PrzeplywyPosr/B/B_II/B_II_3/B_II_3_A", code: CF.IND.B.II.3.A}
+    - {path: "PrzeplywyPosr/B/B_II/B_II_3/B_II_3_B", code: CF.IND.B.II.3.B, user_code: CF.IND.B.II.3.B.USER}
+    - {path: "PrzeplywyPosr/B/B_II/B_II_3/B_II_3_B/B_II_3_B_1", code: CF.IND.B.II.3.B.1}
+    - {path: "PrzeplywyPosr/B/B_II/B_II_3/B_II_3_B/B_II_3_B_2", code: CF.IND.B.II.3.B.2}
+    - {path: "PrzeplywyPosr/B/B_II/B_II_4", code: CF.IND.B.II.4}
+    - {path: "PrzeplywyPosr/B/B_III", code: CF.IND.B.III}
+    - {path: "PrzeplywyPosr/C", code: CF.IND.C, header: true, user_code: CF.IND.C.USER}
+    - {path: "PrzeplywyPosr/C/C_I", code: CF.IND.C.I, user_code: CF.IND.C.I.USER}
+    - {path: "PrzeplywyPosr/C/C_I/C_I_1", code: CF.IND.C.I.1}
+    - {path: "PrzeplywyPosr/C/C_I/C_I_2", code: CF.IND.C.I.2}
+    - {path: "PrzeplywyPosr/C/C_I/C_I_3", code: CF.IND.C.I.3}
+    - {path: "PrzeplywyPosr/C/C_I/C_I_4", code: CF.IND.C.I.4}
+    - {path: "PrzeplywyPosr/C/C_II", code: CF.IND.C.II, user_code: CF.IND.C.II.USER}
+    - {path: "PrzeplywyPosr/C/C_II/C_II_1", code: CF.IND.C.II.1}
+    - {path: "PrzeplywyPosr/C/C_II/C_II_2", code: CF.IND.C.II.2}
+    - {path: "PrzeplywyPosr/C/C_II/C_II_3", code: CF.IND.C.II.3}
+    - {path: "PrzeplywyPosr/C/C_II/C_II_4", code: CF.IND.C.II.4}
+    - {path: "PrzeplywyPosr/C/C_II/C_II_5", code: CF.IND.C.II.5}
+    - {path: "PrzeplywyPosr/C/C_II/C_II_6", code: CF.IND.C.II.6}
+    - {path: "PrzeplywyPosr/C/C_II/C_II_7", code: CF.IND.C.II.7}
+    - {path: "PrzeplywyPosr/C/C_II/C_II_8", code: CF.IND.C.II.8}
+    - {path: "PrzeplywyPosr/C/C_II/C_II_9", code: CF.IND.C.II.9}
+    - {path: "PrzeplywyPosr/C/C_III", code: CF.IND.C.III}
+    - {path: "PrzeplywyPosr/D", code: CF.IND.D}
+    - {path: "PrzeplywyPosr/E", code: CF.IND.E, user_code: CF.IND.E.USER, user_of_which: true}
+    - {path: "PrzeplywyPosr/E/E_1", code: CF.IND.E.1, of_which: true}
+    - {path: "PrzeplywyPosr/F", code: CF.IND.F}
+    - {path: "PrzeplywyPosr/G", code: CF.IND.G, user_code: CF.IND.G.USER, user_of_which: true}
+    - {path: "PrzeplywyPosr/G/G_1", code: CF.IND.G.1, of_which: true}

@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:inst="http://crd.gov.pl/xml/schematy/instytucja/2009/11/16/" xmlns:adr="http://crd.gov.pl/xml/schematy/adres/2009/11/09/" xmlns:oso="http://crd.gov.pl/xml/schematy/osoba/2009/11/16/" targetNamespace="http://crd.gov.pl/xml/schematy/instytucja/2009/11/16/" elementFormDefault="qualified" attributeFormDefault="unqualified" version="0.3">
+	<xsd:import namespace="http://crd.gov.pl/xml/schematy/adres/2009/11/09/" schemaLocation="http://crd.gov.pl/xml/schematy/adres/2009/11/09/adres.xsd"/>
+	<xsd:import namespace="http://crd.gov.pl/xml/schematy/osoba/2009/11/16/" schemaLocation="http://crd.gov.pl/xml/schematy/osoba/2009/11/16/osoba.xsd"/>
+	<xsd:annotation>
+		<xsd:documentation>Schemat podstawowy danych instytucji.
+		</xsd:documentation>
+		<xsd:documentation>Autor: Portal Interoperacyjności.</xsd:documentation>
+	</xsd:annotation>
+	<xsd:element name="Instytucja" type="inst:InstytucjaTyp">
+		<xsd:annotation>
+			<xsd:documentation>Instytucja</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:complexType name="InstytucjaTyp">
+		<xsd:annotation>
+			<xsd:documentation>Instytucja</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element ref="inst:IdInstytucji" minOccurs="0"/>
+			<xsd:element ref="inst:NazwaInstytucji" minOccurs="0"/>
+			<xsd:element ref="adr:Adres" minOccurs="0"/>
+			<xsd:element ref="adr:Kontakt" minOccurs="0"/>
+			<xsd:element ref="inst:Jednostka" minOccurs="0"/>
+			<xsd:element ref="inst:Pracownik" minOccurs="0"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:element name="IdInstytucji" type="inst:IdInstytucjiTyp">
+		<xsd:annotation>
+			<xsd:documentation>Identyfikator instytucji
+			</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:complexType name="IdInstytucjiTyp">
+		<xsd:annotation>
+			<xsd:documentation>Identyfikator instytucji
+			</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element ref="inst:KRS" minOccurs="0"/>
+			<xsd:element ref="inst:NIP" minOccurs="0"/>
+			<xsd:element ref="inst:REGON" minOccurs="0"/>
+			<xsd:element ref="inst:InnyIdentyfikator" minOccurs="0" maxOccurs="unbounded"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:element name="KRS" type="inst:KRSTyp">
+		<xsd:annotation>
+			<xsd:documentation>Numer KRS</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="KRSTyp">
+		<xsd:restriction base="xsd:string">
+			<xsd:pattern value="|\d{10}"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="NIP" type="oso:NIPTyp">
+		<xsd:annotation>
+			<xsd:documentation>Numer NIP</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:element name="REGON" type="inst:REGONTyp">
+		<xsd:annotation>
+			<xsd:documentation>Numer REGON</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="REGONTyp">
+		<xsd:annotation>
+			<xsd:documentation>Numer REGON</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:pattern value="|\d{14}|\d{7}|\d{9}"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="InnyIdentyfikator" type="inst:InnyIdentyfikatorTyp">
+		<xsd:annotation>
+			<xsd:documentation>Inny identyfikator instytucji
+			</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:complexType name="InnyIdentyfikatorTyp">
+		<xsd:sequence>
+			<xsd:element name="TypIdentyfikatora" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation>Typ identyfikatora</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="WartoscIdentyfikatora" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation>Wartość identyfikatora
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:element name="Funkcja" type="inst:FunkcjaTyp">
+		<xsd:annotation>
+			<xsd:documentation>Funkcja pracownika</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="FunkcjaTyp">
+		<xsd:annotation>
+			<xsd:documentation>Funkcja pracownika</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="45"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="NazwaInstytucji" type="inst:NazwaInstytucjiTyp">
+		<xsd:annotation>
+			<xsd:documentation>Nazwa instytucji</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="NazwaInstytucjiTyp">
+		<xsd:annotation>
+			<xsd:documentation>Nazwa instytucji</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="100"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="Poziom" type="inst:PoziomTyp">
+		<xsd:annotation>
+			<xsd:documentation>Poziom w strukturze organizacyjnej
+			</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="PoziomTyp">
+		<xsd:annotation>
+			<xsd:documentation>Poziom w strukturze organizacyjnej
+			</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="45"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="Jednostka" type="inst:JednostkaTyp">
+		<xsd:annotation>
+			<xsd:documentation>Jednostka organizacyjna
+			</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:complexType name="JednostkaTyp">
+		<xsd:annotation>
+			<xsd:documentation>Jednostka organizacyjna
+			</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element ref="inst:NazwaInstytucji" minOccurs="0"/>
+			<xsd:element ref="adr:Adres" minOccurs="0"/>
+			<xsd:element ref="adr:Kontakt" minOccurs="0"/>
+			<xsd:element ref="inst:Poziom" minOccurs="0"/>
+			<xsd:element ref="inst:Jednostka" minOccurs="0"/>
+			<xsd:element ref="inst:Pracownik" minOccurs="0"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:element name="Pracownik" type="inst:PracownikTyp">
+		<xsd:annotation>
+			<xsd:documentation>Pracownik</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:complexType name="PracownikTyp">
+		<xsd:annotation>
+			<xsd:documentation>Pracownik</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element ref="oso:IdOsoby" minOccurs="0"/>
+			<xsd:element ref="oso:Imie" minOccurs="0"/>
+			<xsd:element ref="oso:Nazwisko" minOccurs="0" maxOccurs="3"/>
+			<xsd:element ref="adr:Kontakt" minOccurs="0"/>
+			<xsd:element ref="inst:Funkcja" minOccurs="0"/>
+		</xsd:sequence>
+	</xsd:complexType>
+</xsd:schema>

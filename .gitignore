@@ -12,6 +12,9 @@ __pycache__/
 # Acquisition HTTP cache (HTTP_CACHE_DIR)
 .cache/
 
+# Derived data: canonical Parquet warehouse (WAREHOUSE_DIR, ADR 0008)
+.data/
+
 # Raw browser captures (plan 0003 step A): large, and session-bound even when
 # sanitised. Commit the small fixtures extracted from them instead.
 *.har

@@ -7,6 +7,7 @@ freshly copied `.env.example`) are ignored and fall back to the defaults.
 
 from __future__ import annotations
 
+from decimal import Decimal
 from pathlib import Path
 from typing import Literal
 
@@ -42,6 +43,12 @@ class Settings(BaseSettings):
     http_cache_dir: Path = Path(".cache/http")
     # Where HAR files of manual RDF sessions are dropped for import (gitignored).
     rdf_manual_inbox: Path = Path(".cache/rdf_inbox")
+    # Derived data (C2 output onward): Parquet written by the pipeline (ADR 0008).
+    warehouse_dir: Path = Path(".data/warehouse")
+
+    # Accounting identity tolerance in złoty (AGENT_SPEC §4.3): absolute
+    # differences up to this pass, to absorb rounding.
+    identity_tolerance_pln: Decimal = Decimal("1.00")
 
     # Per-source request pacing (A2/A3).
     # BIR1 publishes no rate limit (ADR 0004): deliberately conservative.

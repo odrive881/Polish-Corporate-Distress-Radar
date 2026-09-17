@@ -1,0 +1,271 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--  -->
+<xsd:schema xmlns:iso639-2="http://lcweb.loc.gov/standards/iso639-2/" xmlns:inst="http://crd.gov.pl/xml/schematy/instytucja/2009/11/16/" xmlns:meta="http://crd.gov.pl/xml/schematy/meta/2009/11/16/" xmlns:oso="http://crd.gov.pl/xml/schematy/osoba/2009/11/16/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="http://crd.gov.pl/xml/schematy/meta/2009/11/16/" elementFormDefault="qualified" attributeFormDefault="unqualified" version="0.1">
+	<xsd:import namespace="http://crd.gov.pl/xml/schematy/instytucja/2009/11/16/" schemaLocation="http://crd.gov.pl/xml/schematy/instytucja/2009/11/16/instytucja.xsd"/>
+	<xsd:import namespace="http://crd.gov.pl/xml/schematy/osoba/2009/11/16/" schemaLocation="http://crd.gov.pl/xml/schematy/osoba/2009/11/16/osoba.xsd"/>
+	<xsd:annotation>
+		<xsd:documentation>Opis: Plik XML Schema opisuje podstawowe typy danych w przestrzeni nazw http://crd.gov.pl/xml/schematy/meta/2009/11/16/ Status dokumentu: wersja robocza Autor: Zespół projektowy ePUAP Data stworzenia: 2008/01/01 Historia zmian: v.0.1 2008/01/01 Utworzenie dokumentu v.0.2 2008/09/01 Aktualizacja przestrzeni nazw</xsd:documentation>
+	</xsd:annotation>
+	<xsd:element name="Data" type="meta:DataTyp"/>
+	<xsd:annotation>
+		<xsd:documentation>Uniwersalna struktura daty</xsd:documentation>
+	</xsd:annotation>
+	<xsd:complexType name="DataTyp">
+		<xsd:sequence>
+			<xsd:choice>
+				<xsd:element name="Czas" type="meta:Czas"/>
+				<xsd:group ref="meta:PrzedzialCzasu"/>
+			</xsd:choice>
+		</xsd:sequence>
+		<xsd:attribute name="typDaty" type="meta:TypDaty" use="required"/>
+		<xsd:attribute name="typDatyUzupelnienie" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Atrybut typDatyUzupelnienie zawiera dodatkowe informacje na temat daty</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+	</xsd:complexType>
+	<xsd:group name="PrzedzialCzasu">
+		<xsd:sequence>
+			<xsd:element name="Od" type="meta:Czas" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Od</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="Do" type="meta:Czas" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Do</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:group>
+	<xsd:complexType name="PrzedzialCzasuTyp">
+		<xsd:sequence>
+			<xsd:group ref="meta:PrzedzialCzasu"/>
+			<xsd:element name="Opis" type="xsd:string" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Opis</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:simpleType name="Czas">
+		<xsd:union memberTypes="xsd:gYear xsd:gYearMonth xsd:date xsd:dateTime"/>
+	</xsd:simpleType>
+	<xsd:simpleType name="TypDaty">
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="dostepnyPo"/>
+			<xsd:enumeration value="opublikowany"/>
+			<xsd:enumeration value="stworzony"/>
+			<xsd:enumeration value="uzyskany"/>
+			<xsd:enumeration value="otrzymany"/>
+			<xsd:enumeration value="wyslany"/>
+			<xsd:enumeration value="zaakceptowany"/>
+			<xsd:enumeration value="zatwierdzony"/>
+			<xsd:enumeration value="zmodyfikowany"/>
+			<xsd:enumeration value="datySkrajne"/>
+			<xsd:enumeration value="zdarzenia"/>
+			<xsd:enumeration value="waznosci"/>
+			<xsd:enumeration value="odrzucony"/>
+			<xsd:enumeration value="inna"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="Grupowanie" type="meta:GrupowanieTyp"/>
+	<xsd:complexType name="GrupowanieTyp">
+		<xsd:annotation>
+			<xsd:documentation>Element jest wykorzystywany do wstawiania różnych identyfikatorów, które mogą grupować kilka dokumentów np. numer teczkowy sprawy. W kilku dokumentach może wystąpić ten sam identyfikator „KodGrupowania” . Atrybut typGrupowania określa rodzaj grupowania np. "znakSprawy"</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="KodGrupowania" type="xsd:string"/>
+			<xsd:element name="OpisKoduGrupowania" type="xsd:string" minOccurs="0"/>
+		</xsd:sequence>
+		<xsd:attribute name="typGrupowania" type="xsd:string" use="required"/>
+	</xsd:complexType>
+	<xsd:element name="Podmiot" type="meta:PodmiotTyp"/>
+	<xsd:complexType name="PodmiotTyp">
+		<xsd:choice>
+			<xsd:element ref="inst:Instytucja" minOccurs="0"/>
+			<xsd:element ref="oso:Osoba" minOccurs="0"/>
+		</xsd:choice>
+		<xsd:attribute name="typPodmiotu" type="xsd:string" use="optional"/>
+	</xsd:complexType>
+	<xsd:element name="Dostep" type="meta:DostepTyp"/>
+	<xsd:complexType name="DostepTyp">
+		<xsd:annotation>
+			<xsd:documentation>Element Dostep określa informacje o dostępie do poszczególnych elementów dokumentu. Dotyczy dokumentu w którym jest umieszczony</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="Dostepnosc">
+				<xsd:simpleType>
+					<xsd:restriction base="xsd:string">
+						<xsd:enumeration value="wszystko"/>
+						<xsd:enumeration value="metadane"/>
+						<xsd:enumeration value="niedostepne"/>
+					</xsd:restriction>
+				</xsd:simpleType>
+			</xsd:element>
+			<xsd:element name="Uwagi" type="xsd:string" minOccurs="0"/>
+			<xsd:element ref="meta:Data" minOccurs="0"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:element name="Identyfikator" type="meta:IdentyfikatorTyp"/>
+	<xsd:complexType name="IdentyfikatorTyp">
+		<xsd:annotation>
+			<xsd:documentation>Uniwersalna struktura identyfikatora</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="Wartosc" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation>Wartość identyfikatora np. jeżeli atrybut typIdentyfikatora="numerDziennikaKorespondencyjnego" to element Wartosc mógłby zawierać "DZKIp/123/2008" itp.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element ref="meta:Podmiot" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Zaleca się aby w przypadku identyfikatorów lokalnych podać podmiot który prowadzi rejestr tych identyfikatorów np. dla Dziennika Kancelaryjnego prowadzonego w Gminie X w elemencie Podmiot wprowadza się dane tego urzędu</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="typIdentyfikatora" type="xsd:string" use="required"/>
+	</xsd:complexType>
+	<xsd:element name="Status" type="meta:StatusTyp"/>
+	<xsd:complexType name="StatusTyp">
+		<xsd:annotation>
+			<xsd:documentation>Uniwersalna struktura statusu dokumentu</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="RodzajStatusu" type="xsd:string"/>
+			<xsd:element name="WersjaStatusu" type="xsd:string"/>
+			<xsd:element name="OpisWersji" type="xsd:string"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:element name="RodzajDokumentu" type="meta:RodzajDokumentuTyp"/>
+	<xsd:complexType name="RodzajDokumentuTyp">
+		<xsd:annotation>
+			<xsd:documentation>Uniwersalna struktura określająca rodzaj dokumentu</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="Kategoria">
+				<xsd:simpleType>
+					<xsd:restriction base="xsd:string">
+						<xsd:enumeration value="kolekcja"/>
+						<xsd:enumeration value="daneStrukturalne"/>
+						<xsd:enumeration value="wydarzenie"/>
+						<xsd:enumeration value="obraz"/>
+						<xsd:enumeration value="zasóbInteraktywny"/>
+						<xsd:enumeration value="obrazRuchomy"/>
+						<xsd:enumeration value="obiektFizyczny"/>
+						<xsd:enumeration value="usługa"/>
+						<xsd:enumeration value="oprogramowanie"/>
+						<xsd:enumeration value="muzyka"/>
+						<xsd:enumeration value="obrazNieruchomy"/>
+						<xsd:enumeration value="tekst"/>
+					</xsd:restriction>
+				</xsd:simpleType>
+			</xsd:element>
+			<xsd:element name="RodzajKategorii" type="xsd:string" minOccurs="0"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:element name="Relacja" type="meta:RelacjaTyp"/>
+	<xsd:complexType name="RelacjaTyp">
+		<xsd:annotation>
+			<xsd:documentation>Relacja określa bezpośrednie powiązania z innymi dokumentami</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="Identyfikator" type="meta:IdentyfikatorTyp"/>
+			<xsd:element name="RodzajRelacji" type="meta:RodzajRelacjiTyp"/>
+		</xsd:sequence>
+		<xsd:attribute name="typInnejRelacji" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Atrybut typInnejRelacji jest uzupełniany w przypadku gdy element RodzajRelacji="inna"</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+	</xsd:complexType>
+	<xsd:simpleType name="RodzajRelacjiTyp">
+		<xsd:annotation>
+			<xsd:documentation>Lista dopuszczalnych typów relacji</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="maFormat"/>
+			<xsd:enumeration value="jestFormatem"/>
+			<xsd:enumeration value="maWersje"/>
+			<xsd:enumeration value="jestWersja"/>
+			<xsd:enumeration value="maCzesc"/>
+			<xsd:enumeration value="jestCzescia"/>
+			<xsd:enumeration value="maOdniesienie"/>
+			<xsd:enumeration value="odnosiSieDo"/>
+			<xsd:enumeration value="maZrodlo"/>
+			<xsd:enumeration value="wymaga"/>
+			<xsd:enumeration value="jestWymagany"/>
+			<xsd:enumeration value="maDekretacje"/>
+			<xsd:enumeration value="jestDekretacja"/>
+			<xsd:enumeration value="inna"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="Jezyk" type="meta:JezykTyp"/>
+	<xsd:complexType name="JezykTyp">
+		<xsd:annotation>
+			<xsd:documentation>Definicja języka</xsd:documentation>
+		</xsd:annotation>
+		<xsd:simpleContent>
+			<xsd:extension base="xsd:string">
+				<xsd:attribute name="kodJezyka" use="required"/>
+			</xsd:extension>
+		</xsd:simpleContent>
+	</xsd:complexType>
+	<xsd:element name="Kwalifikacja" type="meta:KwalifikacjaTyp"/>
+	<xsd:complexType name="KwalifikacjaTyp">
+		<xsd:annotation>
+			<xsd:documentation>Kategoria archiwalna</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="KategoriaArchiwalna" type="xsd:string"/>
+			<xsd:element name="DataNadania" type="xsd:date"/>
+			<xsd:element name="Podmiot" type="meta:PodmiotTyp"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:element name="OpisDokumentu" type="xsd:string"/>
+	<xsd:element name="Uprawnienia" type="xsd:string"/>
+	<xsd:element name="ZnakSprawy" type="meta:ZnakSprawyTyp">
+		<xsd:annotation>
+			<xsd:documentation>Znak sprawy</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="ZnakSprawyTyp">
+		<xsd:annotation>
+			<xsd:documentation>Znak sprawy</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="65"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="Tworca" type="meta:TworcaTyp"/>
+	<xsd:complexType name="TworcaTyp">
+		<xsd:annotation>
+			<xsd:documentation>Definicja typu TworcaTyp określa strukturę twórcy dokumentu</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="Funkcja">
+				<xsd:simpleType>
+					<xsd:union memberTypes="xsd:string">
+						<xsd:simpleType>
+							<xsd:restriction base="xsd:string">
+								<xsd:enumeration value="stworzyl"/>
+								<xsd:enumeration value="modyfikowal"/>
+								<xsd:enumeration value="zatwierdzil"/>
+							</xsd:restriction>
+						</xsd:simpleType>
+					</xsd:union>
+				</xsd:simpleType>
+			</xsd:element>
+			<xsd:element name="Podmiot" type="meta:PodmiotTyp"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:element name="Tworcy" type="meta:TworcyTyp"/>
+	<xsd:complexType name="TworcyTyp">
+		<xsd:annotation>
+			<xsd:documentation>Definicja typu TworcyTyp pozwala na określenie twórców dokunentu, oraz podanie ich ról w procesie tworzenia dokumentu</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element ref="meta:Tworca" maxOccurs="unbounded"/>
+		</xsd:sequence>
+	</xsd:complexType>
+</xsd:schema>

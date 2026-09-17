@@ -1,6 +1,8 @@
 """B1 — content-addressed raw object store (AGENT_SPEC.md §6B, invariant 2).
 
-Layout: `raw/sha256/<h[:2]>/<h>` holds the bytes exactly as downloaded;
+Layout: `raw/sha256/<h[:2]>/<h>` holds the bytes as downloaded (for filed
+documents: after the natural-person redaction of ADR 0009, applied before
+hashing; the sidecar then names the redaction and the received file's hash);
 `<key>.meta.json` holds first-fetch metadata. Objects are never overwritten:
 re-putting known bytes is a no-op, and S3 writes are conditional
 (`If-None-Match: *`) so a concurrent writer cannot clobber either key.
@@ -38,6 +40,9 @@ class RawDocumentMeta(BaseModel):
     # How the bytes were fetched, when not plain HTTP (A3: "playwright", ADR 0007).
     fetch_tier: str | None = None
     browser_version: str | None = None
+    # ADR 0009: set when natural persons' data was removed before storing.
+    redaction_version: str | None = None
+    received_sha256: str | None = None  # hash of the file as downloaded, before redaction
 
     @field_validator("fetched_at")
     @classmethod
@@ -55,6 +60,12 @@ class ObjectStore(Protocol):
         ...
 
     def get(self, key: str) -> bytes: ...
+
+
+class RedactableObjectStore(ObjectStore, Protocol):
+    """A store that can remove objects, for the ADR 0009 redaction migration only."""
+
+    def delete_for_redaction(self, key: str) -> None: ...
 
 
 def sha256_hex(data: bytes) -> str:
@@ -76,6 +87,8 @@ def _sidecar_bytes(sha256: str, byte_size: int, meta: RawDocumentMeta) -> bytes:
 
 def put_raw(store: ObjectStore, data: bytes, meta: RawDocumentMeta) -> str:
     """Store `data` unmodified under its SHA-256; return the hash.
+
+    Callers storing filed documents pass bytes already redacted (ADR 0009).
 
     The sidecar is the completion marker: it is written after the object, so
     a crash between the two is repaired by the next put without overwriting.
@@ -112,6 +125,9 @@ class InMemoryObjectStore:
 
     def get(self, key: str) -> bytes:
         return self.objects[key]
+
+    def delete_for_redaction(self, key: str) -> None:
+        self.objects.pop(key, None)
 
 
 class S3ObjectStore:
@@ -180,6 +196,11 @@ class S3ObjectStore:
 
     def get(self, key: str) -> bytes:
         return self._client.get_object(Bucket=self._bucket, Key=key)["Body"].read()
+
+    def delete_for_redaction(self, key: str) -> None:
+        """Remove an object. Only for replacing unredacted bytes (ADR 0009); never otherwise."""
+        self._ensure_bucket()
+        self._client.delete_object(Bucket=self._bucket, Key=key)
 
 
 def _error_code(exc: ClientError) -> str:
