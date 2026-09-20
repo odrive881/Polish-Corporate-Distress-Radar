@@ -1,0 +1,569 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Dokument xmlns="http://crd.gov.pl/wzor/2025/08/12/13821/" xmlns:ns1="http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2025/07/31/eD/StrukturyDanychSprFin/" xmlns:ns2="http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2025/07/31/eD/JednostkaMikroStruktury/" xmlns:ns3="http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/09/13/eD/DefinicjeTypy/" xmlns:ns4="http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2025/07/31/eD/JednostkaInnaStruktury/" xmlns:p5="http://www.w3.org/2001/XMLSchema-instance" p5:schemaLocation="http://crd.gov.pl/wzor/2025/08/12/13821/ http://crd.gov.pl/wzor/2025/08/12/13821/schemat.xsd">
+  <OpisDokumentu/>
+  <DaneDokumentu/>
+  <TrescDokumentu format="text/xml" kodowanie="XML">
+    <JednostkaMikro>
+      <Naglowek>
+        <ns1:OkresOd>2025-01-01</ns1:OkresOd>
+        <ns1:OkresDo>2025-12-31</ns1:OkresDo>
+        <ns1:DataSporzadzenia>2026-03-26</ns1:DataSporzadzenia>
+        <ns2:KodSprawozdania kodSystemowy="SFJMIZ (2)" wersjaSchemy="1-0E">SprFinJednostkaMikroWZlotych</ns2:KodSprawozdania>
+        <ns2:WariantSprawozdania>2</ns2:WariantSprawozdania>
+      </Naglowek>
+      <InformacjeOgolneJednostkaMikro>
+        <P_1>
+          <P_1A>
+            <ns1:NazwaFirmy>ISB BUDOWNICTWO SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ w restrukturyzacji</ns1:NazwaFirmy>
+            <ns1:Siedziba>
+              <ns1:AdresPol>
+                <ns1:KodKraju>PL</ns1:KodKraju>
+                <ns1:Wojewodztwo>dolnośląskie</ns1:Wojewodztwo>
+                <ns1:Powiat>Wrocław</ns1:Powiat>
+                <ns1:Gmina>Wrocław</ns1:Gmina>
+                <ns1:Ulica>Kominiarska</ns1:Ulica>
+                <ns1:NrDomu>19</ns1:NrDomu>
+                <ns1:NrLokalu>-</ns1:NrLokalu>
+                <ns1:Miejscowosc>Wrocław</ns1:Miejscowosc>
+                <ns1:KodPocztowy>51-180</ns1:KodPocztowy>
+              </ns1:AdresPol>
+            </ns1:Siedziba>
+          </P_1A>
+          <P_1B>
+            <FormaPrawna>17</FormaPrawna>
+          </P_1B>
+          <P_1C>8982106312</P_1C>
+          <P_1D>0000277937</P_1D>
+        </P_1>
+        <P_3>
+          <ns1:DataOd>2025-01-01</ns1:DataOd>
+          <ns1:DataDo>2025-12-31</ns1:DataDo>
+        </P_3>
+        <P_4>ISB Budownictwo Sp. z o.o. w restrukturyzacji spełnia warunki określone w art.3 ust.1 pkt.1a ustawy o rachunkowości, w związku z czym dokonała uproszczenia sprawozdawczości finansowej w następującym zakresie:
+• możliwości sporządzania uproszczonego sprawozdania finansowego zgodnie z załącznikiem nr 4 do ustawy o rachunkowości, na które składa się skrócony bilans zgodnie z art. 46 ust. 5 pkt 4oraz skrócony rachunek zysków i strat zgodnie z art. 47 ust.4 pkt 4 , ustawy o rachunkowości
+• zwolnienia z obowiązku sporządzania informacji dodatkowej zgodnie z art. 48 ust. 3 ustawy o rachunkowości, z uwzględnieniem podawania niektórych informacji w informacjach uzupełniających do bilansu,
+• zwolnienia z obowiązku sporządzania sprawozdania z działalności zgodnie z art. 49 ust. 4 ustawy o rachunkowości,
+• zwolnienia z wymogu sporządzania zestawienia zmian w kapitale własnym oraz rachunku przepływów pieniężnych, zgodnie z art. 45 ust. 3 ustawy o rachunkowości,
+• wyceny wszystkich pozycji bilansu w cenie nabycia lub koszcie wytworzenia.</P_4>
+        <P_5>
+          <P_5A>1</P_5A>
+          <P_5B>2</P_5B>
+          <P_5C>Postanowieniem z dnia 02.07.2021 r. Sąd otworzył wobec ISB postępowanie restrukturyzacyjne (sanacyjne), zezwalając Spółce na wykonywanie zarządu nad całością przedsiębiorstwa w sprawach nie przekraczających zwykłego zarządu oraz wyznaczając jako zarządcę Kancelarię Restrukturyzacyjną Sp. z o.o. reprezentowaną przez Kamila Hajduka (licencja doradcy restrukturyzacyjnego nr 142); Od tego momentu Spółka znajduje się w postępowaniu restrukturyzacyjnym prowadzonym przez SR dla Wrocławia-Fabrycznej we Wrocławiu, VIII Wydział Gospodarczy ds. Upadłościowych i Restrukturyzacyjnych pod sygn. VIII GRs 1/21.
+W dniu 15.04.2025r. postanowieniem Sądu rejonowego dla Wrocławia Fabrycznej, Wydział VIII Gospodarczy dla spraw upadłościowych i restrukturyzacyjnych zatwierdzony został układ przyjęty na zgromadzeniu wierzycieli w dniu 14.03.2025r.
+</P_5C>
+        </P_5>
+        <P_6>
+          <P_6A>Na postawie art. 28b ust. 1 ustawy o rachunkowości jednostka nie stosuje rozporządzenia MF w sprawie szczegółowych zasad uznawania, metod wyceny, zakresu ujawniania i prezentacji instrumentów finansowych.
+Aktywa i pasywa wycenia się według zasad określonych w ustawie o rachunkowości.
+• Wartości niematerialne i prawne oraz środki trwałe wycenia się według cen nabycia pomniejszonych o dotychczasowe umorzenie (amortyzację) oraz o odpisy z tytułu trwałej utraty wartości.
+• Niskocenne środki trwałe oraz wartości niematerialne, tzn. takie których jednostkowa wartość nabycia nie jest wyższa niż 10.000,00 złotych, amortyzowane są w sposób uproszczony poprzez jednorazowy odpis w wartości nabycia w miesiącu, w którym nastąpiło przekazanie ich do użytkowania.
+• Inwestycje długoterminowe wycenia się według cen nabycia i koryguje na dzień bilansowy o odpisy z tytułu trwałej utraty wartości lub według wartości godziwej, w oparciu o przeprowadzoną szczegółową analizę uwzględniającą posiadaną wiedzę, warunki rynkowe i rodzaj transakcji.
+• Zapasy
+a) materiały wycenia się według cen nabycia stosując zasadę FIFO („pierwsze przyszło, pierwsze wyszło”),
+b) towary wycenia się według cen nabycia,
+c) niezakończone umowy w zakresie usług budowlanych w okresie realizacji dłuższym niż 6 m-cy i nie zleconych w całości podwykonawcy, wycenia się w zakresie:
+przychodów zgodnie z art. 34a ustawy o rachunkowości na podstawie stopnia zaawansowania usługi, kosztów zgodnie z art. 34c ustawy o rachunkowości.
+• Udziały, akcje i długoterminowe papiery wartościowe ewidencjonuje się według cen nabycia nie wyższych od ich cen sprzedaży netto na dzień bilansowy, a dłużne papiery wartościowe – według cen sprzedaży.
+• Środki pieniężne
+Krajowe środki pieniężne wykazuje się w wartości nominalnej.
+Środki pieniężne wyrażone w walutach obcych na dzień bilansowy wycenia się po obowiązującym na ten dzień średnim kursie waluty ustalonym przez Prezesa NBP.
+Różnice kursowe powstałe w związku z wyceną na dzień bilansowy środków pieniężnych, udziałów, akcji i papierów wartościowych wyrażonych w walutach obcych według średniego kursu ustalonego przez Prezesa NBP zarachowuje się następująco:
+- dodatnie różnice kursowe powiększają przychody operacji finansowych,
+- ujemne różnice kursowe powiększają koszty operacji finansowych.
+• Należności i zobowiązania w ciągu roku wycenia się według kwoty wymagającej zapłaty. Na dzień bilansowy należności podlegają aktualizacji zgodnie z art. 35b ustawy o rachunkowości.
+• Czynne rozliczenia międzyokresowe kosztów obejmują wydatki dotyczące przyszłych okresów sprawozdawczych oraz nadwyżkę przychodów zarachowanych nad zafakturowanymi z tytułu realizacji długoterminowych kontraktów budowlanych. Spółka dokonuje czynnych rozliczeń międzyokresowych kosztów jeżeli koszty pośrednie dotyczą okresu dłuższego niż rok, przy czym obowiązuje istotność transakcji rozpatrywana indywidualnie.
+• Rezerwy tworzone są na pewne lub o dużym stopniu prawdopodobieństwa przyszłe zobowiązania i wycenia się je na dzień bilansowy w wiarygodnie oszacowanej wartości. Spółka nie tworzy rezerwy na odprawy emerytalne i rentowe. Spółka może tworzyć rezerwy na urlopy, wypłacane zgodnie z kodeksem pracy, na skutki toczącego się postępowania sądowego i odwoławczego oraz na przewidywane straty na nie zakończonych długoterminowych kontraktach.
+• Bierne rozliczenia międzyokresowe kosztów dokonywane są w wysokości prawdopodobnych zobowiązań przypadających na przyszły okres sprawoz</P_6A>
+          <P_6A>dawczy. W Spółce bierne rozliczenia dotyczą wykonanych na rzecz Spółki świadczeń, które nie zostały zafakturowane, a na mocy umowy wykonawca nie był zobowiązany do zafakturowania świadczenia oraz przewidywanych do zarachowania kosztów nie zakończonych długoterminowych kontraktów. W pozycji tej można ująć również prawo wieczystego użytkowania gruntu.
+</P_6A>
+          <P_6B>Przychody
+• Przychody ze sprzedaży obejmują niewątpliwe należne lub uzyskane kwoty netto ze sprzedaży, tj. pomniejszone o należny podatek od towarów i usług (VAT) i ujmowane są w okresach, których dotyczą.
+• Przychody wyrażone w walutach obcych przelicza się na PLN według kursu średniego ogłoszonego przez NBP z ostatniego dnia roboczego poprzedzającego dzień uzyskania przychodu. Faktury dla kontrahentów zagranicznych wystawiane są do momentu ogłoszenia kursu średniego NBP za dany dzień.
+• Przychody ze sprzedaży usług budowlano-montażowych:
+dla umów o okresie realizacji dłuższym niż 6 miesięcy, nie zakończonych na dzień bilansowy, przyjęto następujące zasady ustalania przychodów ze sprzedaży:
+- jeżeli można ustalić stopień zaawansowania usługi w sposób wiarygodny, a cena kontraktu została ustalona ryczałtowo, to przychody ustala się proporcjonalnie do zaawansowania usługi na dzień bilansowy;
+- jeżeli można ustalić stopień zaawansowania usługi w sposób wiarygodny, a cena kontraktu została określona jako koszty plus marża, to przychody ustala się w wysokości poniesionych kosztów powiększonych o narzut zysku ustalony w umowie;
+- jeżeli nie można ustalić stopnia zaawansowania usługi w sposób wiarygodny, to przychody ustala się w wysokości poniesionych kosztów, jednak nie wyższych niż kwota, która jest prawdopodobna do zapłaty przez zlecającego.
+Jako miarę stopnia zaawansowania przyjmuje się udział kosztów faktycznie poniesionych w całkowitych preliminowanych kosztach kontraktu ustalonych albo ustala się procentowo relacje poniesionych kosztów do ogółu kosztów i przyjmuje się, że procent ten odpowiada stosunkowi przychodów za dany okres do przychodu przewidywanego za cały kontrakt.
+Wynik transakcji można ocenić w wiarygodny sposób, jeżeli zostaną spełnione wszystkie następujące warunki:
+- kwotę przychodów można wycenić w wiarygodny sposób, 
+- istnieje prawdopodobieństwo, że Spółka uzyska korzyści ekonomiczne z tytułu przeprowadzonej transakcji, 
+- stopień realizacji transakcji na dzień bilansowy może być określony w wiarygodny sposób, 
+- koszty poniesione w związku z transakcją oraz koszty zakończenia transakcji mogą być wycenione w wiarygodny sposób.
+Jeżeli w wyniku transakcji dotyczącej sprzedaży usług budowlanych nie można oszacować w wiarygodny sposób, przychody z transakcji ujmuje się tylko do wysokości poniesionych kosztów, które jednostka gospodarcza spodziewa się odzyskać.
+Koszty
+• Spółka ewidencjonuje koszty w układzie rodzajowym i kalkulacyjnym.
+• Koszt sprzedanych produktów, towarów i materiałów obejmuje koszty bezpośrednio z nimi związane oraz uzasadnioną część kosztów pośrednich.
+• Koszty wytworzenia niezakończonej usługi długoterminowej, w tym budowlanej, obejmują koszty poniesione od dnia zawarcia umowy do dnia bilansowego. Koszty poniesione przed zawarciem umowy, a związane z realizacją jej przedmiotu, zaliczane są do aktywów, jeżeli pokrycie w przyszłości tych kosztów przychodami uzyskanymi od zamawiającego jest prawdopodobne. Różnicę pomiędzy kosztami wytworzenia a kosztami wpływającymi na wynik finansowy zalicza się do rozliczeń międzyokresowych.
+• Koszty poniesione w walutach obcych przelicza się na PLN według kursu średniego ogłoszonego przez NBP z ostatniego dnia roboczego poprzedzającego dzień poniesienia kosztu. Za dzień poniesienia kosztu uważa się dzień wystawienia faktury.
+Wynik finansowy
+Na wynik finansowy Spółki wpływają ponadto:
+• Pozostałe koszty i przychody operacyjne pośrednio związane z </P_6B>
+          <P_6B>działalnością Spółki w zakresie między innymi zysków i strat ze zbycia niefinansowych aktywów trwałych, aktualizacji wyceny aktywów niefinansowych, utworzenia i rozwiązania rezerw na przyszłe ryzyko, kar, grzywien i odszkodowań, otrzymania lub przekazania darowizn.
+• Przychody i koszty finansowe z tytułu dywidend (udziałów w zyskach),odsetek, zysków lub strat z tytułu zbycia inwestycji, aktualizacji wartości inwestycji, różnic kursowych.
+Wynik finansowy Spółki za dany okres sprawozdawczy obejmuje wszystkie osiągnięte i przypadające na je rzecz przychody oraz związane z tymi przychodami koszty, zgodnie z zasadami memoriału, współmierności przychodów i kosztów oraz ostrożnej wyceny.
+Opodatkowanie
+Wynik finansowy brutto korygują:
+a) bieżące zobowiązania z tytułu podatku dochodowego od osób prawnych naliczone zgodnie z obowiązującymi przepisami podatkowymi,
+b) aktywa z tytułu odroczonego podatku dochodowego ustala się w wysokości kwoty przewidzianej w przyszłości do odliczenia od podatku, w związku z ujemnymi różnicami przejściowymi, które spowodują w przyszłości zmniejszenie podstawy obliczenia podatku oraz straty podatkowej możliwej do odliczenia, ustalonej przy uwzględnieniu zasady ostrożności,
+c) rezerwy z tytułu odroczonego podatku dochodowego tworzy się w wysokości kwoty podatku dochodowego, wymagającej zapłaty w przyszłości, w związku z występowaniem dodatnich różnic przejściowych, które spowodują zwiększenie podstawy obliczenia podatku dochodowego w przyszłości.</P_6B>
+          <P_6C>Sprawozdanie finansowe zostało przygotowane zgodnie z wymogami Ustawy z dnia 29 września 1994r. o rachunkowości obowiązującymi jednostki kontynuujące działalność i obejmuje:
+- Wprowadzenie do sprawozdania finansowego wg załącznika nr 4 do ustawy.
+- Uproszczony bilans według załącznika nr 4 do ustawy, art. 46 ust. 5 pkt 4.
+- Uproszczony rachunek zysków i strat według załącznika nr 4 do ustawy, art. 47 ust. 4 pkt.4.
+
+Spółka nie sporządza informacji dodatkowej, ponieważ przedstawia informacje uzupełniające do bilansu, określone w załączniku nr 4 do ustawy o rachunkowości art. 48 ust. 3.
+Spółka nie sporządza zestawienia zmian w kapitale (funduszu) własnym art. 45 ust. 3.
+Spółka nie sporządza rachunku przepływów pieniężnych art. 45 ust. 3.
+Spółka nie sporządza sprawozdania z działalności, jeżeli w informacji dodatkowej lub jako informacje uzupełniające do bilansu zaprezentuje informacje dotyczące nabycia udziałów (akcji) własnych określonych w załączniku nr 4 do ustawy o rachunkowości art. 49 ust. 4.
+</P_6C>
+          <P_6D>W przypadku środków trwałych w leasingu, Spółka dokonuje uproszczenia zasad rachunkowości poprzez stosowanie podatkowych zasad kwalifikacji leasingu.
+Zgodnie z art. 28a ustawy o rachunkowości, Spółka korzysta z uproszczenia w zakresie wyceny aktywów i pasywów, nie wyceniając poszczególnych składników wg wartości godziwej i skorygowanej ceny nabycia.
+Dla potrzeb podatku dochodowego od osób prawnych przyjmuje się podatkową metodę rozliczania różnic kursowych (art.15 ustawy o podatku dochodowym od osób prawnych).
+Na podstawie art. 37 ust. 10  Ustawy o rachunkowości Spółka odstąpiła od ustalania aktywów i rezerw z tytułu odroczonego podatku dochodowego. 
+Rezerwy i aktywa z tytułu odroczonego podatku dochodowego – o ile są tworzone, dotyczące operacji rozliczanych z kapitałem własnym odnosi się również na kapitał własny.</P_6D>
+        </P_6>
+        <P_7>0</P_7>
+        <P_8>2</P_8>
+        <P_9>
+          <ns1:NazwaPozycji>Zarząd Spółki</ns1:NazwaPozycji>
+          <ns1:Opis>Na dzień bilansowy oraz na dzień sporządzenia sprawozdania finansowego skład Zarządu ISB Budownictwo Spółka z ograniczoną odpowiedzialnością w restrukturyzacji reprezentowany był przez
+- Mariusz Prokop – prezes Zarządu
+</ns1:Opis>
+        </P_9>
+      </InformacjeOgolneJednostkaMikro>
+      <BilansJednostkaMikro>
+        <ns2:Aktywa>
+          <ns1:KwotaA>61880.27</ns1:KwotaA>
+          <ns1:KwotaB>247958.34</ns1:KwotaB>
+          <ns2:Aktywa_A>
+            <ns1:KwotaA>0</ns1:KwotaA>
+            <ns1:KwotaB>0</ns1:KwotaB>
+          </ns2:Aktywa_A>
+          <ns2:Aktywa_B>
+            <ns1:KwotaA>61880.27</ns1:KwotaA>
+            <ns1:KwotaB>247958.34</ns1:KwotaB>
+            <ns2:Aktywa_B_1>
+              <ns1:KwotaA>0</ns1:KwotaA>
+              <ns1:KwotaB>0</ns1:KwotaB>
+            </ns2:Aktywa_B_1>
+            <ns2:Aktywa_B_2>
+              <ns1:KwotaA>22493</ns1:KwotaA>
+              <ns1:KwotaB>19800.35</ns1:KwotaB>
+            </ns2:Aktywa_B_2>
+          </ns2:Aktywa_B>
+          <ns2:Aktywa_C>
+            <ns1:KwotaA>0</ns1:KwotaA>
+            <ns1:KwotaB>0</ns1:KwotaB>
+          </ns2:Aktywa_C>
+          <ns2:Aktywa_D>
+            <ns1:KwotaA>0</ns1:KwotaA>
+            <ns1:KwotaB>0</ns1:KwotaB>
+          </ns2:Aktywa_D>
+        </ns2:Aktywa>
+        <ns2:Pasywa>
+          <ns1:KwotaA>61880.27</ns1:KwotaA>
+          <ns1:KwotaB>247958.34</ns1:KwotaB>
+          <ns2:Pasywa_A>
+            <ns1:KwotaA>61083.54</ns1:KwotaA>
+            <ns1:KwotaB>-1177835.21</ns1:KwotaB>
+            <ns2:Pasywa_A_1>
+              <ns1:KwotaA>50000</ns1:KwotaA>
+              <ns1:KwotaB>50000</ns1:KwotaB>
+            </ns2:Pasywa_A_1>
+          </ns2:Pasywa_A>
+          <ns2:Pasywa_B>
+            <ns1:KwotaA>796.73</ns1:KwotaA>
+            <ns1:KwotaB>1425793.55</ns1:KwotaB>
+            <ns2:Pasywa_B_1>
+              <ns1:KwotaA>0</ns1:KwotaA>
+              <ns1:KwotaB>0</ns1:KwotaB>
+            </ns2:Pasywa_B_1>
+            <ns2:Pasywa_B_2>
+              <ns1:KwotaA>0</ns1:KwotaA>
+              <ns1:KwotaB>0</ns1:KwotaB>
+            </ns2:Pasywa_B_2>
+          </ns2:Pasywa_B>
+        </ns2:Pasywa>
+      </BilansJednostkaMikro>
+      <RZiSJednostkaMikro>
+        <ns2:A>
+          <ns1:KwotaA>0</ns1:KwotaA>
+          <ns1:KwotaB>-215.44</ns1:KwotaB>
+          <ns2:A_1>
+            <ns1:KwotaA>0</ns1:KwotaA>
+            <ns1:KwotaB>-215.44</ns1:KwotaB>
+          </ns2:A_1>
+        </ns2:A>
+        <ns2:B>
+          <ns1:KwotaA>15705.44</ns1:KwotaA>
+          <ns1:KwotaB>85999.6</ns1:KwotaB>
+          <ns2:B_I>
+            <ns1:KwotaA>0</ns1:KwotaA>
+            <ns1:KwotaB>0</ns1:KwotaB>
+          </ns2:B_I>
+          <ns2:B_II>
+            <ns1:KwotaA>0</ns1:KwotaA>
+            <ns1:KwotaB>0</ns1:KwotaB>
+          </ns2:B_II>
+          <ns2:B_III>
+            <ns1:KwotaA>0</ns1:KwotaA>
+            <ns1:KwotaB>62400</ns1:KwotaB>
+          </ns2:B_III>
+          <ns2:B_IV>
+            <ns1:KwotaA>15705.44</ns1:KwotaA>
+            <ns1:KwotaB>23599.6</ns1:KwotaB>
+          </ns2:B_IV>
+        </ns2:B>
+        <ns2:C>
+          <ns1:KwotaA>1327590.91</ns1:KwotaA>
+          <ns1:KwotaB>1032847.57</ns1:KwotaB>
+          <ns2:C_1>
+            <ns1:KwotaA>0</ns1:KwotaA>
+            <ns1:KwotaB>0</ns1:KwotaB>
+          </ns2:C_1>
+        </ns2:C>
+        <ns2:D>
+          <ns1:KwotaA>72966.72</ns1:KwotaA>
+          <ns1:KwotaB>1227317.83</ns1:KwotaB>
+          <ns2:D_1>
+            <ns1:KwotaA>0</ns1:KwotaA>
+            <ns1:KwotaB>0</ns1:KwotaB>
+          </ns2:D_1>
+        </ns2:D>
+        <ns2:E>
+          <ns1:KwotaA>0</ns1:KwotaA>
+          <ns1:KwotaB>0</ns1:KwotaB>
+        </ns2:E>
+        <ns2:F>
+          <ns1:KwotaA>1238918.75</ns1:KwotaA>
+          <ns1:KwotaB>-280685.30</ns1:KwotaB>
+        </ns2:F>
+      </RZiSJednostkaMikro>
+      <InformacjeUzupelniajaceDoBilansuJednostkaMikro>
+        <InformacjeUzupelniajaceDoBilansu>
+          <ns1:Opis>Dodatkowe informacje i objaśnienia do S P R A W O Z D A N I A   F I N A N S O W E G O za rok 2025
+</ns1:Opis>
+          <ns1:Plik>
+            <ns1:Nazwa>attachment.pdf</ns1:Nazwa>
+            <ns1:Zawartosc>YXR0YWNobWVudCByZW1vdmVkIGZyb20gZml4dHVyZQ==</ns1:Zawartosc>
+          </ns1:Plik>
+        </InformacjeUzupelniajaceDoBilansu>
+        <InformacjaDodatkowaDotyczacaPodatkuDochodowego>
+          <ns1:P_ID_1>
+            <ns1:RB>1238918.75</ns1:RB>
+            <ns1:RP>-280685.3</ns1:RP>
+          </ns1:P_ID_1>
+          <ns1:P_ID_2>
+            <ns1:Kwota>
+              <ns1:RB>
+                <ns1:KwotaA>-1219182.93</ns1:KwotaA>
+              </ns1:RB>
+              <ns1:RP>
+                <ns1:KwotaA>-962847.57</ns1:KwotaA>
+              </ns1:RP>
+            </ns1:Kwota>
+            <ns1:PozycjaUzytkownika>
+              <ns1:NazwaPozycji>umorzone wierzytelności restrukturyzacyjne</ns1:NazwaPozycji>
+              <ns1:Kwoty>
+                <ns1:RB>
+                  <ns1:Kwota>
+                    <ns1:KwotaA>-1218058.96</ns1:KwotaA>
+                  </ns1:Kwota>
+                  <ns1:PodstawaPrawna>
+                    <ns1:Art>12</ns1:Art>
+                    <ns1:Ust>4</ns1:Ust>
+                    <ns1:Pkt>8</ns1:Pkt>
+                  </ns1:PodstawaPrawna>
+                </ns1:RB>
+                <ns1:RP>
+                  <ns1:KwotaA>0</ns1:KwotaA>
+                </ns1:RP>
+              </ns1:Kwoty>
+            </ns1:PozycjaUzytkownika>
+            <ns1:PozycjaUzytkownika>
+              <ns1:NazwaPozycji>przychody z tytułu odsetek niezapłacone </ns1:NazwaPozycji>
+              <ns1:Kwoty>
+                <ns1:RB>
+                  <ns1:Kwota>
+                    <ns1:KwotaA>-1123.57</ns1:KwotaA>
+                  </ns1:Kwota>
+                  <ns1:PodstawaPrawna>
+                    <ns1:Art>12</ns1:Art>
+                    <ns1:Ust>1</ns1:Ust>
+                    <ns1:Pkt>1</ns1:Pkt>
+                  </ns1:PodstawaPrawna>
+                </ns1:RB>
+                <ns1:RP>
+                  <ns1:KwotaA>0</ns1:KwotaA>
+                </ns1:RP>
+              </ns1:Kwoty>
+            </ns1:PozycjaUzytkownika>
+            <ns1:PozycjaUzytkownika>
+              <ns1:NazwaPozycji>sprzedaż wierzytelności nie zaliczonej uprzednio do przychodów podatkowych</ns1:NazwaPozycji>
+              <ns1:Kwoty>
+                <ns1:RB>
+                  <ns1:Kwota>
+                    <ns1:KwotaA>0</ns1:KwotaA>
+                  </ns1:Kwota>
+                  <ns1:PodstawaPrawna>
+                    <ns1:Art>12</ns1:Art>
+                    <ns1:Ust>4</ns1:Ust>
+                  </ns1:PodstawaPrawna>
+                </ns1:RB>
+                <ns1:RP>
+                  <ns1:KwotaA>-962846.88</ns1:KwotaA>
+                </ns1:RP>
+              </ns1:Kwoty>
+            </ns1:PozycjaUzytkownika>
+            <ns1:Pozostale>
+              <ns1:RB>
+                <ns1:KwotaA>-0.4</ns1:KwotaA>
+              </ns1:RB>
+              <ns1:RP>
+                <ns1:KwotaA>-0.69</ns1:KwotaA>
+              </ns1:RP>
+            </ns1:Pozostale>
+          </ns1:P_ID_2>
+          <ns1:P_ID_3>
+            <ns1:Kwota>
+              <ns1:RB>
+                <ns1:KwotaA>0</ns1:KwotaA>
+              </ns1:RB>
+              <ns1:RP>
+                <ns1:KwotaA>0</ns1:KwotaA>
+              </ns1:RP>
+            </ns1:Kwota>
+            <ns1:Pozostale>
+              <ns1:RB>
+                <ns1:KwotaA>0</ns1:KwotaA>
+              </ns1:RB>
+              <ns1:RP>
+                <ns1:KwotaA>0</ns1:KwotaA>
+              </ns1:RP>
+            </ns1:Pozostale>
+          </ns1:P_ID_3>
+          <ns1:P_ID_4>
+            <ns1:Kwota>
+              <ns1:RB>
+                <ns1:KwotaA>0</ns1:KwotaA>
+              </ns1:RB>
+              <ns1:RP>
+                <ns1:KwotaA>0</ns1:KwotaA>
+              </ns1:RP>
+            </ns1:Kwota>
+            <ns1:Pozostale>
+              <ns1:RB>
+                <ns1:KwotaA>0</ns1:KwotaA>
+              </ns1:RB>
+              <ns1:RP>
+                <ns1:KwotaA>0</ns1:KwotaA>
+              </ns1:RP>
+            </ns1:Pozostale>
+          </ns1:P_ID_4>
+          <ns1:P_ID_5>
+            <ns1:Kwota>
+              <ns1:RB>
+                <ns1:KwotaA>59850.81</ns1:KwotaA>
+              </ns1:RB>
+              <ns1:RP>
+                <ns1:KwotaA>1227317.83</ns1:KwotaA>
+              </ns1:RP>
+            </ns1:Kwota>
+            <ns1:PozycjaUzytkownika>
+              <ns1:NazwaPozycji>odsetki budżetowe</ns1:NazwaPozycji>
+              <ns1:Kwoty>
+                <ns1:RB>
+                  <ns1:Kwota>
+                    <ns1:KwotaA>0</ns1:KwotaA>
+                  </ns1:Kwota>
+                  <ns1:PodstawaPrawna>
+                    <ns1:Art>16</ns1:Art>
+                    <ns1:Ust>1</ns1:Ust>
+                    <ns1:Pkt>21</ns1:Pkt>
+                  </ns1:PodstawaPrawna>
+                </ns1:RB>
+                <ns1:RP>
+                  <ns1:KwotaA>0</ns1:KwotaA>
+                </ns1:RP>
+              </ns1:Kwoty>
+            </ns1:PozycjaUzytkownika>
+            <ns1:PozycjaUzytkownika>
+              <ns1:NazwaPozycji>koszty postępowania sądowego i egzekucyjnego</ns1:NazwaPozycji>
+              <ns1:Kwoty>
+                <ns1:RB>
+                  <ns1:Kwota>
+                    <ns1:KwotaA>0</ns1:KwotaA>
+                  </ns1:Kwota>
+                  <ns1:PodstawaPrawna>
+                    <ns1:Art>16</ns1:Art>
+                    <ns1:Ust>1</ns1:Ust>
+                    <ns1:Pkt>17</ns1:Pkt>
+                  </ns1:PodstawaPrawna>
+                </ns1:RB>
+                <ns1:RP>
+                  <ns1:KwotaA>0</ns1:KwotaA>
+                </ns1:RP>
+              </ns1:Kwoty>
+            </ns1:PozycjaUzytkownika>
+            <ns1:PozycjaUzytkownika>
+              <ns1:NazwaPozycji>odpis aktualizacyjny</ns1:NazwaPozycji>
+              <ns1:Kwoty>
+                <ns1:RB>
+                  <ns1:Kwota>
+                    <ns1:KwotaA>0</ns1:KwotaA>
+                  </ns1:Kwota>
+                  <ns1:PodstawaPrawna>
+                    <ns1:Art>16</ns1:Art>
+                    <ns1:Ust>1</ns1:Ust>
+                    <ns1:Pkt>26</ns1:Pkt>
+                    <ns1:Lit>a</ns1:Lit>
+                  </ns1:PodstawaPrawna>
+                </ns1:RB>
+                <ns1:RP>
+                  <ns1:KwotaA>1227315.58</ns1:KwotaA>
+                </ns1:RP>
+              </ns1:Kwoty>
+            </ns1:PozycjaUzytkownika>
+            <ns1:Pozostale>
+              <ns1:RB>
+                <ns1:KwotaA>59850.81</ns1:KwotaA>
+              </ns1:RB>
+              <ns1:RP>
+                <ns1:KwotaA>2.25</ns1:KwotaA>
+              </ns1:RP>
+            </ns1:Pozostale>
+          </ns1:P_ID_5>
+          <ns1:P_ID_6>
+            <ns1:Kwota>
+              <ns1:RB>
+                <ns1:KwotaA>0</ns1:KwotaA>
+              </ns1:RB>
+              <ns1:RP>
+                <ns1:KwotaA>0</ns1:KwotaA>
+              </ns1:RP>
+            </ns1:Kwota>
+            <ns1:PozycjaUzytkownika>
+              <ns1:NazwaPozycji>niewypłacone wynagrodzenia</ns1:NazwaPozycji>
+              <ns1:Kwoty>
+                <ns1:RB>
+                  <ns1:Kwota>
+                    <ns1:KwotaA>0</ns1:KwotaA>
+                  </ns1:Kwota>
+                  <ns1:PodstawaPrawna>
+                    <ns1:Art>16</ns1:Art>
+                  </ns1:PodstawaPrawna>
+                </ns1:RB>
+                <ns1:RP>
+                  <ns1:KwotaA>0</ns1:KwotaA>
+                </ns1:RP>
+              </ns1:Kwoty>
+            </ns1:PozycjaUzytkownika>
+            <ns1:Pozostale>
+              <ns1:RB>
+                <ns1:KwotaA>0</ns1:KwotaA>
+              </ns1:RB>
+              <ns1:RP>
+                <ns1:KwotaA>0</ns1:KwotaA>
+              </ns1:RP>
+            </ns1:Pozostale>
+          </ns1:P_ID_6>
+          <ns1:P_ID_7>
+            <ns1:Kwota>
+              <ns1:RB>
+                <ns1:KwotaA>0</ns1:KwotaA>
+              </ns1:RB>
+              <ns1:RP>
+                <ns1:KwotaA>-5200</ns1:KwotaA>
+              </ns1:RP>
+            </ns1:Kwota>
+            <ns1:PozycjaUzytkownika>
+              <ns1:NazwaPozycji>wypłacone wynagrodzenia dotyczące poprzedniego okresu</ns1:NazwaPozycji>
+              <ns1:Kwoty>
+                <ns1:RB>
+                  <ns1:Kwota>
+                    <ns1:KwotaA>0</ns1:KwotaA>
+                  </ns1:Kwota>
+                  <ns1:PodstawaPrawna>
+                    <ns1:Art>16</ns1:Art>
+                    <ns1:Ust>1</ns1:Ust>
+                    <ns1:Pkt>57</ns1:Pkt>
+                  </ns1:PodstawaPrawna>
+                </ns1:RB>
+                <ns1:RP>
+                  <ns1:KwotaA>-5200</ns1:KwotaA>
+                </ns1:RP>
+              </ns1:Kwoty>
+            </ns1:PozycjaUzytkownika>
+            <ns1:Pozostale>
+              <ns1:RB>
+                <ns1:KwotaA>0</ns1:KwotaA>
+              </ns1:RB>
+              <ns1:RP>
+                <ns1:KwotaA>0</ns1:KwotaA>
+              </ns1:RP>
+            </ns1:Pozostale>
+          </ns1:P_ID_7>
+          <ns1:P_ID_8>
+            <ns1:Kwota>
+              <ns1:RB>
+                <ns1:KwotaA>-79586.63</ns1:KwotaA>
+              </ns1:RB>
+              <ns1:RP>
+                <ns1:KwotaA>0</ns1:KwotaA>
+              </ns1:RP>
+            </ns1:Kwota>
+            <ns1:PozycjaUzytkownika>
+              <ns1:NazwaPozycji>strata podatkowa za okres 01-01-2022 do 31-12-2022</ns1:NazwaPozycji>
+              <ns1:Kwoty>
+                <ns1:RB>
+                  <ns1:KwotaA>-72943.73</ns1:KwotaA>
+                </ns1:RB>
+                <ns1:RP>
+                  <ns1:KwotaA>0</ns1:KwotaA>
+                </ns1:RP>
+              </ns1:Kwoty>
+            </ns1:PozycjaUzytkownika>
+            <ns1:PozycjaUzytkownika>
+              <ns1:NazwaPozycji>strata podatkowa za okres 01-01-2023 do 31-12-2023</ns1:NazwaPozycji>
+              <ns1:Kwoty>
+                <ns1:RB>
+                  <ns1:KwotaA>-6642.9</ns1:KwotaA>
+                </ns1:RB>
+                <ns1:RP>
+                  <ns1:KwotaA>0</ns1:KwotaA>
+                </ns1:RP>
+              </ns1:Kwoty>
+            </ns1:PozycjaUzytkownika>
+          </ns1:P_ID_8>
+          <ns1:P_ID_9>
+            <ns1:Kwota>
+              <ns1:RB>
+                <ns1:KwotaA>0</ns1:KwotaA>
+              </ns1:RB>
+              <ns1:RP>
+                <ns1:KwotaA>0</ns1:KwotaA>
+              </ns1:RP>
+            </ns1:Kwota>
+            <ns1:Pozostale>
+              <ns1:RB>
+                <ns1:KwotaA>0</ns1:KwotaA>
+              </ns1:RB>
+              <ns1:RP>
+                <ns1:KwotaA>0</ns1:KwotaA>
+              </ns1:RP>
+            </ns1:Pozostale>
+          </ns1:P_ID_9>
+          <ns1:P_ID_10>
+            <ns1:RB>0</ns1:RB>
+            <ns1:RP>-21415.04</ns1:RP>
+          </ns1:P_ID_10>
+          <ns1:P_ID_11>
+            <ns1:RB>0</ns1:RB>
+            <ns1:RP>0</ns1:RP>
+          </ns1:P_ID_11>
+        </InformacjaDodatkowaDotyczacaPodatkuDochodowego>
+      </InformacjeUzupelniajaceDoBilansuJednostkaMikro>
+    </JednostkaMikro>
+  </TrescDokumentu>
+</Dokument>

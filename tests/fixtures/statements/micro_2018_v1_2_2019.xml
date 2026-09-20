@@ -1,0 +1,194 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<tns:JednostkaMikro xmlns:tns="http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaMikroWZlotych" xmlns:dtsf="http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/DefinicjeTypySprawozdaniaFinansowe/" xmlns:etd="http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2016/01/25/eD/DefinicjeTypy/" xmlns:jin="http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaInnaStruktury" xmlns:jma="http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaMalaStruktury" xmlns:jmi="http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaMikroStruktury" xmlns:kpkd="http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2018/02/01/eD/KodyPKD/" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaMikroWZlotych https://www.gov.pl/documents/2034621/2182793/JednostkaMikroWZlotych(1)_v1-2.xsd http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/DefinicjeTypySprawozdaniaFinansowe/ https://www.gov.pl/documents/2034621/2182793/StrukturyDanychSprFin_v1-2.xsd http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2016/01/25/eD/DefinicjeTypy/ http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2016/01/25/eD/DefinicjeTypy/StrukturyDanych_v4-0E.xsd http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaInnaStruktury https://www.gov.pl/documents/2034621/2182793/JednostkaInnaStrukturyDanychSprFin_v1-2.xsd http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaMalaStruktury https://www.gov.pl/documents/2034621/2182793/JednostkaMalaStrukturyDanychSprFin_v1-2.xsd http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaMikroStruktury https://www.gov.pl/documents/2034621/2182793/JednostkaMikroStrukturyDanychSprFin_v1-2.xsd http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2018/02/01/eD/KodyPKD/ http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2018/02/01/eD/KodyPKD/KodyPKD_v2-0E.xsd">
+  <tns:Naglowek>
+    <dtsf:OkresOd>2019-01-01</dtsf:OkresOd>
+    <dtsf:OkresDo>2019-12-31</dtsf:OkresDo>
+    <dtsf:DataSporzadzenia>2020-03-19</dtsf:DataSporzadzenia>
+    <jmi:KodSprawozdania kodSystemowy="SFJMIZ (1)" wersjaSchemy="1-2">SprFinJednostkaMikroWZlotych</jmi:KodSprawozdania>
+    <jmi:WariantSprawozdania>1</jmi:WariantSprawozdania>
+  </tns:Naglowek>
+  <tns:InformacjeOgolneJednostkaMikro>
+    <tns:P_1>
+      <tns:P_1A>
+        <dtsf:NazwaFirmy>BUDOWNICTWO WODNO-INŻYNIERYJNE I DROGOWE SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ</dtsf:NazwaFirmy>
+        <dtsf:Siedziba>
+          <dtsf:Wojewodztwo>Śląskie</dtsf:Wojewodztwo>
+          <dtsf:Powiat>pszczyński</dtsf:Powiat>
+          <dtsf:Gmina>Pszczyna</dtsf:Gmina>
+          <dtsf:Miejscowosc>Pszczyna</dtsf:Miejscowosc>
+        </dtsf:Siedziba>
+      </tns:P_1A>
+      <tns:P_1B>
+        <dtsf:Adres>
+          <dtsf:KodKraju>PL</dtsf:KodKraju>
+          <dtsf:Wojewodztwo>Śląskie</dtsf:Wojewodztwo>
+          <dtsf:Powiat>pszczyński</dtsf:Powiat>
+          <dtsf:Gmina>Pszczyna</dtsf:Gmina>
+          <dtsf:Ulica>Chochółka</dtsf:Ulica>
+          <dtsf:NrDomu>2</dtsf:NrDomu>
+          <dtsf:Miejscowosc>Pszczyna</dtsf:Miejscowosc>
+          <dtsf:KodPocztowy>43-200</dtsf:KodPocztowy>
+          <dtsf:Poczta>Pszczyna</dtsf:Poczta>
+        </dtsf:Adres>
+      </tns:P_1B>
+      <tns:P_1C>6381533422</tns:P_1C>
+      <tns:P_1D>0000041651</tns:P_1D>
+    </tns:P_1>
+    <tns:P_3>
+      <dtsf:DataOd>2019-01-01</dtsf:DataOd>
+      <dtsf:DataDo>2019-12-31</dtsf:DataDo>
+    </tns:P_3>
+    <tns:P_4>1.    Jednostka nie wycenia aktywów i pasywów według wartości godziwej i skorygowanej ceny nabycia (art. 28a UoR)
+2.    Odpisów amortyzacyjnych dokonuje się według zasad określonych w przepisach podatkowych (art. 32 ust. 7 UoR)
+3.    Przyjęte do użytkowania obce środki trwałe kwalifikuje się stosując definicję leasingu finansowego określoną w przepisach podatkowych (art. 3 ust. 6 UoR)
+4.    Nie ustala się aktywów i rezerw z tytułu odroczonego podatku dochodowego (art. 37 ust. 10 UoR)
+5.    Nie stosuje się rozporządzenia w sprawie szczegółowych zasad uznawania, metod wyceny, zakresu ujawniania i sposobu prezentacji instrumentów finansowych (art. 28b ust. 1 UoR) 
+6.    Nie tworzy się biernych rozliczeń międzyokresowych na przyszłe świadczenia na rzecz pracowników (art. 39 ust. 6)
+7.    Jednostka rezygnuje z zachowania zasady ostrożności przy wycenie poszczególnych składników aktywów i pasywów (art. 7 ust. 2a UoR)</tns:P_4>
+    <tns:P_5>
+      <tns:P_5A>true</tns:P_5A>
+      <tns:P_5B>true</tns:P_5B>
+    </tns:P_5>
+    <tns:P_6>
+      <tns:P_6A>Rzeczowy majątek trwały jest wykazywany w wartości netto (pomniejszonej o umorzenie). Do środków trwałych zaliczane są składniki majątkowe stanowiące własność spółki, które są kompletne i zdatne do użytku w momencie ich przyjęcia do użytkowania, a których przewidywany okres użytkowania jest dłuższy niż rok
+- Stawki amortyzacyjne środków trwałych są ustalane na zasadach określonych przepisami ustawy o podatku dochodowym od osób prawnych. W przypadku środków trwałych, których wartość początkowa nie przekracza 10.000 zł, odpisu amortyzacyjnego dokonuje się jednorazowo w miesiącu oddania do używania środka trwałego.
+- Powyższe zasady stosuje się również do wartości niematerialnych i prawnych.
+- Inwestycje w nieruchomości wycenia się według zasad przewidzianych dla środków trwałych
+</tns:P_6A>
+      <tns:P_6A>- Akcje i udziały jednostek podporządkowanych wycenia się w cenach nabycia, z uwzględnieniem ewentualnej utraty wartości przez nie.
+- Krótkoterminowe aktywa finansowe wycenia się po cenach nabycia nie wyższych od rynkowych.
+- Zobowiązania i należności są wykazywane w wartościach wymagających zapłaty.
+- Zobowiązania i należności w walutach obcych są wyceniane na dzień ujęcia w księgach według średniego kursu NBP ogłoszonego w dniu poprzedzający dzień ujęcia w księgach oraz przeszacowywane na dzień bilansowy wg kursu średniego NBP ogłaszanego na dzień bilansowy.
+- Środki pieniężne w walutach obcych są ewidencjonowane wg średniego kursu NBP ogłoszonego w dniu</tns:P_6A>
+      <tns:P_6A>poprzedzających dzień ich wpłynięcia na rachunek bankowy, chyba że możliwe jest ustalenie kursu faktycznie zastosowanego do transakcji.</tns:P_6A>
+      <tns:P_6B>- W księgach rachunkowych ujmowane są wszystkie osiągnięte, przypadające na rzecz jednostki przychody i obciążające ją koszty związane z tymi przychodami dotyczące danego roku obrotowego (art. 6 ust. 1 UoR)
+
+- Zgodnie z zasadą współmierności do danego okresu sprawozdawczego zaliczane będą koszty lub przychody dotyczące przyszłych okresów oraz przypadające na ten okres sprawozdawczy koszty, które jeszcze nie zostały poniesione (art. 6 ust. 2 UoR)
+
+- Rozliczenia dokonywane są przy zastosowaniu metody FIFO
+</tns:P_6B>
+      <tns:P_6B>
+- Rachunek zysków i strat sporządzany jest w wariancie porównawczym
+
+- W rachunku zysków i strat wykazywany jest bieżący podatek wynikający z zeznania podatkowego, gdyż jednostka nie ma obowiązku obliczania podatku odroczonego</tns:P_6B>
+      <tns:P_6C>- Bilans zawiera informacje w zakresie ustalonym w Załączniku nr 4 ustawy o rachunkowości (art. 46.5.4 UoR)
+- Rachunek zysków i strat zawiera informacje w zakresie ustalonym w Załączniku nr 4 ustawy o rachunkowości (art. 47.4.4 UoR)
+- Jednostka nie sporządza zestawienia zmian w kapitale (funduszu) własnym (art. 48a.3 UoR)
+- Jednostka nie sporządza rachunku przepływów pieniężnych (art. 48b.4 UoR)
+- Jednostka nie sporządza sprawozdania z działalności jednostki (art. 49.4 UoR) – informacja dotycząca nabycia udziałów (akcji) własnych wykazywana jest w informacji uzupełniającej do bilansu (jeśli takie nabycie wystąpiło)</tns:P_6C>
+    </tns:P_6>
+  </tns:InformacjeOgolneJednostkaMikro>
+  <tns:BilansJednostkaMikro>
+    <jmi:Aktywa>
+      <dtsf:KwotaA>239391.57</dtsf:KwotaA>
+      <dtsf:KwotaB>602325.86</dtsf:KwotaB>
+      <jmi:Aktywa_A>
+        <dtsf:KwotaA>56743.04</dtsf:KwotaA>
+        <dtsf:KwotaB>62924.8</dtsf:KwotaB>
+      </jmi:Aktywa_A>
+      <jmi:Aktywa_B>
+        <dtsf:KwotaA>182648.53</dtsf:KwotaA>
+        <dtsf:KwotaB>539401.06</dtsf:KwotaB>
+        <jmi:Aktywa_B_1>
+          <dtsf:KwotaA>0</dtsf:KwotaA>
+          <dtsf:KwotaB>46095.53</dtsf:KwotaB>
+        </jmi:Aktywa_B_1>
+        <jmi:Aktywa_B_2>
+          <dtsf:KwotaA>76478.76</dtsf:KwotaA>
+          <dtsf:KwotaB>465972.86</dtsf:KwotaB>
+        </jmi:Aktywa_B_2>
+      </jmi:Aktywa_B>
+    </jmi:Aktywa>
+    <jmi:Pasywa>
+      <dtsf:KwotaA>239391.57</dtsf:KwotaA>
+      <dtsf:KwotaB>602325.86</dtsf:KwotaB>
+      <jmi:Pasywa_A>
+        <dtsf:KwotaA>-226912.69</dtsf:KwotaA>
+        <dtsf:KwotaB>-480633.04</dtsf:KwotaB>
+        <jmi:Pasywa_A_1>
+          <dtsf:KwotaA>100000</dtsf:KwotaA>
+          <dtsf:KwotaB>100000</dtsf:KwotaB>
+        </jmi:Pasywa_A_1>
+      </jmi:Pasywa_A>
+      <jmi:Pasywa_B>
+        <dtsf:KwotaA>466304.26</dtsf:KwotaA>
+        <dtsf:KwotaB>1082958.9</dtsf:KwotaB>
+        <jmi:Pasywa_B_2>
+          <dtsf:KwotaA>152251.8</dtsf:KwotaA>
+          <dtsf:KwotaB>660697.8</dtsf:KwotaB>
+        </jmi:Pasywa_B_2>
+      </jmi:Pasywa_B>
+    </jmi:Pasywa>
+  </tns:BilansJednostkaMikro>
+  <tns:RZiSJednostkaMikro>
+    <jmi:A>
+      <dtsf:KwotaA>2166353.76</dtsf:KwotaA>
+      <dtsf:KwotaB>1250204.82</dtsf:KwotaB>
+    </jmi:A>
+    <jmi:B>
+      <dtsf:KwotaA>1915400.88</dtsf:KwotaA>
+      <dtsf:KwotaB>1193891.21</dtsf:KwotaB>
+      <jmi:B_I>
+        <dtsf:KwotaA>18181.76</dtsf:KwotaA>
+        <dtsf:KwotaB>17765.04</dtsf:KwotaB>
+      </jmi:B_I>
+      <jmi:B_II>
+        <dtsf:KwotaA>1064456.9</dtsf:KwotaA>
+        <dtsf:KwotaB>428916.73</dtsf:KwotaB>
+      </jmi:B_II>
+      <jmi:B_III>
+        <dtsf:KwotaA>422499.71</dtsf:KwotaA>
+        <dtsf:KwotaB>542006.57</dtsf:KwotaB>
+      </jmi:B_III>
+      <jmi:B_IV>
+        <dtsf:KwotaA>410262.51</dtsf:KwotaA>
+        <dtsf:KwotaB>205202.87</dtsf:KwotaB>
+      </jmi:B_IV>
+    </jmi:B>
+    <jmi:C>
+      <dtsf:KwotaA>8564.69</dtsf:KwotaA>
+      <dtsf:KwotaB>40972</dtsf:KwotaB>
+    </jmi:C>
+    <jmi:D>
+      <dtsf:KwotaA>1441.22</dtsf:KwotaA>
+      <dtsf:KwotaB>3348.9</dtsf:KwotaB>
+    </jmi:D>
+    <jmi:E>
+      <dtsf:KwotaA>4356</dtsf:KwotaA>
+      <dtsf:KwotaB>5700</dtsf:KwotaB>
+    </jmi:E>
+    <jmi:F>
+      <dtsf:KwotaA>253720.35</dtsf:KwotaA>
+      <dtsf:KwotaB>88236.71</dtsf:KwotaB>
+    </jmi:F>
+  </tns:RZiSJednostkaMikro>
+  <tns:InformacjeUzupelniajaceDoBilansuJednostkaMikro>
+    <tns:InformacjeUzupelniajaceDoBilansu>
+      <dtsf:Opis>Dodatkowe informacje i objaśnienia:
+1)    kwota wszelkich zobowiązań finansowych, w tym z tytułu dłużnych instrumentów finansowych, gwarancji i poręczeń lub zobowiązań warunkowych nieuwzględnionych w bilansie, ze wskazaniem charakteru i formy wierzytelności zabezpieczonych rzeczowo; wszelkie zobowiązania dotyczące emerytur oraz jednostek powiązanych lub stowarzyszonych są ujawniane odrębnie,
+
+Nie dotyczy
+
+</dtsf:Opis>
+    </tns:InformacjeUzupelniajaceDoBilansu>
+    <tns:InformacjeUzupelniajaceDoBilansu>
+      <dtsf:Opis>2)    kwota zaliczek i kredytów udzielonych członkom organów administrujących, zarządzających i nadzorujących, ze wskazaniem oprocentowania, głównych warunków oraz wszelkich kwot spłaconych, odpisanych lub umorzonych, a także zobowiązań zaciągniętych w ich imieniu tytułem gwarancji i poręczeń wszelkiego rodzaju, ze wskazaniem kwoty ogółem dla każdej kategorii,
+
+Nie dotyczy
+
+3)    o udziałach (akcjach) własnych, w tym:
+</dtsf:Opis>
+    </tns:InformacjeUzupelniajaceDoBilansu>
+    <tns:InformacjeUzupelniajaceDoBilansu>
+      <dtsf:Opis>a)    przyczyna nabycia udziałów (akcji) własnych dokonanego w roku obrotowym,
+b)    liczba i wartość nominalna nabytych oraz zbytych w roku obrotowym udziałów (akcji), a w przypadku braku wartości nominalnej, ich wartość księgowa, jak też część kapitału podstawowego, którą te udziały (akcje) reprezentują,
+c)    w przypadku nabycia lub zbycia odpłatnego, równowartość tych udziałów (akcji),
+d)    liczba i wartość nominalna lub, w razie braku wartości nominalnej, wartość księgowa wszystkich udziałów (akcji) nabytych i zatrzymanych, jak również część kapitału podstawowego, którą te udziały (akcje) reprezentują.
+
+</dtsf:Opis>
+    </tns:InformacjeUzupelniajaceDoBilansu>
+    <tns:InformacjeUzupelniajaceDoBilansu>
+      <dtsf:Opis>Nie dotyczy</dtsf:Opis>
+    </tns:InformacjeUzupelniajaceDoBilansu>
+  </tns:InformacjeUzupelniajaceDoBilansuJednostkaMikro>
+</tns:JednostkaMikro>

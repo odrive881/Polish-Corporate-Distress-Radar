@@ -209,6 +209,36 @@ def test_subtotal_failure_without_total_assets_quarantines(mapping_config: Mappi
     ]
 
 
+def test_altered_micro_total_assets_quarantines(mapping_config: MappingConfig) -> None:
+    """A micro filing whose balance sheet no longer balances must quarantine.
+
+    Built from the committed fixture rather than a synthetic frame, so it
+    exercises the real micro body and the real chart codes. A micro balance
+    sheet has 13 lines, which leaves the identity checks very little to catch a
+    defect with — this pins that they still catch the one that matters.
+    """
+    xml = STATEMENTS_DIR / "micro_2018_v1_2_2019.xml"
+    root = etree.fromstring(xml.read_bytes(), safe_parser())
+    total = root.find(".//{*}BilansJednostkaMikro/{*}Aktywa/{*}KwotaA")
+    assert total is not None
+    total.text = str(Decimal(total.text or "0") + Decimal("1000.00"))
+
+    detection = detect(root, mapping_config)
+    assert detection.spec is not None
+    parsed = parse_statement(root, detection.spec, mapping_config)
+    sha = hashlib.sha256(b"altered-micro").hexdigest()
+    ctx = DocumentContext(
+        "0000041651", None, None, "altered", sha, "zip:altered.xml", date(2020, 6, 30), "run-1"
+    )
+    frame = to_frame(parsed, ctx)
+    results = run_identity_checks(frame, mapping_config, TOLERANCE)
+    failed = results.filter(pl.col("status") == "fail")
+    assert "balance_sheet_balances" in failed["check"].to_list()
+    assert grade(frame, results, mapping_config)["quality_grade"].unique().to_list() == [
+        "quarantined"
+    ]
+
+
 def _golden_frame(
     xml: Path, config: MappingConfig, known_from: date = date(2024, 1, 1)
 ) -> pl.DataFrame:

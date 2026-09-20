@@ -24,7 +24,8 @@ from distress_radar.parsing.xsd_validation import XsdValidator
 
 FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
 STATEMENTS_DIR = FIXTURES_DIR / "statements"
-GOLDEN = sorted(STATEMENTS_DIR.glob("full_*.xml")) + [FIXTURES_DIR / "neobis_001.xml"]
+# Every committed fixture, so a new one is covered without editing this file.
+GOLDEN = sorted(STATEMENTS_DIR.glob("*.xml")) + [FIXTURES_DIR / "neobis_001.xml"]
 TNS_2018 = "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaInnaWZlotych"
 TNS_2018_TYS = "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaInnaWTysiacach"
 JIN_2018 = "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaInnaStruktury"
@@ -117,13 +118,20 @@ def test_identity_totals_by_hand(mapping_config: MappingConfig) -> None:
 def test_income_statement_variants_are_never_mixed(
     xml: Path, mapping_config: MappingConfig
 ) -> None:
+    """A document uses exactly one income-statement layout, never two.
+
+    Three exist: the comparative and calculation variants of the full and small
+    forms, and the micro form's own single layout, which is neither (ADR 0005
+    second addendum §4) and so carries `variant: "n/a"`.
+    """
+    layouts = {"COMP": "comparative", "CALC": "calculation", "MIKRO": "n/a"}
     parsed = parse(load(xml), mapping_config)
     income = {
         f.line_item.split(".")[1] for f in parsed.facts if f.statement_type == "income_statement"
     }
-    assert income in ({"COMP"}, {"CALC"})
+    assert len(income) == 1 and income <= set(layouts), income
     variants = {f.variant for f in parsed.facts if f.statement_type == "income_statement"}
-    assert variants == ({"comparative"} if income == {"COMP"} else {"calculation"})
+    assert variants == {layouts[next(iter(income))]}
 
 
 def test_wariant_2_uses_the_narrowed_codes(mapping_config: MappingConfig) -> None:
