@@ -1,0 +1,186 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<ns1:JednostkaMala xmlns:ns1="http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2025/01/01/JednostkaMalaWZlotych" xmlns:ns2="http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2025/01/01/JednostkaMalaStruktury" xmlns:ns3="http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2025/01/01/JednostkaInnaStruktury" xmlns:ns4="http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/DefinicjeTypySprawozdaniaFinansowe/" xmlns:ns5="http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2018/02/01/eD/KodyPKD/" xmlns:ns6="http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2016/01/25/eD/DefinicjeTypy/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2025/01/01/JednostkaMalaWZlotych https://www.gov.pl/static/finanse/SF/DefinicjeTypySprawozdaniaFinansowe/2024/10/24/JednostkaMalaWZlotych(1)_v1-3.xsd"><ns1:Naglowek><ns4:OkresOd>2025-08-05</ns4:OkresOd><ns4:OkresDo>2025-12-31</ns4:OkresDo><ns4:DataSporzadzenia>2026-03-31</ns4:DataSporzadzenia><ns2:KodSprawozdania kodSystemowy="SFJMAZ (1)" wersjaSchemy="1-3">SprFinJednostkaMalaWZlotych</ns2:KodSprawozdania><ns2:WariantSprawozdania>1</ns2:WariantSprawozdania></ns1:Naglowek><ns1:WprowadzenieDoSprawozdaniaFinansowegoJednostkaMala><ns1:P_1><ns1:P_1A><ns4:NazwaFirmy>STALBUD-KONSTRUKCJE SP. Z O.O. W UPADŁOŚCI</ns4:NazwaFirmy><ns4:Siedziba><ns4:Wojewodztwo>MAŁOPOLSKIE</ns4:Wojewodztwo><ns4:Powiat>KRAKÓW</ns4:Powiat><ns4:Gmina>KRAKÓW</ns4:Gmina><ns4:Miejscowosc>KRAKÓW</ns4:Miejscowosc></ns4:Siedziba></ns1:P_1A><ns1:P_1B><ns4:Adres><ns4:KodKraju>PL</ns4:KodKraju><ns4:Wojewodztwo>MAŁOPOLSKIE</ns4:Wojewodztwo><ns4:Powiat>KRAKÓW</ns4:Powiat><ns4:Gmina>KRAKÓW</ns4:Gmina><ns4:Ulica>BOCIANA</ns4:Ulica><ns4:NrDomu>17</ns4:NrDomu><ns4:Miejscowosc>KRAKÓW</ns4:Miejscowosc><ns4:KodPocztowy>31-231</ns4:KodPocztowy><ns4:Poczta>KRAKÓW</ns4:Poczta></ns4:Adres></ns1:P_1B><ns1:P_1C>9452179054</ns1:P_1C><ns1:P_1D>0000507997</ns1:P_1D></ns1:P_1><ns1:P_3><ns4:DataOd>2025-08-05</ns4:DataOd><ns4:DataDo>2025-12-31</ns4:DataDo></ns1:P_3><ns1:P_4>Przy sporządzaniu sprawozdania finansowego za okres 05.08.2025-31.12.2025 w spółce zastosowano uproszczenia:
+
+1. Wprowadzenie do sprawozdania finansowego ,
+
+2. Uproszczony bilans,
+
+3. Uproszczony rachunek zysków i strat,
+
+4. Brak konieczności sporządzania zestawienia zmian w kapitale,
+
+5. Brak konieczności sporządzania rachunku przepływów pieniężnych,
+
+6. Klasyfikowania umów do leasingu finansowego zgodnie z przepisami podatkowymi,
+
+7. Niewyłączania z kosztu wytworzenia produktu kosztów stałych niewykorzystanych zdolności
+
+produkcyjnych,
+
+8. Niestosowania rozporządzenia o instrumentach finansowych,
+
+9. Zaniechania ustalania aktywów i rezerw z tytułu odroczonego podatku dochodowego.</ns1:P_4><ns1:P_5><ns1:P_5A>true</ns1:P_5A><ns1:P_5B>false</ns1:P_5B><ns1:P_5C>SĄD REJONOWYDLA KRAKOWA - ŚRÓDMIEŚCIA W KRAKOWIE VIII WYDZIAŁ GOSPODARCZY DLA SPRAW UPADŁOŚCIOWYCH I REKONSTRUKCYJNYCH 5 SIERPNIA 2025 ROKU OGLOSIŁ UPADLOŚĆ SPÓŁKI - SYG. AKT KR1S/GU/977/202</ns1:P_5C></ns1:P_5><ns1:P_6><ns1:P_6A>MATERIAŁY
+
+Spółka dzieli materiały na: materiały budowlane (podstawowe) i materiały pomocnicze ( np. biurowe, lub
+
+inne) . Materiały podstawowe są wykorzystywane w bieżącej działalności spółki (usługi budowlane), a
+
+materiały pomocnicze w ogólnej dzialalnosci. Materiały ewidencjonuje sie na koncie 402 Materiały i
+
+energia w ujęciu wartościowym. Konto syntetyczne 402 posiada konta analityczne. Koszt zakupu
+
+materiałów wycenia sie z data wystawienia faktury. Spółka nie prowadzi MAGAZYNU. Jedynie na koniec
+
+miesiąc sa przeksięgowywane materiały nie wbudowane na konto 310. Materiały nie wbudowane w
+
+magazynie wycenia się wg cen nabycia. Rozchód metodą FIFO.
+
+ŚRODKI TRWAŁE I AMORTYZACJA
+
+Składniki majątku o przewidywanym okresie użytkowania dłuższym niż rok i wartości początkowej równej
+
+lub niższej niż 2.000 złotych są zaliczane bezpośrednio do kosztów zużycia materiałów.. Kontrolę i
+
+ewidencję składników o wartości od 800 – 2.000 złotych prowadzi pozaksięgowo Kierownik BST w
+
+programie Ontrack, w sposób umożliwiający identyfikację każdego przedmiotu oraz miejsc ich użytkowania
+
+i osób za nie odpowiedzialnych.
+
+Przedmioty o wartości początkowej ponad 2.000,00 zł do 10 000,00 zł wprowadza się do ewidencji
+
+bilansowej środków trwałych i są amortyzowane jednorazowo .
+
+Środki trwałe o wartości początkowej powyżej 10 000,00 zł amortyzowane są proporcjonalnie do okresu ich
+
+użytkowania ,zgodnie z przepisami ustawy o pdop z zastosowaniem liniowej metody amortyzacji.
+
+Wartości niematerialne i prawne o wartości jednostkowej do 10 000,00 zł odpisuje się jednorazowo w
+
+pełnej ich wartości w koszty, natomiast o wartości wyższej są amortyzowane proporcjonalnie do okresu ich
+
+użytkowania.
+
+Amortyzacji środków trwałych i wartości niematerialnych i prawnych dokonuje się w miesiącu przyjęcia do
+
+użytkowania, w którym składnik majątkowy wprowadzono do ewidencji środków trwałych oraz wartości
+
+niematerialnych i prawnych.
+
+Spółka korzysta z rocznego limitu jednorazowych odpisów amortyzacyjnych – 100 000zł.
+
+ODPISY AKTUALIZUJĄCE NALEŻNOŚCI
+
+sporządzane są na koniec roku obrotowego po otrzymaniu od Radcy Prawnego stanu spraw sądowych oraz
+
+po akceptacji przez Prezesa. Odpisy są księgowane w pozostałe koszty operacyjne.
+
+PRZETERMINOWANE ZOBOWIĄZANIA (KAUCJE)
+
+jeżeli upłynął okres 3 lat od przeterminowania zapłaty, nikt nie zgłasza się po ich zwrot bądź zgłoszenie
+
+jest po terminie, zgodnie z art. 3 ust. 1 pkt 32c uor firma rozlicza zobowiązanie do pozostałych
+
+przychodów operacyjnych i opodatkowuje to.
+
+ROZLICZANIE KONTRAKTÓW DŁUGOTERMINOWYCH
+
+metoda stosowana do rozliczenia to metoda stopnia zaawansowania , od strony efektu. Kontrakty
+
+posiadają budżety kosztów oraz sprzedaży. Przychodem kontraktu są wartości wynikające z faktur
+
+częściowych, a koszty z nimi związane zostaną ustalone jako różnica pomiędzy kosztami rzeczywiście
+
+poniesionymi a tymi, które podczas inwentaryzacji zostały uznane jako produkcja w toku.
+
+REZERWY
+
+W firmie nie tworzy się rezerw na przyszłe świadczenia pracownicze, takie jak odprawy emerytalne oraz
+
+nagrody jubileuszowe. Rezerwa na zaległe urlopy wypoczynkowe jest tworzona wtedy gdy ich wartość jest
+
+większa o progu istotności przyjętego na granicy 3% sumy bilansowej z roku poprzedniego.
+
+Firma nie tworzy rezerw i aktywów z tytułu odroczonego podatku dochodowego od osób prawnych.
+
+Od 2020 roku firma księguję rezerwy na bieżące urlopy wypoczynkowe.
+
+RÓŻ</ns1:P_6A><ns1:P_6A>NICE KURSOWE - nie wystąpiły
+
+PODRÓZE SŁUŻBOWE – nie występują.
+
+ŚLAD REWIZOWY – numer wewnętrzny dokumentów to: rodzaj dokumentu przez automatycznie nadany
+
+numer przez program księgowy przez miesiąc przez rok.
+
+KONTROLA WEWNĘTRZNA
+
+Kontroli wewnętrznej podlegają wszystkie faktury zakupowe, sprzedażowe. Faktury są podpisywane przez
+
+Kierowników, Głównego Księgowego oraz Prezesa. Dokumenty dekretuje Księgowa.
+
+PRODUKCJA W TOKU - wycena produkcji w toku według cen sprzedaży netto.
+
+KREDYTY – brak kredytów.</ns1:P_6A><ns1:P_6B>Spółka stosuje rachunek zysków i strat w wariancie kalkulacyjnym.</ns1:P_6B><ns1:P_6C>Sprawozdanie finansowe zostało sporządzone z zgodnie z ustawa z dnia 29.09.1994r o rachunkowości
+
+(Dz.U. z 2023r. poz 120 ze zm.) według załącznika nr 5 do tej ustawy.</ns1:P_6C><ns1:P_6D>1. Firma stosuje zasady rachunkowości zgodne z UoR, KSR, MSR.
+
+2. Rokiem obrotowym przyjętym dla potrzeb sprawozdawczości jest rok kalendarzowy ,to jest okres
+
+kolejnych 12 miesięcy rozpoczynających się do 1 stycznia każdego roku i kończący się 31 grudnia danego
+
+roku kalendarzowego.
+
+3. Okresem sprawozdawczym jest miesiąc.
+
+4. Dniem bilansowym jest dzień kończący rok obrotowy (31 grudnia),
+
+5. Księgi rachunkowe prowadzone są w siedzibie spółki przy ul. Bociana 17 w Krakowie.
+
+Księgi rachunkowe obejmują:
+
+1) dziennik,
+
+2) księgę główną,
+
+3) księgi pomocnicze,
+
+4) zestawienia obrotów i sald kont księgi głównej oraz sald kont pomocniczych.
+
+6. Księgi rachunkowe prowadzone są w formie komputerowej, przy pomocy programu finansowo -
+
+księgowego firmy COMARCH,Optima ERP służącego do ewidencji wszystkich operacji gospodarczych w
+
+formie analityczno - syntetycznej.
+
+7. Ewidencja środków trwałych oraz wartości niematerialnych i prawnych, ich umorzenia oraz amortyzacji
+
+jest prowadzona techniką komputerową i obejmuje takie urządzenia ewidencyjne jak księgę inwentarzową
+
+i plan amortyzacji. Na koniec miesiąca za pomocą zbiorczych zestawień wielkości umorzenia i amortyzacji
+
+księguje się na konta programu finansowo – księgowego.
+
+8. Rozliczenia z tytułu wynagrodzeń za pracę i umów zlecenia prowadzone są przy użyciu programu
+
+płacowego AGA – Kadry i Płace firmy Streamsoft, a zapisy na kontach księgowych programu finansowo -
+
+księgowego dokonywane są 2 raz w miesiącu na podstawie list płac za dany miesiąc.
+
+9. Spółka prowadzi zakładowy plan kont zgodny z „Zeszyty Metodyczne Rachunkowości. Zakładowy plan
+
+kont 2018r cz. 1 i 2 „ wydanym przez Wydawnictwo Podatkowe Gofin.
+
+10. Ustala się trzy cyfrowy symbol kont syntetycznych oraz dwucyfrowy cyfrowy symbol kont analitycznych
+
+(wykaz kont stanowi załącznik nr 1 do niniejszej uchwały). Prowadzona bieżąca aktualizacja kont
+
+syntetycznych nie wymaga odrębnego zarządzenia. Wydruk stosowanych kont syntetycznych i
+
+analitycznych (załącznik) powinien być aktualizowany co najmniej raz na zakończenie roku obrotowego.
+
+11. Programowa ochrona danych polega na tworzeniu kopii wszystkich zbiorów danych na koniec każdego
+
+miesiąca na inny komputerowy nośnik danych . Odpowiedzialność za archiwizowanie ksiąg rachunkowych
+
+powierza się osobie odpowiedzialnej za prowadzenie ksiąg rachunkowych .</ns1:P_6D></ns1:P_6></ns1:WprowadzenieDoSprawozdaniaFinansowegoJednostkaMala><ns1:BilansJednostkaMala><ns2:Aktywa><ns4:KwotaA>6073837.24</ns4:KwotaA><ns4:KwotaB>6112028.98</ns4:KwotaB><ns2:Aktywa_A><ns4:KwotaA>659380.08</ns4:KwotaA><ns4:KwotaB>1872803.16</ns4:KwotaB><ns2:Aktywa_A_I><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>0</ns4:KwotaB></ns2:Aktywa_A_I><ns2:Aktywa_A_II><ns4:KwotaA>659380.08</ns4:KwotaA><ns4:KwotaB>667203.47</ns4:KwotaB><ns2:Aktywa_A_II_1><ns4:KwotaA>659380.08</ns4:KwotaA><ns4:KwotaB>667203.47</ns4:KwotaB></ns2:Aktywa_A_II_1><ns2:Aktywa_A_II_2><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>0</ns4:KwotaB></ns2:Aktywa_A_II_2></ns2:Aktywa_A_II><ns2:Aktywa_A_III><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>974241.75</ns4:KwotaB></ns2:Aktywa_A_III><ns2:Aktywa_A_IV><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>0</ns4:KwotaB><ns2:Aktywa_A_IV_1><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>0</ns4:KwotaB></ns2:Aktywa_A_IV_1><ns2:Aktywa_A_IV_2><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>0</ns4:KwotaB></ns2:Aktywa_A_IV_2></ns2:Aktywa_A_IV><ns2:Aktywa_A_V><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>231357.94</ns4:KwotaB></ns2:Aktywa_A_V></ns2:Aktywa_A><ns2:Aktywa_B><ns4:KwotaA>5414457.16</ns4:KwotaA><ns4:KwotaB>4239225.82</ns4:KwotaB><ns2:Aktywa_B_I><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>0</ns4:KwotaB></ns2:Aktywa_B_I><ns2:Aktywa_B_II><ns4:KwotaA>5175446.75</ns4:KwotaA><ns4:KwotaB>4239224.41</ns4:KwotaB><ns2:Aktywa_B_II_A><ns4:KwotaA>5175446.75</ns4:KwotaA><ns4:KwotaB>1958372.47</ns4:KwotaB><ns2:Aktywa_B_II_A_1><ns4:KwotaA>5175446.75</ns4:KwotaA><ns4:KwotaB>1958372.47</ns4:KwotaB></ns2:Aktywa_B_II_A_1><ns2:Aktywa_B_II_A_2><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>0</ns4:KwotaB></ns2:Aktywa_B_II_A_2></ns2:Aktywa_B_II_A></ns2:Aktywa_B_II><ns2:Aktywa_B_III><ns4:KwotaA>7652.47</ns4:KwotaA><ns4:KwotaB>1.41</ns4:KwotaB><ns2:Aktywa_B_III_A><ns4:KwotaA>7652.47</ns4:KwotaA><ns4:KwotaB>1.41</ns4:KwotaB><ns2:Aktywa_B_III_A_1><ns4:KwotaA>7652.47</ns4:KwotaA><ns4:KwotaB>1.41</ns4:KwotaB></ns2:Aktywa_B_III_A_1></ns2:Aktywa_B_III_A></ns2:Aktywa_B_III><ns2:Aktywa_B_IV><ns4:KwotaA>231357.94</ns4:KwotaA><ns4:KwotaB>0</ns4:KwotaB></ns2:Aktywa_B_IV></ns2:Aktywa_B><ns2:Aktywa_C><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>0</ns4:KwotaB></ns2:Aktywa_C><ns2:Aktywa_D><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>0</ns4:KwotaB></ns2:Aktywa_D></ns2:Aktywa><ns2:Pasywa><ns4:KwotaA>6073837.24</ns4:KwotaA><ns4:KwotaB>6112028.98</ns4:KwotaB><ns2:Pasywa_A><ns4:KwotaA>-4038039.01</ns4:KwotaA><ns4:KwotaB>-3769544.19</ns4:KwotaB><ns2:Pasywa_A_I><ns4:KwotaA>100000</ns4:KwotaA><ns4:KwotaB>100000</ns4:KwotaB></ns2:Pasywa_A_I><ns2:Pasywa_A_II><ns4:KwotaA>669196.61</ns4:KwotaA><ns4:KwotaB>669196.61</ns4:KwotaB><ns2:Pasywa_A_II_1><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>0</ns4:KwotaB></ns2:Pasywa_A_II_1></ns2:Pasywa_A_II><ns2:Pasywa_A_III><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>0</ns4:KwotaB><ns2:Pasywa_A_III_1><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>0</ns4:KwotaB></ns2:Pasywa_A_III_1></ns2:Pasywa_A_III><ns2:Pasywa_A_IV><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>0</ns4:KwotaB></ns2:Pasywa_A_IV><ns2:Pasywa_A_V><ns4:KwotaA>-4538740.8</ns4:KwotaA><ns4:KwotaB>-3879098.27</ns4:KwotaB></ns2:Pasywa_A_V><ns2:Pasywa_A_VI><ns4:KwotaA>-268494.82</ns4:KwotaA><ns4:KwotaB>-659642.53</ns4:KwotaB></ns2:Pasywa_A_VI><ns2:Pasywa_A_VII><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>0</ns4:KwotaB></ns2:Pasywa_A_VII></ns2:Pasywa_A><ns2:Pasywa_B><ns4:KwotaA>10111876.25</ns4:KwotaA><ns4:KwotaB>9881573.17</ns4:KwotaB><ns2:Pasywa_B_I><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>0</ns4:KwotaB><ns2:Pasywa_B_I_1><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>0</ns4:KwotaB></ns2:Pasywa_B_I_1></ns2:Pasywa_B_I><ns2:Pasywa_B_II><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>2301238.01</ns4:KwotaB><ns2:Pasywa_B_II_1><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>0</ns4:KwotaB></ns2:Pasywa_B_II_1></ns2:Pasywa_B_II><ns2:Pasywa_B_III><ns4:KwotaA>10111876.25</ns4:KwotaA><ns4:KwotaB>7580335.16</ns4:KwotaB><ns2:Pasywa_B_III_A><ns4:KwotaA>2360.66</ns4:KwotaA><ns4:KwotaB>0</ns4:KwotaB></ns2:Pasywa_B_III_A><ns2:Pasywa_B_III_B><ns4:KwotaA>7746039.04</ns4:KwotaA><ns4:KwotaB>3588600.79</ns4:KwotaB><ns2:Pasywa_B_III_B_1><ns4:KwotaA>7746039.04</ns4:KwotaA><ns4:KwotaB>3588600.79</ns4:KwotaB></ns2:Pasywa_B_III_B_1><ns2:Pasywa_B_III_B_2><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>0</ns4:KwotaB></ns2:Pasywa_B_III_B_2></ns2:Pasywa_B_III_B><ns2:Pasywa_B_III_C><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>0</ns4:KwotaB></ns2:Pasywa_B_III_C></ns2:Pasywa_B_III><ns2:Pasywa_B_IV><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>0</ns4:KwotaB></ns2:Pasywa_B_IV></ns2:Pasywa_B></ns2:Pasywa></ns1:BilansJednostkaMala><ns1:RZiSJednostkaMala><ns2:RZiSKalk><ns2:A><ns4:KwotaA>70684.94</ns4:KwotaA><ns4:KwotaB>67599.09</ns4:KwotaB></ns2:A><ns2:B><ns4:KwotaA>370532.97</ns4:KwotaA><ns4:KwotaB>777708.79</ns4:KwotaB></ns2:B><ns2:C><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>0</ns4:KwotaB></ns2:C><ns2:D><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>0</ns4:KwotaB></ns2:D><ns2:E><ns4:KwotaA>-299848.03</ns4:KwotaA><ns4:KwotaB>-710109.70</ns4:KwotaB></ns2:E><ns2:F><ns4:KwotaA>31751.54</ns4:KwotaA><ns4:KwotaB>57106.3</ns4:KwotaB><ns2:F_1><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>0</ns4:KwotaB></ns2:F_1></ns2:F><ns2:G><ns4:KwotaA>398.33</ns4:KwotaA><ns4:KwotaB>4694.94</ns4:KwotaB><ns2:G_1><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>0</ns4:KwotaB></ns2:G_1></ns2:G><ns2:H><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>0</ns4:KwotaB><ns2:H_I><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>0</ns4:KwotaB><ns2:H_I_1><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>0</ns4:KwotaB></ns2:H_I_1></ns2:H_I><ns2:H_II><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>0</ns4:KwotaB><ns2:H_II_1><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>0</ns4:KwotaB></ns2:H_II_1></ns2:H_II><ns2:H_III><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>0</ns4:KwotaB><ns2:H_III_1><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>0</ns4:KwotaB></ns2:H_III_1></ns2:H_III><ns2:H_IV><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>0</ns4:KwotaB></ns2:H_IV></ns2:H><ns2:I><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>1944.19</ns4:KwotaB><ns2:I_I><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>1944.19</ns4:KwotaB><ns2:I_I_1><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>0</ns4:KwotaB></ns2:I_I_1></ns2:I_I><ns2:I_II><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>0</ns4:KwotaB><ns2:I_II_1><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>0</ns4:KwotaB></ns2:I_II_1></ns2:I_II><ns2:I_III><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>0</ns4:KwotaB></ns2:I_III></ns2:I><ns2:J><ns4:KwotaA>-268494.82</ns4:KwotaA><ns4:KwotaB>-659642.53</ns4:KwotaB></ns2:J><ns2:K><ns4:KwotaA>0</ns4:KwotaA><ns4:KwotaB>0</ns4:KwotaB></ns2:K><ns2:L><ns4:KwotaA>-268494.82</ns4:KwotaA><ns4:KwotaB>-659642.53</ns4:KwotaB></ns2:L></ns2:RZiSKalk></ns1:RZiSJednostkaMala><ns1:DodatkoweInformacjeIObjasnieniaJednostkaMala><ns1:DodatkoweInformacjeIObjasnienia><ns4:Opis>Dodatkowe Informacje 2025</ns4:Opis><ns4:Plik><ns4:Nazwa>attachment.pdf</ns4:Nazwa><ns4:Zawartosc>YXR0YWNobWVudCByZW1vdmVkIGZyb20gZml4dHVyZQ==</ns4:Zawartosc></ns4:Plik></ns1:DodatkoweInformacjeIObjasnienia><ns1:InformacjaDodatkowaDotyczacaPodatkuDochodowego><ns4:P_ID_1><ns4:RB>-264494.82</ns4:RB><ns4:RP>-659642.53</ns4:RP></ns4:P_ID_1><ns4:P_ID_2><ns4:Kwota><ns4:RB><ns4:KwotaA>0</ns4:KwotaA></ns4:RB><ns4:RP><ns4:KwotaA>0</ns4:KwotaA></ns4:RP></ns4:Kwota><ns4:Pozostale><ns4:RB><ns4:KwotaA>0</ns4:KwotaA></ns4:RB><ns4:RP><ns4:KwotaA>0</ns4:KwotaA></ns4:RP></ns4:Pozostale></ns4:P_ID_2><ns4:P_ID_3><ns4:Kwota><ns4:RB><ns4:KwotaA>0</ns4:KwotaA></ns4:RB><ns4:RP><ns4:KwotaA>0</ns4:KwotaA></ns4:RP></ns4:Kwota><ns4:PozycjaUzytkownika><ns4:NazwaPozycji>Kary i odszkodowania</ns4:NazwaPozycji><ns4:Kwoty><ns4:RB><ns4:Kwota><ns4:KwotaA>0</ns4:KwotaA></ns4:Kwota><ns4:PodstawaPrawna><ns4:Art>0</ns4:Art></ns4:PodstawaPrawna></ns4:RB><ns4:RP><ns4:KwotaA>0</ns4:KwotaA></ns4:RP></ns4:Kwoty></ns4:PozycjaUzytkownika><ns4:Pozostale><ns4:RB><ns4:KwotaA>0</ns4:KwotaA></ns4:RB><ns4:RP><ns4:KwotaA>0</ns4:KwotaA></ns4:RP></ns4:Pozostale></ns4:P_ID_3><ns4:P_ID_4><ns4:Kwota><ns4:RB><ns4:KwotaA>0</ns4:KwotaA></ns4:RB><ns4:RP><ns4:KwotaA>0</ns4:KwotaA></ns4:RP></ns4:Kwota><ns4:PozycjaUzytkownika><ns4:NazwaPozycji>Kontrakty długoterminowe</ns4:NazwaPozycji><ns4:Kwoty><ns4:RB><ns4:Kwota><ns4:KwotaA>0</ns4:KwotaA></ns4:Kwota><ns4:PodstawaPrawna><ns4:Art>12</ns4:Art><ns4:Ust>3a</ns4:Ust></ns4:PodstawaPrawna></ns4:RB><ns4:RP><ns4:KwotaA>0</ns4:KwotaA></ns4:RP></ns4:Kwoty></ns4:PozycjaUzytkownika><ns4:Pozostale><ns4:RB><ns4:KwotaA>0</ns4:KwotaA></ns4:RB><ns4:RP><ns4:KwotaA>0</ns4:KwotaA></ns4:RP></ns4:Pozostale></ns4:P_ID_4><ns4:P_ID_5><ns4:Kwota><ns4:RB><ns4:KwotaA>317.26</ns4:KwotaA></ns4:RB><ns4:RP><ns4:KwotaA>16169.49</ns4:KwotaA></ns4:RP></ns4:Kwota><ns4:PozycjaUzytkownika><ns4:NazwaPozycji>Koszty paliwa i inne</ns4:NazwaPozycji><ns4:Kwoty><ns4:RB><ns4:Kwota><ns4:KwotaA>317.26</ns4:KwotaA></ns4:Kwota><ns4:PodstawaPrawna><ns4:Art>23</ns4:Art></ns4:PodstawaPrawna></ns4:RB><ns4:RP><ns4:KwotaA>5635</ns4:KwotaA></ns4:RP></ns4:Kwoty></ns4:PozycjaUzytkownika><ns4:PozycjaUzytkownika><ns4:NazwaPozycji>Podatki o opłaty</ns4:NazwaPozycji><ns4:Kwoty><ns4:RB><ns4:Kwota><ns4:KwotaA>0</ns4:KwotaA></ns4:Kwota><ns4:PodstawaPrawna><ns4:Art>0</ns4:Art></ns4:PodstawaPrawna></ns4:RB><ns4:RP><ns4:KwotaA>0</ns4:KwotaA></ns4:RP></ns4:Kwoty></ns4:PozycjaUzytkownika><ns4:PozycjaUzytkownika><ns4:NazwaPozycji>Odsetki biudżetowe</ns4:NazwaPozycji><ns4:Kwoty><ns4:RB><ns4:Kwota><ns4:KwotaA>0</ns4:KwotaA></ns4:Kwota><ns4:PodstawaPrawna><ns4:Art>16</ns4:Art></ns4:PodstawaPrawna></ns4:RB><ns4:RP><ns4:KwotaA>283.07</ns4:KwotaA></ns4:RP></ns4:Kwoty></ns4:PozycjaUzytkownika><ns4:PozycjaUzytkownika><ns4:NazwaPozycji>Kary o odszkodowania</ns4:NazwaPozycji><ns4:Kwoty><ns4:RB><ns4:Kwota><ns4:KwotaA>0</ns4:KwotaA></ns4:Kwota><ns4:PodstawaPrawna><ns4:Art>15</ns4:Art></ns4:PodstawaPrawna></ns4:RB><ns4:RP><ns4:KwotaA>1661.12</ns4:KwotaA></ns4:RP></ns4:Kwoty></ns4:PozycjaUzytkownika><ns4:Pozostale><ns4:RB><ns4:KwotaA>0</ns4:KwotaA></ns4:RB><ns4:RP><ns4:KwotaA>8590.3</ns4:KwotaA></ns4:RP></ns4:Pozostale></ns4:P_ID_5><ns4:P_ID_6><ns4:Kwota><ns4:RB><ns4:KwotaA>117633.58</ns4:KwotaA></ns4:RB><ns4:RP><ns4:KwotaA>348173.07</ns4:KwotaA></ns4:RP></ns4:Kwota><ns4:PozycjaUzytkownika><ns4:NazwaPozycji>Faktury niezapłacone pow.90 złe dlugi</ns4:NazwaPozycji><ns4:Kwoty><ns4:RB><ns4:Kwota><ns4:KwotaA>0</ns4:KwotaA></ns4:Kwota><ns4:PodstawaPrawna><ns4:Art>16</ns4:Art></ns4:PodstawaPrawna></ns4:RB><ns4:RP><ns4:KwotaA>0</ns4:KwotaA></ns4:RP></ns4:Kwoty></ns4:PozycjaUzytkownika><ns4:PozycjaUzytkownika><ns4:NazwaPozycji>ZUS pracodawcy bieżące niezapłacone</ns4:NazwaPozycji><ns4:Kwoty><ns4:RB><ns4:Kwota><ns4:KwotaA>18185.89</ns4:KwotaA></ns4:Kwota><ns4:PodstawaPrawna><ns4:Art>16</ns4:Art></ns4:PodstawaPrawna></ns4:RB><ns4:RP><ns4:KwotaA>53936.87</ns4:KwotaA></ns4:RP></ns4:Kwoty></ns4:PozycjaUzytkownika><ns4:PozycjaUzytkownika><ns4:NazwaPozycji>Niewypłacone wynagrodzenia w danym roku</ns4:NazwaPozycji><ns4:Kwoty><ns4:RB><ns4:Kwota><ns4:KwotaA>99447.69</ns4:KwotaA></ns4:Kwota><ns4:PodstawaPrawna><ns4:Art>16</ns4:Art></ns4:PodstawaPrawna></ns4:RB><ns4:RP><ns4:KwotaA>294236.2</ns4:KwotaA></ns4:RP></ns4:Kwoty></ns4:PozycjaUzytkownika><ns4:PozycjaUzytkownika><ns4:NazwaPozycji>Wartość utworzonych rezerw koszty na początek roku (art. 16</ns4:NazwaPozycji><ns4:Kwoty><ns4:RB><ns4:Kwota><ns4:KwotaA>0</ns4:KwotaA></ns4:Kwota><ns4:PodstawaPrawna><ns4:Art>16</ns4:Art><ns4:Ust>1</ns4:Ust><ns4:Pkt>27</ns4:Pkt></ns4:PodstawaPrawna></ns4:RB><ns4:RP><ns4:KwotaA>0</ns4:KwotaA></ns4:RP></ns4:Kwoty></ns4:PozycjaUzytkownika><ns4:PozycjaUzytkownika><ns4:NazwaPozycji>Wartość utworzonych rezerw koszty na koniec roku (art. 16 ust.</ns4:NazwaPozycji><ns4:Kwoty><ns4:RB><ns4:Kwota><ns4:KwotaA>0</ns4:KwotaA></ns4:Kwota><ns4:PodstawaPrawna><ns4:Art>16</ns4:Art><ns4:Ust>1</ns4:Ust><ns4:Pkt>27</ns4:Pkt></ns4:PodstawaPrawna></ns4:RB><ns4:RP><ns4:KwotaA>0</ns4:KwotaA></ns4:RP></ns4:Kwoty></ns4:PozycjaUzytkownika><ns4:Pozostale><ns4:RB><ns4:KwotaA>0</ns4:KwotaA></ns4:RB><ns4:RP><ns4:KwotaA>0</ns4:KwotaA></ns4:RP></ns4:Pozostale></ns4:P_ID_6><ns4:P_ID_7><ns4:Kwota><ns4:RB><ns4:KwotaA>135226.39</ns4:KwotaA></ns4:RB><ns4:RP><ns4:KwotaA>0</ns4:KwotaA></ns4:RP></ns4:Kwota><ns4:PozycjaUzytkownika><ns4:NazwaPozycji>Wypłacone wynagrodzenia</ns4:NazwaPozycji><ns4:Kwoty><ns4:RB><ns4:Kwota><ns4:KwotaA>115022.01</ns4:KwotaA></ns4:Kwota><ns4:PodstawaPrawna><ns4:Art>0</ns4:Art></ns4:PodstawaPrawna></ns4:RB></ns4:Kwoty></ns4:PozycjaUzytkownika><ns4:PozycjaUzytkownika><ns4:NazwaPozycji>Zapłacone skłdki ZUS</ns4:NazwaPozycji><ns4:Kwoty><ns4:RB><ns4:Kwota><ns4:KwotaA>20204.38</ns4:KwotaA></ns4:Kwota><ns4:PodstawaPrawna><ns4:Art>0</ns4:Art></ns4:PodstawaPrawna></ns4:RB></ns4:Kwoty></ns4:PozycjaUzytkownika><ns4:Pozostale><ns4:RB><ns4:KwotaA>0</ns4:KwotaA></ns4:RB><ns4:RP><ns4:KwotaA>0</ns4:KwotaA></ns4:RP></ns4:Pozostale></ns4:P_ID_7><ns4:P_ID_8><ns4:Kwota><ns4:RB><ns4:KwotaA>0</ns4:KwotaA></ns4:RB><ns4:RP><ns4:KwotaA>0</ns4:KwotaA></ns4:RP></ns4:Kwota></ns4:P_ID_8><ns4:P_ID_9><ns4:Kwota><ns4:RB><ns4:KwotaA>0</ns4:KwotaA></ns4:RB><ns4:RP><ns4:KwotaA>0</ns4:KwotaA></ns4:RP></ns4:Kwota><ns4:Pozostale><ns4:RB><ns4:KwotaA>0</ns4:KwotaA></ns4:RB><ns4:RP><ns4:KwotaA>0</ns4:KwotaA></ns4:RP></ns4:Pozostale></ns4:P_ID_9><ns4:P_ID_10><ns4:RB>-285770.37</ns4:RB><ns4:RP>-295299.97</ns4:RP></ns4:P_ID_10><ns4:P_ID_11><ns4:RB>0</ns4:RB><ns4:RP>0</ns4:RP></ns4:P_ID_11></ns1:InformacjaDodatkowaDotyczacaPodatkuDochodowego></ns1:DodatkoweInformacjeIObjasnieniaJednostkaMala></ns1:JednostkaMala>

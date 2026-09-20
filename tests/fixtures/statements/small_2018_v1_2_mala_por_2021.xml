@@ -1,0 +1,313 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<tns:JednostkaMala xmlns:tns="http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaMalaWZlotych" xmlns:dtsf="http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/DefinicjeTypySprawozdaniaFinansowe/" xmlns:etd="http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2016/01/25/eD/DefinicjeTypy/" xmlns:jin="http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaInnaStruktury" xmlns:jma="http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaMalaStruktury" xmlns:kpkd="http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2018/02/01/eD/KodyPKD/" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaMalaWZlotych https://www.gov.pl/documents/2034621/2182793/JednostkaMalaWZlotych(1)_v1-2.xsd http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/DefinicjeTypySprawozdaniaFinansowe/ https://www.gov.pl/documents/2034621/2182793/StrukturyDanychSprFin_v1-2.xsd http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2016/01/25/eD/DefinicjeTypy/ http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2016/01/25/eD/DefinicjeTypy/StrukturyDanych_v4-0E.xsd http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaInnaStruktury https://www.gov.pl/documents/2034621/2182793/JednostkaInnaStrukturyDanychSprFin_v1-2.xsd http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaMalaStruktury https://www.gov.pl/documents/2034621/2182793/JednostkaMalaStrukturyDanychSprFin_v1-2.xsd http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2018/02/01/eD/KodyPKD/ http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2018/02/01/eD/KodyPKD/KodyPKD_v2-0E.xsd">
+  <tns:Naglowek>
+    <dtsf:OkresOd>2021-01-01</dtsf:OkresOd>
+    <dtsf:OkresDo>2021-12-31</dtsf:OkresDo>
+    <dtsf:DataSporzadzenia>2022-06-29</dtsf:DataSporzadzenia>
+    <jma:KodSprawozdania kodSystemowy="SFJMAZ (1)" wersjaSchemy="1-2">SprFinJednostkaMalaWZlotych</jma:KodSprawozdania>
+    <jma:WariantSprawozdania>1</jma:WariantSprawozdania>
+  </tns:Naglowek>
+  <tns:WprowadzenieDoSprawozdaniaFinansowegoJednostkaMala>
+    <tns:P_1>
+      <tns:P_1A>
+        <dtsf:NazwaFirmy>FIRMA BUDOWLANA "FOBIS" SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ</dtsf:NazwaFirmy>
+        <dtsf:Siedziba>
+          <dtsf:Wojewodztwo>Dolnośląskie</dtsf:Wojewodztwo>
+          <dtsf:Powiat>lubiński</dtsf:Powiat>
+          <dtsf:Gmina>Lubin</dtsf:Gmina>
+          <dtsf:Miejscowosc>Lubin</dtsf:Miejscowosc>
+        </dtsf:Siedziba>
+      </tns:P_1A>
+      <tns:P_1B>
+        <dtsf:Adres>
+          <dtsf:KodKraju>PL</dtsf:KodKraju>
+          <dtsf:Wojewodztwo>Dolnośląskie</dtsf:Wojewodztwo>
+          <dtsf:Powiat>lubiński</dtsf:Powiat>
+          <dtsf:Gmina>Lubin</dtsf:Gmina>
+          <dtsf:Ulica>Przemysłowa</dtsf:Ulica>
+          <dtsf:NrDomu>3</dtsf:NrDomu>
+          <dtsf:Miejscowosc>Lubin</dtsf:Miejscowosc>
+          <dtsf:KodPocztowy>59-300</dtsf:KodPocztowy>
+          <dtsf:Poczta>Lubin</dtsf:Poczta>
+        </dtsf:Adres>
+      </tns:P_1B>
+      <tns:P_1C>6922383001</tns:P_1C>
+      <tns:P_1D>0000225354</tns:P_1D>
+    </tns:P_1>
+    <tns:P_3>
+      <dtsf:DataOd>2021-01-01</dtsf:DataOd>
+      <dtsf:DataDo>2021-12-31</dtsf:DataDo>
+    </tns:P_3>
+    <tns:P_4>Ponieważ sprawozdanie finansowe za rok 2021 nie podlega badaniu składa się więc z następujących elementów:    bilansu,    rachunku zysków i strat,    informacji dodatkowej obejmującej :      - wprowadzenie do sprawozdania finansowego,      - dodatkowe informacje i objaśnienia,</tns:P_4>
+    <tns:P_5>
+      <tns:P_5A>true</tns:P_5A>
+      <tns:P_5B>true</tns:P_5B>
+    </tns:P_5>
+    <tns:P_6>
+      <tns:P_6A>Aktywa i pasywa wyceniono według zasad określonych w polityce rachunkowości a także w oparciu o ustawę o rachunkowości. NIe sporządza się sprawozdania finansowego w oparciu o MSR/MSSF, sporządza sprawozdanie dedykowane dla jednosetk małych. Poszczególne składniki aktywów i pasywów wycenia się w następujący sposób opisany w kolejnych punktach.</tns:P_6A>
+      <tns:P_6B>Środki trwałe: Do amortyzacji środków trwałych jednostka stosuje stawki przewidziane w wykazie rocznych stawek podatkowych, stanowiącym załącznik do ustawy podatkowej. Stawki te zapewniają odzwierciedlenie ekonomicznego zużycia środków.Środki trwałe o niskiej jednostkowej wartości początkowej to znaczy poniżej 10 000 PLN podlegają jednorazowej amortyzacji w miesiącu zakupu.Wartości niematerialne i prawne:Wartości niematerialne i prawne ujmowane są w cenach nabycia. Do amortyzacji stosuje się stawki wynikające z decyzji właścicela uwzględniające ekonomiczną użyteczność oraz przewidywany okres korzystania. Należności oraz zobowiązania:Należności są wykazywane w kwocie wymaganej zapłaty pomniejszonej o odpisy aktualizujące. Wartość należności aktualizuje się uwzględniając stopień prawdopodobieństwa ich zapłaty poprzez dokonanie odpisu aktualizującego.</tns:P_6B>
+      <tns:P_6B>Odpisyaktualizujące wartość należności zalicza się odpowiednio do pozostałych kosztów operacyjnych lub do kosztów finansowych - zależnie od rodzaju należności, której dotyczy odpis aktualizacji. Należności umorzone, przedawnione lub nieściągalne, od których nie dokonano odpisów aktualizujących ich wartość lub dokonano odpisów w niepełnej wysokości, zalicza się odpowiednio do pozostałych kosztów operacyjnych lub kosztów finansowych.Na dzień bilansowy nie nalicza odsetek od zobowiązań.Transakcje w walucie obcej:Transakcje wyrażone w walutach innych niż polski złoty są przeliczane na złote polskie przy zastosowaniu kursu średniego NBP obowiązującego przed dniem zawarcia transakcji (udokumentowanie fakturą).Na dzień bilansowy aktywa i pasywa wyrażone w walutach innych niż polski złoty są przeliczane na złote polskie przy zastosowaniu średniego kursu NBP. Powstałe z przeliczenia</tns:P_6B>
+      <tns:P_6B>różnicekursowe ujmowane są odpowiednio w pozycji przychodów (kosztów) finansowych.Kredyty bankowe i pożyczki: W momencie początkowego ujęcia, kredyty bankowe i pożyczki są ujmowane według wartości otrzymanych środków pieniężnych. Na dzień bilansowy kredyty i pożyczki w walutach innych niż polski złoty są przeliczane na złote polskie przy zastosowaniu średniego kursu NBP.</tns:P_6B>
+      <tns:P_6C>Jednostka sporządza rachunek zysków i strat w wariancie porównawczym, jednostka ewidencjonuje koszty w układzie rodzajowym (zespół 4) i według miejsca powstawania kosztów (zespół 5)</tns:P_6C>
+      <tns:P_6D>.</tns:P_6D>
+    </tns:P_6>
+  </tns:WprowadzenieDoSprawozdaniaFinansowegoJednostkaMala>
+  <tns:BilansJednostkaMala>
+    <jma:Aktywa>
+      <dtsf:KwotaA>12249688.48</dtsf:KwotaA>
+      <dtsf:KwotaB>10551674.72</dtsf:KwotaB>
+      <jma:Aktywa_A>
+        <dtsf:KwotaA>2321982.09</dtsf:KwotaA>
+        <dtsf:KwotaB>2492521.64</dtsf:KwotaB>
+        <jma:Aktywa_A_I>
+          <dtsf:KwotaA>0.00</dtsf:KwotaA>
+          <dtsf:KwotaB>2605.23</dtsf:KwotaB>
+        </jma:Aktywa_A_I>
+        <jma:Aktywa_A_II>
+          <dtsf:KwotaA>1231461.38</dtsf:KwotaA>
+          <dtsf:KwotaB>1236712.46</dtsf:KwotaB>
+          <jma:Aktywa_A_II_1>
+            <dtsf:KwotaA>1231461.38</dtsf:KwotaA>
+            <dtsf:KwotaB>1231461.38</dtsf:KwotaB>
+          </jma:Aktywa_A_II_1>
+        </jma:Aktywa_A_II>
+        <jma:Aktywa_A_III>
+          <dtsf:KwotaA>0.00</dtsf:KwotaA>
+          <dtsf:KwotaB>169342.24</dtsf:KwotaB>
+        </jma:Aktywa_A_III>
+        <jma:Aktywa_A_IV>
+          <dtsf:KwotaA>980174.33</dtsf:KwotaA>
+          <dtsf:KwotaB>980174.33</dtsf:KwotaB>
+          <jma:Aktywa_A_IV_2>
+            <dtsf:KwotaA>980174.33</dtsf:KwotaA>
+            <dtsf:KwotaB>980174.33</dtsf:KwotaB>
+          </jma:Aktywa_A_IV_2>
+        </jma:Aktywa_A_IV>
+        <jma:Aktywa_A_V>
+          <dtsf:KwotaA>110346.38</dtsf:KwotaA>
+          <dtsf:KwotaB>103687.38</dtsf:KwotaB>
+        </jma:Aktywa_A_V>
+      </jma:Aktywa_A>
+      <jma:Aktywa_B>
+        <dtsf:KwotaA>9927706.39</dtsf:KwotaA>
+        <dtsf:KwotaB>8059153.08</dtsf:KwotaB>
+        <jma:Aktywa_B_I>
+          <dtsf:KwotaA>1859895.40</dtsf:KwotaA>
+          <dtsf:KwotaB>1017344.61</dtsf:KwotaB>
+        </jma:Aktywa_B_I>
+        <jma:Aktywa_B_II>
+          <dtsf:KwotaA>5050430.75</dtsf:KwotaA>
+          <dtsf:KwotaB>1523890.75</dtsf:KwotaB>
+          <jma:Aktywa_B_II_A>
+            <dtsf:KwotaA>0.00</dtsf:KwotaA>
+            <dtsf:KwotaB>0.00</dtsf:KwotaB>
+            <jma:Aktywa_B_II_A_1>
+              <dtsf:KwotaA>3032186.22</dtsf:KwotaA>
+              <dtsf:KwotaB>1664572.15</dtsf:KwotaB>
+            </jma:Aktywa_B_II_A_1>
+          </jma:Aktywa_B_II_A>
+        </jma:Aktywa_B_II>
+        <jma:Aktywa_B_III>
+          <dtsf:KwotaA>2971110.57</dtsf:KwotaA>
+          <dtsf:KwotaB>5475108.45</dtsf:KwotaB>
+          <jma:Aktywa_B_III_A>
+            <dtsf:KwotaA>0.00</dtsf:KwotaA>
+            <dtsf:KwotaB>0.00</dtsf:KwotaB>
+            <jma:Aktywa_B_III_A_1>
+              <dtsf:KwotaA>2890929.23</dtsf:KwotaA>
+              <dtsf:KwotaB>4494934.12</dtsf:KwotaB>
+            </jma:Aktywa_B_III_A_1>
+          </jma:Aktywa_B_III_A>
+        </jma:Aktywa_B_III>
+        <jma:Aktywa_B_IV>
+          <dtsf:KwotaA>46269.67</dtsf:KwotaA>
+          <dtsf:KwotaB>42809.27</dtsf:KwotaB>
+        </jma:Aktywa_B_IV>
+      </jma:Aktywa_B>
+    </jma:Aktywa>
+    <jma:Pasywa>
+      <dtsf:KwotaA>12249688.48</dtsf:KwotaA>
+      <dtsf:KwotaB>10551674.72</dtsf:KwotaB>
+      <jma:Pasywa_A>
+        <dtsf:KwotaA>7293040.25</dtsf:KwotaA>
+        <dtsf:KwotaB>6091618.60</dtsf:KwotaB>
+        <jma:Pasywa_A_I>
+          <dtsf:KwotaA>50000.00</dtsf:KwotaA>
+          <dtsf:KwotaB>50000.00</dtsf:KwotaB>
+        </jma:Pasywa_A_I>
+        <jma:Pasywa_A_II>
+          <dtsf:KwotaA>5988487.64</dtsf:KwotaA>
+          <dtsf:KwotaB>7080145.50</dtsf:KwotaB>
+        </jma:Pasywa_A_II>
+        <jma:Pasywa_A_V>
+          <dtsf:KwotaA>0.00</dtsf:KwotaA>
+          <dtsf:KwotaB>-858539.53</dtsf:KwotaB>
+        </jma:Pasywa_A_V>
+        <jma:Pasywa_A_VI>
+          <dtsf:KwotaA>1254552.61</dtsf:KwotaA>
+          <dtsf:KwotaB>-179987.37</dtsf:KwotaB>
+        </jma:Pasywa_A_VI>
+      </jma:Pasywa_A>
+      <jma:Pasywa_B>
+        <dtsf:KwotaA>4956648.23</dtsf:KwotaA>
+        <dtsf:KwotaB>4460056.12</dtsf:KwotaB>
+        <jma:Pasywa_B_II>
+          <dtsf:KwotaA>919966.80</dtsf:KwotaA>
+          <dtsf:KwotaB>1970719.77</dtsf:KwotaB>
+          <jma:Pasywa_B_II_1>
+            <dtsf:KwotaA>919966.80</dtsf:KwotaA>
+            <dtsf:KwotaB>1970719.77</dtsf:KwotaB>
+          </jma:Pasywa_B_II_1>
+        </jma:Pasywa_B_II>
+        <jma:Pasywa_B_III>
+          <dtsf:KwotaA>4036681.43</dtsf:KwotaA>
+          <dtsf:KwotaB>2489336.35</dtsf:KwotaB>
+          <jma:Pasywa_B_III_A>
+            <dtsf:KwotaA>2261471.74</dtsf:KwotaA>
+            <dtsf:KwotaB>1113507.16</dtsf:KwotaB>
+          </jma:Pasywa_B_III_A>
+          <jma:Pasywa_B_III_B>
+            <dtsf:KwotaA>0.00</dtsf:KwotaA>
+            <dtsf:KwotaB>0.00</dtsf:KwotaB>
+            <jma:Pasywa_B_III_B_1>
+              <dtsf:KwotaA>960303.97</dtsf:KwotaA>
+              <dtsf:KwotaB>948675.24</dtsf:KwotaB>
+            </jma:Pasywa_B_III_B_1>
+          </jma:Pasywa_B_III_B>
+        </jma:Pasywa_B_III>
+      </jma:Pasywa_B>
+    </jma:Pasywa>
+  </tns:BilansJednostkaMala>
+  <tns:RZiSJednostkaMala>
+    <jma:RZiSPor>
+      <jma:A>
+        <dtsf:KwotaA>15438765.94</dtsf:KwotaA>
+        <dtsf:KwotaB>9703628.44</dtsf:KwotaB>
+        <jma:A_I>
+          <dtsf:KwotaA>15353689.59</dtsf:KwotaA>
+          <dtsf:KwotaB>9676628.44</dtsf:KwotaB>
+        </jma:A_I>
+        <jma:A_II>
+          <dtsf:KwotaA>85076.35</dtsf:KwotaA>
+          <dtsf:KwotaB>27000.00</dtsf:KwotaB>
+        </jma:A_II>
+      </jma:A>
+      <jma:B>
+        <dtsf:KwotaA>15163268.69</dtsf:KwotaA>
+        <dtsf:KwotaB>10035869.88</dtsf:KwotaB>
+        <jma:B_I>
+          <dtsf:KwotaA>252295.42</dtsf:KwotaA>
+          <dtsf:KwotaB>347853.88</dtsf:KwotaB>
+        </jma:B_I>
+        <jma:B_II>
+          <dtsf:KwotaA>7414259.17</dtsf:KwotaA>
+          <dtsf:KwotaB>4146030.51</dtsf:KwotaB>
+        </jma:B_II>
+        <jma:B_III>
+          <dtsf:KwotaA>5429315.49</dtsf:KwotaA>
+          <dtsf:KwotaB>3137425.60</dtsf:KwotaB>
+        </jma:B_III>
+        <jma:B_IV>
+          <dtsf:KwotaA>1428672.76</dtsf:KwotaA>
+          <dtsf:KwotaB>1364829.13</dtsf:KwotaB>
+        </jma:B_IV>
+        <jma:B_V>
+          <dtsf:KwotaA>302810.77</dtsf:KwotaA>
+          <dtsf:KwotaB>255131.93</dtsf:KwotaB>
+          <jma:B_V_1>
+            <dtsf:KwotaA>0.00</dtsf:KwotaA>
+            <dtsf:KwotaB>0.00</dtsf:KwotaB>
+          </jma:B_V_1>
+        </jma:B_V>
+        <jma:B_VI>
+          <dtsf:KwotaA>335915.08</dtsf:KwotaA>
+          <dtsf:KwotaB>784598.83</dtsf:KwotaB>
+          <jma:B_VI_1>
+            <dtsf:KwotaA>0.00</dtsf:KwotaA>
+            <dtsf:KwotaB>0.00</dtsf:KwotaB>
+          </jma:B_VI_1>
+        </jma:B_VI>
+      </jma:B>
+      <jma:C>
+        <dtsf:KwotaA>275497.25</dtsf:KwotaA>
+        <dtsf:KwotaB>-332241.44</dtsf:KwotaB>
+      </jma:C>
+      <jma:D>
+        <dtsf:KwotaA>1427167.97</dtsf:KwotaA>
+        <dtsf:KwotaB>519112.56</dtsf:KwotaB>
+      </jma:D>
+      <jma:E>
+        <dtsf:KwotaA>177371.55</dtsf:KwotaA>
+        <dtsf:KwotaB>334760.34</dtsf:KwotaB>
+      </jma:E>
+      <jma:F>
+        <dtsf:KwotaA>2548.84</dtsf:KwotaA>
+        <dtsf:KwotaB>94192.17</dtsf:KwotaB>
+        <jma:F_II>
+          <dtsf:KwotaA>0.00</dtsf:KwotaA>
+          <dtsf:KwotaB>0.00</dtsf:KwotaB>
+        </jma:F_II>
+      </jma:F>
+      <jma:G>
+        <dtsf:KwotaA>114033.90</dtsf:KwotaA>
+        <dtsf:KwotaB>114999.32</dtsf:KwotaB>
+        <jma:G_I>
+          <dtsf:KwotaA>114033.90</dtsf:KwotaA>
+          <dtsf:KwotaB>114999.32</dtsf:KwotaB>
+        </jma:G_I>
+      </jma:G>
+      <jma:H>
+        <dtsf:KwotaA>1413808.61</dtsf:KwotaA>
+        <dtsf:KwotaB>-168696.37</dtsf:KwotaB>
+      </jma:H>
+      <jma:I>
+        <dtsf:KwotaA>159256.00</dtsf:KwotaA>
+        <dtsf:KwotaB>11291.00</dtsf:KwotaB>
+      </jma:I>
+      <jma:J>
+        <dtsf:KwotaA>1254552.61</dtsf:KwotaA>
+        <dtsf:KwotaB>-179987.37</dtsf:KwotaB>
+      </jma:J>
+    </jma:RZiSPor>
+  </tns:RZiSJednostkaMala>
+  <tns:DodatkoweInformacjeIObjasnieniaJednostkaMala>
+    <tns:DodatkoweInformacjeIObjasnienia>
+      <dtsf:Opis>Dodatkowe informacje i objaśnienia do sprawozdania finansowego za rok 2021:
+1. Szczegółowy zakres zmian wartości grup rodzajowych środków trwałych – Majątek stanowią zabudowan grunty a także park maszynowy niezbędne do prowadzenia działalności gospodarczej.
+2. Szczegółowy zakres zmian wartości niematerialnych i prawnych oraz inwestycji długoterminowych – brak
+3.Wartość gruntów użytkowanych wieczyście – bilansowa wartość takich gruntów wynosiła 340 400
+4. Środki używane na podstawie umowy leasingu operacyjnego – w leasingu operacyjnych użytkowano maszyny i samochody
+5. Zobowiązania wobec budżetu państwa lub jednostek samorządu terytorialnego z tytułu uzyskania prawa własności</dtsf:Opis>
+    </tns:DodatkoweInformacjeIObjasnienia>
+    <tns:DodatkoweInformacjeIObjasnienia>
+      <dtsf:Opis>budynków i budowli – Na dzień bilansowy  nie posiadano takich zobowiązań.
+6. Informacja o zmianach inwestycji długoterminowych, długoterminowych aktywów finansowych – nie posiada takich zobowiązań.
+7. Informacja o stanie i ruchu kapitałów własnych w roku 2021 – brak zmian.
+8. Propozycje podziału zysku – proponuje się odpisać zyska na kapitały zapasowe.
+9. Dane o odpisach aktualizujących należności – nie wystąpiły
+10.Podział zobowiązań według terminu wymagalności ich spłaty – posiadane zobowiązania są krótkoterminowe (spłata do 1 roku)
+</dtsf:Opis>
+    </tns:DodatkoweInformacjeIObjasnienia>
+    <tns:DodatkoweInformacjeIObjasnienia>
+      <dtsf:Opis>11. Podział należności według terminu wymagalności ich spłaty - posiadane przez należności są krótkoterminowe (spłata do 1 roku)
+12. Dane o stanie rezerw według celu ich utworzenia- nie wystąpiły
+13. Wykaz pozycji czynnych i biernych rozliczeń międzyokresowych – rozliczeni czynne - ubepieczenia do rozliczenia w kolejnych okresach
+14. Wykaz grup zobowiązań zabezpieczonych na majątku jednostki – nie posiadała
+15. Zobowiązania warunkowe – nie posiadała 
+16. Struktura rzeczowa (rodzaje działalności) i terytorialna przychodów netto ze sprzedaży produktów, towarów</dtsf:Opis>
+    </tns:DodatkoweInformacjeIObjasnienia>
+    <tns:DodatkoweInformacjeIObjasnienia>
+      <dtsf:Opis>imateriałów – Całość przychodów realizowana jest na terenie RP.
+17.Wysokość i wyjaśnienie przyczyn odpisów aktualizujących środki trwałe – nie wystąpiły odpisy aktualizujące środki trwałe
+18.Wysokość odpisów aktualizujących zapasy – nie wystąpiły odpisy aktualizujące zapasy.
+19. Informacja o produkcji w toku - niezakończona produkcja  o wartosci 624 933,65
+20.Informacja o przychodach, kosztach i wynikach działalności zaniechanej w roku obrotowym lub przewidzianej do zaniechania w roku następnym – W roku obrotowym Spółka nie zaniechała i w kolejnym roku nie planuje zaniechania żadnego rodzaju działalności.
+</dtsf:Opis>
+    </tns:DodatkoweInformacjeIObjasnienia>
+    <tns:DodatkoweInformacjeIObjasnienia>
+      <dtsf:Opis>21.Struktura kosztów rodzajowych – nie dotyczy, ponieważ jednostka sporządza rachunek metodą  porównawczą.
+22. Koszty, przychody finansowe - koszty odsetki od kredytów.
+23. Pozostałe koszty, przychody operacyjne - koszty: odpisane wierzytelności, przychody: umorzona czesć subwencji PFR oraz przychidy ze sprzedaży środków trwałych.</dtsf:Opis>
+    </tns:DodatkoweInformacjeIObjasnienia>
+  </tns:DodatkoweInformacjeIObjasnieniaJednostkaMala>
+</tns:JednostkaMala>

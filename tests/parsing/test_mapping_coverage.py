@@ -26,9 +26,8 @@ from distress_radar.parsing.xsd_inventory import statement_line_items
 from distress_radar.parsing.xsd_validation import XsdValidator, load_xsd_catalog
 
 FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
-GOLDEN = sorted((FIXTURES_DIR / "statements").glob("full_*.xml")) + [
-    FIXTURES_DIR / "neobis_001.xml"
-]
+# Every committed fixture, so a new one is covered without editing this file.
+GOLDEN = sorted((FIXTURES_DIR / "statements").glob("*.xml")) + [FIXTURES_DIR / "neobis_001.xml"]
 XSD_DIR = CONFIG_DIR / "xsd"
 XSD_NS = "{http://www.w3.org/2001/XMLSchema}"
 # Every version with a spec. Parametrised so a new spec is covered automatically.
@@ -214,6 +213,24 @@ def test_every_full_form_version_has_a_golden_statement(mapping_config: MappingC
     builds a synthetic thousands document instead of committing a fixture."""
     for version in (v for v in MAPPED if v.startswith("full-") and not v.endswith("-tys")):
         assert _golden_for(mapping_config.specs[version], mapping_config), version
+
+
+@pytest.mark.parametrize("xml", GOLDEN, ids=lambda p: p.stem)
+def test_no_fixture_contains_personal_data(xml: Path) -> None:
+    """Invariant 6: the fixtures are public, and must name no natural person.
+
+    Plan 0004 scanned its fixtures by hand; this makes the scan a gate, so a
+    fixture added later cannot quietly reintroduce signer data. It checks the
+    raw bytes, not just the text, so a signature block or an embedded
+    attachment cannot hide one.
+    """
+    raw = xml.read_bytes()
+    for marker in (b"PESEL", b"X509Certificate", b"SignatureValue", b"ds:Signature"):
+        assert marker not in raw, f"{xml.name} contains {marker.decode()}"
+    text = " ".join(
+        t for t in etree.fromstring(raw, safe_parser()).itertext() if t and t.strip()
+    )
+    assert not re.search(r"\b\d{11}\b", text), f"{xml.name} has an 11-digit run (PESEL-shaped)"
 
 
 def test_golden_statements_are_schema_valid(

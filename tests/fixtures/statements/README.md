@@ -11,6 +11,16 @@ Trimmed copies of real annual financial statements from the Phase 1 seed, used b
 | `full_2018_v1_2_por_2023.xml` | 0000498679 | 2023 | `full-2018-v1-2` | comparative / indirect: the 2022 file's successor, for `prior_year_consistency` |
 | `full_2025_v1_3_por_2024.xml` | 0000498679 | 2024 | `full-2025-v1-3` | comparative / indirect, with equity changes: the 2023 file's successor, so `prior_year_consistency` has a pair that crosses from schema 1-2 to 1-3 |
 | `full_2025_w2_kalk_2025.xml` | 0000188883 | 2025 | `full-2025-w2-v1-0` | calculation; carries a real immaterial subtotal gap (graded `warn`) |
+| `small_2018_v1_2_mala_kalk_2021.xml` | 0000507997 | 2021 | `small-2018-v1-2` | small body, calculation variant |
+| `small_2018_v1_2_mala_por_2021.xml` | 0000225354 | 2021 | `small-2018-v1-2` | small body, comparative |
+| `small_2018_v1_2_mala_por_2022.xml` | 0000225354 | 2022 | `small-2018-v1-2` | small body, comparative: the 2021 file's successor, so `prior_year_consistency` has a short-form pair |
+| `small_2018_v1_2_inna_por_2022.xml` | 0000181328 | 2022 | `small-2018-v1-2` | **full body inside a small envelope** (`BilansJednostkaInna`) |
+| `small_2018_v1_0_mixed_por_2018.xml` | 0000225354 | 2018 | `small-2018-v1-0` | **mixed**: small balance sheet, full income statement — the case per-statement alternatives exist for |
+| `small_2025_v1_3_mala_kalk_2025.xml` | 0000507997 | 2025 | `small-2025-v1-3` | small body, calculation: exercises the `.R2025` overrides on the small form |
+| `micro_2018_v1_0_2018.xml` | 0000041651 | 2018 | `micro-2018-v1-0` | micro, schema 1-0 |
+| `micro_2018_v1_2_2019.xml` | 0000041651 | 2019 | `micro-2018-v1-2` | micro with the `G` block (`jednostka_mikro_v1_2`) |
+| `micro_2025_v1_3_2024.xml` | 0000041651 | 2024 | `micro-2025-v1-3` | micro without the `G` block (`jednostka_mikro_v1_3`) |
+| `micro_2025_w2_2025.xml` | 0000277937 | 2025 | `micro-2025-w2-v1-0` | the seed's only CRWDE micro filing |
 | `../neobis_001.xml` | (not in seed) | 2025 | `full-2025-w2-v1-0` | comparative (the original Phase 0 fixture, unsigned and unchanged since `a699750`) |
 
 ## What was trimmed
@@ -22,7 +32,11 @@ Each file **in this directory** was produced from its stored download by a one-o
 - replaced the base64 content of every attached notes file (`Plik/Zawartosc`) with a short placeholder and renamed it `notes.pdf`. The attachments are large, and the notes can name people.
 - stripped a UTF-8 BOM where present.
 
-`../neobis_001.xml` predates this and went through none of it: it is the unsigned Phase 0
+The ten short-form files were produced the same way on 2026-09-20 (plan 0005 step E); none carried a
+signature, and their attached files were replaced with a placeholder. Every fixture here was scanned for
+`PESEL`, `Imię`, `Nazwisko` and `Podpis` after trimming and came back clean.
+
+`../neobis_001.xml` predates all of this and went through none of it: it is the unsigned Phase 0
 fixture, unchanged since `a699750`. Nothing else was changed. The statement data, the header and the free-text accounting-policy fields are as filed. Every file still validates against its official XSD (`test_mapping_coverage.py`). The free-text fields were read through to confirm that no person is named in them.
 
 Synthetic variants (thousands of złoty, a direct-method cash flow, signature wrappers, a known-bad total) are built from these files inside the tests, not committed.

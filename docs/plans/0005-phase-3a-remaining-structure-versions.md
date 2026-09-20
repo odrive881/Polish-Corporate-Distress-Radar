@@ -4,7 +4,7 @@
 
 **Order:** this plan first, then 0006, then 0007. Plan 0006's single in-scope PDF turned out to be a rendered **small-form** statement (`SprFinJednostkaMalaWZlotych`, schema 1-2), so its extraction target is the `jednostka_mala` body and chart codes this plan introduces. Plan 0007 aggregates the canonical table and wants its final shape.
 
-## Status: steps A–D done (2026-09-20), steps E–H not started
+## Status: steps A–E done (2026-09-20), steps F–H not started
 
 ## Why
 
@@ -317,6 +317,37 @@ Trimmed seed filings, produced the same way as plan 0004's (signatures removed, 
 - `micro-2018-v1-2`: one, plus one `micro-2025-w2-v1-0` (the single CRWDE file).
 - A small-form pair from one entity in adjacent years, so `prior_year_consistency` has a real restatement candidate on the short form.
 - A known-bad micro copy with total assets altered, for the quarantine path.
+
+**Done, 2026-09-20.** Ten short-form fixtures, trimmed as plan 0004's were (no signature was present in any of
+them; attached files replaced with a placeholder). **11 of the 12 specs now have a golden fixture**; only
+`full-2018-v1-2-tys` does not, by design — no seed filing uses it, so `test_mapping_engine` builds a synthetic
+thousands document instead. The skip message names it rather than passing silently.
+
+The set deliberately covers **every body-choice case step D uncovered**, since that is where its three defects
+hid and nothing else would catch a regression:
+
+| Fixture | Covers |
+|---|---|
+| `small_2018_v1_2_mala_kalk_2021` / `…_mala_por_2021` / `…_mala_por_2022` | small body, both variants; the last two are an adjacent-year pair, so `prior_year_consistency` has a short-form case |
+| `small_2018_v1_2_inna_por_2022` | the **full body inside a small envelope** |
+| `small_2018_v1_0_mixed_por_2018` | **mixed**: small balance sheet, full income statement — the case per-statement alternatives exist for |
+| `small_2025_v1_3_mala_kalk_2025` | the `.R2025` overrides on the small form |
+| `micro_2018_v1_0_2018`, `micro_2018_v1_2_2019` | micro **with** the `G` block (`jednostka_mikro_v1_2`) |
+| `micro_2025_v1_3_2024`, `micro_2025_w2_2025` | micro **without** it (`jednostka_mikro_v1_3`), including the seed's only CRWDE micro filing |
+
+- **Fixture discovery is now a glob** over `tests/fixtures/statements/*.xml` in both test modules, so a fixture
+  added later is picked up without editing a list. `test_golden_statements_pass` already requires every fixture
+  to pass the identity checks, and all ten do.
+- **`test_income_statement_variants_are_never_mixed` was too narrow.** It asserted income-statement codes are
+  all `COMP` or all `CALC`; the micro layout is neither. It now expresses the real invariant — exactly one of
+  the three layouts per document — with `MIKRO` mapping to `variant: "n/a"`.
+- **Known-bad case:** `test_altered_micro_total_assets_quarantines` shifts the committed micro fixture's total
+  assets by 1,000.00 and asserts `balance_sheet_balances` fails and the file grades `quarantined`. Built from
+  the real fixture rather than a synthetic frame, so it exercises the micro body and chart codes.
+- **Invariant 6 is now a gate, not a one-off.** `test_no_fixture_contains_personal_data` scans every committed
+  fixture's raw bytes for `PESEL`, `X509Certificate`, `SignatureValue` and `ds:Signature`, and its text for
+  11-digit runs. Plan 0004 did this scan by hand; a fixture added later can no longer quietly reintroduce
+  signer data.
 
 ### F. Identity checks over the short forms
 
