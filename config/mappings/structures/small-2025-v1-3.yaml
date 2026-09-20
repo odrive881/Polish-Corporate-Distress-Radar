@@ -1,0 +1,48 @@
+# Small form (UoR Annex 5, JednostkaMala), schema 1-3. Plan 0005 step D.
+# 1-3 narrows the goods-and-materials lines in both bodies, so the overrides
+# cover the small body's three and the full body's six (canonical_chart .R2025).
+structure_version: small-2025-v1-3
+form: small
+body: jednostka_mala
+detect:
+  root_namespace: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2025/01/01/JednostkaMalaWZlotych"
+  root_name: JednostkaMala
+  kod_systemowy: "SFJMAZ (1)"
+  wersja_schemy: "1-3"
+xsd: "https://www.gov.pl/static/finanse/SF/DefinicjeTypySprawozdaniaFinansowe/2024/10/24/JednostkaMalaWZlotych(1)_v1-3.xsd"
+effective_from: null
+effective_to: null
+namespaces:
+  tns: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2025/01/01/JednostkaMalaWZlotych"
+  jma: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2025/01/01/JednostkaMalaStruktury"
+  dtsf: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/DefinicjeTypySprawozdaniaFinansowe/"
+  jin: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2025/01/01/JednostkaInnaStruktury"
+statement_root: "/tns:JednostkaMala"
+header:
+  kod_sprawozdania: "tns:Naglowek/jma:KodSprawozdania"
+  period_start: "tns:Naglowek/dtsf:OkresOd"
+  period_end: "tns:Naglowek/dtsf:OkresDo"
+unit:
+  SprFinJednostkaMalaWZlotych: 1
+statements:
+  Bilans:
+    - {xpath: "tns:BilansJednostkaMala", body: jednostka_mala, item_namespace: jma}
+    - {xpath: "tns:BilansJednostkaInna", body: jednostka_inna, item_namespace: jin}
+  RZiS:
+    - {xpath: "tns:RZiSJednostkaMala", body: jednostka_mala, item_namespace: jma}
+    - {xpath: "tns:RZiSJednostkaInna", body: jednostka_inna, item_namespace: jin}
+item_namespace: jma
+amount_namespace: dtsf
+columns:
+  KwotaA: current_year
+  KwotaB: prior_year
+  KwotaB1: prior_year_restated
+code_overrides:
+  IS.CALC.A: IS.CALC.A.R2025
+  IS.CALC.A.USER: IS.CALC.A.R2025.USER
+  IS.CALC.A.II: IS.CALC.A.II.R2025
+  IS.CALC.B: IS.CALC.B.R2025
+  IS.CALC.B.USER: IS.CALC.B.R2025.USER
+  IS.CALC.B.II: IS.CALC.B.II.R2025
+  IS.COMP.A.IV: IS.COMP.A.IV.R2025
+  IS.COMP.B.VIII: IS.COMP.B.VIII.R2025

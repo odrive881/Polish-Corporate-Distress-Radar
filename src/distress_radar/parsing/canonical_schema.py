@@ -180,10 +180,25 @@ class HeaderPaths(_Frozen):
     period_end: str
 
 
+class StatementAlternative(_Frozen):
+    """One shape a statement may take in a document, with the body it implies.
+
+    The small form accepts either the small statements (`BilansJednostkaMala`,
+    items in `JednostkaMalaStruktury`) or the full ones (`BilansJednostkaInna`,
+    items in `JednostkaInnaStruktury`), chosen per statement and invisible to
+    header-based detection (plan 0005 step D). A spec lists the alternatives it
+    accepts; the engine uses whichever the document actually contains.
+    """
+
+    xpath: str
+    body: str
+    item_namespace: str
+
+
 class StructureSpec(_Frozen):
     structure_version: str = Field(pattern=r"^[a-z0-9-]+$")
     form: Literal["full", "small", "micro"]
-    body: str
+    body: str  # the default body; a statement alternative may name another
     detect: Detect
     xsd: str
     effective_from: date | None
@@ -192,19 +207,42 @@ class StructureSpec(_Frozen):
     statement_root: str
     header: HeaderPaths
     unit: dict[str, int]  # KodSprawozdania text -> multiplier to złoty
-    statements: dict[StatementName, str]
+    statements: dict[StatementName, str | tuple[StatementAlternative, ...]]
     item_namespace: str
     amount_namespace: str
     columns: dict[str, Column]
     code_overrides: dict[str, str] = {}
 
+    def alternatives(self, name: StatementName) -> tuple[StatementAlternative, ...]:
+        """The shapes this spec accepts for a statement, always as alternatives."""
+        entry = self.statements[name]
+        if isinstance(entry, str):
+            return (
+                StatementAlternative(
+                    xpath=entry, body=self.body, item_namespace=self.item_namespace
+                ),
+            )
+        return entry
+
+    @property
+    def bodies_used(self) -> set[str]:
+        return {self.body} | {
+            alt.body for name in self.statements for alt in self.alternatives(name)
+        }
+
     @model_validator(mode="after")
     def _consistent(self) -> StructureSpec:
-        for prefix in (self.item_namespace, self.amount_namespace):
+        prefixes = [self.item_namespace, self.amount_namespace]
+        prefixes += [a.item_namespace for n in self.statements for a in self.alternatives(n)]
+        for prefix in prefixes:
             if prefix not in self.namespaces:
                 raise ValueError(
                     f"{self.structure_version}: namespace prefix {prefix!r} is not bound"
                 )
+        for name in self.statements:
+            alts = self.alternatives(name)
+            if len({a.xpath for a in alts}) != len(alts):
+                raise ValueError(f"{self.structure_version}/{name}: duplicate alternative xpath")
         if not self.unit or any(m not in (1, 1000) for m in self.unit.values()):
             raise ValueError(f"{self.structure_version}: unit multipliers must be 1 or 1000")
         return self
@@ -246,9 +284,14 @@ class MappingConfig(_Frozen):
                 raise ValueError(f"body {body.body}: codes not in the chart {sorted(unknown)}")
         keys: dict[tuple[str, str, str, str], str] = {}
         for spec in self.specs.values():
-            if spec.body not in self.bodies:
-                raise ValueError(f"{spec.structure_version}: unknown body {spec.body!r}")
-            body_codes = self.bodies[spec.body].codes()
+            unknown_bodies = spec.bodies_used - set(self.bodies)
+            if unknown_bodies:
+                raise ValueError(
+                    f"{spec.structure_version}: unknown body {sorted(unknown_bodies)}"
+                )
+            # An override may target any body the spec can reach, since which one
+            # applies is decided per statement from the document (plan 0005 step D).
+            body_codes = {c for b in spec.bodies_used for c in self.bodies[b].codes()}
             for old, new in spec.code_overrides.items():
                 if old not in body_codes or new not in chart_codes:
                     raise ValueError(f"{spec.structure_version}: bad code override {old} -> {new}")

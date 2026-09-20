@@ -1,0 +1,40 @@
+# Small form (UoR Annex 5, JednostkaMala), schema 1-0. Plan 0005 step D.
+# The small envelope accepts either the small statements or the full ones,
+# per statement; both alternatives are listed (ADR 0005 second addendum).
+structure_version: small-2018-v1-0
+form: small
+body: jednostka_mala
+detect:
+  root_namespace: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaMalaWZlotych"
+  root_name: JednostkaMala
+  kod_systemowy: "SFJMAZ (1)"
+  wersja_schemy: "1-0E"
+xsd: "https://www.mf.gov.pl/documents/764034/6464789/JednostkaMalaWZlotych(1)_v1-0.xsd"
+effective_from: null
+effective_to: null
+namespaces:
+  tns: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaMalaWZlotych"
+  jma: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaMalaStruktury"
+  dtsf: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/DefinicjeTypySprawozdaniaFinansowe/"
+  jin: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaInnaStruktury"
+statement_root: "/tns:JednostkaMala"
+header:
+  kod_sprawozdania: "tns:Naglowek/jma:KodSprawozdania"
+  period_start: "tns:Naglowek/dtsf:OkresOd"
+  period_end: "tns:Naglowek/dtsf:OkresDo"
+unit:
+  SprFinJednostkaMalaWZlotych: 1
+statements:
+  Bilans:
+    - {xpath: "tns:BilansJednostkaMala", body: jednostka_mala, item_namespace: jma}
+    - {xpath: "tns:BilansJednostkaInna", body: jednostka_inna, item_namespace: jin}
+  RZiS:
+    - {xpath: "tns:RZiSJednostkaMala", body: jednostka_mala, item_namespace: jma}
+    - {xpath: "tns:RZiSJednostkaInna", body: jednostka_inna, item_namespace: jin}
+item_namespace: jma
+amount_namespace: dtsf
+columns:
+  KwotaA: current_year
+  KwotaB: prior_year
+  KwotaB1: prior_year_restated
+code_overrides: {}

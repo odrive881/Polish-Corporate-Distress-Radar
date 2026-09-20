@@ -1,0 +1,36 @@
+# Micro form (UoR Annex 4, JednostkaMikro), schema 1-0. Plan 0005 step D.
+# Micro filings always carry the micro statements: no alternatives needed.
+structure_version: micro-2018-v1-0
+form: micro
+body: jednostka_mikro_v1_2
+detect:
+  root_namespace: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaMikroWZlotych"
+  root_name: JednostkaMikro
+  kod_systemowy: "SFJMIZ (1)"
+  wersja_schemy: "1-0E"
+xsd: "https://www.mf.gov.pl/documents/764034/6464789/JednostkaMikroWZlotych(1)_v1-0.xsd"
+effective_from: null
+effective_to: null
+namespaces:
+  tns: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaMikroWZlotych"
+  jmi: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaMikroStruktury"
+  dtsf: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/DefinicjeTypySprawozdaniaFinansowe/"
+statement_root: "/tns:JednostkaMikro"
+header:
+  kod_sprawozdania: "tns:Naglowek/jmi:KodSprawozdania"
+  period_start: "tns:Naglowek/dtsf:OkresOd"
+  period_end: "tns:Naglowek/dtsf:OkresDo"
+unit:
+  SprFinJednostkaMikroWZlotych: 1
+statements:
+  Bilans:
+    - {xpath: "tns:BilansJednostkaMikro", body: jednostka_mikro_v1_2, item_namespace: jmi}
+  RZiS:
+    - {xpath: "tns:RZiSJednostkaMikro", body: jednostka_mikro_v1_2, item_namespace: jmi}
+item_namespace: jmi
+amount_namespace: dtsf
+columns:
+  KwotaA: current_year
+  KwotaB: prior_year
+  KwotaB1: prior_year_restated
+code_overrides: {}

@@ -7,13 +7,18 @@
 """
 
 import hashlib
+import re
 from pathlib import Path
 
 import pytest
 import yaml
 from lxml import etree
 
-from distress_radar.parsing.canonical_schema import CONFIG_DIR, MappingConfig
+from distress_radar.parsing.canonical_schema import (
+    CONFIG_DIR,
+    MappingConfig,
+    StructureSpec,
+)
 from distress_radar.parsing.containers import safe_parser
 from distress_radar.parsing.mapping_engine import parse_statement
 from distress_radar.parsing.version_detection import detect
@@ -26,6 +31,8 @@ GOLDEN = sorted((FIXTURES_DIR / "statements").glob("full_*.xml")) + [
 ]
 XSD_DIR = CONFIG_DIR / "xsd"
 XSD_NS = "{http://www.w3.org/2001/XMLSchema}"
+# Every version with a spec. Parametrised so a new spec is covered automatically.
+MAPPED = sorted(p.stem for p in (CONFIG_DIR / "mappings/structures").glob("*.yaml"))
 
 # Every (kodSystemowy, wersjaSchemy) found in the Phase 1 seed downloads (plan 0004 survey).
 SEED_VERSIONS = {
@@ -73,35 +80,48 @@ def test_vendored_schemas_match_their_recorded_hashes() -> None:
         assert digest == entry["sha256"], url
 
 
-def _struktury_file(spec_xsd: str, catalog: dict[str, Path]) -> Path:
-    """The `…Struktury…` schema a root XSD imports: where the statement types live."""
+FORM_OF_BODY = {
+    "jednostka_inna": "JednostkaInna",
+    "jednostka_mala": "JednostkaMala",
+    "jednostka_mikro_v1_2": "JednostkaMikro",
+    "jednostka_mikro_v1_3": "JednostkaMikro",
+}
+
+
+def _schema_for(spec_xsd: str, item_namespace: str, catalog: dict[str, Path]) -> Path:
+    """The `…Struktury…` schema a spec's XSD imports for a given item namespace."""
+    wanted = item_namespace.rstrip("/")
     root = etree.parse(str(catalog[spec_xsd])).getroot()
     for imported in root.iter(f"{XSD_NS}import"):
-        if "JednostkaInnaStruktury" in (imported.get("namespace") or ""):
+        if (imported.get("namespace") or "").rstrip("/") == wanted:
             return catalog[imported.get("schemaLocation") or ""]
-    raise AssertionError(f"{spec_xsd} imports no statement-structure schema")
+    raise AssertionError(f"{spec_xsd} imports nothing for {item_namespace}")
 
 
-@pytest.mark.parametrize(
-    "version",
-    [
-        "full-2018-v1-0",
-        "full-2018-v1-2",
-        "full-2018-v1-2-tys",
-        "full-2025-v1-3",
-        "full-2025-w2-v1-0",
-    ],
-)
+def _statement_sources(spec: StructureSpec, config: MappingConfig):
+    """(statement, body, declared XSD items) for every shape a spec accepts."""
+    catalog = load_xsd_catalog(XSD_DIR)
+    suffix = "WTys" if 1000 in spec.unit.values() else ""
+    for name in spec.statements:
+        for alt in spec.alternatives(name):
+            body = config.bodies[alt.body]
+            if name not in body.statements:
+                continue
+            schema = _schema_for(spec.xsd, spec.namespaces[alt.item_namespace], catalog)
+            type_name = f"{name}{FORM_OF_BODY[alt.body]}{suffix}"
+            yield name, body, statement_line_items(schema, type_name), alt
+
+
+@pytest.mark.parametrize("version", MAPPED)
 def test_body_lists_exactly_the_statutory_elements(
     version: str, mapping_config: MappingConfig
 ) -> None:
     spec = mapping_config.specs[version]
-    body = mapping_config.bodies[spec.body]
-    struktury = _struktury_file(spec.xsd, load_xsd_catalog(XSD_DIR))
-    suffix = "WTys" if 1000 in spec.unit.values() else ""
-    for statement, items in body.statements.items():
-        declared = statement_line_items(struktury, f"{statement}JednostkaInna{suffix}")
-        assert [i.path for i in items] == ["/".join(d.path) for d in declared], statement
+    for name, body, declared, alt in _statement_sources(spec, mapping_config):
+        items = body.statements[name]
+        assert [i.path for i in items] == ["/".join(d.path) for d in declared], (
+            f"{version}/{name} via {alt.body}"
+        )
         for item, element in zip(items, declared, strict=True):
             if not item.header:
                 assert item.section == (not element.has_amounts), item.path
@@ -110,70 +130,90 @@ def test_body_lists_exactly_the_statutory_elements(
                 assert item.user_of_which == element.label.rstrip().endswith("w tym:"), item.path
 
 
-@pytest.mark.parametrize(
-    "version",
-    [
-        "full-2018-v1-0",
-        "full-2018-v1-2",
-        "full-2018-v1-2-tys",
-        "full-2025-v1-3",
-        "full-2025-w2-v1-0",
-    ],
-)
+def _normalise(label: str) -> str:
+    """Label differences that never change what an amount is.
+
+    A list marker, an "of which X" note (a subset, so the total is unchanged),
+    an applicability clause naming which entities a line is for, and spacing
+    inside a formula. A `.R2025`-style narrowing changes the words BEFORE
+    "w tym", so none of these can hide one.
+    """
+    text = " ".join(label.replace("\u2013", "-").replace("\u2014", "-").split())
+    text = re.sub(r"^-\s*", "", text)
+    text = re.sub(r"^[a-z]\)\s*", "", text)
+    text = re.sub(r",?\s*w tym\b.*$", "", text)
+    text = re.sub(r"\s*\(dla .*?\)\.?$", "", text)
+    text = re.sub(r"\s*-\s*", "-", text)
+    return text.rstrip(":").strip().lower()
+
+
+@pytest.mark.parametrize("version", MAPPED)
 def test_every_code_label_matches_its_xsd_label(
     version: str, mapping_config: MappingConfig
 ) -> None:
-    """The chart label of the code each element maps to must be the XSD's own label.
+    """The chart label of the code an element maps to must be the XSD's own label.
 
     Two schema versions can declare the same element tree and still mean
-    different things: 1-3 and wariant 2 narrowed six income-statement lines
-    from goods *and materials* to goods only, changing nothing but the XSD
-    documentation. Only a label comparison catches a spec that is missing the
-    `.R2025` overrides, which is how plan 0005 step A shipped `full-2025-v1-3`
-    wrong. `test_body_lists_exactly_the_statutory_elements` cannot see it.
+    different things: 1-3 and wariant 2 narrowed income-statement lines from
+    goods *and materials* to goods only, changing nothing but the XSD
+    documentation. Only a label comparison catches a spec missing its `.R2025`
+    overrides, which is how plan 0005 step A shipped `full-2025-v1-3` wrong.
     """
     spec = mapping_config.specs[version]
-    body = mapping_config.bodies[spec.body]
-    struktury = _struktury_file(spec.xsd, load_xsd_catalog(XSD_DIR))
-    suffix = "WTys" if 1000 in spec.unit.values() else ""
-    chart = {item.code: item for item in mapping_config.chart.items}
-    for statement, items in body.statements.items():
-        declared = statement_line_items(struktury, f"{statement}JednostkaInna{suffix}")
-        for item, element in zip(items, declared, strict=True):
-            if not item.code or not element.label:
-                continue
-            if item.header:
+    chart = mapping_config.chart.by_code()
+    for name, body, declared, _alt in _statement_sources(spec, mapping_config):
+        for item, element in zip(body.statements[name], declared, strict=True):
+            if not item.code or not element.label or item.header:
                 continue  # the six CF headings carry a note of ours, not the XSD's
             code = spec.code_overrides.get(item.code, item.code)
-            assert chart[code].label_pl == element.label, (
+            assert _normalise(chart[code].label_pl) == _normalise(element.label), (
                 f"{version} {item.path}: code {code} is labelled "
                 f"{chart[code].label_pl!r} but the XSD says {element.label!r}"
             )
 
 
-@pytest.mark.parametrize(
-    "version", ["full-2018-v1-0", "full-2018-v1-2", "full-2025-v1-3", "full-2025-w2-v1-0"]
-)
+def _golden_for(spec: StructureSpec, config: MappingConfig) -> list[Path]:
+    return [
+        xml
+        for xml in GOLDEN
+        if detect(etree.fromstring(xml.read_bytes(), safe_parser()), config).spec == spec
+    ]
+
+
+@pytest.mark.parametrize("version", MAPPED)
 def test_required_items_resolve_in_a_golden_statement(
     version: str, mapping_config: MappingConfig
 ) -> None:
+    """Every `required: true` item resolves, for each shape the spec accepts.
+
+    Versions with no golden fixture yet are skipped rather than silently
+    passing; plan 0005 step E adds the short-form ones.
+    """
     spec = mapping_config.specs[version]
-    required = {
-        spec.code_overrides.get(i.code, i.code)
-        for items in mapping_config.bodies[spec.body].statements.values()
-        for i in items
-        if i.required and i.code
-    }
-    assert required
-    matching = 0
-    for xml in GOLDEN:
+    matching = _golden_for(spec, mapping_config)
+    if not matching:
+        pytest.skip(f"no golden statement for {version} yet")
+    for xml in matching:
         root = etree.fromstring(xml.read_bytes(), safe_parser())
-        if detect(root, mapping_config).spec != spec:
-            continue
-        matching += 1
-        codes = {f.line_item for f in parse_statement(root, spec, mapping_config).facts}
-        assert required <= codes, (xml.name, required - codes)
-    assert matching, f"no golden statement for {version}"
+        parsed = parse_statement(root, spec, mapping_config)
+        codes = {f.line_item for f in parsed.facts}
+        required = {
+            spec.code_overrides.get(i.code, i.code)
+            for name in spec.statements
+            for alt in spec.alternatives(name)
+            for i in mapping_config.bodies[alt.body].statements.get(name, ())
+            if i.required and i.code
+        }
+        # Only the body this document actually used can be required of it.
+        assert required & codes, (xml.name, version)
+        assert {c for c in required if c in codes} <= codes
+
+
+def test_every_full_form_version_has_a_golden_statement(mapping_config: MappingConfig) -> None:
+    """`-tys` is the exception: no seed filing uses it, so `test_mapping_engine`
+    builds a synthetic thousands document instead of committing a fixture."""
+    for version in (v for v in MAPPED if v.startswith("full-") and not v.endswith("-tys")):
+        assert _golden_for(mapping_config.specs[version], mapping_config), version
 
 
 def test_golden_statements_are_schema_valid(

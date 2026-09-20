@@ -33,6 +33,7 @@ from distress_radar.parsing.canonical_schema import (
     MappingConfig,
     Role,
     StatementBody,
+    StatementName,
     StructureSpec,
 )
 from distress_radar.parsing.mapping_engine import VALUE_DTYPE
@@ -93,7 +94,36 @@ class _Group:
     period_end: date
     column: str
     spec: StructureSpec
+    # Which body each statement was filed in. A small filing may carry the
+    # small statements or the full ones, chosen per statement (plan 0005
+    # step D), so the rules to check it against are per document.
+    bodies: tuple[tuple[StatementName, str], ...]
     values: dict[str, Decimal]
+
+
+def _bodies_filed(spec: StructureSpec, paths: list[str]) -> tuple[tuple[StatementName, str], ...]:
+    """Which body each statement was filed in, read from `source_element_path`.
+
+    The path records the statement element the facts came from, which is the
+    only thing that distinguishes `BilansJednostkaMala` from
+    `BilansJednostkaInna` inside the same small envelope.
+    """
+    filed: list[tuple[StatementName, str]] = []
+    for name in spec.statements:
+        alts = spec.alternatives(name)
+        match = next(
+            (
+                alt
+                for alt in alts
+                if any(path.startswith(f"{spec.statement_root}/{alt.xpath}/") for path in paths)
+            ),
+            None,
+        )
+        # No path matched: fall back to the first alternative rather than
+        # dropping the statement. An empty result would silently check nothing,
+        # which is a far worse failure than checking against the wrong body.
+        filed.append((name, (match or alts[0]).body))
+    return tuple(filed)
 
 
 def _groups(frame: pl.DataFrame, config: MappingConfig) -> Iterator[_Group]:
@@ -104,6 +134,8 @@ def _groups(frame: pl.DataFrame, config: MappingConfig) -> Iterator[_Group]:
         values: dict[str, Decimal] = dict(
             zip(part["line_item"].to_list(), part["value"].to_list(), strict=True)
         )
+        spec = config.specs[first["structure_version"]]
+        paths = part["source_element_path"].to_list()
         yield _Group(
             krs=first["krs"],
             document_ref=first["document_ref"],
@@ -111,7 +143,8 @@ def _groups(frame: pl.DataFrame, config: MappingConfig) -> Iterator[_Group]:
             source_member=str(keys[1]),
             period_end=first["period_end"],
             column=str(keys[2]),
-            spec=config.specs[first["structure_version"]],
+            spec=spec,
+            bodies=_bodies_filed(spec, paths),
             values=values,
         )
 
@@ -208,7 +241,7 @@ def cashflow_ties(frame: pl.DataFrame, config: MappingConfig, tolerance: Decimal
 
 
 def _subtotal_rules(
-    body: StatementBody, spec: StructureSpec
+    body: StatementBody, spec: StructureSpec, only: StatementName | None = None
 ) -> list[tuple[str, list[tuple[int, str]]]]:
     """(computed code, [(sign, operand code)]) for every sum and formula, in canonical codes."""
 
@@ -217,7 +250,7 @@ def _subtotal_rules(
 
     rules: list[tuple[str, list[tuple[int, str]]]] = []
     for name, items in body.statements.items():
-        if name in body.no_subtotal_check:
+        if name in body.no_subtotal_check or (only is not None and name != only):
             continue
         for parent in items:
             if parent.code is None or parent.header:
@@ -243,12 +276,19 @@ def subtotals_consistent(
     frame: pl.DataFrame, config: MappingConfig, tolerance: Decimal
 ) -> pl.DataFrame:
     rows: list[dict[str, object]] = []
-    cache: dict[str, list[tuple[str, list[tuple[int, str]]]]] = {}
+    cache: dict[
+        tuple[str, tuple[tuple[StatementName, str], ...]],
+        list[tuple[str, list[tuple[int, str]]]],
+    ] = {}
     for g in _groups(frame, config):
-        version = g.spec.structure_version
-        if version not in cache:
-            cache[version] = _subtotal_rules(config.bodies[g.spec.body], g.spec)
-        for code, operands in cache[version]:
+        key = (g.spec.structure_version, g.bodies)
+        if key not in cache:
+            cache[key] = [
+                rule
+                for name, body in g.bodies
+                for rule in _subtotal_rules(config.bodies[body], g.spec, name)
+            ]
+        for code, operands in cache[key]:
             if code not in g.values:
                 continue
             present = [(sign, g.values[c]) for sign, c in operands if c in g.values]

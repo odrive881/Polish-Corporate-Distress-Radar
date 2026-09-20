@@ -1,0 +1,40 @@
+# Micro form (UoR Annex 4, JednostkaMikro), CRWDE template 13821, wariant 2,
+# schema 1-0E. Applies to fiscal years beginning on or after 2025-01-01
+# (ADR 0005). Plan 0005 step D. The statement sits inside a CRWDE `Dokument`
+# envelope, as the full-form wariant 2 does.
+#
+# Binds the v1_3 micro body: wariant 2 drops the `G` block exactly as schema
+# 1-3 does (ADR 0005 second addendum §1). Micro filings always carry the micro
+# statements, so no alternatives are needed.
+structure_version: micro-2025-w2-v1-0
+form: micro
+body: jednostka_mikro_v1_3
+detect:
+  root_namespace: "http://crd.gov.pl/wzor/2025/08/12/13821/"
+  root_name: Dokument
+  kod_systemowy: "SFJMIZ (2)"
+  wersja_schemy: "1-0E"
+xsd: "http://crd.gov.pl/wzor/2025/08/12/13821/schemat.xsd"
+effective_from: 2025-01-01  # fiscal-year start, ADR 0005
+effective_to: null
+namespaces:
+  tns: "http://crd.gov.pl/wzor/2025/08/12/13821/"
+  jmi: "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2025/07/31/eD/JednostkaMikroStruktury/"
+  dtsf: "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2025/07/31/eD/StrukturyDanychSprFin/"
+statement_root: "/tns:Dokument/tns:TrescDokumentu/tns:JednostkaMikro"
+header:
+  kod_sprawozdania: "tns:Naglowek/jmi:KodSprawozdania"
+  period_start: "tns:Naglowek/dtsf:OkresOd"
+  period_end: "tns:Naglowek/dtsf:OkresDo"
+unit:
+  SprFinJednostkaMikroWZlotych: 1
+statements:
+  Bilans: "tns:BilansJednostkaMikro"
+  RZiS: "tns:RZiSJednostkaMikro"
+item_namespace: jmi
+amount_namespace: dtsf
+columns:
+  KwotaA: current_year
+  KwotaB: prior_year
+  KwotaB1: prior_year_restated
+code_overrides: {}

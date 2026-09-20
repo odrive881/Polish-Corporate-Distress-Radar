@@ -32,6 +32,7 @@ from distress_radar.parsing.canonical_schema import (
     ChartItem,
     Column,
     MappingConfig,
+    StatementBody,
     StatementName,
     StatementType,
     StructureSpec,
@@ -41,11 +42,21 @@ from distress_radar.parsing.containers import Element
 
 CENT = Decimal("0.01")
 MANDATORY_STATEMENTS: tuple[StatementName, ...] = ("Bilans", "RZiS")
-# Statements whose body starts with a choice of variant sections; exactly one must be present.
+# Statements that MAY start with a choice of variant sections. Whether a given
+# body actually does is read from the body itself: the micro income statement
+# has no variants, its items hang directly off RZiS (plan 0005 step D).
 VARIANT_SECTIONS: dict[StatementName, tuple[str, ...]] = {
     "RZiS": ("RZiSPor", "RZiSKalk"),
     "RachPrzeplywow": ("PrzeplywyPosr", "PrzeplywyBezp"),
 }
+
+
+def _variant_sections(body: StatementBody, name: StatementName) -> tuple[str, ...]:
+    """The variant sections this body declares for a statement, if any."""
+    tops = {item.parts[0] for item in body.statements.get(name, ())}
+    return tuple(s for s in VARIANT_SECTIONS.get(name, ()) if s in tops)
+
+
 VALUE_DTYPE = pl.Decimal(precision=20, scale=2)
 USER_LINE = re.compile(r"PozycjaUszczegolawiajaca_\d+")
 
@@ -120,10 +131,8 @@ def _amount(text: str | None, multiplier: int, where: str) -> Decimal:
 
 def parse_statement(root: Element, spec: StructureSpec, config: MappingConfig) -> ParsedStatement:
     ns = spec.namespaces
-    item_ns = ns[spec.item_namespace]
     amount_ns = ns[spec.amount_namespace]
     chart = config.chart.by_code()
-    body = config.bodies[spec.body]
 
     top = _one(
         _elements(root, spec.statement_root, ns), spec.statement_root, "statement_root_missing"
@@ -151,28 +160,44 @@ def parse_statement(root: Element, spec: StructureSpec, config: MappingConfig) -
         )
 
     facts: list[Fact] = []
-    for name, xpath in spec.statements.items():
-        found = _elements(top, xpath, ns)
-        if not found:
+    for name in spec.statements:
+        # A spec may accept the statement in more than one shape, each implying
+        # its own body: a small filing carries either the small statements or
+        # the full ones, chosen per statement (plan 0005 step D). Exactly one
+        # may be present.
+        present_alts = [
+            (alt, _one(found, name, "statement_duplicated"))
+            for alt in spec.alternatives(name)
+            if (found := _elements(top, alt.xpath, ns))
+        ]
+        if not present_alts:
             if name in MANDATORY_STATEMENTS:
                 raise MappingError("required_statement_missing", f"no {name}")
             continue
-        statement = _one(found, name, "statement_duplicated")
-        sections = VARIANT_SECTIONS.get(name)
-        if sections is not None:
-            present = [s for s in sections if statement.find(f"{{{item_ns}}}{s}") is not None]
+        if len(present_alts) > 1:
+            raise MappingError(
+                "statement_body_ambiguous",
+                f"{name} present as {[a.xpath for a, _ in present_alts]}",
+            )
+        alt, statement = present_alts[0]
+        alt_body = config.bodies[alt.body]
+        alt_item_ns = ns[alt.item_namespace]
+        sections = _variant_sections(alt_body, name)
+        if sections:
+            present = [s for s in sections if statement.find(f"{{{alt_item_ns}}}{s}") is not None]
             if len(present) != 1:
                 raise MappingError("statement_variant_ambiguous", f"{name} has sections {present}")
-        prefix = f"{spec.statement_root}/{xpath}"
+        prefix = f"{spec.statement_root}/{alt.xpath}"
         facts.extend(
             _statement_facts(
                 statement,
-                body.statements.get(name, ()),
+                alt_body.statements.get(name, ()),
                 name,
                 prefix,
+                alt.item_namespace,
                 spec,
                 chart,
-                item_ns,
+                alt_item_ns,
                 amount_ns,
                 multiplier,
             )
@@ -187,6 +212,7 @@ def _statement_facts(
     items: tuple[BodyItem, ...],
     name: StatementName,
     prefix: str,
+    item_prefix: str,
     spec: StructureSpec,
     chart: dict[str, ChartItem],
     item_ns: str,
@@ -204,7 +230,7 @@ def _statement_facts(
             if item.required:
                 raise MappingError("required_item_missing", f"{name}/{item.path}")
             continue
-        element_path = prefix + "".join(f"/{spec.item_namespace}:{p}" for p in item.parts)
+        element_path = prefix + "".join(f"/{item_prefix}:{p}" for p in item.parts)
         if item.code is not None:
             code = spec.code_overrides.get(item.code, item.code)
             chart_item = chart[code]
@@ -220,7 +246,15 @@ def _statement_facts(
         if item.user_code is not None:
             facts.extend(
                 _user_line_facts(
-                    el, item.user_code, element_path, spec, chart, item_ns, amount_ns, multiplier
+                    el,
+                    item.user_code,
+                    element_path,
+                    item_prefix,
+                    spec,
+                    chart,
+                    item_ns,
+                    amount_ns,
+                    multiplier,
                 )
             )
     return _check_balance_sheet(name, facts)
@@ -230,6 +264,7 @@ def _user_line_facts(
     el: Element,
     user_code: str,
     element_path: str,
+    item_prefix: str,
     spec: StructureSpec,
     chart: dict[str, ChartItem],
     item_ns: str,
@@ -257,7 +292,7 @@ def _user_line_facts(
             local = etree.QName(line).localname
             position = 1 + len(list(line.itersiblings(line.tag, preceding=True)))
             where = (
-                f"{element_path}/{spec.item_namespace}:{local}[{position}]"
+                f"{element_path}/{item_prefix}:{local}[{position}]"
                 f"/{spec.amount_namespace}:KwotyPozycji/{spec.amount_namespace}:{column_tag}"
             )
             total += _amount(amount.text, multiplier, where)

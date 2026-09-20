@@ -51,10 +51,12 @@ def test_same_namespace_different_schema_version_is_told_apart(
 
 
 def test_catalogued_but_unmapped_version(mapping_config: MappingConfig) -> None:
+    """A thousands twin: catalogued so it is recorded, never quarantined, but
+    deliberately not mapped (plan 0005 decision 1)."""
     root = etree.fromstring(
-        b'<JednostkaMala xmlns="http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaMalaWZlotych">'
-        b'<Naglowek><j:KodSprawozdania xmlns:j="urn:x" kodSystemowy="SFJMAZ (1)" wersjaSchemy="1-2">'
-        b"SprFinJednostkaMalaWZlotych</j:KodSprawozdania></Naglowek></JednostkaMala>"
+        b'<JednostkaMalaWTys xmlns="http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaMalaWTysiacach">'
+        b'<Naglowek><j:KodSprawozdania xmlns:j="urn:x" kodSystemowy="SFJMAT (1)" wersjaSchemy="1-2">'
+        b"SprFinJednostkaMalaWTysiacach</j:KodSprawozdania></Naglowek></JednostkaMalaWTys>"
     )
     detection = detect(root, mapping_config)
     assert (detection.status, detection.spec) == ("not_yet_mapped", None)

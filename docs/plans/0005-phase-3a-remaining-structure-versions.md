@@ -4,7 +4,7 @@
 
 **Order:** this plan first, then 0006, then 0007. Plan 0006's single in-scope PDF turned out to be a rendered **small-form** statement (`SprFinJednostkaMalaWZlotych`, schema 1-2), so its extraction target is the `jednostka_mala` body and chart codes this plan introduces. Plan 0007 aggregates the canonical table and wants its final shape.
 
-## Status: steps A–C done (2026-09-20), steps D–H not started
+## Status: steps A–D done (2026-09-20), steps E–H not started
 
 ## Why
 
@@ -217,6 +217,96 @@ predicted). Every body verified element by element against **all four** of its s
 - Seven spec files, one per (form, namespace, schema version) — the eight of decision 1 less `full-2025-v1-3`, which step A landed — each binding namespaces, `statement_root`, header paths, `unit`, `statements`, `columns` and `code_overrides` to its body.
 - Remove each newly mapped entry from `structure_catalog.yaml`; leave the `…WTysiacach` twins in it.
 - `test_mapping_coverage.py` gains the new versions in all three parametrised tests, and `SEED_VERSIONS` shrinks to whatever genuinely remains unmapped.
+
+### Blocked, 2026-09-20: the small form's statement body is a per-document choice
+
+Reading the real seed documents before writing the specs (the namespaces and element names had to come from
+filings, not assumptions) turned up something decision 1 did not anticipate.
+
+**A small-form filing does not have to contain the small-form statements.** The `JednostkaMala` envelope
+accepts either the small body (`BilansJednostkaMala`, items in `JednostkaMalaStruktury`) or the **full** body
+(`BilansJednostkaInna`, items in `JednostkaInnaStruktury`) — and the choice is made per statement, not per
+document. Across all 30 small-form seed files:
+
+| Balance sheet | Income statement | Files | Schema versions |
+|---|---|---|---|
+| `…JednostkaMala` | `…JednostkaMala` | 15 | 1-0E (2), 1-2 (10), 1-3 (3) |
+| `…JednostkaInna` | `…JednostkaInna` | 12 | 1-0E (1), 1-2 (7), 1-3 (4) |
+| `…JednostkaMala` | **`…JednostkaInna`** | 3 | 1-0E (1), 1-2 (2) |
+
+The 3 mixed files are KRS `0000225354` — one of the four entities with no canonical facts at all. The
+full-body filers include `0000181328` and `0000153402`. **Micro is not affected**: all 12 micro files use
+`JednostkaMikro` bodies.
+
+This breaks decision 1's "one body per spec". A `small-2018-v1-2` spec bound to `jednostka_mala` parses 10 of
+its 19 files and fails the rest; bound to `jednostka_inna` it does the reverse. Detection cannot separate them
+either — `kodSystemowy` and `wersjaSchemy` are identical across all three rows above.
+
+The good news: the existing bodies need no change. The `BilansJednostkaInna` inside a small envelope is the
+same complexType the full-form schema declares, so `jednostka_inna` applies to it unaltered, and step C's
+`jednostka_mala` applies to the small one. What has to change is how a spec binds them.
+
+**Options (owner's call before step D proceeds):**
+
+1. **Per-statement body alternatives in the spec.** `statements:` lists, per statement, the element names that
+   may appear with the body and item namespace each implies; the engine picks whichever is present. Handles the
+   mixed files directly. Contained change: `mapping_engine.py` resolves the body per statement (it currently
+   reads `config.bodies[spec.body]` once) rather than per document, plus the spec schema and the coverage
+   tests. Three specs for small, as planned.
+2. **A structure version per body combination**, detected from which statement elements are present rather than
+   from the header alone. `structure_version` would then record what was actually filed, which is arguably
+   better for `dq_mart` and for features. Costs up to 9 small specs instead of 3, and extends `detect` beyond
+   the header — a change to the §6C1 rule that ADR 0005 settled.
+3. **Map only the pure-small files and leave the rest catalogued.** Cheapest, but it abandons 15 of 30 small
+   files and leaves `0000225354` with no facts, which is most of this plan's point.
+
+Recommendation: **option 1**. It is the smallest change that covers every seed file, and `source_element_path`
+already records which element each fact came from, so no lineage is lost by not encoding the choice in
+`structure_version`.
+
+**Resolved 2026-09-20: option 1, built.** A spec's `statements` entry may now be a list of alternatives, each
+naming the element, the body it implies and its item namespace; the engine uses whichever the document
+contains and refuses (`statement_body_ambiguous`) if more than one is present. The five Phase 2 specs keep the
+plain-string form and are untouched.
+
+**Done, 2026-09-20.** 12 specs (5 + 7 new), catalogue down to 10 (the thousands twins and the two CRWDE
+templates). **All 49 previously unmapped files now parse**, except one quarantined for a genuine XSD defect.
+
+| | before step D | after |
+|---|---|---|
+| valid files | 88 | **129** |
+| entities with facts | 13 | **17 of 17** |
+| canonical rows | 36,466 | 43,611 |
+| `not_yet_mapped` | 42 | **0** |
+
+- **The Phase 2 full-form hash is unchanged** (`7d6d0dee…`, 33,490 rows), and re-materializing leaves all 14
+  Parquet files byte-identical.
+- **Grades:** 82 `pass`, 19 `warn`, 28 `quarantined`. Of the 41 short-form files, 33 pass, 3 warn, 5
+  quarantine — scattered across 5 entities in ones and twos, the signature of filing defects rather than a
+  mapping fault. Spot-checked: `0000041651`'s balance sheet is out by 1,000.00; `0000277937`'s micro net
+  result (−72,117.63) does not match its own `A-B+C-D-E` (−250,731.91); `0000225354` reports fixed assets of
+  2,881,651.81 against components summing to 1,692,594.92.
+- **One file quarantines on XSD validation**: `0000507997`, small 1-2, leaves a mandatory `Art` out of
+  `PodstawaPrawna` in the *tax* additional information — a section this project does not map. Quarantining the
+  whole document is what §6C1 requires, so it stands; the entity's other 8 files parse.
+
+**Three defects found and fixed while doing this, all mine:**
+
+1. **The engine enforced an income-statement variant section on every body.** The micro income statement has
+   no `RZiSKalk`/`RZiSPor` choice, so all 12 micro files failed `statement_variant_ambiguous`. The check is now
+   read from the body rather than a module constant.
+2. **`source_element_path` was written with the spec's default namespace prefix**, not the alternative's, so
+   facts from a full body inside a small envelope cited `jma:` paths that resolve to nothing — invariant 3
+   broken for exactly the files this step added. The prefix is now threaded through.
+3. **The identity checks resolved the body from `spec.body`**, ignoring the alternative, so a small filing
+   carrying the full statements was checked against the small body's hierarchy. That produced 12 spurious
+   quarantines with a distinctive signature: 59 of 74 failures on just `IS.COMP.A` and `IS.COMP.B`, which is
+   what prompted tracing it rather than accepting them as filing defects. The checker now reads the filed
+   shape back off `source_element_path`. Quarantines fell from 40 to 28.
+
+   Its fallback matters: when no path matches an alternative the checker uses the spec's first one rather than
+   an empty rule set, because checking nothing at all is a worse failure than checking against the wrong body.
+   Five existing unit tests caught this by building synthetic frames whose paths match no alternative.
 
 ### E. Fixtures
 
