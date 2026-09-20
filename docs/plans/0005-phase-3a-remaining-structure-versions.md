@@ -4,7 +4,7 @@
 
 **Order:** this plan first, then 0006, then 0007. Plan 0006's single in-scope PDF turned out to be a rendered **small-form** statement (`SprFinJednostkaMalaWZlotych`, schema 1-2), so its extraction target is the `jednostka_mala` body and chart codes this plan introduces. Plan 0007 aggregates the canonical table and wants its final shape.
 
-## Status: steps A–E done (2026-09-20), steps F–H not started
+## Status: steps A–F done (2026-09-20), steps G–H not started
 
 ## Why
 
@@ -353,6 +353,33 @@ hid and nothing else would catch a regression:
 
 - No new rule. Confirm on fixtures that `cashflow_ties` and the equity walk are skipped rather than failed when the statement is absent, and that `subtotals_consistent` walks the shorter tree correctly, including micro's of-which lines being excluded from their parent's sum.
 - Add an explicit test that a micro filing's `Aktywa_B_1` ("– zapasy") does **not** count towards `Aktywa_B`. Finding 3 is the trap this plan most needs a regression test for.
+
+**Done, 2026-09-20.** No rule changed, as planned: the four §4.3 checks read the short forms correctly as
+they stand. Eight tests in `test_accounting_identities.py` pin that, and the golden set there is now a glob
+over `tests/fixtures/statements/*.xml` — it was still `full_*.xml`, so **step E's ten short-form fixtures
+were not actually being run through the identity checks**; they are now, and all pass.
+
+- **The of-which regression test earns its place.** `test_micro_of_which_lines_are_not_summed_into_current_assets`
+  asserts `BS.ASSETS.B` produces no `subtotals_consistent` row for a micro filing, and its twin
+  `test_the_full_form_sums_what_the_micro_form_only_notes` feeds **the same codes and the same amounts**
+  through `jednostka_inna` and asserts it fails. Verified by mutation: deleting `of_which: true` from the
+  micro body's `Aktywa_B_1` fails that test *and* quarantines two golden micro fixtures, off by the
+  106,169.77 the of-which lines do not account for. Finding 3's silent mis-map is no longer silent.
+- **Absent statements**, over all ten short-form fixtures: no `cash_flow` or `equity_changes` facts are
+  written at all, `cashflow_ties` returns an empty frame rather than a failure, and no check row references
+  a `CF.`/`EQ.` code. Decision 3 is now enforced on real filings, not only reasoned from the schemas.
+- **`profit_ties` is `skipped` on micro**, which declares no balance-sheet net-result line — step C's
+  assertion, now made against a fixture rather than a synthetic frame.
+- **The shorter tree is walked as its own.** The small form's profit chain (`IS.COMP.MALA.H`,
+  `IS.COMP.MALA.J`) is checked and the full form's operating result `IS.COMP.F` is absent, which is the
+  letter shift step C found expressed as a test.
+- **The mixed body case is covered too**: `small_2018_v1_0_mixed_por_2018` is asserted to carry small-form
+  balance-sheet codes while its income statement is checked against the full chain — the shape whose
+  mis-resolution caused step D's 12 spurious quarantines.
+- **The short-form restatement pair** (`0000225354`, FY2021/FY2022) agrees exactly, so it emits no
+  `restatement_events` row. A one-line alteration of the later filing's prior-year column produces exactly
+  one event, which is what proves the comparison ran rather than passing vacuously.
+- `make check`: **390 passed**, 2 skipped (up from 354; the widened golden set accounts for most of it).
 
 ### G. Dagster
 

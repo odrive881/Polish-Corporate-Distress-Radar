@@ -31,7 +31,11 @@ from distress_radar.parsing.version_detection import detect
 
 FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
 STATEMENTS_DIR = FIXTURES_DIR / "statements"
-GOLDEN = sorted(STATEMENTS_DIR.glob("full_*.xml")) + [FIXTURES_DIR / "neobis_001.xml"]
+# Every committed fixture, so a new one is covered without editing this file.
+GOLDEN = sorted(STATEMENTS_DIR.glob("*.xml")) + [FIXTURES_DIR / "neobis_001.xml"]
+# The forms that declare no cash-flow and no equity-changes statement (plan 0005
+# step B): their absence is a schema fact, never a filer omission.
+SHORT_FORM = sorted(STATEMENTS_DIR.glob("small_*.xml")) + sorted(STATEMENTS_DIR.glob("micro_*.xml"))
 TOLERANCE = Decimal("1.00")
 DTSF_2018 = "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/DefinicjeTypySprawozdaniaFinansowe/"
 JIN_2018 = "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaInnaStruktury"
@@ -57,6 +61,7 @@ def _frame(
     ref: str = "doc",
     period: tuple[date, date] = (date(2022, 1, 1), date(2022, 12, 31)),
     known_from: date = date(2023, 6, 30),
+    version: str = "full-2018-v1-2",
 ) -> pl.DataFrame:
     chart = config.chart.by_code()
     facts = tuple(
@@ -70,7 +75,7 @@ def _frame(
         )  # type: ignore[arg-type]
         for (code, column), v in values.items()
     )
-    parsed = ParsedStatement("full-2018-v1-2", period[0], period[1], 1, facts)
+    parsed = ParsedStatement(version, period[0], period[1], 1, facts)
     return to_frame(parsed, _ctx(ref, known_from))
 
 
@@ -417,3 +422,179 @@ def test_prior_year_only_failures_warn(mapping_config: MappingConfig) -> None:
     results = run_identity_checks(frame, mapping_config, TOLERANCE)
     assert results.filter(pl.col("status") == "fail")["column"].unique().to_list() == ["prior_year"]
     assert grade(frame, results, mapping_config)["quality_grade"].unique().to_list() == ["warn"]
+
+
+# --- Short forms (plan 0005 step F) -----------------------------------------
+#
+# No new rule: the small and micro forms are checked by the same four identities
+# as the full form. What changes is the tree each one walks, and the two
+# statements that are simply not there. These pin both.
+
+
+def _current_year(frame: pl.DataFrame) -> dict[str, Decimal]:
+    part = frame.filter(pl.col("column") == "current_year")
+    return dict(zip(part["line_item"].to_list(), part["value"].to_list(), strict=True))
+
+
+@pytest.mark.parametrize("xml", SHORT_FORM, ids=lambda p: p.stem)
+def test_short_forms_write_no_cash_flow_or_equity_rows(
+    xml: Path, mapping_config: MappingConfig
+) -> None:
+    """A small or micro filing produces no `cash_flow` or `equity_changes` facts.
+
+    Small and micro entities are exempt from both statements and the schemas do
+    not declare them, so there is nothing to report. Invariant 4: absent, not
+    zero rows.
+    """
+    frame = _golden_frame(xml, mapping_config)
+    assert set(frame["statement_type"].to_list()) <= {"balance_sheet", "income_statement"}
+
+
+@pytest.mark.parametrize("xml", SHORT_FORM, ids=lambda p: p.stem)
+def test_absent_statements_are_skipped_never_failed(
+    xml: Path, mapping_config: MappingConfig
+) -> None:
+    """`cashflow_ties` and the equity walk must not fail a form that has neither.
+
+    `cashflow_ties` emits no row at all when no side of the tie was reported,
+    and the equity walk is a subtotal tree that does not exist here — so the
+    absence must show up as nothing checked, never as a failure.
+    """
+    assert cashflow_ties(_golden_frame(xml, mapping_config), mapping_config, TOLERANCE).is_empty()
+
+    frame = _golden_frame(xml, mapping_config)
+    results = run_identity_checks(frame, mapping_config, TOLERANCE)
+    assert "cashflow_ties" not in results["check"].to_list()
+    assert not [c for c in results["line_item"].to_list() if c.startswith(("CF.", "EQ."))]
+
+
+def test_micro_of_which_lines_are_not_summed_into_current_assets(
+    mapping_config: MappingConfig,
+) -> None:
+    """Finding 3, the trap this plan most needs a regression test for.
+
+    The micro form's `Aktywa/Aktywa_B/Aktywa_B_1` is `– zapasy`, an of-which
+    note under `Aktywa obrotowe`. It carries chart code `BS.ASSETS.B.I`, which
+    in the full form is `Zapasy`, a summing component of the same parent. Same
+    code, opposite role — and no identity check can tell the difference by
+    itself, because a wrong flag produces a plausible failure on a correct
+    filing rather than an error.
+    """
+    frame = _golden_frame(STATEMENTS_DIR / "micro_2018_v1_2_2019.xml", mapping_config)
+    values = _current_year(frame)
+    # The of-which children of this filing do not add up to their parent, so
+    # summing them would be visible rather than harmless.
+    assert values["BS.ASSETS.B.I"] + values["BS.ASSETS.B.II"] != values["BS.ASSETS.B"]
+
+    results = subtotals_consistent(frame, mapping_config, TOLERANCE)
+    # `Aktywa obrotowe` has only of-which children in the micro form, so it has
+    # no statutory children to sum and is not checked at all.
+    assert "BS.ASSETS.B" not in results["line_item"].to_list()
+    assert set(results["status"].to_list()) == {"pass"}
+
+
+def test_the_full_form_sums_what_the_micro_form_only_notes(
+    mapping_config: MappingConfig,
+) -> None:
+    """The same codes and the same amounts, read against the full-form body.
+
+    The counterpart to the test above: it is the body, not the chart code, that
+    decides whether a line is summed. Bound to `jednostka_inna`, these figures
+    fail by the 106,169.77 the of-which lines do not account for.
+    """
+    values = _current_year(
+        _golden_frame(STATEMENTS_DIR / "micro_2018_v1_2_2019.xml", mapping_config)
+    )
+    codes = ("BS.ASSETS.B", "BS.ASSETS.B.I", "BS.ASSETS.B.II")
+    as_full_form = _frame(
+        {(code, "current_year"): str(values[code]) for code in codes}, mapping_config
+    )
+    assert (
+        _statuses(subtotals_consistent(as_full_form, mapping_config, TOLERANCE))["BS.ASSETS.B"]
+        == "fail"
+    )
+
+
+def test_micro_profit_ties_is_skipped_with_no_balance_sheet_result(
+    mapping_config: MappingConfig,
+) -> None:
+    """The micro balance sheet declares no net-result line, so the tie has one side.
+
+    `IS.MIKRO.F` is the income statement's result; nothing in the 13-line micro
+    balance sheet restates it. That is a `skipped` row, not a failure, and not
+    an excuse to impute the missing side (invariant 4).
+    """
+    frame = _golden_frame(STATEMENTS_DIR / "micro_2018_v1_2_2019.xml", mapping_config)
+    results = profit_ties(frame, mapping_config, TOLERANCE)
+    assert set(results["line_item"].to_list()) == {"IS.MIKRO.F"}
+    assert set(results["status"].to_list()) == {"skipped"}
+
+
+def test_small_form_subtotals_walk_its_own_shorter_profit_chain(
+    mapping_config: MappingConfig,
+) -> None:
+    """The small form's section letters do not line up with the full form's.
+
+    It has no operating-result line, so its `F` is the full form's `G` and the
+    shift continues to the end of the statement (plan 0005 step C). Its profit
+    chain therefore has its own codes and its own formulas, and the full form's
+    operating result must not be checked against it.
+    """
+    frame = _golden_frame(STATEMENTS_DIR / "small_2018_v1_2_mala_por_2021.xml", mapping_config)
+    results = subtotals_consistent(frame, mapping_config, TOLERANCE)
+    codes = set(results["line_item"].to_list())
+    assert {"IS.COMP.MALA.H", "IS.COMP.MALA.J"} <= codes
+    assert "IS.COMP.F" not in codes  # "Zysk (strata) z działalności operacyjnej"
+    assert set(results["status"].to_list()) == {"pass"}
+
+
+def test_mixed_filing_is_checked_against_the_body_each_statement_was_filed_in(
+    mapping_config: MappingConfig,
+) -> None:
+    """One document, two trees: a small balance sheet and a full income statement.
+
+    The `JednostkaMala` envelope accepts either body, chosen per statement, and
+    the header does not say which (plan 0005 step D). Checking the whole
+    document against one of them produced 12 spurious quarantines before the
+    checker learned to read the filed shape back off `source_element_path`.
+    """
+    frame = _golden_frame(STATEMENTS_DIR / "small_2018_v1_0_mixed_por_2018.xml", mapping_config)
+    results = subtotals_consistent(frame, mapping_config, TOLERANCE)
+    codes = set(results["line_item"].to_list())
+
+    # Balance sheet: the small body, which has lines the full form does not.
+    assert {c for c in frame["line_item"].to_list() if c.startswith("BS.ASSETS.MALA.")}
+    # Income statement: the full body's chain, not the small form's.
+    assert {"IS.COMP.F", "IS.COMP.L"} <= codes
+    assert not {c for c in codes if c.startswith("IS.") and ".MALA." in c}
+    assert set(results["status"].to_list()) == {"pass"}
+
+
+def test_small_form_restatement_pair_reports_no_restatement(
+    mapping_config: MappingConfig,
+) -> None:
+    """Adjacent small-form years from one entity: compared, and in agreement.
+
+    KRS 0000225354's FY2022 filing repeats its FY2021 figures exactly, so the
+    expected result is no event. Altering one line proves the comparison ran
+    rather than passing vacuously.
+    """
+    earlier = _golden_frame(
+        STATEMENTS_DIR / "small_2018_v1_2_mala_por_2021.xml", mapping_config, date(2022, 6, 1)
+    )
+    later = _golden_frame(
+        STATEMENTS_DIR / "small_2018_v1_2_mala_por_2022.xml", mapping_config, date(2023, 6, 1)
+    )
+    assert prior_year_consistency(pl.concat([earlier, later]), TOLERANCE).is_empty()
+
+    restated = later.with_columns(
+        pl.when((pl.col("line_item") == "BS.ASSETS") & (pl.col("column") == "prior_year"))
+        .then(pl.col("value") + Decimal("1000.00"))
+        .otherwise(pl.col("value"))
+        .alias("value")
+    )
+    [event] = prior_year_consistency(pl.concat([earlier, restated]), TOLERANCE).iter_rows(
+        named=True
+    )
+    assert (event["line_item"], event["fiscal_year"]) == ("BS.ASSETS", 2021)
+    assert event["restated_value"] - event["originally_reported_value"] == Decimal("1000.00")
