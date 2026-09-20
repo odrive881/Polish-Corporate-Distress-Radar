@@ -26,8 +26,20 @@ def test_every_role_the_checks_read_is_defined(mapping_config: MappingConfig) ->
     chart = mapping_config.chart
     assert chart.codes_with_role("total_assets") == {"BS.ASSETS"}
     assert chart.codes_with_role("total_equity_and_liabilities") == {"BS.EQUITY_LIABILITIES"}
-    assert chart.codes_with_role("net_result") == {"IS.COMP.L", "IS.CALC.O"}
+    # One net-result line per income-statement layout. `IS.MIKRO.G` is the same
+    # figure presented for UoR art. 3(1a)(2) units and deliberately has no role:
+    # a filing carrying both F and G would otherwise make `_role_value` raise.
+    assert chart.codes_with_role("net_result") == {
+        "IS.COMP.L",
+        "IS.CALC.O",
+        "IS.COMP.MALA.J",
+        "IS.CALC.MALA.L",
+        "IS.MIKRO.F",
+    }
     assert chart.codes_with_role("cash_opening") == {"CF.IND.F", "CF.DIR.F"}
+    # The micro form declares no balance-sheet net-result line, so `profit_ties`
+    # is skipped there rather than failing (ADR 0005 second addendum).
+    assert chart.codes_with_role("net_result_balance_sheet") == {"BS.EQUITY_LIABILITIES.A.VI"}
 
 
 def test_2025_narrowed_items_are_distinct_codes(mapping_config: MappingConfig) -> None:

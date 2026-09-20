@@ -1,0 +1,52 @@
+# Micro form (UoR Annex 4, `JednostkaMikro`), schema 1-3 and CRWDE wariant 2. Plan 0005
+# step C; classification in the ADR 0005 second addendum.
+#
+# This is the 1-3 / wariant 2 twin of `jednostka_mikro_v1_2.yaml`: identical
+# balance sheet, and an income statement with the `G` block removed (the
+# presentation for UoR art. 3(1a)(2) units, dropped in 1-3) and `F`
+# relabelled. Everything else is the same.
+# The balance sheet is identical in every version.
+#
+# What the micro form does NOT declare: a cash-flow statement, an equity-changes
+# statement, and any balance-sheet net-result line. The first two mean no
+# `cash_flow`/`equity_changes` facts are ever produced for a micro filing (not a
+# filer omission, a schema fact). The third means `profit_ties` has no
+# balance-sheet side and is skipped, which `_row` already handles.
+#
+# The balance sheet reuses the full-form codes: its aggregates are the same
+# concepts, and the "w tym" children below them are `of_which` breakdowns, not
+# summing components, so `subtotals_consistent` must not add them to their
+# parent. Only `Pasywa_B_2` has no full-form equivalent — it merges the long-
+# and short-term credit and loan lines the full form keeps apart.
+body: jednostka_mikro_v1_3
+formulas:
+  IS.MIKRO.F: [[1, IS.MIKRO.A], [-1, IS.MIKRO.B], [1, IS.MIKRO.C], [-1, IS.MIKRO.D], [-1, IS.MIKRO.E]]
+statements:
+  Bilans:
+    - {path: "Aktywa", code: BS.ASSETS, required: true, user_code: BS.ASSETS.USER}
+    - {path: "Aktywa/Aktywa_A", code: BS.ASSETS.A}
+    - {path: "Aktywa/Aktywa_B", code: BS.ASSETS.B, user_code: BS.ASSETS.B.USER, user_of_which: true}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_1", code: BS.ASSETS.B.I, of_which: true}
+    - {path: "Aktywa/Aktywa_B/Aktywa_B_2", code: BS.ASSETS.B.II, of_which: true}
+    - {path: "Aktywa/Aktywa_C", code: BS.ASSETS.C}
+    - {path: "Aktywa/Aktywa_D", code: BS.ASSETS.D}
+    - {path: "Pasywa", code: BS.EQUITY_LIABILITIES, required: true, user_code: BS.EQUITY_LIABILITIES.USER}
+    - {path: "Pasywa/Pasywa_A", code: BS.EQUITY_LIABILITIES.A, user_code: BS.EQUITY_LIABILITIES.A.USER, user_of_which: true}
+    - {path: "Pasywa/Pasywa_A/Pasywa_A_1", code: BS.EQUITY_LIABILITIES.A.I, of_which: true}
+    - {path: "Pasywa/Pasywa_B", code: BS.EQUITY_LIABILITIES.B, user_code: BS.EQUITY_LIABILITIES.B.USER, user_of_which: true}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_1", code: BS.EQUITY_LIABILITIES.B.I, of_which: true}
+    - {path: "Pasywa/Pasywa_B/Pasywa_B_2", code: BS.EQUITY_LIABILITIES.MIKRO.B.2, of_which: true}
+  RZiS:
+    - {path: "A", code: IS.MIKRO.A, user_code: IS.MIKRO.A.USER, user_of_which: true}
+    - {path: "A/A_1", code: IS.MIKRO.A.1, of_which: true}
+    - {path: "B", code: IS.MIKRO.B, user_code: IS.MIKRO.B.USER}
+    - {path: "B/B_I", code: IS.MIKRO.B.I}
+    - {path: "B/B_II", code: IS.MIKRO.B.II}
+    - {path: "B/B_III", code: IS.MIKRO.B.III}
+    - {path: "B/B_IV", code: IS.MIKRO.B.IV}
+    - {path: "C", code: IS.MIKRO.C, user_code: IS.MIKRO.C.USER, user_of_which: true}
+    - {path: "C/C_1", code: IS.MIKRO.C.1, of_which: true}
+    - {path: "D", code: IS.MIKRO.D, user_code: IS.MIKRO.D.USER, user_of_which: true}
+    - {path: "D/D_1", code: IS.MIKRO.D.1, of_which: true}
+    - {path: "E", code: IS.MIKRO.E}
+    - {path: "F", code: IS.MIKRO.F}

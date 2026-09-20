@@ -4,7 +4,7 @@
 
 **Order:** this plan first, then 0006, then 0007. Plan 0006's single in-scope PDF turned out to be a rendered **small-form** statement (`SprFinJednostkaMalaWZlotych`, schema 1-2), so its extraction target is the `jednostka_mala` body and chart codes this plan introduces. Plan 0007 aggregates the canonical table and wants its final shape.
 
-## Status: steps A and B done (2026-09-20), steps C–H not started
+## Status: steps A–C done (2026-09-20), steps D–H not started
 
 ## Why
 
@@ -176,6 +176,41 @@ no database, no network). Headlines, all of which change step C:
 - Extend `config/mappings/canonical_chart.yaml` with the codes step B identified. Keep the UoR numbering convention; prefix nothing with the form name unless the line genuinely exists only in that form.
 - Write `config/mappings/structures/bodies/jednostka_mala.yaml` and `jednostka_mikro.yaml`, each declaring only the statements its schema has, with its own subtotal tree, `of_which` flags, `user_code` slots and `required: true` items.
 - `required: true` is set conservatively: total assets, total equity and liabilities, and the net result. A micro balance sheet has 13 lines and little room for a filing to be usefully partial, but quarantining on an optional line would violate invariant 4's intent.
+
+**Done, 2026-09-20.** Chart 554 → **600 codes**; three new bodies (the micro split was needed, as step B
+predicted). Every body verified element by element against **all four** of its schema versions — paths,
+`section`, user slots, `user_of_which`, and chart-label-against-XSD-label: **0 problems**.
+
+| Body | Versions | `Bilans` | `RZiS` |
+|---|---|---|---|
+| `jednostka_mala` | 1-0E, 1-2, 1-3, w2 | 46 | 63 |
+| `jednostka_mikro_v1_2` | 1-0E, 1-2 | 13 | 16 |
+| `jednostka_mikro_v1_3` | 1-3, w2 | 13 | 13 |
+
+- **Codes are matched by meaning, never by position.** This was the decisive finding: **the section letters do
+  not line up between the forms.** The small form skips the full form's operating-result line, so its `F` is
+  the full form's `G`, its `G` is the full form's `H`, and the shift continues to the end of the statement.
+  Path-based reuse would have mapped "Przychody finansowe" onto "Pozostałe koszty operacyjne" — a silent
+  mis-map that every identity check would have passed. Matching resolves each line by label, scoped to its
+  variant, and disambiguates by **which full-form line its parent matched to**.
+- **Two safety rules** were needed after the matcher proposed nonsense twice: never match across
+  `Aktywa`/`Pasywa` (it put an assets code on a trade-payables line), and never guess when a generic label
+  ("– do 12 miesięcy") fits several full-form parents. Both now fall through to a new code instead.
+- **46 new codes**, all genuinely form-specific: 22 for micro (21 of them its own income-statement layout),
+  24 for small (its receivables/payables split by *type* where the full form splits by counterparty, plus its
+  own computed profit chain and formulas). Everything else reuses the full-form vocabulary, so
+  "fixed assets" and "inventories" stay comparable across forms for Phase 5.
+- **Three lines the small form narrows in 1-3 and wariant 2** map onto the existing `.R2025` codes
+  (`IS.CALC.A`, `IS.CALC.B`, `IS.COMP.B.VIII`). No new narrowing codes were needed; those two specs carry the
+  overrides in step D.
+- **Label normalisation** now tolerates three presentational differences that never change an amount: a
+  leading list marker (`–`, `a)`), a trailing `, w tym X` ("of which" is a subset note), a trailing
+  `(dla jednostek …)` applicability clause, and spacing inside a formula (`(A - B)` vs `(A–B)`). None can hide
+  a `.R2025`-style narrowing, where the words before "w tym" change.
+- **`profit_ties` needs no change for micro**, which declares no balance-sheet net-result line: `_row` already
+  returns `skipped` when a side is missing. Pinned by an assertion.
+- **`IS.MIKRO.G` deliberately carries no `net_result` role** — a filing with both `F` and `G` would make
+  `_role_value` raise. `test_every_role_the_checks_read_is_defined` records the five net-result codes and why.
 
 ### D. Specs
 

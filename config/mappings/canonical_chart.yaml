@@ -576,3 +576,74 @@ items:
   - {code: CF.IND.G, statement_type: cash_flow, variant: "indirect", label_pl: "Środki pieniężne na koniec okresu (F±D), w tym:", role: cash_closing}
   - {code: CF.IND.G.USER, statement_type: cash_flow, variant: "indirect", label_pl: "Pozycje uszczegóławiające jednostki (suma): Środki pieniężne na koniec okresu (F±D), w tym:"}
   - {code: CF.IND.G.1, statement_type: cash_flow, variant: "indirect", label_pl: "– o ograniczonej możliwości dysponowania"}
+
+  # --- JednostkaMikro (UoR Annex 4), plan 0005 step C -------------------------
+  # The micro balance sheet reuses the full-form codes for every line but one;
+  # its income statement shares none of them (ADR 0005 second addendum §4). It
+  # is a third layout, not the comparative or calculation variant, and the
+  # form offers no variant to choose, so `variant: "n/a"`.
+  #
+  # Only `IS.MIKRO.F` carries `role: net_result`. `IS.MIKRO.G` is the same
+  # figure presented for UoR art. 3(1a)(2) units (not sp. z o.o., so out of v1
+  # scope); giving both the role would break `_role_value` on a filing that
+  # carried both.
+  - {code: BS.EQUITY_LIABILITIES.MIKRO.B.2, statement_type: balance_sheet, variant: "n/a", label_pl: "– zobowiązania z tytułu kredytów i pożyczek"}
+  - {code: IS.MIKRO.A, statement_type: income_statement, variant: "n/a", label_pl: "Przychody podstawowej działalności operacyjnej i zrównane z nimi, w tym:"}
+  - {code: IS.MIKRO.A.USER, statement_type: income_statement, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Przychody podstawowej działalności operacyjnej i zrównane z nimi, w tym:"}
+  - {code: IS.MIKRO.A.1, statement_type: income_statement, variant: "n/a", label_pl: "– zmiana stanu produktów (zwiększenie – wartość dodatnia, zmniejszenie – wartość ujemna)"}
+  - {code: IS.MIKRO.B, statement_type: income_statement, variant: "n/a", label_pl: "Koszty podstawowej działalności operacyjnej"}
+  - {code: IS.MIKRO.B.USER, statement_type: income_statement, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Koszty podstawowej działalności operacyjnej"}
+  - {code: IS.MIKRO.B.I, statement_type: income_statement, variant: "n/a", label_pl: "Amortyzacja"}
+  - {code: IS.MIKRO.B.II, statement_type: income_statement, variant: "n/a", label_pl: "Zużycie materiałów i energii"}
+  - {code: IS.MIKRO.B.III, statement_type: income_statement, variant: "n/a", label_pl: "Wynagrodzenia, ubezpieczenia społeczne i inne świadczenia"}
+  - {code: IS.MIKRO.B.IV, statement_type: income_statement, variant: "n/a", label_pl: "Pozostałe koszty"}
+  - {code: IS.MIKRO.C, statement_type: income_statement, variant: "n/a", label_pl: "Pozostałe przychody i zyski, w tym:"}
+  - {code: IS.MIKRO.C.USER, statement_type: income_statement, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Pozostałe przychody i zyski, w tym:"}
+  - {code: IS.MIKRO.C.1, statement_type: income_statement, variant: "n/a", label_pl: "– aktualizacja wartości aktywów"}
+  - {code: IS.MIKRO.D, statement_type: income_statement, variant: "n/a", label_pl: "Pozostałe koszty i straty, w tym:"}
+  - {code: IS.MIKRO.D.USER, statement_type: income_statement, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Pozostałe koszty i straty, w tym:"}
+  - {code: IS.MIKRO.D.1, statement_type: income_statement, variant: "n/a", label_pl: "– aktualizacja wartości aktywów"}
+  - {code: IS.MIKRO.E, statement_type: income_statement, variant: "n/a", label_pl: "Podatek dochodowy"}
+  - {code: IS.MIKRO.F, statement_type: income_statement, variant: "n/a", label_pl: "Zysk/strata netto (A-B+C-D-E) (dla jednostek mikro, o których mowa w art. 3 ust. 1a pkt 1, 3 i 4 oraz ust. 1b ustawy)", role: net_result}
+  - {code: IS.MIKRO.G, statement_type: income_statement, variant: "n/a", label_pl: "Wynik finansowy netto ogółem (A-B+C-D-E), w tym: (dla jednostek mikro, o których mowa w art. 3 ust. 1a pkt 2 ustawy)."}
+  - {code: IS.MIKRO.G.USER, statement_type: income_statement, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): Wynik finansowy netto ogółem"}
+  - {code: IS.MIKRO.G.I, statement_type: income_statement, variant: "n/a", label_pl: "Nadwyżka przychodów nad kosztami (wartość dodatnia)"}
+  - {code: IS.MIKRO.G.II, statement_type: income_statement, variant: "n/a", label_pl: "Nadwyżka kosztów nad przychodami (wartość ujemna)"}
+
+  # --- JednostkaMala (UoR Annex 5), plan 0005 step C -------------------------
+  # The small form reuses full-form codes wherever a line is the same concept,
+  # which is most of it. The letters do NOT line up between the forms (the
+  # small form has fewer sections), so the mapping is by meaning, not position:
+  # ADR 0005 second addendum §2 and the body file record which full-form line
+  # each one is. The codes below are the lines the full form has no equivalent
+  # for — the small form's own aggregations and its own computed profit chain.
+  #
+  # Balance sheet: the small form splits receivables and payables by *type*
+  # (trade, credits and loans) where the full form splits them by counterparty
+  # first, so these aggregates cross the full form's categories.
+  - {code: BS.ASSETS.MALA.B.II.A, statement_type: balance_sheet, variant: "n/a", label_pl: "a) z tytułu dostaw i usług, w tym:"}
+  - {code: BS.ASSETS.MALA.B.II.A.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): należności z tytułu dostaw i usług"}
+  - {code: BS.ASSETS.MALA.B.II.A.1, statement_type: balance_sheet, variant: "n/a", label_pl: "– do 12 miesięcy"}
+  - {code: BS.ASSETS.MALA.B.II.A.2, statement_type: balance_sheet, variant: "n/a", label_pl: "– powyżej 12 miesięcy"}
+  - {code: BS.EQUITY_LIABILITIES.MALA.B.II.1, statement_type: balance_sheet, variant: "n/a", label_pl: "– z tytułu kredytów i pożyczek"}
+  - {code: BS.EQUITY_LIABILITIES.MALA.B.III.A, statement_type: balance_sheet, variant: "n/a", label_pl: "a) z tytułu kredytów i pożyczek"}
+  - {code: BS.EQUITY_LIABILITIES.MALA.B.III.B, statement_type: balance_sheet, variant: "n/a", label_pl: "b) z tytułu dostaw i usług, w tym:"}
+  - {code: BS.EQUITY_LIABILITIES.MALA.B.III.B.USER, statement_type: balance_sheet, variant: "n/a", label_pl: "Pozycje uszczegóławiające jednostki (suma): zobowiązania z tytułu dostaw i usług"}
+  - {code: BS.EQUITY_LIABILITIES.MALA.B.III.B.1, statement_type: balance_sheet, variant: "n/a", label_pl: "– Do 12 miesięcy"}
+  - {code: BS.EQUITY_LIABILITIES.MALA.B.III.B.2, statement_type: balance_sheet, variant: "n/a", label_pl: "– Powyżej 12 miesięcy"}
+  # Income statement: the small form skips the full form's operating-result
+  # line, so its profit chain has its own formulas and its own letters.
+  - {code: IS.CALC.MALA.E, statement_type: income_statement, variant: "calculation", label_pl: "Zysk (strata) ze sprzedaży (A - B - C - D)"}
+  - {code: IS.CALC.MALA.H.I, statement_type: income_statement, variant: "calculation", label_pl: "Dywidendy i udziały w zyskach od jednostek, w których jednostka posiada zaangażowanie w kapitale, w tym:"}
+  - {code: IS.CALC.MALA.H.I.USER, statement_type: income_statement, variant: "calculation", label_pl: "Pozycje uszczegóławiające jednostki (suma): dywidendy i udziały w zyskach"}
+  - {code: IS.CALC.MALA.H.I.1, statement_type: income_statement, variant: "calculation", label_pl: "– od jednostek powiązanych, w których jednostka posiada zaangażowanie w kapitale"}
+  - {code: IS.CALC.MALA.J, statement_type: income_statement, variant: "calculation", label_pl: "Zysk (strata) brutto (E + F - G + H - I)"}
+  - {code: IS.CALC.MALA.L, statement_type: income_statement, variant: "calculation", label_pl: "Zysk (strata) netto (J - K)", role: net_result}
+  - {code: IS.COMP.MALA.A.I, statement_type: income_statement, variant: "comparative", label_pl: "Przychody netto ze sprzedaży"}
+  - {code: IS.COMP.MALA.B.VI, statement_type: income_statement, variant: "comparative", label_pl: "Pozostałe koszty, w tym:"}
+  - {code: IS.COMP.MALA.B.VI.USER, statement_type: income_statement, variant: "comparative", label_pl: "Pozycje uszczegóławiające jednostki (suma): pozostałe koszty"}
+  - {code: IS.COMP.MALA.F.I, statement_type: income_statement, variant: "comparative", label_pl: "Dywidendy i udziały w zyskach od jednostek, w których jednostka posiada zaangażowanie w kapitale, w tym:"}
+  - {code: IS.COMP.MALA.F.I.USER, statement_type: income_statement, variant: "comparative", label_pl: "Pozycje uszczegóławiające jednostki (suma): dywidendy i udziały w zyskach"}
+  - {code: IS.COMP.MALA.F.I.1, statement_type: income_statement, variant: "comparative", label_pl: "– od jednostek powiązanych, w których jednostka posiada zaangażowanie w kapitale"}
+  - {code: IS.COMP.MALA.H, statement_type: income_statement, variant: "comparative", label_pl: "Zysk (strata) brutto (C + D - E + F - G)"}
+  - {code: IS.COMP.MALA.J, statement_type: income_statement, variant: "comparative", label_pl: "Zysk (strata) netto (H - I)", role: net_result}
