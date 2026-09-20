@@ -111,6 +111,47 @@ def test_body_lists_exactly_the_statutory_elements(
 
 
 @pytest.mark.parametrize(
+    "version",
+    [
+        "full-2018-v1-0",
+        "full-2018-v1-2",
+        "full-2018-v1-2-tys",
+        "full-2025-v1-3",
+        "full-2025-w2-v1-0",
+    ],
+)
+def test_every_code_label_matches_its_xsd_label(
+    version: str, mapping_config: MappingConfig
+) -> None:
+    """The chart label of the code each element maps to must be the XSD's own label.
+
+    Two schema versions can declare the same element tree and still mean
+    different things: 1-3 and wariant 2 narrowed six income-statement lines
+    from goods *and materials* to goods only, changing nothing but the XSD
+    documentation. Only a label comparison catches a spec that is missing the
+    `.R2025` overrides, which is how plan 0005 step A shipped `full-2025-v1-3`
+    wrong. `test_body_lists_exactly_the_statutory_elements` cannot see it.
+    """
+    spec = mapping_config.specs[version]
+    body = mapping_config.bodies[spec.body]
+    struktury = _struktury_file(spec.xsd, load_xsd_catalog(XSD_DIR))
+    suffix = "WTys" if 1000 in spec.unit.values() else ""
+    chart = {item.code: item for item in mapping_config.chart.items}
+    for statement, items in body.statements.items():
+        declared = statement_line_items(struktury, f"{statement}JednostkaInna{suffix}")
+        for item, element in zip(items, declared, strict=True):
+            if not item.code or not element.label:
+                continue
+            if item.header:
+                continue  # the six CF headings carry a note of ours, not the XSD's
+            code = spec.code_overrides.get(item.code, item.code)
+            assert chart[code].label_pl == element.label, (
+                f"{version} {item.path}: code {code} is labelled "
+                f"{chart[code].label_pl!r} but the XSD says {element.label!r}"
+            )
+
+
+@pytest.mark.parametrize(
     "version", ["full-2018-v1-0", "full-2018-v1-2", "full-2025-v1-3", "full-2025-w2-v1-0"]
 )
 def test_required_items_resolve_in_a_golden_statement(

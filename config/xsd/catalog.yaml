@@ -11,6 +11,12 @@ schemas:
   "http://crd.gov.pl/wzor/2025/08/07/13817/schemat.xsd":
     path: "crd.gov.pl/wzor/2025/08/07/13817/schemat.xsd"
     sha256: ee69992d4416f08c53e6b7ccd0d66350adc8ee1b5539d8e1ac8d900ec0e515bd
+  "http://crd.gov.pl/wzor/2025/08/07/13818/schemat.xsd":
+    path: "crd.gov.pl/wzor/2025/08/07/13818/schemat.xsd"
+    sha256: cde6d07a29272574d0a6dc40e0f332dfc93e80e647bbfe2c7e919effdb08d233
+  "http://crd.gov.pl/wzor/2025/08/11/13819/schemat.xsd":
+    path: "crd.gov.pl/wzor/2025/08/11/13819/schemat.xsd"
+    sha256: 297ef3f69b27bd913fb6457a3950d6bda15cbc533f32877d5b98c6fc7a81c817
   "http://crd.gov.pl/wzor/2025/08/12/13821/schemat.xsd":
     path: "crd.gov.pl/wzor/2025/08/12/13821/schemat.xsd"
     sha256: eb20e39ca85aafc30d2367fcec00ec224854a791f0095d56d2cd99963cd9ec22

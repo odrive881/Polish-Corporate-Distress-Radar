@@ -820,7 +820,7 @@
       "/tns:JednostkaInna/tns:RZiS/jin:RZiSPor/jin:A/jin:A_I/dtsf:KwotaB"
     ],
     [
-      "IS.COMP.A.IV",
+      "IS.COMP.A.IV.R2025",
       "current_year",
       "income_statement",
       "comparative",
@@ -828,7 +828,7 @@
       "/tns:JednostkaInna/tns:RZiS/jin:RZiSPor/jin:A/jin:A_IV/dtsf:KwotaA"
     ],
     [
-      "IS.COMP.A.IV",
+      "IS.COMP.A.IV.R2025",
       "prior_year",
       "income_statement",
       "comparative",
@@ -964,7 +964,7 @@
       "/tns:JednostkaInna/tns:RZiS/jin:RZiSPor/jin:B/jin:B_VII/dtsf:KwotaB"
     ],
     [
-      "IS.COMP.B.VIII",
+      "IS.COMP.B.VIII.R2025",
       "current_year",
       "income_statement",
       "comparative",
@@ -972,7 +972,7 @@
       "/tns:JednostkaInna/tns:RZiS/jin:RZiSPor/jin:B/jin:B_VIII/dtsf:KwotaA"
     ],
     [
-      "IS.COMP.B.VIII",
+      "IS.COMP.B.VIII.R2025",
       "prior_year",
       "income_statement",
       "comparative",

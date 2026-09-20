@@ -77,6 +77,22 @@ versions:
     kod_systemowy: "SFJMIT (1)"
     wersja_schemy: "1-3"
     xsd: "https://www.gov.pl/static/finanse/SF/DefinicjeTypySprawozdaniaFinansowe/2024/10/24/JednostkaMikroWTysiacach(1)_v1-3.xsd"
+  # CRWDE wariant 2, found by probing the template range in plan 0005 step B:
+  # 13817 is the full form (mapped), 13818 the small, 13819 the micro thousands
+  # twin, 13821 the micro (13820 is JednostkaOp, public-benefit organisations,
+  # outside the v1 sp. z o.o. scope). No seed filing uses 13818 or 13819; they
+  # are listed so a filing on either is recorded rather than quarantined as an
+  # unknown structure.
+  - root_namespace: "http://crd.gov.pl/wzor/2025/08/07/13818/"
+    root_name: JednostkaMala
+    kod_systemowy: "SFJMAZ (2)"
+    wersja_schemy: "1-0E"
+    xsd: "http://crd.gov.pl/wzor/2025/08/07/13818/schemat.xsd"
+  - root_namespace: "http://crd.gov.pl/wzor/2025/08/11/13819/"
+    root_name: JednostkaMikroWTys
+    kod_systemowy: "SFJMIT (2)"
+    wersja_schemy: "1-0E"
+    xsd: "http://crd.gov.pl/wzor/2025/08/11/13819/schemat.xsd"
   - root_namespace: "http://crd.gov.pl/wzor/2025/08/12/13821/"
     root_name: Dokument
     kod_systemowy: "SFJMIZ (2)"

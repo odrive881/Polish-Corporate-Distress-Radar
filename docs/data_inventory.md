@@ -52,7 +52,7 @@ All documents in this section come from the Repozytorium Dokumentów Finansowych
 |---|---|---|---|---|
 | Full form (UoR Annex 1, `JednostkaInna`), schemas 1-0 and 1-2 | `full-2018-v1-0.yaml`, `full-2018-v1-2.yaml` | required | DIR §1; SPEC §6C | **mapped** (plan 0004); golden fixtures in `tests/fixtures/statements/` |
 | Full form in thousands of złoty, schema 1-2 | `full-2018-v1-2-tys.yaml` | required | SPEC §4.2 | **mapped**; no seed filing uses it, tested with a synthetic document |
-| Full form, schema 1-3 (FY2024, namespace dated 2025-01-01) | — | required | ADR 0005 addendum | catalogued, not mapped (Phase 3); same line items as 1-2 |
+| Full form, schema 1-3 (FY2024, namespace dated 2025-01-01) | `full-2025-v1-3.yaml` | required | ADR 0005 addendum | **mapped** (plan 0005 step A); shares the 1-2 body, element trees are identical; fixture `statements/full_2025_v1_3_por_2024.xml` |
 | New generation, fiscal years starting ≥ 2025-01-01 (CRWDE template 13817, "wariant 2 / wersja 1-0E") | `full-2025-w2-v1-0.yaml` | required | ADR 0005; SPEC §11.2 | **mapped**; fixtures `neobis_001.xml`, `statements/full_2025_w2_kalk_2025.xml` |
 | Small / simplified form (`JednostkaMala`), schemas 1-0, 1-2, 1-3 | `small-*.yaml` | required | DIR §1; SPEC §4.1 | catalogued, not mapped (Phase 3); 30 seed statements |
 | Micro form (`JednostkaMikro`), schemas 1-0, 1-2, 1-3, CRWDE template 13821 | `micro-*.yaml` | required (entities can switch form between years) | DIR §1; SPEC §4.1 | catalogued, not mapped (Phase 3); 12 seed statements |
