@@ -7,11 +7,6 @@
 # system codes and schema versions were read from those XSDs (fixed values).
 # Move an entry out of here when its spec is written (Phase 3).
 versions:
-  - root_namespace: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2025/01/01/JednostkaInnaWZlotych"
-    root_name: JednostkaInna
-    kod_systemowy: "SFJINZ (1)"
-    wersja_schemy: "1-3"
-    xsd: "https://www.gov.pl/static/finanse/SF/DefinicjeTypySprawozdaniaFinansowe/2024/10/24/JednostkaInnaWZlotych(1)_v1-3.xsd"
   - root_namespace: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaInnaWTysiacach"
     root_name: JednostkaInnaWTys
     kod_systemowy: "SFJINT (1)"

@@ -9,13 +9,14 @@ Trimmed copies of real annual financial statements from the Phase 1 seed, used b
 | `full_2018_v1_2_kalk_2021.xml` | 0000225506 | 2021 | `full-2018-v1-2` | calculation / indirect, with equity changes |
 | `full_2018_v1_2_por_2022.xml` | 0000498679 | 2022 | `full-2018-v1-2` | comparative / indirect, with equity changes |
 | `full_2018_v1_2_por_2023.xml` | 0000498679 | 2023 | `full-2018-v1-2` | comparative / indirect: the 2022 file's successor, for `prior_year_consistency` |
+| `full_2025_v1_3_por_2024.xml` | 0000498679 | 2024 | `full-2025-v1-3` | comparative / indirect, with equity changes: the 2023 file's successor, so `prior_year_consistency` has a pair that crosses from schema 1-2 to 1-3 |
 | `full_2025_w2_kalk_2025.xml` | 0000188883 | 2025 | `full-2025-w2-v1-0` | calculation; carries a real immaterial subtotal gap (graded `warn`) |
 | `../neobis_001.xml` | (not in seed) | 2025 | `full-2025-w2-v1-0` | comparative (the original Phase 0 fixture, unsigned and unchanged since `a699750`) |
 
 ## What was trimmed
 
-Each file **in this directory** was produced from the stored download on 2026-09-17 by a one-off
-script, which:
+Each file **in this directory** was produced from its stored download by a one-off script — the first six on
+2026-09-17 (plan 0004), `full_2025_v1_3_por_2024.xml` on 2026-09-20 (plan 0005 step A) — which:
 
 - removed every `ds:Signature` element. XAdES signatures carry signatories' names and PESEL numbers, and the project stores no natural persons (invariant 6).
 - replaced the base64 content of every attached notes file (`Plik/Zawartosc`) with a short placeholder and renamed it `notes.pdf`. The attachments are large, and the notes can name people.

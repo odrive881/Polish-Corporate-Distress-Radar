@@ -1,0 +1,52 @@
+# UoR Annex 1 (full form), MF structure JednostkaInnaWZlotych, schema 1-3.
+# Plan 0005 step A. Line items come from the shared body; this file binds a
+# document version to it (AGENT_SPEC §6C2).
+#
+# 1-3 is the generation that carries most FY2024 filings. Its namespace is
+# dated 2025/01/01 (the 2018 one is not reused), but its statutory element
+# tree is identical to schema 1-2, element for element, in all four
+# statements — checked against the XSD by
+# `test_body_lists_exactly_the_statutory_elements`. So it shares the
+# `jednostka_inna` body and needs no code overrides.
+structure_version: full-2025-v1-3
+form: full
+body: jednostka_inna
+# C1 detection: root element + the KodSprawozdania system code and schema
+# version. Here the namespace alone would do, but detection is uniform.
+detect:
+  root_namespace: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2025/01/01/JednostkaInnaWZlotych"
+  root_name: JednostkaInna
+  kod_systemowy: "SFJINZ (1)"
+  wersja_schemy: "1-3"
+xsd: "https://www.gov.pl/static/finanse/SF/DefinicjeTypySprawozdaniaFinansowe/2024/10/24/JednostkaInnaWZlotych(1)_v1-3.xsd"
+effective_from: null  # not published with the schema; detection does not use it
+effective_to: null
+# `jin` moves to the 2025/01/01 Struktury namespace; `dtsf` (the amount types)
+# stays on the 2018/07/09 one, which this schema still imports.
+namespaces:
+  tns: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2025/01/01/JednostkaInnaWZlotych"
+  jin: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2025/01/01/JednostkaInnaStruktury"
+  dtsf: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/DefinicjeTypySprawozdaniaFinansowe/"
+# XPath from the document root to the element holding Naglowek and the statements.
+statement_root: "/tns:JednostkaInna"
+header:
+  kod_sprawozdania: "tns:Naglowek/jin:KodSprawozdania"
+  period_start: "tns:Naglowek/dtsf:OkresOd"
+  period_end: "tns:Naglowek/dtsf:OkresDo"
+# The unit is fixed by the structure (AGENT_SPEC §4.2): KodSprawozdania's text
+# must be one of these, and amounts are multiplied by the value.
+unit:
+  SprFinJednostkaInnaWZlotych: 1
+statements:
+  Bilans: "tns:Bilans"
+  RZiS: "tns:RZiS"
+  ZestZmianWKapitale: "tns:ZestZmianWKapitale"
+  RachPrzeplywow: "tns:RachPrzeplywow"
+# Line items live in the `jin` namespace, amounts in `dtsf`.
+item_namespace: jin
+amount_namespace: dtsf
+columns:
+  KwotaA: current_year
+  KwotaB: prior_year
+  KwotaB1: prior_year_restated
+code_overrides: {}

@@ -67,7 +67,8 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │       ├── full-2018-v1-0.yaml
 │   │       ├── full-2018-v1-2.yaml
 │   │       ├── full-2018-v1-2-tys.yaml
-│   │       └── full-2025-w2-v1-0.yaml # small-*/micro-* follow in Phase 3
+│   │       ├── full-2025-v1-3.yaml
+│   │       └── full-2025-w2-v1-0.yaml # small-*/micro-* follow in plan 0005
 │   ├── xsd/                           # official MF/CRWDE XSDs, vendored (catalog.yaml)
 │   └── statutory/
 │       ├── size_thresholds.yaml       # accounting-law size class thresholds, dated

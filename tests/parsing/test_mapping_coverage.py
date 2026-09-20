@@ -83,7 +83,14 @@ def _struktury_file(spec_xsd: str, catalog: dict[str, Path]) -> Path:
 
 
 @pytest.mark.parametrize(
-    "version", ["full-2018-v1-0", "full-2018-v1-2", "full-2018-v1-2-tys", "full-2025-w2-v1-0"]
+    "version",
+    [
+        "full-2018-v1-0",
+        "full-2018-v1-2",
+        "full-2018-v1-2-tys",
+        "full-2025-v1-3",
+        "full-2025-w2-v1-0",
+    ],
 )
 def test_body_lists_exactly_the_statutory_elements(
     version: str, mapping_config: MappingConfig
@@ -103,7 +110,9 @@ def test_body_lists_exactly_the_statutory_elements(
                 assert item.user_of_which == element.label.rstrip().endswith("w tym:"), item.path
 
 
-@pytest.mark.parametrize("version", ["full-2018-v1-0", "full-2018-v1-2", "full-2025-w2-v1-0"])
+@pytest.mark.parametrize(
+    "version", ["full-2018-v1-0", "full-2018-v1-2", "full-2025-v1-3", "full-2025-w2-v1-0"]
+)
 def test_required_items_resolve_in_a_golden_statement(
     version: str, mapping_config: MappingConfig
 ) -> None:
