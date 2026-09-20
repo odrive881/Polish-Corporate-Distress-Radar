@@ -179,7 +179,7 @@ The spec forbids bulk enumeration of any source. Acquisition is per entity, seed
 ## 8. Open gaps found while compiling this list
 
 1. **RDF access rests on an informal confirmation** (ADR 0007). KRS support allowed 3 requests/minute verbally, and could not promise how the WAF reacts. Re-run the probe notebook before any backfill.
-2. **No source named for average employment.** SPEC §4.4 needs it for size classification, but no spec says which field or document provides it. Confirm during C2 which structures carry it (e.g. in the additional information).
+2. ~~**No source named for average employment.**~~ Answered by C2 in plan 0004: no MF structure carries it as a field. Superseded by item 8, which records the candidate sources and what is still undecided.
 3. ~~**No pre-2025-generation XML fixture.**~~ Resolved in plan 0004: golden fixtures for schemas 1-0 and 1-2. Small and micro forms still have none.
 4. **No LLM provider or key** in `.env.example`, yet C3 and G2 both need one.
 5. **Terms of use unconfirmed** for KRS, KRZ, MSiG and any aggregator (SPEC §11.3).

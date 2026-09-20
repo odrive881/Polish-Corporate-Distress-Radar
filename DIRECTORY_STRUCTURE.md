@@ -260,7 +260,7 @@ Import as `from distress_radar.acquisition import regon_client`, never via relat
 - **Modules:** `snake_case.py`, named after what they do, not the tool they use — `document_retrieval.py`, not `httpx_client.py`.
 - **Stage prefixes in comments, not filenames:** reference `# A3` or `# implements stage C2` inside docstrings/comments so the mapping to `AGENT_SPEC.md` is traceable, but don't put stage codes in filenames themselves.
 - **Config files:** match the thing they configure — `size_thresholds.yaml`, not `config1.yaml`.
-- **XML structure mapping files:** `<form>-<year>-v<n>.yaml`, e.g. `small-2018-v1.yaml`, `full-2026-v1.yaml`. The filename must be independently sufficient to identify which Ministry structure it maps.
+- **XML structure mapping files:** `<form>-<namespace-year>[-w<wariant>]-v<schema-version>[-tys].yaml`, e.g. `full-2018-v1-2.yaml`, `full-2018-v1-2-tys.yaml`, `full-2025-w2-v1-0.yaml`. The filename must be independently sufficient to identify which Ministry structure it maps, so it carries the schema version (`wersjaSchemy`) as well as the namespace year: one namespace can hold several schema versions (plan 0004, ADR 0005). `-w<n>` marks a CRWDE wariant, `-tys` the thousands-of-złoty twin.
 - **ADRs:** `docs/adr/NNNN-short-title.md`, sequential, never renumbered or deleted after merge — superseded ADRs are marked superseded in their own text, not removed.
 - **Build plans:** `docs/plans/NNNN-short-title.md`, sequential, one file per requested stage plan, never overwritten — mirrors the ADR numbering convention.
 - **Eval sets:** `evals/text_signals/<signal_type>.jsonl`, matching the `signal_type` enum in `AGENT_SPEC.md` §5 exactly — `going_concern_uncertainty.jsonl`, not `going_concern.jsonl`.

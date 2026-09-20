@@ -316,8 +316,15 @@ All five asset checks passed: no failing figure is graded `pass`.
    - **Verification:** all 473 MinIO objects scan clean. Re-parsing (Dagster run `9b158140`) reproduced the canonical facts, grades and restatement events exactly: a SHA-256 over every value column matched before and after. A further run was byte-identical.
    - **Changed values:** `source_document_hash` changed for the affected files. Their `source_member` no longer shows a signature wrapper (`zip:x.xades` instead of `zip:x.xades>ds:Object[2]>base64`).
    - **Manifest:** `parsed_documents` rows for the replaced hashes were dropped, leaving 147 rows (131 current plus 16 for superseded config hashes). `quarantine` rows were repointed to the new hashes, none deleted.
-   - **Test fixture:** `neobis_001.xml` had its two signatures removed.
-   - **Still open:** the fixture's original, with two PESEL numbers, remains in the public git history (commit `77a012b`, on `origin/master`). Removing it needs a history rewrite and force push, which is the owner's call.
+   - ~~**Test fixture:** `neobis_001.xml` had its two signatures removed.~~
+   - ~~**Still open:** the fixture's original, with two PESEL numbers, remains in the public git history (commit `77a012b`, on `origin/master`). Removing it needs a history rewrite and force push, which is the owner's call.~~
+   - **Correction, 2026-09-20: both claims above were wrong; there is nothing to remediate.** Verified against the object database:
+     - `tests/fixtures/neobis_001.xml` has exactly **one** blob in the whole history, `047ccd164bb6`, byte-identical in all 14 commits from `a699750` (2026-09-13) to `44c9db7` and to the working tree. It contains no `ds:Signature` element and no PESEL. The committed fixture was therefore never signed, and nothing was removed from it on 2026-09-17.
+     - Commit `77a012b` is not a valid object and never reached any ref. It cannot have been rewritten away either: `44c9db7`, the commit carrying this addendum, still exists, so a rewrite would have changed its SHA too. It was most likely a work-in-progress commit amended into `44c9db7` while this plan was being written.
+     - No history rewrite or force push has happened: `origin/master`'s reflog holds a single entry, `9f7b702 → 44c9db7` `update by push` (a fast-forward, not `forced-update`), and there are no rewrite artefacts and no unreachable objects.
+     - A scan of every blob git holds, reachable or not, for `X509Certificate`, `SignatureValue`, `<PESEL>` and 11-digit runs hits only `acquisition/redaction.py` (which names the elements it strips), its tests, and ADR 0009. The single PESEL value present anywhere is the placeholder `00000000000`.
+
+     ADR 0009 still governs new downloads, and the MinIO migration it records (above) stands. Only these two lines about git history were false.
 2. **Average employment:** the management report (RDF types 20/5) is recorded as a possible source, probably out of v1 scope. Distressed seed entities file it late or not at all, and micro/small entities may be exempt (`docs/data_inventory.md` §8).
 3. **The 9 stale quarantine rows stay**; they will be deleted only if they cause trouble.
 

@@ -259,24 +259,31 @@ Requirements:
 
 **C1 — Version detection and validation.** First unwrap the stored download (a ZIP, possibly holding signature containers: enveloping or base64 XAdES, ePUAP envelopes) into its statement files, and tie each to its `filing_index` row. Detect structure version from XML namespace URI plus root element, plus the `KodSprawozdania` header's `kodSystemowy` and `wersjaSchemy`: MF schemas 1-0 and 1-2 share a namespace. Never from filename. Validate against the official XSD for that version, vendored under `config/xsd/` and resolved offline. Validation failure is recorded as a finding and the document is quarantined, not discarded. PDF statements are routed to C3; versions recognised but not yet mapped (`config/mappings/structure_catalog.yaml`) are recorded and skipped.
 
-**C2 — Canonical mapping.** Declarative specs in `config/mappings/structures/<version>.yaml`:
+**C2 — Canonical mapping.** Declarative specs in `config/mappings/structures/<version>.yaml`. Structures that declare the same statutory elements share one body file under `bodies/` (element paths, the canonical code for each, and the hierarchy `subtotals_consistent` walks); each version spec binds namespaces, header paths, unit, amount columns and code overrides to that body:
 
 ```yaml
-structure_version: "full-2018-v1"
-namespace: "..."
-effective_from: 2018-10-01
+structure_version: full-2018-v1-2
+form: full
+body: jednostka_inna         # config/mappings/structures/bodies/jednostka_inna.yaml
+detect:                      # C1: namespace alone is ambiguous, see C1 above
+  root_namespace: "http://www.mf.gov.pl/schematy/SF/.../2018/07/09/JednostkaInnaWZlotych"
+  root_name: JednostkaInna
+  kod_systemowy: "SFJINZ (1)"
+  wersja_schemy: "1-2"
+xsd: "https://www.gov.pl/.../JednostkaInnaWZlotych(1)_v1-2.xsd"   # vendored, config/xsd/
+effective_from: null
 effective_to: null
-unit_field_xpath: "..."
-mappings:
-  - canonical: "BS.ASSETS.TOTAL"
-    xpath: "..."
-    statement_type: balance_sheet
-    required: true
+namespaces: {tns: "...", jin: "...", dtsf: "..."}
+statement_root: "/tns:JednostkaInna"
+header: {kod_sprawozdania: "...", period_start: "...", period_end: "..."}
+unit:                        # §4.2: the structure fixes the unit
+  SprFinJednostkaInnaWZlotych: 1
+statements: {Bilans: "tns:Bilans", RZiS: "tns:RZiS", ...}
+columns: {KwotaA: current_year, KwotaB: prior_year, KwotaB1: prior_year_restated}
+code_overrides: {}           # where this version narrows a line's meaning
 ```
 
 Engine reads the spec, extracts via lxml XPath, normalises units, and emits long-format rows in Polars. Mapping logic lives in data, not code.
-
-As built (plan 0004): statement structures that declare the same statutory elements share one body file (`config/mappings/structures/bodies/`, element paths plus the hierarchy the identity checks walk), and each version spec binds namespaces, header paths, unit, amount columns and code overrides to it.
 
 CI tests: every known structure version has a spec; every spec's `canonical` targets exist in the canonical chart; every spec marked `required: true` resolves against at least one golden fixture document.
 

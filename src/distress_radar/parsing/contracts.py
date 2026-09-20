@@ -31,8 +31,11 @@ def _column(name: str, dtype: pl.DataType | type[pl.DataType], nullable: bool) -
         )
     elif name == "variant":
         checks.append(pa.Check.isin(["comparative", "calculation", "direct", "indirect", "n/a"]))
-    elif name in ("column", "restated_column"):
+    elif name == "column":
         checks.append(pa.Check.isin(["current_year", "prior_year", "prior_year_restated"]))
+    elif name == "restated_column":
+        # §5: only a comparative column can be restated, never the current year.
+        checks.append(pa.Check.isin(["prior_year", "prior_year_restated"]))
     elif name == "quality_grade":
         checks.append(pa.Check.isin(["pass", "warn", "quarantined"]))
     return pa.Column(dtype, checks=checks, nullable=nullable)

@@ -10,16 +10,18 @@ Trimmed copies of real annual financial statements from the Phase 1 seed, used b
 | `full_2018_v1_2_por_2022.xml` | 0000498679 | 2022 | `full-2018-v1-2` | comparative / indirect, with equity changes |
 | `full_2018_v1_2_por_2023.xml` | 0000498679 | 2023 | `full-2018-v1-2` | comparative / indirect: the 2022 file's successor, for `prior_year_consistency` |
 | `full_2025_w2_kalk_2025.xml` | 0000188883 | 2025 | `full-2025-w2-v1-0` | calculation; carries a real immaterial subtotal gap (graded `warn`) |
-| `../neobis_001.xml` | (not in seed) | 2025 | `full-2025-w2-v1-0` | comparative (the original Phase 0 fixture; its two signatures were removed on 2026-09-17, ADR 0009) |
+| `../neobis_001.xml` | (not in seed) | 2025 | `full-2025-w2-v1-0` | comparative (the original Phase 0 fixture, unsigned and unchanged since `a699750`) |
 
 ## What was trimmed
 
-Each file was produced from the stored download on 2026-09-17 by a one-off script, which:
+Each file **in this directory** was produced from the stored download on 2026-09-17 by a one-off
+script, which:
 
 - removed every `ds:Signature` element. XAdES signatures carry signatories' names and PESEL numbers, and the project stores no natural persons (invariant 6).
 - replaced the base64 content of every attached notes file (`Plik/Zawartosc`) with a short placeholder and renamed it `notes.pdf`. The attachments are large, and the notes can name people.
 - stripped a UTF-8 BOM where present.
 
-Nothing else was changed. The statement data, the header and the free-text accounting-policy fields are as filed. Every file still validates against its official XSD (`test_mapping_coverage.py`). The free-text fields were read through to confirm that no person is named in them.
+`../neobis_001.xml` predates this and went through none of it: it is the unsigned Phase 0
+fixture, unchanged since `a699750`. Nothing else was changed. The statement data, the header and the free-text accounting-policy fields are as filed. Every file still validates against its official XSD (`test_mapping_coverage.py`). The free-text fields were read through to confirm that no person is named in them.
 
 Synthetic variants (thousands of złoty, a direct-method cash flow, signature wrappers, a known-bad total) are built from these files inside the tests, not committed.

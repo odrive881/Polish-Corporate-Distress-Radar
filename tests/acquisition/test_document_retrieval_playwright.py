@@ -58,9 +58,13 @@ def _refs(krs: str) -> list[str]:
 
 
 def _zip(ref: str) -> bytes:
+    """A stub download. Byte-identical whenever it is rebuilt: the tests compare
+    what the stub server served against a fresh copy, and `writestr` would
+    otherwise stamp each one with the current clock (DOS time, 2s resolution)."""
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w") as archive:
-        archive.writestr("statement.xml", f"<?xml version='1.0'?><Doc id='{ref}'/>")
+        info = zipfile.ZipInfo("statement.xml", date_time=(2025, 1, 1, 0, 0, 0))
+        archive.writestr(info, f"<?xml version='1.0'?><Doc id='{ref}'/>")
     return buffer.getvalue()
 
 
