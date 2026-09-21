@@ -106,11 +106,11 @@ Run on every parsed statement. Tolerance: absolute difference ≤ 1 currency uni
 | `cashflow_ties` | net cash movement == closing cash − opening cash |
 | `prior_year_consistency` | prior-year column matches the previously filed current-year column; mismatch emits a row into `restatement_events`, not a failure |
 
-Grading (plan 0004): a statement file is `quarantined` when a tie fails in the current-year column, or a current-year subtotal is off by more than 1% of its total assets. Every other failure grades it `warn`: immaterial subtotal gaps, and anything confined to the prior-year columns, whose authority is the earlier filing. A cash difference exactly explained by the reported exchange-rate effect on cash passes `cashflow_ties`. Sums include the filer's own extra lines (`PozycjaUszczegolawiajaca_N`), except under "w tym" (of which) lines.
+A statement a form does not declare is **absent, not empty**: the small and micro structures have no cash-flow and no equity-changes statement at all (ADR 0005 second addendum §1), so those checks are `skipped` for such a filing, never failed, and no zero rows are written for the missing lines (invariant 4). The same applies to a tie whose other side is missing. Grading (plan 0004): a statement file is `quarantined` when a tie fails in the current-year column, or a current-year subtotal is off by more than 1% of its total assets. Every other failure grades it `warn`: immaterial subtotal gaps, and anything confined to the prior-year columns, whose authority is the earlier filing. A cash difference exactly explained by the reported exchange-rate effect on cash passes `cashflow_ties`. Sums include the filer's own extra lines (`PozycjaUszczegolawiajaca_N`), except under "w tym" (of which) lines.
 
 ### 4.4 Size classification
 
-Computed per fiscal year from the filed statement, never taken from a registry. Inputs: balance sheet total, net revenue, average employment. The accounting law applies thresholds over a multi-year window, so classification requires the prior year too. Thresholds come from `config/statutory/size_thresholds.yaml`, keyed by effective date range.
+Computed per fiscal year from the filed statement, never taken from a registry — and never inferred from which form the entity filed: choosing the micro form is the filer asserting a size class, and filers get it wrong (plan 0005 decision 4). Inputs: balance sheet total, net revenue, average employment. The accounting law applies thresholds over a multi-year window, so classification requires the prior year too. Thresholds come from `config/statutory/size_thresholds.yaml`, keyed by effective date range.
 
 ### 4.5 Legal tripwires
 
@@ -283,9 +283,20 @@ columns: {KwotaA: current_year, KwotaB: prior_year, KwotaB1: prior_year_restated
 code_overrides: {}           # where this version narrows a line's meaning
 ```
 
+A statement entry may instead list the shapes the structure accepts, when the envelope does not fix the body — a `JednostkaMala` filing may carry either the small statements or the full ones, chosen per statement, and the header is identical either way (plan 0005 step D, ADR 0005 second addendum §6):
+
+```yaml
+statements:
+  Bilans:
+    - {xpath: "tns:BilansJednostkaMala", body: jednostka_mala, item_namespace: jma}
+    - {xpath: "tns:BilansJednostkaInna", body: jednostka_inna, item_namespace: jin}
+```
+
+The engine uses whichever alternative the document contains, quarantines the file (`statement_body_ambiguous`) if more than one is present, and writes `source_element_path` with that alternative's prefix — which is what lets E2 check each statement against the body it was actually filed in.
+
 Engine reads the spec, extracts via lxml XPath, normalises units, and emits long-format rows in Polars. Mapping logic lives in data, not code.
 
-CI tests: every known structure version has a spec; every spec's `canonical` targets exist in the canonical chart; every spec marked `required: true` resolves against at least one golden fixture document.
+CI tests: every known structure version has a spec; every spec's `canonical` targets exist in the canonical chart; every spec marked `required: true` resolves against at least one golden fixture document; every chart code is reachable from some body or override; and every mapped element's chart label matches its XSD's own label, which is the only way a version that narrows a line's meaning without renaming it can be caught.
 
 **C3 — PDF tier.** Router:
 

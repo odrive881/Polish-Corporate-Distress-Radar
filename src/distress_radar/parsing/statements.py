@@ -4,7 +4,9 @@ The Dagster assets read bytes and manifest rows, call these functions, and
 write the results. Every file ends in exactly one `FileOutcome` status:
 
 - `valid`: a mapped structure version that passed XSD validation;
-- `not_yet_mapped`: a catalogued version with no spec yet (Phase 3);
+- `not_yet_mapped`: a catalogued version with no spec
+  (`config/mappings/structure_catalog.yaml`; no seed filing uses one since
+  plan 0005);
 - `needs_pdf_tier`: a PDF statement, for C3;
 - `quarantined`: anything else, with a reason code.
 """

@@ -1,4 +1,5 @@
-# Canonical chart of line items (AGENT_SPEC §5 `line_item`), plan 0004.
+# Canonical chart of line items (AGENT_SPEC §5 `line_item`), plan 0004,
+# extended for the small and micro forms in plan 0005 step C.
 #
 # Codes follow the statutory numbering of UoR Annex 1 (the MF `JednostkaInna`
 # structures), which is identical in every full-form schema version from v1-0
@@ -6,6 +7,16 @@
 # (bilans), IS.COMP / IS.CALC (RZiS, comparative / calculation variant), EQ
 # (zestawienie zmian w kapitale), CF.IND / CF.DIR (cash flow, indirect / direct).
 # A `.J` segment is the statutory "of which: related parties" line.
+#
+# Short forms reuse a full-form code wherever the line means the same thing, so
+# "fixed assets" and "inventories" stay comparable across forms. Where the
+# aggregation genuinely differs, the code carries a `.MALA` or `.MIKRO` segment
+# naming the form it belongs to (`BS.EQUITY_LIABILITIES.MIKRO.B.2`,
+# `IS.COMP.MALA.H`), and `IS.MIKRO.*` is the micro income statement, a third
+# layout that is neither comparative nor calculation. Matching is by label, not
+# by element path or section letter: the letters do not line up between forms
+# (ADR 0005 second addendum §6). A line present in a short form but absent from
+# the full form never borrows a full-form code "close enough" to it.
 #
 # `.R2025` codes: wariant 2 narrowed these items from goods *and materials* to
 # goods only (sales of materials moved out). They are distinct facts, never

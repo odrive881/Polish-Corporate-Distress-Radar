@@ -3,7 +3,9 @@
 # Every JednostkaInna schema version (v1-0, v1-2, v1-3, wariant 2) and its
 # thousands twin declares these statutory elements identically, so the
 # structure specs in `config/mappings/structures/` share this file and bind
-# the namespaces. `path` is the element's local-name path below the statement
+# the namespaces. The `small-*` specs bind it too, as a statement alternative:
+# a JednostkaMala envelope may carry these full-form statements instead of the
+# small ones (plan 0005 step D), and the complexType is the same. `path` is the element's local-name path below the statement
 # element (`Bilans`, `RZiS`, ...); `code` is its canonical chart code.
 #
 # - `section: true`: a header with no amounts of its own (not a fact).

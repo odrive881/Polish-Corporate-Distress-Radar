@@ -4,7 +4,7 @@
 
 **Order:** this plan first, then 0006, then 0007. Plan 0006's single in-scope PDF turned out to be a rendered **small-form** statement (`SprFinJednostkaMalaWZlotych`, schema 1-2), so its extraction target is the `jednostka_mala` body and chart codes this plan introduces. Plan 0007 aggregates the canonical table and wants its final shape.
 
-## Status: steps A–F done (2026-09-20), steps G–H not started
+## Status: complete — steps A–F (2026-09-20), G–H (2026-09-21)
 
 ## Why
 
@@ -385,11 +385,86 @@ were not actually being run through the identity checks**; they are now, and all
 
 No new asset. `financial_statements_canonical` already walks every stored statement download; the new specs simply make more of them `valid`. Update the asset docstring's input description and the run-metadata counters if they name versions explicitly.
 
+**Done, 2026-09-21.** No new asset, as planned — the counters never named a version (they read
+`spec.structure_version`), so the step was nearly empty as written. A scan of steps A–F before starting it
+turned up four things worth folding in instead, all now landed:
+
+1. **`spec_hash` ignored alternative bodies — a real lineage defect.** `load_mapping_config` digested the
+   spec, *its default body* and the chart, so editing `jednostka_inna.yaml` did not move the three small
+   specs' hashes, although 15 seed files parse through that body under them (step D). Those files would have
+   kept their `parsed_documents` row and `first_ingestion_run_id` across a mapping change, contradicting
+   `parsing/manifest.py`'s own contract. It now digests every body in `spec.bodies_used`. Verified: full-form
+   digests are unchanged (recomputed by hand), the three small specs now rotate, and the four micro specs
+   correctly do not.
+2. **The run-metadata label lost the version for files with no spec.** It fell back to `member_kind`, so any
+   catalogued-but-unmapped filing would report as `xml`; it now falls back to `structure_key`. No effect on
+   today's seed — every current file resolves a spec — but the catalogue still holds 10 versions.
+3. **The fallback in `_bodies_filed` was silent.** When no element path matches an alternative the checks use
+   the spec's first one (step D deliberately chose that over checking nothing), but nothing said when it
+   happened. `unresolved_bodies` now reports it — one row per (file, statement) with facts but no matching
+   path — the asset logs a warning and publishes the count as run metadata. Zero on the seed.
+4. **The label-comparison rule lived in two places**, a strict copy in `test_mapping_coverage.py` and a loose
+   one in the step B notebook, with the notebook regenerating the ADR addendum the test enforces. Both now
+   come from `parsing/xsd_inventory.py`: `normalise_label` (as written) and `same_line` (same statutory
+   line), with unit tests pinning that `same_line` does not tolerate a `.R2025` narrowing.
+
+Two gaps in this plan's own test list were closed at the same time: `test_every_chart_code_is_used` (no
+chart code without a body or override referencing it — mutation-checked) and the docstring of the asset,
+which now states that a spec may bind more than one body per statement.
+
+The asset docstring's input description is updated; `restatement_events` needed no change.
+
 ### H. Verification and docs
 
 - Materialize, then compare a column-wise SHA-256 over the canonical values **for the full-form files only**, before and after, to prove decision 6.
 - Re-run to confirm byte-identical Parquet (invariant 5).
 - Update: `README.md` status line; `docs/data_inventory.md` §2.2 (structure status) and gap 3 (small/micro fixtures now exist); `DIRECTORY_STRUCTURE.md` §1 config tree; `CLAUDE.md` "Known moving targets"; ADR 0005 second addendum from step B.
+
+**Done, 2026-09-21.** Materialized from the stored downloads: 123 stored statement downloads → **129 valid
+files, 43,611 canonical facts, all 17 seed entities**, fiscal years 2018–2025, grades **82 `pass` / 19 `warn`
+/ 28 `quarantined`**, 130 `restatement_events` over 10 entities. All five asset checks passed.
+
+- **Decision 6 holds.** The four full-form versions mapped before this plan are **33,490 rows** — exactly the
+  count steps A and D recorded — and their column-wise value hash is stable across the step G change and two
+  consecutive materializations.
+- **The hash recipe is now committed**, as `notebooks/exploration/canonical_value_hash.py` (read-only over
+  `WAREHOUSE_DIR`): rows sorted by the engine's `SORT_KEY`, then SHA-256 over every column except
+  `ingestion_run_id`, which a mapping-config change is *meant* to rotate. The earlier `7d6d0dee…` figure came
+  from a session-local recipe that was never written down, so it cannot be recomputed; today's values are
+  `228eb7f5…` for the phase-2 full-form subset and `fa74f3a1…` for all 43,611 rows. Compare against these,
+  not against the old number.
+- **The step G `spec_hash` fix rotated exactly what it should.** `parsed_documents` 291 → 321 rows (+30: the
+  30 small-form files gaining a row under the new hash), distinct `spec_hash` 21 → 24. The full-form
+  `ingestion_run_id` hash was unchanged; the all-rows one moved. No value moved anywhere.
+- **The docs pass then rotated everything once more, as designed.** `canonical_chart.yaml` and
+  `jednostka_inna.yaml` gained header comments, and the hash is over file bytes, so all 12 specs rotated:
+  `parsed_documents` 321 → 451 (+130, one per statement file with a spec), 35 distinct hashes, every
+  canonical partition rewritten with new run ids. **Both value hashes were identical before and after**, and
+  the run after that was byte-identical again. This is the mechanism working: a comment is indistinguishable
+  from a semantic change without parsing the file, so it is treated as one.
+- **Idempotence (invariant 5):** re-materializing left all 14 Parquet files byte-identical, with every
+  snapshot field identical.
+- `make check`: **413 passed**, 2 skipped (390 before step G). `make test-integration`: 28 passed.
+- Docs updated, beginning with this step's list and extended to everything this plan made stale:
+  - `README.md` status line, plus a section on running the parsing assets and checking a mapping change
+    against the values it must not move — the file documented acquisition and stopped there.
+  - `docs/data_inventory.md` §2.2 (small and micro now mapped, with the body-choice caveat and the
+    two-micro-bodies reason), the XSD rows (51 → 53), the fixture row, and gaps 3 and 6.
+  - `DIRECTORY_STRUCTURE.md` §1 config tree: 4 bodies, 12 specs.
+  - `CLAUDE.md` "Known moving targets": the three short-form traps, stated as rules.
+  - `AGENT_SPEC.md` §6C2 (body alternatives, `statement_body_ambiguous`, two new CI tests), §4.3 (a
+    statement a form does not declare is absent, not empty — checks are `skipped`, no zero rows) and §4.4
+    (size class is never inferred from the filed form).
+  - ADR 0005: second addendum §3 marked landed, template 13821 corrected to mapped, and a new §6 recording
+    the two build findings invisible in the schemas; the vendored-XSD count corrected in the first addendum.
+    ADR 0009 records that fixture personal-data scanning is now a test, not a manual pass.
+  - `config/mappings/canonical_chart.yaml` and `bodies/jednostka_inna.yaml` headers: the `.MALA`/`.MIKRO`
+    families and match-by-label rule, and the fact that a small spec can bind the full-form body. The chart's
+    header still described a full-form-only vocabulary.
+  - `parsing/statements.py` docstring: `not_yet_mapped` no longer points at Phase 3 as future work.
+  - Plan 0004's close-out carries a superseded-figures note; plans 0006 and 0007 carry dated notes on the
+    premises this plan invalidated (the header does not fix the body; the quarantine counts moved;
+    `skipped` vs `not_applicable`; `dq_mart` cannot split by filed body without a manifest column).
 
 ## Tests
 
@@ -401,14 +476,14 @@ No new asset. `financial_statements_canonical` already walks every stored statem
 
 ## Definition of done
 
-- [ ] Full-form 1-3 mapped; 7 files and 7 entities gained (step A, landed separately).
-- [ ] ADR 0005 second addendum records the line-by-line classification behind every new chart code.
-- [ ] Small and micro bodies and all seven remaining specs written, catalogue reduced accordingly, CRWDE small catalogued.
-- [ ] All 49 `not_yet_mapped` files parse to `valid`, or are quarantined with an investigated, recorded reason.
-- [ ] **All 17 seed entities have canonical facts**; the four currently at zero are covered.
-- [ ] Full-form canonical values provably unchanged (column-wise hash).
-- [ ] `make check` and `make test-integration` green; re-materialization byte-identical.
-- [ ] Docs from step H updated.
+- [x] Full-form 1-3 mapped; 7 files and 7 entities gained (step A, landed separately).
+- [x] ADR 0005 second addendum records the line-by-line classification behind every new chart code.
+- [x] Small and micro bodies and all seven remaining specs written, catalogue reduced accordingly, CRWDE small catalogued.
+- [x] All 49 `not_yet_mapped` files parse to `valid`, or are quarantined with an investigated, recorded reason — 48 valid, 1 quarantined on a genuine XSD defect in a section this project does not map (`0000507997`, small 1-2).
+- [x] **All 17 seed entities have canonical facts**; the four currently at zero are covered.
+- [x] Full-form canonical values provably unchanged (column-wise hash; recipe now committed as a notebook).
+- [x] `make check` and `make test-integration` green; re-materialization byte-identical.
+- [x] Docs from step H updated.
 
 ## Risks
 

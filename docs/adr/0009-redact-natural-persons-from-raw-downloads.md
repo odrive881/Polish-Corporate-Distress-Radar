@@ -30,6 +30,7 @@ The owner decided to redact.
 
 ## Consequences
 
+- **Committed fixtures are gated, not eyeballed (2026-09-20, plan 0005 step E).** `test_no_fixture_contains_personal_data` scans every file in `tests/fixtures/statements/` for `PESEL`, `X509Certificate`, `SignatureValue`, `ds:Signature` and 11-digit runs. Plan 0004 did that scan by hand; a fixture added later can no longer reintroduce signer data quietly.
 - **Parsing is unaffected.** Statements parse as before, and `containers.unwrap` still handles wrapped files if any arrive. Derived datasets must be re-materialized after the migration, because `source_document_hash` changes.
 - **Residual personal data, accepted for now:**
   - **Free text:** notes and accounting-policy text can name board members, and signature stamps drawn into page content are not removed. Board composition is public KRS data, and text extraction (G) must not emit person names (PROJECT_OVERVIEW: pseudonymise).

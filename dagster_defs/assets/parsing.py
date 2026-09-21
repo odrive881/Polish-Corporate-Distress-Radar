@@ -121,10 +121,14 @@ def financial_statements_canonical(context: dg.AssetExecutionContext) -> dg.Mate
 
     Inputs: `filing_index` rows with a stored file whose RDF type is a
     downloaded statement (`config/mappings/rdf_document_types.yaml`), the stored
-    bytes in MinIO, `entity_master`, and `config/mappings/` + `config/xsd/`.
+    bytes in MinIO, `entity_master`, and `config/mappings/` + `config/xsd/` —
+    the chart, one spec per mapped structure version with the bodies it binds
+    (a spec may accept more than one body for a statement, chosen per document:
+    plan 0005 step D), the catalogue of versions recognised but not mapped, and
+    the vendored XSDs. Versions are read from the config, never listed here.
     Outputs:
-    - `parsed_documents` (Postgres): one row per statement file with its
-      structure version and status (`valid`, `not_yet_mapped`,
+    - `parsed_documents` (Postgres): one row per (statement file, mapping-config
+      hash) with its structure version and status (`valid`, `not_yet_mapped`,
       `needs_pdf_tier`, `quarantined`);
     - `quarantine` rows, stage `C1` (container, detection, XSD), `C2` (mapping)
       or `E2` (identity failures that grade a file `quarantined`);
