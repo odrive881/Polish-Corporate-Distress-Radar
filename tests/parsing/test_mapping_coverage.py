@@ -22,7 +22,7 @@ from distress_radar.parsing.canonical_schema import (
 from distress_radar.parsing.containers import safe_parser
 from distress_radar.parsing.mapping_engine import parse_statement
 from distress_radar.parsing.version_detection import detect
-from distress_radar.parsing.xsd_inventory import statement_line_items
+from distress_radar.parsing.xsd_inventory import same_line, statement_line_items
 from distress_radar.parsing.xsd_validation import XsdValidator, load_xsd_catalog
 
 FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
@@ -129,23 +129,6 @@ def test_body_lists_exactly_the_statutory_elements(
                 assert item.user_of_which == element.label.rstrip().endswith("w tym:"), item.path
 
 
-def _normalise(label: str) -> str:
-    """Label differences that never change what an amount is.
-
-    A list marker, an "of which X" note (a subset, so the total is unchanged),
-    an applicability clause naming which entities a line is for, and spacing
-    inside a formula. A `.R2025`-style narrowing changes the words BEFORE
-    "w tym", so none of these can hide one.
-    """
-    text = " ".join(label.replace("\u2013", "-").replace("\u2014", "-").split())
-    text = re.sub(r"^-\s*", "", text)
-    text = re.sub(r"^[a-z]\)\s*", "", text)
-    text = re.sub(r",?\s*w tym\b.*$", "", text)
-    text = re.sub(r"\s*\(dla .*?\)\.?$", "", text)
-    text = re.sub(r"\s*-\s*", "-", text)
-    return text.rstrip(":").strip().lower()
-
-
 @pytest.mark.parametrize("version", MAPPED)
 def test_every_code_label_matches_its_xsd_label(
     version: str, mapping_config: MappingConfig
@@ -165,7 +148,7 @@ def test_every_code_label_matches_its_xsd_label(
             if not item.code or not element.label or item.header:
                 continue  # the six CF headings carry a note of ours, not the XSD's
             code = spec.code_overrides.get(item.code, item.code)
-            assert _normalise(chart[code].label_pl) == _normalise(element.label), (
+            assert same_line(chart[code].label_pl, element.label), (
                 f"{version} {item.path}: code {code} is labelled "
                 f"{chart[code].label_pl!r} but the XSD says {element.label!r}"
             )

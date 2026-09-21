@@ -336,9 +336,13 @@ def load_mapping_config(config_dir: Path = CONFIG_DIR) -> MappingConfig:
             raise ValueError(f"{path}: structure_version must match the file name")
         specs[spec.structure_version] = spec
         digest = hashlib.sha256()
-        for part in (path, body_paths.get(spec.body), chart_path):
-            if part is not None:
-                digest.update(part.read_bytes())
+        # Every body the spec can reach, not just its default: a small filing
+        # may carry the full-form statements (plan 0005 step D), so editing
+        # `jednostka_inna` changes how those files are mapped and must give
+        # them a new `spec_hash`.
+        used = [body_paths[b] for b in sorted(spec.bodies_used) if b in body_paths]
+        for part in (path, *used, chart_path):
+            digest.update(part.read_bytes())
         hashes[spec.structure_version] = digest.hexdigest()
     catalog = StructureCatalog.model_validate(_yaml(mappings / "structure_catalog.yaml"))
     return MappingConfig(

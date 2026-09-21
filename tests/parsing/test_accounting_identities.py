@@ -17,6 +17,7 @@ from distress_radar.parsing.accounting_identities import (
     profit_ties,
     run_identity_checks,
     subtotals_consistent,
+    unresolved_bodies,
 )
 from distress_radar.parsing.canonical_schema import MappingConfig
 from distress_radar.parsing.containers import safe_parser
@@ -598,3 +599,39 @@ def test_small_form_restatement_pair_reports_no_restatement(
     )
     assert (event["line_item"], event["fiscal_year"]) == ("BS.ASSETS", 2021)
     assert event["restated_value"] - event["originally_reported_value"] == Decimal("1000.00")
+
+
+@pytest.mark.parametrize("xml", GOLDEN, ids=lambda p: p.stem)
+def test_no_golden_statement_is_checked_against_a_fallback_body(
+    xml: Path, mapping_config: MappingConfig
+) -> None:
+    """Every filed statement resolves to the body it was actually filed in."""
+    assert unresolved_bodies(_golden_frame(xml, mapping_config), mapping_config).is_empty()
+
+
+def test_an_unreadable_element_path_is_reported_as_a_fallback(
+    mapping_config: MappingConfig,
+) -> None:
+    """The fallback in `_bodies_filed` is deliberate, but it must not be silent.
+
+    A renamed body or a changed path format would leave a filing checked
+    against another body's rules, and the results themselves cannot show it.
+    """
+    frame = _golden_frame(STATEMENTS_DIR / "small_2018_v1_2_inna_por_2022.xml", mapping_config)
+    assert unresolved_bodies(frame, mapping_config).is_empty()
+
+    renamed = frame.with_columns(
+        pl.col("source_element_path").str.replace("BilansJednostkaInna", "BilansJednostkaZmieniona")
+    )
+    [row] = unresolved_bodies(renamed, mapping_config).iter_rows(named=True)
+    assert (row["statement"], row["structure_version"]) == ("Bilans", "small-2018-v1-2")
+    assert row["body_used"] == "jednostka_mala"  # the spec's first alternative
+    # The income statement still resolves, so only the balance sheet is reported.
+    assert unresolved_bodies(renamed, mapping_config).height == 1
+
+
+def test_an_absent_statement_is_not_a_fallback(mapping_config: MappingConfig) -> None:
+    """A small filing declares no cash flow; not filing one is not a resolution failure."""
+    frame = _golden_frame(STATEMENTS_DIR / "small_2018_v1_2_mala_por_2021.xml", mapping_config)
+    assert "cash_flow" not in set(frame["statement_type"].to_list())
+    assert unresolved_bodies(frame, mapping_config).is_empty()

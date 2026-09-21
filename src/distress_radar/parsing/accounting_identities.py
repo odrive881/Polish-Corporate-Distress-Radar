@@ -30,8 +30,10 @@ from typing import Literal
 import polars as pl
 
 from distress_radar.parsing.canonical_schema import (
+    STATEMENT_TYPES,
     MappingConfig,
     Role,
+    StatementAlternative,
     StatementBody,
     StatementName,
     StructureSpec,
@@ -65,6 +67,15 @@ RESULT_SCHEMA: dict[str, pl.DataType | type[pl.DataType]] = {
     "expected": VALUE_DTYPE,
     "actual": VALUE_DTYPE,
     "difference": VALUE_DTYPE,
+}
+UNRESOLVED_BODY_SCHEMA: dict[str, pl.DataType | type[pl.DataType]] = {
+    "krs": pl.String,
+    "document_ref": pl.String,
+    "source_document_hash": pl.String,
+    "source_member": pl.String,
+    "structure_version": pl.String,
+    "statement": pl.String,
+    "body_used": pl.String,
 }
 RESTATEMENT_SCHEMA: dict[str, pl.DataType | type[pl.DataType]] = {
     "krs": pl.String,
@@ -101,29 +112,77 @@ class _Group:
     values: dict[str, Decimal]
 
 
-def _bodies_filed(spec: StructureSpec, paths: list[str]) -> tuple[tuple[StatementName, str], ...]:
-    """Which body each statement was filed in, read from `source_element_path`.
+def _filed_alternative(
+    spec: StructureSpec, name: StatementName, paths: list[str]
+) -> StatementAlternative | None:
+    """The shape a statement was filed in, read from `source_element_path`.
 
     The path records the statement element the facts came from, which is the
     only thing that distinguishes `BilansJednostkaMala` from
     `BilansJednostkaInna` inside the same small envelope.
     """
+    return next(
+        (
+            alt
+            for alt in spec.alternatives(name)
+            if any(path.startswith(f"{spec.statement_root}/{alt.xpath}/") for path in paths)
+        ),
+        None,
+    )
+
+
+def _bodies_filed(spec: StructureSpec, paths: list[str]) -> tuple[tuple[StatementName, str], ...]:
+    """Which body each statement is checked against."""
     filed: list[tuple[StatementName, str]] = []
     for name in spec.statements:
         alts = spec.alternatives(name)
-        match = next(
-            (
-                alt
-                for alt in alts
-                if any(path.startswith(f"{spec.statement_root}/{alt.xpath}/") for path in paths)
-            ),
-            None,
-        )
         # No path matched: fall back to the first alternative rather than
         # dropping the statement. An empty result would silently check nothing,
         # which is a far worse failure than checking against the wrong body.
-        filed.append((name, (match or alts[0]).body))
+        # `unresolved_bodies` reports where that fallback was actually used.
+        filed.append((name, (_filed_alternative(spec, name, paths) or alts[0]).body))
     return tuple(filed)
+
+
+def unresolved_bodies(frame: pl.DataFrame, config: MappingConfig) -> pl.DataFrame:
+    """Statements checked against a fallback body because their own could not be read.
+
+    One row per (file, statement) that has facts but whose element paths match
+    none of the shapes its spec accepts, so `_bodies_filed` fell back to the
+    first. The fallback is deliberate — checking nothing is worse — but it is
+    invisible in the results, and it means a filing may be checked against
+    rules that are not its own. A statement the document simply does not
+    contain is not a fallback and is not reported; nor is a statement whose
+    spec accepts only one shape, where there is nothing to resolve.
+
+    Empty is the expected state. A row means a body was renamed, a spec lost an
+    alternative, or `source_element_path` stopped being written the way the
+    spec declares it.
+    """
+    rows: list[dict[str, object]] = []
+    for keys, part in frame.sort(DOCUMENT_KEY).group_by(DOCUMENT_KEY, maintain_order=True):
+        first = part.row(0, named=True)
+        spec = config.specs[first["structure_version"]]
+        paths = part["source_element_path"].to_list()
+        filed_types = set(part["statement_type"].to_list())
+        for name in spec.statements:
+            alts = spec.alternatives(name)
+            if len(alts) == 1 or STATEMENT_TYPES[name] not in filed_types:
+                continue
+            if _filed_alternative(spec, name, paths) is not None:
+                continue
+            rows.append(
+                {
+                    "krs": first["krs"],
+                    "document_ref": first["document_ref"],
+                    "source_document_hash": str(keys[0]),
+                    "source_member": str(keys[1]),
+                    "structure_version": spec.structure_version,
+                    "statement": name,
+                    "body_used": alts[0].body,
+                }
+            )
+    return _frame(rows, UNRESOLVED_BODY_SCHEMA)
 
 
 def _groups(frame: pl.DataFrame, config: MappingConfig) -> Iterator[_Group]:

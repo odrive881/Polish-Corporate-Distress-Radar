@@ -26,6 +26,7 @@ from distress_radar.parsing.accounting_identities import (
     grade,
     prior_year_consistency,
     run_identity_checks,
+    unresolved_bodies,
 )
 from distress_radar.parsing.canonical_schema import MappingConfig, load_mapping_config
 from distress_radar.parsing.contracts import FINANCIAL_STATEMENTS_CANONICAL, RESTATEMENT_EVENTS
@@ -155,7 +156,14 @@ def financial_statements_canonical(context: dg.AssetExecutionContext) -> dg.Mate
                 source, store.get(raw_key(source.sha256)), config, validator
             )
             for outcome in outcomes:
-                label = outcome.spec.structure_version if outcome.spec else outcome.member_kind
+                # A file with no spec still knows which structure it is when
+                # detection got that far (catalogued but unmapped, or unknown):
+                # `member_kind` alone would report every one of them as "xml".
+                label = (
+                    outcome.spec.structure_version
+                    if outcome.spec
+                    else outcome.structure_key or outcome.member_kind
+                )
                 if outcome.status == "quarantined":
                     assert outcome.stage is not None and outcome.reason_code is not None
                     _record(conn, config, source.sha256, source.krs, outcome, run_id, now)
@@ -212,6 +220,11 @@ def financial_statements_canonical(context: dg.AssetExecutionContext) -> dg.Mate
 
         facts = pl.concat(frames) if frames else empty_frame()
         results = run_identity_checks(facts, config, settings.identity_tolerance_pln)
+        # Expected to be empty: a row means a statement was checked against a
+        # body that may not be the one it was filed in (plan 0005 step D).
+        fallbacks = unresolved_bodies(facts, config)
+        if not fallbacks.is_empty():
+            context.log.warning(f"{fallbacks.height} statements checked against a fallback body")
         graded = FINANCIAL_STATEMENTS_CANONICAL.validate(
             grade(facts, results, config).sort(SORT_KEY)
         )
@@ -253,6 +266,14 @@ def financial_statements_canonical(context: dg.AssetExecutionContext) -> dg.Mate
             "fact_rows": graded.height,
             "files_by_quality_grade": dict(
                 sorted(Counter(grades.get_column("quality_grade").to_list()).items())
+            ),
+            "statements_checked_against_a_fallback_body": dict(
+                sorted(
+                    (f"{v}:{name}", n)
+                    for v, name, n in fallbacks.group_by("structure_version", "statement")
+                    .len()
+                    .iter_rows()
+                )
             ),
             "identity_results": dict(
                 sorted(

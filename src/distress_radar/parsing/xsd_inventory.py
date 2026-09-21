@@ -10,6 +10,11 @@ mapping specs can be checked for completeness against the official schema
 User-defined lines (`PozycjaUszczegolawiajaca*`) are not statutory items and
 are not listed; `user_slots` says whether an element declares interleaved ones
 (`PozycjaUszczegolawiajaca_N`) among its children.
+
+It also holds the two ways this project compares statutory labels, which is
+how a line's *meaning* is established when its element path cannot be trusted
+(plan 0005 finding 3): `normalise_label` compares labels as written, and
+`same_line` asks whether two labels name the same line.
 """
 
 from __future__ import annotations
@@ -41,6 +46,39 @@ class XsdLineItem:
     label: str  # the element's xsd:documentation, whitespace-normalised
     has_amounts: bool  # False for section headers that only group children
     user_slots: bool  # declares interleaved `PozycjaUszczegolawiajaca_N` user-defined lines
+
+
+def normalise_label(label: str) -> str:
+    """A label as written, ignoring dash style, spacing, case and a trailing colon.
+
+    Two labels equal under this are the same text. Use it to ask whether a
+    label *changed* — e.g. classifying short-form lines against the full form's
+    (`notebooks/exploration/short_form_line_classification.py`, ADR 0005 second
+    addendum), where a differing label means the line is a different line.
+    """
+    return " ".join(label.replace("\u2013", "-").replace("\u2014", "-").split()).rstrip(":").lower()
+
+
+def same_line(label: str, other: str) -> bool:
+    """Whether two labels name the same statutory line.
+
+    Tolerates, on top of `normalise_label`, the presentational differences that
+    never change what an amount is: a list marker, an "of which X" note (a
+    subset, so the total is unchanged), an applicability clause naming which
+    entities a line is for, and spacing inside a formula. A `.R2025`-style
+    narrowing changes the words BEFORE "w tym", so none of these can hide one.
+    """
+    return _denotation(label) == _denotation(other)
+
+
+def _denotation(label: str) -> str:
+    text = normalise_label(label)
+    text = re.sub(r"^-\s*", "", text)
+    text = re.sub(r"^[a-z]\)\s*", "", text)
+    text = re.sub(r",?\s*w tym\b.*$", "", text)
+    text = re.sub(r"\s*\(dla .*?\)\.?$", "", text)
+    text = re.sub(r"\s*-\s*", "-", text)
+    return text.rstrip(":").strip()
 
 
 def _local(qname: str | None) -> str:
