@@ -1,8 +1,8 @@
 # 0007 — Phase 3c: SQLMesh over the canonical Parquet, `quarantine` and `dq_mart`
 
-**Stage:** Phase 3 (AGENT_SPEC.md §10), third of three plans: E3 (§6E3) and the first F models (§6F). Plans 0005 and 0006 complete the parsing side; this one is the transformation and data-quality layer over it.
+**Stage:** Phase 3 (AGENT_SPEC.md §10), E3 (§6E3) and the first F models (§6F) — the transformation and data-quality layer over the parsing side. Written as the third of three plans; with plan 0006 deferred (2026-09-21) it is the second and last of Phase 3.
 
-**Order:** last. `dq_mart` reports coverage and pass rates by structure version, so it wants the full set of versions (plan 0005) and the PDF route (plan 0006) in place — otherwise its first published numbers describe a half-mapped corpus.
+**Order:** after plan 0005, which is done. `dq_mart` reports coverage and pass rates by structure version, and every XML version in the seed is now mapped, so its first published numbers describe the corpus as it is. It no longer waits for the PDF route: plan 0006 is deferred, and the single `needs_pdf_tier` file is something `dq_mart` should **report**, not something it needs resolved first — its coverage grain is where that gap becomes visible and measurable, which is also how plan 0006's triggers get counted.
 
 ## Status: not started
 

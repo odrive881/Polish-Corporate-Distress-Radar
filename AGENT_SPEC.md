@@ -483,7 +483,7 @@ Each phase must be demonstrable before the next begins.
 | 0 | Repo skeleton, Docker Compose, CI, ADR template, Dagster hello-world asset |
 | 1 | Acquisition for 20 hand-picked entities; raw documents in MinIO, manifest in Postgres |
 | 2 | Two structure versions parsed end-to-end into canonical model, accounting identities passing |
-| 3 | Remaining structure versions, PDF tier, `dq_mart` published |
+| 3 | Remaining structure versions, `dq_mart` published (the C3 PDF tier moved to phase 4, where MSiG's pre-2021 notices need a PDF text layer regardless — plan 0006) |
 | 4 | Legal events, outcome labels, censoring, regime flags |
 | 5 | Feature store with ASOF assembly and blocking leakage tests |
 | 6 | Baseline and classical models, out-of-time backtest report |

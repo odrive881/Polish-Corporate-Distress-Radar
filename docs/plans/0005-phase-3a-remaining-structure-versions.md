@@ -2,7 +2,7 @@
 
 **Stage:** Phase 3 (AGENT_SPEC.md §10), first of three plans: C1 and C2 (§6C) for every structure version left in the seed, and E2 (§4.3) grading over the forms that file no cash-flow statement. Phase 3's other two parts are the C3 PDF tier (plan 0006) and SQLMesh `quarantine` + `dq_mart` (plan 0007).
 
-**Order:** this plan first, then 0006, then 0007. Plan 0006's single in-scope PDF turned out to be a rendered **small-form** statement (`SprFinJednostkaMalaWZlotych`, schema 1-2), so its extraction target is the `jednostka_mala` body and chart codes this plan introduces. Plan 0007 aggregates the canonical table and wants its final shape.
+**Order:** this plan first, then 0006, then 0007. Plan 0006's single in-scope PDF turned out to be a rendered **small-form** statement (`SprFinJednostkaMalaWZlotych`, schema 1-2), so its extraction target is the `jednostka_mala` body and chart codes this plan introduces. Plan 0007 aggregates the canonical table and wants its final shape. **Superseded 2026-09-21:** plan 0006 is deferred (its one document's figures are already in the warehouse as the next year's comparative column, and both filings post-date the entity's bankruptcy), so 0007 follows this plan directly.
 
 ## Status: complete — steps A–F (2026-09-20), G–H (2026-09-21)
 
@@ -493,4 +493,6 @@ files, 43,611 canonical facts, all 17 seed entities**, fiscal years 2018–2025,
 
 ## Next plan
 
-Plan 0006 (C3 PDF tier) and plan 0007 (SQLMesh `quarantine` + `dq_mart`) complete Phase 3.
+Plan 0007 (SQLMesh `quarantine` + `dq_mart`). Plan 0006 (C3 PDF tier) was deferred on 2026-09-21 — see its
+status section — so Phase 3 completes without it, and the one `needs_pdf_tier` file stays recorded and
+counted until a trigger there fires.
