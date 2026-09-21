@@ -75,7 +75,7 @@ Every XML statement must yield these components:
 
 | Item | Handled by | Req. | Spec ref |
 |---|---|---|---|
-| Statements filed as PDF (e.g. IFRS filers, non-XML attachments) | C3 tier: PyMuPDF → Docling → vision LLM | required (never silently dropped) | SPEC §6C3; OVERVIEW stage 4 |
+| Statements filed as PDF (e.g. IFRS filers, non-XML attachments) | C3 tier: PyMuPDF → Docling → vision LLM | required (never silently dropped) | SPEC §6C3; OVERVIEW stage 4 — **tier deferred 2026-09-21** (plan 0006): the seed's one PDF statement is recorded `needs_pdf_tier` and its figures are recoverable from the next filing's comparative column |
 | Scanned / degraded statements | C3 vision-LLM tier | required | SPEC §6C3 |
 
 ### 2.4 Accompanying documents (text signals)
