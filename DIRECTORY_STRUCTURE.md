@@ -63,12 +63,22 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │   ├── structure_catalog.yaml     # versions recognised but not mapped yet
 │   │   └── structures/                # one file per XML structure version
 │   │       ├── bodies/                # statutory element paths shared by versions
-│   │       │   └── jednostka_inna.yaml
+│   │       │   ├── jednostka_inna.yaml
+│   │       │   ├── jednostka_mala.yaml
+│   │       │   ├── jednostka_mikro_v1_2.yaml
+│   │       │   └── jednostka_mikro_v1_3.yaml  # 1-3 and wariant 2 drop the G block
 │   │       ├── full-2018-v1-0.yaml
 │   │       ├── full-2018-v1-2.yaml
 │   │       ├── full-2018-v1-2-tys.yaml
 │   │       ├── full-2025-v1-3.yaml
-│   │       └── full-2025-w2-v1-0.yaml # small-*/micro-* follow in plan 0005
+│   │       ├── full-2025-w2-v1-0.yaml
+│   │       ├── micro-2018-v1-0.yaml
+│   │       ├── micro-2018-v1-2.yaml
+│   │       ├── micro-2025-v1-3.yaml
+│   │       ├── micro-2025-w2-v1-0.yaml
+│   │       ├── small-2018-v1-0.yaml
+│   │       ├── small-2018-v1-2.yaml
+│   │       └── small-2025-v1-3.yaml   # a spec may bind more than one body (plan 0005 step D)
 │   ├── xsd/                           # official MF/CRWDE XSDs, vendored (catalog.yaml)
 │   └── statutory/
 │       ├── size_thresholds.yaml       # accounting-law size class thresholds, dated

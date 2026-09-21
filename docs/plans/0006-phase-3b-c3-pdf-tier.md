@@ -6,9 +6,24 @@
 
 ## Status: not started
 
+**Note, 2026-09-21 (plan 0005 close-out).** Two things this plan assumes have changed:
+
+- **The header does not determine the body.** Step B says "detect the structure from the header, exactly as
+  C1 does for XML". That is still right for the *version*, but plan 0005 step D found that a `JednostkaMala`
+  envelope may carry either the small-form statements or the full-form ones, chosen per statement, with an
+  identical header — and the in-scope PDF's header (`SFJMAZ`, `1-2`) is exactly that case. Which body was
+  rendered has to come from the rendered labels, so the label map is per body, not per structure version, and
+  decision 7's `small-2018-v1-2-pdf` suffix does not by itself say which one was read. Decide how the tier
+  records it before writing the map; the XML side settled on body alternatives in the spec plus the body
+  written into `source_element_path`.
+- **The vocabulary this plan needs now exists**: `jednostka_mala`, the small-form chart codes, and ten
+  short-form golden fixtures, including `small_2018_v1_2_mala_kalk_2021` from the same form and schema as the
+  PDF. The `tier` column this plan adds to `parsed_documents` is also the natural place to record the filed
+  body, which nothing currently stores per file.
+
 ## Why
 
-One stored seed download cannot be parsed as XML: KRS `0000181328`, FY2023, recorded `needs_pdf_tier` by C1 (`zip:SF2023/SF2023.xml>epuap:Zalacznik[1]>base64`). The entity filed a PDF inside an ePUAP envelope instead of a structured statement. It is also the entity with the thinnest structured coverage in the seed — 1 parsed file against 9 that plan 0005 maps and this one.
+One stored seed download cannot be parsed as XML: KRS `0000181328`, FY2023, recorded `needs_pdf_tier` by C1 (`zip:SF2023/SF2023.xml>epuap:Zalacznik[1]>base64`). The entity filed a PDF inside an ePUAP envelope instead of a structured statement. It was the entity with the thinnest structured coverage in the seed — 1 parsed file against 9 that plan 0005 has since mapped; with those 10 parsed, this PDF is the only statement it has filed that the pipeline cannot read (FY2023, the middle of its 2018–2025 run).
 
 AGENT_SPEC §6C3 also routes IFRS filers and pre-2021 MSiG notices here. Neither exists in the seed today: the `czyMSR` flag is unreliable and every flagged statement is a UoR structure (plan 0004), and MSiG notices arrive in Phase 4.
 
@@ -112,7 +127,7 @@ If you would rather have all three tiers now, say so before step B; the cost is 
 
 - [ ] Router, tier 1 extractor, label map and manifest `tier` column implemented and tested.
 - [ ] KRS `0000181328` FY2023 parses into canonical facts that **pass the accounting identity checks**, or is quarantined with an investigated reason.
-- [ ] That entity's structured coverage goes from 1 file to 11 (this plan plus plan 0005).
+- [ ] That entity's structured coverage goes from 10 files (after plan 0005) to 11, with no gap in 2018–2025.
 - [ ] Golden fixture hand-verified against the rendering; personal-data scan green in CI.
 - [ ] Tiers 2 and 3 quarantine explicitly with a recorded reason; no document is silently skipped.
 - [ ] ADR 0011 accepted; docs from step F updated.

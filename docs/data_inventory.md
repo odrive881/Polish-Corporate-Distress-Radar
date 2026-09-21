@@ -54,9 +54,9 @@ All documents in this section come from the Repozytorium Dokumentów Finansowych
 | Full form in thousands of złoty, schema 1-2 | `full-2018-v1-2-tys.yaml` | required | SPEC §4.2 | **mapped**; no seed filing uses it, tested with a synthetic document |
 | Full form, schema 1-3 (FY2024, namespace dated 2025-01-01) | `full-2025-v1-3.yaml` | required | ADR 0005 addendum | **mapped** (plan 0005 step A); shares the 1-2 body, element trees are identical; fixture `statements/full_2025_v1_3_por_2024.xml` |
 | New generation, fiscal years starting ≥ 2025-01-01 (CRWDE template 13817, "wariant 2 / wersja 1-0E") | `full-2025-w2-v1-0.yaml` | required | ADR 0005; SPEC §11.2 | **mapped**; fixtures `neobis_001.xml`, `statements/full_2025_w2_kalk_2025.xml` |
-| Small / simplified form (`JednostkaMala`), schemas 1-0, 1-2, 1-3 | `small-*.yaml` | required | DIR §1; SPEC §4.1 | catalogued, not mapped (Phase 3); 30 seed statements |
-| Micro form (`JednostkaMikro`), schemas 1-0, 1-2, 1-3, CRWDE template 13821 | `micro-*.yaml` | required (entities can switch form between years) | DIR §1; SPEC §4.1 | catalogued, not mapped (Phase 3); 12 seed statements |
-| Thousands-of-złoty twins of every form | one YAML per version | required | SPEC §4.2 | XSDs vendored and catalogued; none seen in the seed |
+| Small / simplified form (`JednostkaMala`), schemas 1-0, 1-2, 1-3 | `small-2018-v1-0.yaml`, `small-2018-v1-2.yaml`, `small-2025-v1-3.yaml` | required | DIR §1; SPEC §4.1; ADR 0005 second addendum | **mapped** (plan 0005); 30 seed statements. One body (`jednostka_mala`) serves all versions, but a small envelope may carry the **full-form** statements instead, chosen per statement, so each spec accepts both (plan 0005 step D) |
+| Micro form (`JednostkaMikro`), schemas 1-0, 1-2, 1-3, CRWDE template 13821 | `micro-2018-v1-0.yaml`, `micro-2018-v1-2.yaml`, `micro-2025-v1-3.yaml`, `micro-2025-w2-v1-0.yaml` | required (entities can switch form between years) | DIR §1; SPEC §4.1; ADR 0005 second addendum | **mapped** (plan 0005); 12 seed statements. Two bodies: 1-3 and wariant 2 drop the `G` block, and the micro income statement is a third layout, neither comparative nor calculation |
+| Thousands-of-złoty twins of every form | one YAML per version | required | SPEC §4.2 | XSDs vendored and catalogued; none seen in the seed. Only `full-2018-v1-2-tys` is mapped, to keep unit normalisation under test |
 
 Every XML statement must yield these components:
 
@@ -69,7 +69,7 @@ Every XML statement must yield these components:
 | Current-year **and** prior-year columns | dane za rok bieżący / poprzedni | both captured | `prior_year_consistency` check → `restatement_events` |
 | Declared unit | PLN / tys. PLN | normalise to złoty; quarantine if missing | all monetary values (SPEC §4.2) |
 | Average employment | przeciętne zatrudnienie | — | size classification (SPEC §4.4) |
-| Official XSD for the structure version | — | — | C1 validation (SPEC §6C) — **collected**: 51 files in `config/xsd/` with `catalog.yaml` (URL, SHA-256), 2026-09-17 |
+| Official XSD for the structure version | — | — | C1 validation (SPEC §6C) — **collected**: 53 files in `config/xsd/` with `catalog.yaml` (URL, SHA-256); 51 on 2026-09-17, plus CRWDE templates 13818 and 13819 on 2026-09-20 |
 
 ### 2.3 Annual financial statement — PDF / scans
 
@@ -127,7 +127,7 @@ The spec forbids bulk enumeration of any source. Acquisition is per entity, seed
 | Sector financial aggregates (construction) | GUS BDL (JSON) | A5 | raw → Parquet | macro / sector features, dashboards | required | SPEC §6H | not started |
 | Regional indicators by voivodeship | GUS BDL | A5 | raw → Parquet | regional features, heatmaps | required | SPEC §6H; OVERVIEW stage 12 | not started |
 | Eurostat series | Eurostat | A5 | raw → Parquet | macro context | optional | TECH_ARCH §3 A5 | not started |
-| Official MF XSD schemas, one per structure version | Ministry of Finance | C1 | committed reference files | XSD validation | required | SPEC §6C1 | collected (`config/xsd/`, plan 0004) |
+| Official MF XSD schemas, one per structure version | Ministry of Finance | C1 | committed reference files | XSD validation | required | SPEC §6C1 | collected (`config/xsd/`, plan 0004; small, micro and the two remaining CRWDE templates added in plan 0005) |
 | UoR size-class thresholds (balance sheet total, revenue, average employment; multi-year rule), dated | Ustawa o rachunkowości | E / H | `config/statutory/size_thresholds.yaml` | `entity_size_class_history` | required | SPEC §4.4 | not written |
 | KSH tripwire ratios: Art. 233 (sp. z o.o., ½ share capital), Art. 397 (S.A., ⅓ share capital), dated | Kodeks spółek handlowych | H | `config/statutory/ksh_tripwires.yaml` | tripwire features, `tripwire_triggered` alerts | required | SPEC §4.5 | not written |
 | Insolvency / restructuring procedure taxonomy, dated | Prawo upadłościowe, Prawo restrukturyzacyjne, COVID-era acts | F | `config/statutory/procedure_taxonomy.yaml` | `outcome_labels` | required | SPEC §4.6 | not written |
@@ -140,7 +140,7 @@ The spec forbids bulk enumeration of any source. Acquisition is per entity, seed
 
 | Item | Location | Req. | Spec ref | Status |
 |---|---|---|---|---|
-| Golden XML statements, at least one per structure version, each resolving every `required: true` mapping | `tests/fixtures/` | required | SPEC §6C2, §9.2 | one or more per mapped version (`tests/fixtures/statements/`); none yet for small/micro |
+| Golden XML statements, at least one per structure version, each resolving every `required: true` mapping | `tests/fixtures/` | required | SPEC §6C2, §9.2 | 11 of the 12 mapped versions have one (`tests/fixtures/statements/`), small and micro included; `full-2018-v1-2-tys` has none by design (no seed filing uses it) and is tested with a synthetic document |
 | Known-bad statements that must be quarantined (unbalanced, missing unit) | `tests/fixtures/` | required | SPEC §9.2 | missing |
 | Statement declared in thousands of złoty | `tests/fixtures/` | required | SPEC §9.2 | missing |
 | One comparative and one calculation income-statement filing | `tests/fixtures/` | required | SPEC §9.2 | missing |
@@ -180,10 +180,10 @@ The spec forbids bulk enumeration of any source. Acquisition is per entity, seed
 
 1. **RDF access rests on an informal confirmation** (ADR 0007). KRS support allowed 3 requests/minute verbally, and could not promise how the WAF reacts. Re-run the probe notebook before any backfill.
 2. ~~**No source named for average employment.**~~ Answered by C2 in plan 0004: no MF structure carries it as a field. Superseded by item 8, which records the candidate sources and what is still undecided.
-3. ~~**No pre-2025-generation XML fixture.**~~ Resolved in plan 0004: golden fixtures for schemas 1-0 and 1-2. Small and micro forms still have none.
+3. ~~**No pre-2025-generation XML fixture.**~~ Resolved in plan 0004: golden fixtures for schemas 1-0 and 1-2. ~~Small and micro forms still have none.~~ Ten short-form fixtures added in plan 0005 step E, covering every body-choice case; a committed fixture carrying signer data is now a test failure, not a manual check (`test_no_fixture_contains_personal_data`).
 4. **No LLM provider or key** in `.env.example`, yet C3 and G2 both need one.
 5. **Terms of use unconfirmed** for KRS, KRZ, MSiG and any aggregator (SPEC §11.3).
-6. ~~**Full list of MF structure versions not enumerated.**~~ Enumerated in plan 0004: 20 (form × unit × schema 1-0/1-2/1-3, plus CRWDE templates 13817 and 13821), listed in `config/mappings/structures/` and `structure_catalog.yaml`.
+6. ~~**Full list of MF structure versions not enumerated.**~~ Enumerated in plan 0004 and completed in plan 0005 step B: 22 (form × unit × schema 1-0/1-2/1-3, plus CRWDE templates 13817, 13818, 13819 and 13821; 13820 is `JednostkaOp`, outside v1 scope), listed in `config/mappings/structures/` (12 mapped) and `structure_catalog.yaml` (10 recognised, not mapped).
 7. ~~**Stale wording** about structures applying "from 2026".~~ Fixed in plan 0004.
 8. **Average employment has no structured source.** No MF structure carries it as a field.
    - **Possible source (owner, 2026-09-17): the management report** (*Sprawozdanie zarządu / Sprawozdanie z działalności*, RDF types 20 and 5), which states employment and can be downloaded from RDF like the statements. It is noted for future use and **probably out of v1 scope**.

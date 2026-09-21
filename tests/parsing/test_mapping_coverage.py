@@ -168,8 +168,10 @@ def test_required_items_resolve_in_a_golden_statement(
 ) -> None:
     """Every `required: true` item resolves, for each shape the spec accepts.
 
-    Versions with no golden fixture yet are skipped rather than silently
-    passing; plan 0005 step E adds the short-form ones.
+    Versions with no golden fixture are skipped by name rather than silently
+    passing. Since plan 0005 step E that is only `full-2018-v1-2-tys`: no seed
+    filing uses it, so `test_mapping_engine` builds a synthetic thousands
+    document instead.
     """
     spec = mapping_config.specs[version]
     matching = _golden_for(spec, mapping_config)

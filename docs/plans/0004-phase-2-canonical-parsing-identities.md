@@ -233,6 +233,12 @@ The step A research and the first seed runs changed the design. In summary:
 
 ## Close-out (2026-09-17)
 
+> **Superseded figures, 2026-09-21.** Everything below is the state at Phase 2's close and is kept as the
+> record of it. Plan 0005 mapped all 49 `not_yet_mapped` files (full 1-3, small, micro) and the seed now
+> stands at 129 valid files, 43,611 rows and all 17 entities. This plan's decision 4 ("SQLMesh takes over
+> `financial_statements_canonical` in Phase 3") is superseded by plan 0007 decision 1, and the hand-written
+> `DELETE` of stale quarantine rows it recorded is superseded by plan 0007 decision 4.
+
 **Checks.**
 - `make check`: ruff clean, pyright 0 errors, 221 passed.
 - `make test-integration`: 27 passed.

@@ -6,6 +6,20 @@
 
 ## Status: not started
 
+**Note, 2026-09-21 (plan 0005 close-out).** Three premises to re-check before step A:
+
+- **The figures predate plan 0005.** "46 rows, 9 of them stale" was the state after plan 0004; the Postgres
+  `quarantine` table now holds 68 rows, and the canonical table grades 28 files `quarantined` out of 129.
+  Re-derive the stale set rather than reusing the count.
+- **The identity checks emit `skipped`, not `not_applicable`** (`accounting_identities.py`). Step A's
+  distinction is right and matters more than ever now that whole statements are absent by schema on the short
+  forms — but pick one name and use it in both places.
+- **`dq_mart` cannot currently split by filed body.** A small-form filing may carry the full-form statements
+  (plan 0005 step D); `structure_version` deliberately does not record which, and the only per-fact evidence
+  is the prefix of `source_element_path`. If the mart wants that dimension, it needs a column on
+  `parsed_documents` — which plan 0006 step A already migrates for `tier`, so bundle the two rather than
+  migrating twice.
+
 ## Why
 
 Three things are outstanding and they resolve together.
