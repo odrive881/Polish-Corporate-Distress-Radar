@@ -6,26 +6,29 @@
 
 ## Status: not started
 
-**Note, 2026-09-21 (plan 0005 close-out).** Three premises to re-check before step A:
+**Owner decisions, 2026-09-21.** The three premises flagged at plan 0005's close-out are settled, and the
+stale figures are corrected:
 
-- **The figures predate plan 0005.** "46 rows, 9 of them stale" was the state after plan 0004; the Postgres
-  `quarantine` table now holds 68 rows, and the canonical table grades 28 files `quarantined` out of 129.
-  Re-derive the stale set rather than reusing the count.
-- **The identity checks emit `skipped`, not `not_applicable`** (`accounting_identities.py`). Step A's
-  distinction is right and matters more than ever now that whole statements are absent by schema on the short
-  forms — but pick one name and use it in both places.
-- **`dq_mart` cannot currently split by filed body.** A small-form filing may carry the full-form statements
-  (plan 0005 step D); `structure_version` deliberately does not record which, and the only per-fact evidence
-  is the prefix of `source_element_path`. If the mart wants that dimension, it needs a column on
-  `parsed_documents` — which plan 0006 step A already migrates for `tier`, so bundle the two rather than
-  migrating twice.
+1. **`not_applicable` is the name.** `run_identity_checks` currently emits `skipped`; step A renames it
+   everywhere — the rule, `RESULT_SCHEMA`, the asset-check metadata, the tests and the new dataset. The
+   distinction matters more since plan 0005: a small or micro filing has no cash-flow statement to check, and
+   counting that as a pass would inflate every pass rate the mart publishes.
+2. **`dq_mart` gets the filed-body dimension.** `parsed_documents` gains a column recording the body each
+   statement was filed in (a small envelope may carry the full-form statements — plan 0005 step D). Plan 0006
+   would have carried it alongside its `tier` column, but that plan is deferred, so this one owns the
+   migration; `tier` joins the same column set whenever 0006 is built.
+3. **Never clean the log; recompute the current set from scratch on every run**, taking each stage's answer
+   from whichever source actually knows — see decision 4, which this sharpens.
+4. **Current counts** (2026-09-21, replacing "46 rows, 9 of them stale"): the Postgres `quarantine` table
+   holds **68 rows**; the canonical table grades **28 of 129 files** `quarantined`; `parsed_documents` holds
+   451 rows across 35 mapping-config hashes, of which the current config accounts for 130 statement files.
 
 ## Why
 
 Three things are outstanding and they resolve together.
 
 1. **`transform/` is empty scaffolding.** `models/staging/`, `models/marts/` and `models/quarantine/` contain only `.gitkeep`. SQLMesh is not in `pyproject.toml`. The whole F stage is unbuilt.
-2. **There are two different things called "quarantine".** The Postgres `quarantine` table is an append-only log of first detection, written by A2, A3, C1, C2 and E2. `quality_grade` on the canonical table is the current state. They disagree: 9 of the table's 46 rows are from a development run under superseded grading rules and describe files the current rules grade `pass` or `warn` (plan 0004 close-out). The owner chose to leave them until E3 derives the current set properly. That is this plan.
+2. **There are two different things called "quarantine".** The Postgres `quarantine` table is an append-only log of first detection, written by A2, A3, C1, C2 and E2 (68 rows at 2026-09-21). `quality_grade` on the canonical table is the current state (28 of 129 files). They disagree, and always will: the log holds rows written under grading rules that have since changed, describing files the current rules grade `pass` or `warn`. The owner chose to leave them rather than clean them, and confirmed it on 2026-09-21 — the log is evidence of what was detected when, and the current set is derived, never stored. That is this plan (decision 4).
 3. **`dq_mart` has no source for its headline number.** §6E3 requires pass rates **by check type**. `run_identity_checks` produces exactly that, per file per check, in `dagster_defs/assets/parsing.py` — and then throws it away. Only `quality_grade` (a per-file roll-up) and quarantine rows (failures only) are persisted. **Pass and warn outcomes per check do not exist anywhere on disk.** Step A closes this before any SQL is written.
 
 ## Decisions this plan makes (flag any you disagree with before step B)
@@ -38,7 +41,9 @@ Three things are outstanding and they resolve together.
 3. **The Postgres `quarantine` table is renamed `quarantine_events`.** §5 makes `quarantine` a canonical dataset name, and after this plan that name belongs to the SQLMesh model holding the *current* set. Two objects with one name and opposite semantics — a log versus a current state — is precisely what the canonical-names rule exists to prevent. The Postgres table keeps its append-only detection-log role under the clearer name.
    - This touches A2, A3, C1, C2 and E2 writers and `acquisition/models.py`. It is a rename, not a semantic change, and the 46 existing rows migrate as they are.
 
-4. **The `quarantine` model derives the current set, and the 9 stale rows disappear by construction.** For stages with a graded output (C2/E2), current membership comes from `quality_grade = 'quarantined'` on the canonical table. For stages without one (A2, A3, C1 — where there is no row to grade because nothing was produced), it comes from `quarantine_events`, taking the latest event per key. No manual `DELETE` is needed, and the plan-0004 close-out's hand-written SQL can be dropped.
+4. **The log is never cleaned; the current set is recomputed from scratch on every run.** `quarantine_events` stays append-only and nothing is ever deleted from it — a detection log that gets tidied stops being evidence of what was detected when. The `quarantine` model rebuilds membership each run, asking **whichever source actually knows** for each stage: for stages with a graded output (C2/E2), the canonical table's `quality_grade = 'quarantined'`, because grading is recomputed from the current rules on every materialization; for stages that produce no row to grade (A2, A3, C1 — nothing was written), the latest event per key in `quarantine_events`.
+   - This is why no `DELETE` is needed and why the plan-0004 close-out's hand-written SQL is dropped: rows describing files the current rules no longer quarantine simply stop being selected. They remain in the log, which is the point — the log answers "what did we reject, and when", the model answers "what is rejected now".
+   - It also means the model is a full rebuild, not an incremental one. Decision 5's `known_from` keying applies to the staging layer, not to this.
 
 5. **Incremental models are keyed on `known_from`, not `fiscal_year`.** §6F asks that a late-arriving filing for an old period trigger a correct partial rebuild. `known_from` is the axis on which data actually arrives (§4.7); a 2019 statement filed in 2026 is new data for an old period. The model processes by `known_from` range and rebuilds whichever `fiscal_year` partitions that touches.
 
@@ -46,7 +51,11 @@ Three things are outstanding and they resolve together.
 
 7. **`dq_mart` is built and materialized here; publishing to the Evidence site is Phase 9.** §10 says "`dq_mart` published" and §6E3 says "published to the public site", but `site/` is Phase 9 scaffolding (stage K). Phase 3's deliverable is the model plus a **publish-safe contract** the site can later consume unchanged.
 
-8. **`dq_mart` suppresses small cells.** It is the one dataset intended to leave the building, and the public site is "aggregated/pseudonymised only". With 17 entities, a cell like (`micro-2018-v1-0`, FY2019) has exactly one filer, so a pass rate of 0% names a company to anyone who can read a KRS search. Cells below a threshold (default 5 entities, a setting) publish their counts as null with a `suppressed` flag rather than being dropped — dropping them would hide that the data exists.
+8. **pandas is no longer prohibited (owner, 2026-09-21).** SQLMesh 0.236 installs pandas and numpy transitively, and a ban that the locked stack itself violates is a dead letter. The restriction is removed from `CLAUDE.md` and `AGENT_SPEC.md` §3 rather than carried with an exception. Project code still uses **Polars** — that is a stack choice, not a prohibition — and step B adds a test asserting `import pandas` appears nowhere in `src/` or `dagster_defs/`, so the idiom is enforced where it matters instead of at the dependency graph.
+
+9. **`dq_mart` is built to suppress small cells, with suppression off until Phase 9 (owner, 2026-09-21).** It is the one dataset intended to leave the building, and the public site is "aggregated/pseudonymised only". With 17 entities, a cell like (`micro-2018-v1-0`, FY2019) has exactly one filer, so a pass rate of 0% names a company to anyone who can read a KRS search. The mechanism is built now: cells below a threshold publish their counts as null with a `suppressed` flag rather than being dropped — dropping them would hide that the data exists.
+   - **The threshold setting ships as `null`, meaning no cell is suppressed.** At any useful value the 17-entity seed would suppress nearly every cell, and the mart would be useless as the working artifact Phases 3–8 need. Nothing leaves the building before Phase 9, so nothing is exposed by this.
+   - **Before Phase 9 publishes anything, the threshold must be set — to at least 5 entities — and the publish must refuse to run while it is `null`.** This is recorded in `AGENT_SPEC.md` §10 (phase 9) and in the setting's own definition, so it is not left to anyone remembering this plan. The `suppressed` column exists from the start (always false while the threshold is `null`), so the publish-safe contract of decision 7 does not change shape when suppression is switched on.
 
 ## Out of scope
 
@@ -62,6 +71,7 @@ Three things are outstanding and they resolve together.
 
 - Add a third derived dataset, `identity_check_results`, written by the `financial_statements_canonical` asset from the `run_identity_checks` frame it already computes: one row per (file, check, column) with `status` (`pass`/`fail`/`not_applicable`), the expected/actual/difference it already carries, and the file's lineage columns.
 - `not_applicable` is a real outcome and must be recorded, not omitted: a small-form filing has no cash-flow statement (plan 0005), and "this check did not apply" is different from "this check passed". A pass rate that silently counts exemptions as passes is wrong.
+- **Rename `skipped` → `not_applicable` at the source** (owner decision 1): `accounting_identities._row`, `RESULT_SCHEMA`'s documented values, the asset-check metadata counters in `dagster_defs/checks/`, and the tests that assert on it. One name, used by the rule, the dataset and the mart. It is a pure rename — no row changes status — so the canonical values and both value hashes must be unchanged afterwards (`notebooks/exploration/canonical_value_hash.py`).
 - Amend **AGENT_SPEC §5** with the dataset, and add a Pandera contract in `parsing/contracts.py` beside the other two.
 - Deterministic row order and the same atomic write as the other datasets (ADR 0008 point 3).
 
@@ -71,11 +81,13 @@ Three things are outstanding and they resolve together.
 - `transform/config.yaml`: DuckDB gateway for execution, Postgres for state (decision 2), `WAREHOUSE_DIR` resolved from the same setting the Python side uses so there is one source of truth for the path.
 - External models for `financial_statements_canonical`, `restatement_events`, `identity_check_results` (Parquet) and `quarantine_events` (Postgres), with their columns declared so SQLMesh can type-check the models above them.
 - `make` targets: `transform-plan`, `transform-run`, and `transform-test` wired into `make check` so a broken model fails the gate like anything else.
+- SQLMesh installs **pandas and numpy** transitively (0.236 resolves on this Python; probed 2026-09-21). That is accepted, and the prohibition is being removed from the specs (decision 8). Add the replacement guard here: a test asserting no module under `src/` or `dagster_defs/` imports pandas, so the Polars idiom is enforced where it matters.
 
 ### C. Rename `quarantine` → `quarantine_events`
 
 - Migration in the Postgres schema modules, following ADR 0006's pattern; update A2, A3, C1, C2 and E2 writers and `QuarantineRecord`.
-- Integration test: the migration is idempotent and preserves all 46 rows.
+- Integration test: the migration is idempotent and preserves every row (68 at 2026-09-21 — assert against the count read before the migration, not a literal).
+- **Same migration adds the filed body to `parsed_documents`** (owner decision 2): which body each statement was filed in, for the specs that accept alternatives. The asset already resolves it per statement while mapping (`mapping_engine`) and E2 reads it back off `source_element_path`, so this is recording what is already known, not deriving anything new. Nullable, and null for a spec with one body. Plan 0006's `tier` column joins the same set when that plan is built.
 
 ### D. `quarantine` model
 
@@ -85,9 +97,9 @@ Three things are outstanding and they resolve together.
 
 ### E. `dq_mart` model
 
-- Grain: structure version × fiscal year × check type. Measures: files checked, passed, warned, failed, not-applicable, pass rate, and distinct entities.
-- A companion coverage grain: files stored, parsed, `not_yet_mapped`, `needs_pdf_tier`, by fiscal year — which is the number that makes plans 0005 and 0006 legible, and which today can only be got by hand-querying `parsed_documents`.
-- Small-cell suppression per decision 8, as a model-level rule with its threshold in settings, plus an audit that no published cell has an entity count below it.
+- Grain: structure version × **filed body** × fiscal year × check type (decision 2). Measures: files checked, passed, warned, failed, not-applicable, pass rate, and distinct entities. The body matters because a small envelope carrying full-form statements is a different parsing path with its own failure modes, and `structure_version` alone hides it.
+- A companion coverage grain: files stored, parsed, `not_yet_mapped`, `needs_pdf_tier`, by fiscal year — which is the number that makes plans 0005 and 0006 legible, and which today can only be got by hand-querying `parsed_documents`. With plan 0006 deferred, this grain is also how its triggers get counted: a `needs_pdf_tier` file with no later filing for the same entity is the case that would justify building the PDF tier.
+- Small-cell suppression per decision 9, as a model-level rule with its threshold in settings, plus an audit that no cell has an entity count below it while it is not flagged `suppressed`. The setting is nullable and **defaults to `null` (suppression off)**; its definition carries a comment stating that it must be set to at least 5 before Phase 9 publishes, and that the publish step must refuse to run while it is `null`. Test both states: `null` suppresses nothing, and a set threshold suppresses and flags exactly the cells below it.
 - Incremental by `known_from` (decision 5).
 
 ### F. Dagster wiring
@@ -108,7 +120,7 @@ Three things are outstanding and they resolve together.
 
 - **`identity_check_results`:** contract holds; `not_applicable` is emitted for a small-form filing's cash-flow check; the dataset reproduces byte-identically on re-run.
 - **SQLMesh model tests** (fixtures, not the live seed): the `quarantine` model drops a key whose grade improved between runs — the 9-stale-row scenario, as a test; a file failing two checks appears once with both reasons; an ungraded A3 failure survives.
-- **`dq_mart`:** pass rates computed against a hand-built fixture; `not_applicable` excluded from the denominator; a 1-entity cell is suppressed and flagged, not dropped.
+- **`dq_mart`:** pass rates computed against a hand-built fixture; `not_applicable` excluded from the denominator; with a threshold set, a 1-entity cell is suppressed and flagged, not dropped; with the threshold `null` (the shipped default), nothing is suppressed and every `suppressed` flag is false.
 - **Audits run in CI** via `make check`.
 - **Idempotence:** `transform-run` twice over unchanged input produces identical output.
 
@@ -118,7 +130,7 @@ Three things are outstanding and they resolve together.
 - [ ] SQLMesh project runs from `make`, state in Postgres, DuckDB reading `WAREHOUSE_DIR`.
 - [ ] Postgres `quarantine` renamed `quarantine_events`, all 46 rows preserved.
 - [ ] `quarantine` model materializes and **excludes all 9 stale rows with no manual SQL**.
-- [ ] `dq_mart` materializes with pass rates by structure version × fiscal year × check type, plus the coverage grain, with small cells suppressed.
+- [ ] `dq_mart` materializes with pass rates by structure version × filed body × fiscal year × check type, plus the coverage grain; the suppression mechanism is built and tested, and ships switched off (threshold `null`) with the Phase 9 instruction recorded.
 - [ ] Dagster runs the models; audits surface as asset checks.
 - [ ] ADR 0010 accepted; docs from step G updated, including the plan-0004 supersession pointer.
 - [ ] `make check` and `make test-integration` green; re-running is byte-identical.
