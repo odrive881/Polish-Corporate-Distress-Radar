@@ -114,9 +114,32 @@ def test_two_specs_detecting_the_same_version_are_rejected(tmp_path: Path) -> No
         load_mapping_config(config_dir)
 
 
-def test_spec_hash_changes_with_the_body(tmp_path: Path) -> None:
+def test_spec_hash_changes_with_any_body_the_spec_can_reach(tmp_path: Path) -> None:
+    """Including a body reached only through a statement alternative.
+
+    A small filing may carry the full-form statements (plan 0005 step D), so
+    `jednostka_inna` is part of how `small-2018-v1-2` maps a document. If its
+    hash did not move, those files would keep their `first_ingestion_run_id`
+    and `parsed_documents` row after a mapping change (`parsing/manifest.py`).
+    """
     config_dir = _copy_config(tmp_path)
-    before = load_mapping_config(config_dir).spec_hashes["full-2018-v1-2"]
+    before = load_mapping_config(config_dir).spec_hashes
     body = config_dir / "mappings" / "structures" / "bodies" / "jednostka_inna.yaml"
     body.write_text(body.read_text(encoding="utf-8") + "\n# edited\n", encoding="utf-8")
-    assert load_mapping_config(config_dir).spec_hashes["full-2018-v1-2"] != before
+    after = load_mapping_config(config_dir).spec_hashes
+    assert after["full-2018-v1-2"] != before["full-2018-v1-2"]
+    assert after["small-2018-v1-2"] != before["small-2018-v1-2"]
+    # A spec that cannot reach the edited body is unaffected: micro filings
+    # always carry the micro statements, so nothing about them changed.
+    assert after["micro-2018-v1-2"] == before["micro-2018-v1-2"]
+
+
+def test_every_chart_code_is_used(mapping_config: MappingConfig) -> None:
+    """A code no body maps and no spec overrides to is vocabulary nothing can emit.
+
+    Plan 0005 step C added 46 codes; this is what keeps an abandoned one from
+    sitting in the chart looking like a mapped line.
+    """
+    used = set[str]().union(*(body.codes() for body in mapping_config.bodies.values()))
+    used |= {code for spec in mapping_config.specs.values() for code in spec.code_overrides.values()}
+    assert set(mapping_config.chart.by_code()) - used == set()

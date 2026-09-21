@@ -22,9 +22,20 @@ def _():
     import marimo as mo
 
     from distress_radar.parsing.canonical_schema import CONFIG_DIR, load_mapping_config
-    from distress_radar.parsing.xsd_inventory import STATEMENT_TYPES, statement_line_items
+    from distress_radar.parsing.xsd_inventory import (
+        STATEMENT_TYPES,
+        normalise_label,
+        statement_line_items,
+    )
 
-    return CONFIG_DIR, STATEMENT_TYPES, load_mapping_config, mo, statement_line_items
+    return (
+        CONFIG_DIR,
+        STATEMENT_TYPES,
+        load_mapping_config,
+        mo,
+        normalise_label,
+        statement_line_items,
+    )
 
 
 @app.cell
@@ -65,11 +76,7 @@ def _(SCHEMAS, statement_line_items):
         except ValueError:
             return None
 
-    def normalise(label: str) -> str:
-        """Compare labels ignoring dash style, spacing and a trailing colon."""
-        return " ".join(label.replace("–", "-").replace("—", "-").split()).rstrip(":").lower()
-
-    return lines, normalise
+    return (lines,)
 
 
 @app.cell
@@ -119,7 +126,7 @@ def _(STATEMENT_TYPES, lines, mo):
 
 
 @app.cell
-def _(lines, load_mapping_config, mo, normalise):
+def _(lines, load_mapping_config, mo, normalise_label):
     # 2. Every short-form line against the full form's, by element path.
     #
     # A path present in both forms does NOT mean the same line: the label is
@@ -148,7 +155,7 @@ def _(lines, load_mapping_config, mo, normalise):
                         "no such path in the full form"
                         if theirs is None
                         else "same line"
-                        if normalise(theirs) == normalise(ours)
+                        if normalise_label(theirs) == normalise_label(ours)
                         else "path collides, meaning differs"
                     )
                     out.append(

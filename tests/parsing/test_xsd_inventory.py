@@ -10,7 +10,11 @@ from pathlib import Path
 import pytest
 
 from distress_radar.parsing.canonical_schema import CONFIG_DIR
-from distress_radar.parsing.xsd_inventory import statement_line_items
+from distress_radar.parsing.xsd_inventory import (
+    normalise_label,
+    same_line,
+    statement_line_items,
+)
 
 JIN_V1_2 = (
     CONFIG_DIR
@@ -114,3 +118,28 @@ def test_reads_the_real_mf_schema(type_name: str) -> None:
     assert all(i.path for i in items)
     assert any(i.user_slots for i in items)
     assert any(i.has_amounts for i in items)
+
+
+def test_normalise_label_only_ignores_how_a_label_is_written() -> None:
+    assert normalise_label("Aktywa  trwałe:") == normalise_label("aktywa trwałe")
+    assert normalise_label("– zapasy") == normalise_label("— zapasy")
+    # A note or a marker is text, so this comparison sees them.
+    assert normalise_label("Aktywa trwałe, w tym środki trwałe") != normalise_label("Aktywa trwałe")
+    assert normalise_label("- zapasy") != normalise_label("zapasy")
+
+
+def test_same_line_tolerates_presentation_but_not_a_narrowing() -> None:
+    """The rule behind `test_every_code_label_matches_its_xsd_label` (plan 0005 step A)."""
+    assert same_line("Aktywa trwałe, w tym środki trwałe", "Aktywa trwałe")
+    assert same_line("a) do 12 miesięcy", "do 12 miesięcy")
+    assert same_line("Zysk (strata) brutto (A - B)", "Zysk (strata) brutto (A-B)")
+    assert same_line(
+        "Kapitał podstawowy (dla jednostek innych niż spółki kapitałowe).",
+        "Kapitał podstawowy",
+    )
+    # The 2025 narrowing: the words BEFORE "w tym" change, so it is a different line.
+    assert not same_line(
+        "Przychody netto ze sprzedaży towarów i materiałów",
+        "Przychody netto ze sprzedaży towarów",
+    )
+    assert not same_line("Przychody finansowe", "Pozostałe koszty operacyjne")
