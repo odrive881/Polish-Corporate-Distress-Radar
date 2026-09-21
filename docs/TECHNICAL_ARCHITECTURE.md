@@ -519,7 +519,7 @@ Load models in-process from the MLflow registry. No BentoML, Seldon, or KServe: 
 | Manifest / OLTP | Postgres | SQLite |
 | XML parsing | lxml + xmlschema | ElementTree |
 | Mapping specs | YAML + Pydantic | XSLT |
-| DataFrame engine | Polars | pandas |
+| DataFrame engine | Polars | pandas (chosen against, not forbidden — it arrives with SQLMesh; plan 0007 decision 8) |
 | PDF extraction | PyMuPDF → Docling → vision LLM | pdfplumber, Tesseract |
 | Exploration | marimo | Jupyter |
 | Table contracts | Pandera | Great Expectations |

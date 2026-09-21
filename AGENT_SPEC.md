@@ -45,7 +45,7 @@ Violating any of these is a build failure, not a code-review comment.
 | Object store | **MinIO** | S3 API, via `boto3` |
 | Operational DB | **Postgres** | Manifest, scores, alerts, watchlists |
 | XML | **lxml** + **xmlschema** | Parse with lxml, validate against official XSD |
-| DataFrames | **Polars** | Not pandas |
+| DataFrames | **Polars** | Project code uses Polars; pandas is allowed as a transitive dependency (SQLMesh pulls it) |
 | PDF text | **PyMuPDF** → **Docling** → vision LLM | Tiered, routed by detection |
 | Notebooks | **marimo** | `.py` format only, no `.ipynb` |
 | Table contracts | **Pandera** | At every Python stage boundary |
@@ -70,7 +70,7 @@ Violating any of these is a build failure, not a code-review comment.
 
 ### Do not introduce
 
-Kafka or any streaming layer. Spark or Dask. Kubernetes. Any cloud warehouse. A separate vector database (use `pgvector` if vector search is needed). A model-serving framework (load in-process from MLflow). Feast. Great Expectations. pandas. LangChain.
+Kafka or any streaming layer. Spark or Dask. Kubernetes. Any cloud warehouse. A separate vector database (use `pgvector` if vector search is needed). A model-serving framework (load in-process from MLflow). Feast. Great Expectations. LangChain.
 
 Data volume is ~10⁷ rows of financial line items, a few GB of Parquet. It fits in RAM. Size all solutions accordingly.
 
@@ -489,7 +489,7 @@ Each phase must be demonstrable before the next begins.
 | 6 | Baseline and classical models, out-of-time backtest report |
 | 7 | Text extraction with measured eval, folded into features |
 | 8 | Modern and survival models, calibration, SHAP, MLflow registry |
-| 9 | FastAPI, Streamlit explorer, Evidence site, Quarto report |
+| 9 | FastAPI, Streamlit explorer, Evidence site, Quarto report. **Before anything is published: set `dq_mart`'s small-cell suppression threshold (≥5 entities).** It ships `null` — suppression off — for Phases 3–8 (plan 0007 decision 9), and the publish must refuse to run while it is still `null` |
 | 10 | Scheduling, alerting, Evidently drift monitoring |
 
 Phase 1 precedes phase 2 deliberately: discovering a source is inaccessible must happen before anything is built on top of it.
