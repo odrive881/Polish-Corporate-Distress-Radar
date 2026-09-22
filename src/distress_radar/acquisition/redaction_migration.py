@@ -6,7 +6,7 @@ For every raw object with personal-data markers:
 2. store the redacted bytes as a new content-addressed object, with a sidecar
    naming the redaction and the replaced hash;
 3. in one transaction, point every manifest reference at the new hash
-   (`filing_index`, `raw_document_fetches`, `quarantine`), drop the old file's
+   (`filing_index`, `raw_document_fetches`, `quarantine_events`), drop the old file's
    `parsed_documents` rows (re-parsing recreates them), log the replacement in
    `raw_redactions`, and delete the old `raw_documents` row;
 4. only then delete the old object and its sidecar.
@@ -110,7 +110,7 @@ def replace_document(
             (new_sha256, old_sha256),
         )
         conn.execute(
-            "UPDATE quarantine SET source_document_hash = %s WHERE source_document_hash = %s",
+            "UPDATE quarantine_events SET source_document_hash = %s WHERE source_document_hash = %s",
             (new_sha256, old_sha256),
         )
         if conn.execute("SELECT to_regclass('parsed_documents')").fetchone() != (None,):

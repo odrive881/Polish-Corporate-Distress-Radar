@@ -23,6 +23,7 @@ from distress_radar.acquisition.models import QuarantineRecord, QuarantineStage
 from distress_radar.acquisition.raw_store import raw_key
 from distress_radar.parsing import manifest
 from distress_radar.parsing.accounting_identities import (
+    filed_bodies,
     grade,
     identity_check_results,
     prior_year_consistency,
@@ -65,7 +66,9 @@ def _entity_key(krs: str, outcome_ref: str | None, source_member: str) -> str:
 def _quarantine(
     conn: "Connection",
     stage: QuarantineStage,
-    entity_key: str,
+    krs: str,
+    document_ref: str | None,
+    source_member: str,
     reason_code: str,
     detail: str,
     sha256: str,
@@ -77,12 +80,14 @@ def _quarantine(
         [
             QuarantineRecord(
                 stage=stage,
-                entity_key=entity_key,
+                entity_key=_entity_key(krs, document_ref, source_member),
                 reason_code=reason_code,
                 detail=detail,
                 source_document_hash=sha256,
                 ingestion_run_id=run_id,
                 created_at=now,
+                krs=krs,
+                document_ref=document_ref,
             )
         ],
     )
@@ -135,8 +140,9 @@ def financial_statements_canonical(context: dg.AssetExecutionContext) -> dg.Mate
     Outputs:
     - `parsed_documents` (Postgres): one row per (statement file, mapping-config
       hash) with its structure version and status (`valid`, `not_yet_mapped`,
-      `needs_pdf_tier`, `quarantined`);
-    - `quarantine` rows, stage `C1` (container, detection, XSD), `C2` (mapping)
+      `needs_pdf_tier`, `quarantined`), the body set its statements were filed
+      in, and `last_seen_run_id` = this run on every row it touched;
+    - `quarantine_events` rows, stage `C1` (container, detection, XSD), `C2` (mapping)
       or `E2` (identity failures that grade a file `quarantined`);
     - `WAREHOUSE_DIR/financial_statements_canonical/fiscal_year=YYYY/`: the
       canonical facts (AGENT_SPEC §5 plus `document_ref`, `source_member`),
@@ -184,11 +190,9 @@ def financial_statements_canonical(context: dg.AssetExecutionContext) -> dg.Mate
                     _quarantine(
                         conn,
                         cast("QuarantineStage", outcome.stage),
-                        _entity_key(
-                            source.krs,
-                            outcome.filing.document_ref if outcome.filing else None,
-                            outcome.source_member,
-                        ),
+                        source.krs,
+                        outcome.filing.document_ref if outcome.filing else None,
+                        outcome.source_member,
                         outcome.reason_code,
                         outcome.detail or "",
                         source.sha256,
@@ -219,7 +223,9 @@ def financial_statements_canonical(context: dg.AssetExecutionContext) -> dg.Mate
                     _quarantine(
                         conn,
                         "C2",
-                        _entity_key(source.krs, outcome.filing.document_ref, outcome.source_member),
+                        source.krs,
+                        outcome.filing.document_ref,
+                        outcome.source_member,
                         exc.reason_code,
                         exc.detail,
                         source.sha256,
@@ -243,6 +249,14 @@ def financial_statements_canonical(context: dg.AssetExecutionContext) -> dg.Mate
             grade(facts, results).sort(SORT_KEY)
         )
         checked = IDENTITY_CHECK_RESULTS.validate(identity_check_results(results, graded))
+        for row in filed_bodies(facts, config).iter_rows(named=True):
+            manifest.record_filed_bodies(
+                conn,
+                row["source_document_hash"],
+                row["source_member"],
+                config.spec_hashes[row["structure_version"]],
+                row["filed_bodies"],
+            )
         failing = (
             results.filter(pl.col("status") == "fail")
             .group_by("source_document_hash", "source_member", "krs", "document_ref", "check")
@@ -261,7 +275,9 @@ def financial_statements_canonical(context: dg.AssetExecutionContext) -> dg.Mate
             _quarantine(
                 conn,
                 "E2",
-                _entity_key(row["krs"], row["document_ref"], row["source_member"]),
+                row["krs"],
+                row["document_ref"],
+                row["source_member"],
                 row["check"],
                 f"{row['n']} failing lines, e.g. {row['example']}",
                 row["source_document_hash"],

@@ -27,6 +27,7 @@ from distress_radar.acquisition.models import (
     SeedEntry,
     SegmentSpec,
     UniverseCandidate,
+    is_krs,
 )
 
 STAGE = "A1"
@@ -64,6 +65,10 @@ def load_seed(path: Path, *, ingestion_run_id: str, discovered_at: datetime) -> 
                 source_document_hash=None,
                 ingestion_run_id=ingestion_run_id,
                 created_at=discovered_at,
+                # Only a well-formed KRS is recorded as one; a malformed entry's
+                # key is kept verbatim in `entity_key`.
+                krs=entity_key if is_krs(entity_key) else None,
+                document_ref=None,
             )
         )
 
@@ -82,7 +87,7 @@ def load_seed(path: Path, *, ingestion_run_id: str, discovered_at: datetime) -> 
                 f"entry #{index}: KRS must be a quoted string, got {type(krs).__name__}",
             )
             continue
-        if len(krs) != KRS_LENGTH or not krs.isdigit():
+        if not is_krs(krs):
             quarantine(
                 krs,
                 "malformed_krs",

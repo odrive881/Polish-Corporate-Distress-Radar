@@ -106,8 +106,21 @@ SCHEMA_DDL: tuple[LiteralString, ...] = (
         UNIQUE NULLS NOT DISTINCT (krs, field, seed_value, bir1_value)
     )
     """,
+    # The append-only detection log. Named `quarantine` until plan 0007, which
+    # gave that canonical name to the SQLMesh model of the *current* set
+    # (decision 3); a database from before then is renamed in place, rows as
+    # they are.
     """
-    CREATE TABLE IF NOT EXISTS quarantine (
+    DO $$
+    BEGIN
+        IF to_regclass('quarantine') IS NOT NULL
+           AND to_regclass('quarantine_events') IS NULL THEN
+            ALTER TABLE quarantine RENAME TO quarantine_events;
+        END IF;
+    END $$
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS quarantine_events (
         stage                 text NOT NULL,
         entity_key            text NOT NULL,
         reason_code           text NOT NULL,
@@ -115,8 +128,15 @@ SCHEMA_DDL: tuple[LiteralString, ...] = (
         source_document_hash  text,
         ingestion_run_id      text NOT NULL,
         created_at            timestamptz NOT NULL,
+        krs                   text,
+        document_ref          text,
         UNIQUE NULLS NOT DISTINCT (stage, entity_key, reason_code, source_document_hash)
     )
+    """,
+    """
+    ALTER TABLE quarantine_events
+        ADD COLUMN IF NOT EXISTS krs text,
+        ADD COLUMN IF NOT EXISTS document_ref text
     """,
     # A3. List columns are always known; detail columns fill in when the row is
     # expanded (`detail_sha256`), `sha256` when the document is downloaded.
@@ -148,6 +168,41 @@ SCHEMA_DDL: tuple[LiteralString, ...] = (
     # the document they correct, named here. Added after the table first shipped.
     """
     ALTER TABLE filing_index ADD COLUMN IF NOT EXISTS correction_of text
+    """,
+    # Backfill `krs` / `document_ref` on log rows written before plan 0007, from
+    # the stage-specific `entity_key` they were packed into: the KRS alone for
+    # A2/A3 (and a well-formed A1 key), `krs:document_ref` for C1/C2/E2 — where
+    # a C1 file with no filing row has `krs:source_member` instead, so the part
+    # after the colon is a `document_ref` only if `filing_index` knows it. A key
+    # in no known format fails the schema step; it is never skipped. Writers
+    # set both columns themselves from plan 0007 on, so this touches only
+    # legacy rows and is a no-op once they are filled.
+    """
+    DO $$
+    BEGIN
+        IF EXISTS (
+            SELECT 1 FROM quarantine_events q
+            WHERE q.krs IS NULL AND (
+                (q.stage IN ('A2', 'A3') AND q.entity_key !~ '^[0-9]{10}$')
+                OR (q.stage IN ('C1', 'C2', 'E2') AND q.entity_key !~ '^[0-9]{10}:.+$')
+                OR (q.stage IN ('C2', 'E2') AND NOT EXISTS (
+                    SELECT 1 FROM filing_index f
+                    WHERE f.krs = substring(q.entity_key FROM '^([0-9]{10})')
+                      AND f.document_ref = substring(q.entity_key FROM '^[0-9]{10}:(.+)$')
+                ))
+            )
+        ) THEN
+            RAISE EXCEPTION 'quarantine_events: a legacy entity_key matches no known format';
+        END IF;
+        UPDATE quarantine_events q SET
+            krs = substring(q.entity_key FROM '^([0-9]{10})'),
+            document_ref = CASE WHEN q.stage IN ('C1', 'C2', 'E2') AND EXISTS (
+                SELECT 1 FROM filing_index f
+                WHERE f.krs = substring(q.entity_key FROM '^([0-9]{10})')
+                  AND f.document_ref = substring(q.entity_key FROM '^[0-9]{10}:(.+)$')
+            ) THEN substring(q.entity_key FROM '^[0-9]{10}:(.+)$') END
+        WHERE q.krs IS NULL AND (q.stage <> 'A1' OR q.entity_key ~ '^[0-9]{10}$');
+    END $$
     """,
 )
 
@@ -290,10 +345,10 @@ def insert_quarantine(conn: Connection, rows: Iterable[QuarantineRecord]) -> Non
     for row in rows:
         conn.execute(
             """
-            INSERT INTO quarantine
+            INSERT INTO quarantine_events
                 (stage, entity_key, reason_code, detail, source_document_hash,
-                 ingestion_run_id, created_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
+                 ingestion_run_id, created_at, krs, document_ref)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT DO NOTHING
             """,
             (
@@ -304,6 +359,8 @@ def insert_quarantine(conn: Connection, rows: Iterable[QuarantineRecord]) -> Non
                 row.source_document_hash,
                 row.ingestion_run_id,
                 row.created_at,
+                row.krs,
+                row.document_ref,
             ),
         )
 
@@ -331,7 +388,7 @@ def unresolved_candidates(conn: Connection) -> list[tuple[str, str | None, str |
         FROM universe_candidates c
         WHERE NOT EXISTS (SELECT 1 FROM entity_master m WHERE m.krs = c.krs)
           AND NOT EXISTS (
-              SELECT 1 FROM quarantine q WHERE q.stage = 'A2' AND q.entity_key = c.krs
+              SELECT 1 FROM quarantine_events q WHERE q.stage = 'A2' AND q.entity_key = c.krs
           )
         ORDER BY c.krs, c.discovered_at
         """
@@ -461,7 +518,7 @@ def unindexed_entities(conn: Connection) -> list[str]:
         FROM entity_master m
         WHERE NOT EXISTS (SELECT 1 FROM filing_index f WHERE f.krs = m.krs)
           AND NOT EXISTS (
-              SELECT 1 FROM quarantine q WHERE q.stage = 'A3' AND q.entity_key = m.krs
+              SELECT 1 FROM quarantine_events q WHERE q.stage = 'A3' AND q.entity_key = m.krs
           )
         ORDER BY m.krs
         """
@@ -566,7 +623,7 @@ def table_counts(conn: Connection) -> dict[str, int]:
         "universe_candidates",
         "entity_master",
         "entity_reconciliation_log",
-        "quarantine",
+        "quarantine_events",
         "filing_index",
     ):
         query = sql.SQL("SELECT count(*) FROM {}").format(sql.Identifier(table))

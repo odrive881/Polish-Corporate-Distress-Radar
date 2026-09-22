@@ -101,7 +101,10 @@ def test_signed_document_is_replaced_and_references_follow(conn: psycopg.Connect
         (signed_sha, NOW),
     )
     conn.execute(
-        "INSERT INTO quarantine VALUES ('E2', '0000000001:ref', 'profit_ties', 'd', %s, 'run-a', %s)",
+        "INSERT INTO quarantine_events (stage, entity_key, reason_code, detail, "
+        "source_document_hash, ingestion_run_id, created_at, krs, document_ref) "
+        "VALUES ('E2', '0000000001:ref', 'profit_ties', 'd', %s, 'run-a', %s, "
+        "'0000000001', 'ref')",
         (signed_sha, NOW),
     )
     parsing_manifest.record_parsed_document(
@@ -135,7 +138,7 @@ def test_signed_document_is_replaced_and_references_follow(conn: psycopg.Connect
         signed_sha,
     )
     assert conn.execute("SELECT sha256 FROM filing_index").fetchall() == [(new,)]
-    assert conn.execute("SELECT source_document_hash FROM quarantine").fetchall() == [(new,)]
+    assert conn.execute("SELECT source_document_hash FROM quarantine_events").fetchall() == [(new,)]
     assert conn.execute("SELECT count(*) FROM parsed_documents").fetchone() == (0,)
     assert conn.execute(
         "SELECT sha256, source_url FROM raw_document_fetches ORDER BY source_url"

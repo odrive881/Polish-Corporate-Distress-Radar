@@ -53,7 +53,7 @@ def universe_candidates(
 
     Inputs: the seed YAML (no network).
     Outputs: Postgres `universe_candidates` rows (`discovery_source=manual_seed`);
-    malformed entries as `quarantine` rows (stage A1, reason-coded). Inserts are
+    malformed entries as `quarantine_events` rows (stage A1, reason-coded). Inserts are
     `ON CONFLICT DO NOTHING`, so re-materializing adds no rows.
     Partition scheme: none (unpartitioned) for the Phase 1 seed.
     """
@@ -87,10 +87,10 @@ def entity_master(context: dg.AssetExecutionContext, config: SegmentConfig) -> d
     """A2 — validate candidates against GUS BIR1.
 
     Inputs: `universe_candidates` rows with no A2 outcome yet (not in
-    `entity_master`, no A2 `quarantine` row); `config/segments/<segment>.yaml`.
+    `entity_master`, no A2 `quarantine_events` row); `config/segments/<segment>.yaml`.
     Outputs: BIR1 XML payloads in MinIO under `raw/sha256/...` with sidecars;
     Postgres `raw_documents` / `raw_document_fetches`, `entity_master`,
-    `entity_reconciliation_log`, and reason-coded A2 `quarantine` rows.
+    `entity_reconciliation_log`, and reason-coded A2 `quarantine_events` rows.
     Resolved candidates are skipped, so re-materializing makes no BIR1 calls
     and adds no objects or rows. Each entity commits on its own; a source
     error leaves that candidate unresolved for the next run and fails the asset.
@@ -168,11 +168,11 @@ def filing_index(
     """A3 — search each resolved entity in RDF and index its filing list.
 
     Inputs: `entity_master` rows with no A3 outcome yet (no `filing_index` rows,
-    no A3 `quarantine` row).
+    no A3 `quarantine_events` row).
     Outputs: the raw entity-lookup and filing-list responses in MinIO (sidecar
     `fetch_tier: playwright`); Postgres `raw_documents` / `raw_document_fetches`,
     one `filing_index` row per listed document (detail columns and `sha256`
-    NULL), and `rdf_entity_not_found` / `no_rdf_filings` A3 `quarantine` rows.
+    NULL), and `rdf_entity_not_found` / `no_rdf_filings` A3 `quarantine_events` rows.
     Indexed entities are skipped, so re-materializing makes no RDF requests and
     adds no rows. Each entity commits on its own; a blocked or failed lookup
     leaves the entity unresolved and fails the asset; the circuit breaker stops
@@ -362,7 +362,7 @@ def rdf_manual_import(
     Outputs: the same as `filing_index` + `raw_filing_documents` for what the
     HARs contain — raw RDF API responses and document bytes in MinIO (sidecar
     `fetch_tier: manual_har`, `fetched_at` = capture time), `filing_index` rows
-    with their detail columns and `sha256`, and A3 `quarantine` rows. Only
+    with their detail columns and `sha256`, and A3 `quarantine_events` rows. Only
     pending work is done, so re-importing the same files adds nothing. The HAR
     files themselves are never stored. In-scope documents a capture did not
     complete are listed in the metadata (`missing_documents`); a file that could
