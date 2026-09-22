@@ -1,0 +1,22 @@
+# `staging.parsed_documents_current` (plan 0007 amendment 10): only the rows the
+# latest parsing run touched. The file below was `not_yet_mapped` under
+# `spec_hash ''` in run-a; run-b mapped it under h2, and also no longer uses the
+# old config hash h1. Only run-b's row is current.
+
+test_only_the_latest_runs_rows_are_current:
+  model: staging.parsed_documents_current
+  inputs:
+    ext.parsed_documents:
+      rows:
+        - {sha256: h1, source_member: "zip:a.xml", spec_hash: "", krs: "0000000001", document_ref: ref1, status: not_yet_mapped, last_seen_run_id: run-a, last_seen_at: "2026-09-10 08:00:00+00"}
+        - {sha256: h1, source_member: "zip:a.xml", spec_hash: h1, krs: "0000000001", document_ref: ref1, status: quarantined, last_seen_run_id: run-a, last_seen_at: "2026-09-10 08:00:00+00"}
+        - {sha256: h1, source_member: "zip:a.xml", spec_hash: h2, krs: "0000000001", document_ref: ref1, status: valid, filed_bodies: jednostka_mala, last_seen_run_id: run-b, last_seen_at: "2026-09-20 08:00:00+00"}
+        - {sha256: h9, source_member: "zip:old.xml", spec_hash: h0, krs: "0000000009", document_ref: ref9, status: valid}
+    ext.filing_index:
+      rows:
+        - {krs: "0000000001", document_ref: ref1, period_start: 2022-01-01, period_end: 2022-12-31, submission_date: 2023-06-30}
+  outputs:
+    query:
+      partial: true
+      rows:
+        - {sha256: h1, source_member: "zip:a.xml", spec_hash: h2, status: valid, filed_bodies: jednostka_mala, fiscal_year: 2022, known_from: 2023-06-30, last_seen_run_id: run-b}

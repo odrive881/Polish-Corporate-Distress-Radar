@@ -1,0 +1,68 @@
+# `quarantine.quarantine` (plan 0007 step D). Fixtures, never the live seed.
+#
+# Files: F1 is quarantined now (two material failures and one immaterial);
+# F2 was quarantined by an earlier rule and now grades `pass` (its log row is
+# stale); F3 failed C2 mapping and has no canonical rows; F4 failed C2 once
+# but the latest run maps it (`valid`). A2 key K2 was detected twice with
+# different reasons; A3 key K3 once.
+
+test_quarantine_is_the_current_set_not_the_log:
+  model: quarantine.quarantine
+  inputs:
+    ext.financial_statements_canonical:
+      rows:
+        - {krs: "0000000001", document_ref: ref1, source_document_hash: h1, source_member: "zip:1.xml", known_from: 2023-06-30, quality_grade: quarantined, line_item: BS.ASSETS}
+        - {krs: "0000000001", document_ref: ref1, source_document_hash: h1, source_member: "zip:1.xml", known_from: 2023-06-30, quality_grade: quarantined, line_item: BS.EQUITY_LIABILITIES}
+        - {krs: "0000000002", document_ref: ref2, source_document_hash: h2, source_member: "zip:2.xml", known_from: 2023-07-01, quality_grade: pass, line_item: BS.ASSETS}
+    ext.identity_check_results:
+      rows:
+        - {source_document_hash: h1, source_member: "zip:1.xml", check: balance_sheet_balances, status: fail, severity: material}
+        - {source_document_hash: h1, source_member: "zip:1.xml", check: subtotals_consistent, status: fail, severity: material}
+        - {source_document_hash: h1, source_member: "zip:1.xml", check: subtotals_consistent, status: fail, severity: material}
+        - {source_document_hash: h1, source_member: "zip:1.xml", check: profit_ties, status: fail, severity: immaterial}
+        - {source_document_hash: h2, source_member: "zip:2.xml", check: subtotals_consistent, status: pass}
+    staging.parsed_documents_current:
+      rows:
+        - {sha256: h1, source_member: "zip:1.xml", krs: "0000000001", document_ref: ref1, status: valid, known_from: 2023-06-30}
+        - {sha256: h2, source_member: "zip:2.xml", krs: "0000000002", document_ref: ref2, status: valid, known_from: 2023-07-01}
+        - {sha256: h3, source_member: "zip:3.xml", krs: "0000000003", document_ref: ref3, status: quarantined, known_from: 2023-08-01}
+        - {sha256: h4, source_member: "zip:4.xml", krs: "0000000004", document_ref: ref4, status: valid, known_from: 2023-09-01}
+    ext.quarantine_events:
+      rows:
+        - {stage: E2, entity_key: "0000000001:ref1", reason_code: subtotals_consistent, source_document_hash: h1, created_at: "2026-09-10 08:00:00+00", krs: "0000000001", document_ref: ref1}
+        - {stage: E2, entity_key: "0000000001:ref1", reason_code: balance_sheet_balances, source_document_hash: h1, created_at: "2026-09-12 08:00:00+00", krs: "0000000001", document_ref: ref1}
+        - {stage: E2, entity_key: "0000000002:ref2", reason_code: subtotals_consistent, source_document_hash: h2, created_at: "2026-09-10 08:00:00+00", krs: "0000000002", document_ref: ref2}
+        - {stage: C2, entity_key: "0000000003:ref3", reason_code: unmapped_element, source_document_hash: h3, created_at: "2026-09-11 08:00:00+00", krs: "0000000003", document_ref: ref3}
+        - {stage: C2, entity_key: "0000000004:ref4", reason_code: unmapped_element, source_document_hash: h4, created_at: "2026-09-11 08:00:00+00", krs: "0000000004", document_ref: ref4}
+        - {stage: A2, entity_key: "0000000022", reason_code: not_found, source_document_hash: s1, created_at: "2026-09-01 08:00:00+00", krs: "0000000022"}
+        - {stage: A2, entity_key: "0000000022", reason_code: pkd_section_mismatch, source_document_hash: s2, created_at: "2026-09-05 08:00:00+00", krs: "0000000022"}
+        - {stage: A3, entity_key: "0000000033", reason_code: no_rdf_filings, source_document_hash: s3, created_at: "2026-09-02 08:00:00+00", krs: "0000000033"}
+  outputs:
+    query:
+      rows:
+        # A2: the latest detection's reason; first detected at the first one.
+        - {stage: A2, entity_key: "0000000022", krs: "0000000022", document_ref: null, source_document_hash: s2, source_member: null, reason_codes: [pkd_section_mismatch], known_from: null, first_detected_at: "2026-09-01 08:00:00+00"}
+        # An ungraded A3 failure survives: the log is its only source.
+        - {stage: A3, entity_key: "0000000033", krs: "0000000033", document_ref: null, source_document_hash: s3, source_member: null, reason_codes: [no_rdf_filings], known_from: null, first_detected_at: "2026-09-02 08:00:00+00"}
+        # F3: a C2 file with no canonical rows, from parsed_documents. F4 is gone: now mapped.
+        - {stage: C2, entity_key: "0000000003:ref3", krs: "0000000003", document_ref: ref3, source_document_hash: h3, source_member: "zip:3.xml", reason_codes: [unmapped_element], known_from: 2023-08-01, first_detected_at: "2026-09-11 08:00:00+00"}
+        # F1 once, with both material reasons and not the immaterial one. F2 is gone: grade improved.
+        - {stage: E2, entity_key: "0000000001:ref1", krs: "0000000001", document_ref: ref1, source_document_hash: h1, source_member: "zip:1.xml", reason_codes: [balance_sheet_balances, subtotals_consistent], known_from: 2023-06-30, first_detected_at: "2026-09-10 08:00:00+00"}
+
+test_a_c1_file_without_a_filing_is_keyed_by_its_member:
+  model: quarantine.quarantine
+  inputs:
+    ext.financial_statements_canonical:
+      rows: []
+    ext.identity_check_results:
+      rows: []
+    staging.parsed_documents_current:
+      rows:
+        - {sha256: h5, source_member: "zip:stray.xml", krs: "0000000005", document_ref: null, status: quarantined, known_from: null}
+    ext.quarantine_events:
+      rows:
+        - {stage: C1, entity_key: "0000000005:zip:stray.xml", reason_code: member_not_in_filing_index, source_document_hash: h5, created_at: "2026-09-11 08:00:00+00", krs: "0000000005", document_ref: null}
+  outputs:
+    query:
+      rows:
+        - {stage: C1, entity_key: "0000000005:zip:stray.xml", krs: "0000000005", document_ref: null, source_document_hash: h5, source_member: "zip:stray.xml", reason_codes: [member_not_in_filing_index], known_from: null, first_detected_at: "2026-09-11 08:00:00+00"}
