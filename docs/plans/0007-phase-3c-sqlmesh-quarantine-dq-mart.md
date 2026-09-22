@@ -23,6 +23,33 @@ stale figures are corrected:
    holds **68 rows**; the canonical table grades **28 of 129 files** `quarantined`; `parsed_documents` holds
    451 rows across 35 mapping-config hashes, of which the current config accounts for 130 statement files.
 
+**Amendments proposed 2026-09-22 (pre-build review, pending owner confirmation).** Checking the plan against
+the code found premises that do not hold; the steps below are already edited to match. Confirm or overrule
+before step A.
+
+5. **C2 is not a graded stage.** A `MappingError` file is recorded `quarantined` in `parsed_documents` and
+   skipped (`dagster_defs/assets/parsing.py`): it has no canonical rows, hence no `quality_grade`. Only E2
+   sets `quality_grade = 'quarantined'`. The source that knows the current C1/C2 answer is
+   `parsed_documents.status`, recomputed on every run. Decision 4 and step D now use it.
+6. **The filed body is per statement, not per file.** One file can mix bodies (plan 0005 step D), so a
+   single scalar on `parsed_documents` cannot hold "the body". The column records the file's **body set**:
+   its distinct filed bodies, sorted and joined with `+`. That is exactly `dq_mart`'s dimension, and the
+   per-statement detail stays readable from `source_element_path`.
+7. **`quarantine_events` gains `krs` and `document_ref`; the model drops last-seen.** Today both are packed
+   into `entity_key` in stage-specific formats, and inserts are `ON CONFLICT DO NOTHING`, so `created_at` is
+   first detection only. A last-seen timestamp would mean mutating the log, against decision 4. `known_from`
+   is null for A-stage rows, where no filing exists to take it from.
+8. **Identity results carry a per-row `severity`.** Checks emit `pass`/`fail`/`not_applicable`; `warn` is a
+   per-file grade derived in `grade()` from the materiality of each failure. Step A makes that per-row
+   judgement explicit (`material`/`immaterial` on failing rows), and `grade()` rolls it up. `dq_mart` then
+   counts material and immaterial failures per check instead of "warned", which no check produces.
+9. **`dq_mart` is a full rebuild, not incremental by `known_from`.** A fiscal-year cell aggregates filings
+   with many `known_from` dates, and a grading-rule change rewrites past cells. Decision 5 applies to the
+   staging layer only.
+10. **`parsed_documents` records which run last saw each row.** Rows are upserted only when a run touches
+    them, so a file once `not_yet_mapped` under `spec_hash ''` keeps that row after it is mapped. The
+    coverage grain and the C1/C2 half of `quarantine` read only rows seen by the latest run.
+
 ## Why
 
 Three things are outstanding and they resolve together.
@@ -39,13 +66,17 @@ Three things are outstanding and they resolve together.
 2. **DuckDB is the execution engine; Postgres is the state backend.** DuckDB reads the Parquet under `WAREHOUSE_DIR` directly (ADR 0008) and is the locked analytics engine. SQLMesh's own state (snapshots, plans, environments) goes to the Postgres that already runs for the manifest, rather than a second DuckDB file: Dagster and an interactive `sqlmesh` CLI will both touch it, and a file-backed state under `.data/` invites a locking problem the day that happens. Recorded as **ADR 0010**.
 
 3. **The Postgres `quarantine` table is renamed `quarantine_events`.** §5 makes `quarantine` a canonical dataset name, and after this plan that name belongs to the SQLMesh model holding the *current* set. Two objects with one name and opposite semantics — a log versus a current state — is precisely what the canonical-names rule exists to prevent. The Postgres table keeps its append-only detection-log role under the clearer name.
-   - This touches A2, A3, C1, C2 and E2 writers and `acquisition/models.py`. It is a rename, not a semantic change, and the 46 existing rows migrate as they are.
+   - This touches the A1, A2, A3, C1, C2 and E2 writers, `acquisition/models.py`, the pending-work queries in `acquisition/manifest.py`, `table_counts()` and `redaction_migration.py`. It is a rename, not a semantic change, and the existing rows (68 at 2026-09-21) migrate as they are.
 
-4. **The log is never cleaned; the current set is recomputed from scratch on every run.** `quarantine_events` stays append-only and nothing is ever deleted from it — a detection log that gets tidied stops being evidence of what was detected when. The `quarantine` model rebuilds membership each run, asking **whichever source actually knows** for each stage: for stages with a graded output (C2/E2), the canonical table's `quality_grade = 'quarantined'`, because grading is recomputed from the current rules on every materialization; for stages that produce no row to grade (A2, A3, C1 — nothing was written), the latest event per key in `quarantine_events`.
+4. **The log is never cleaned; the current set is recomputed from scratch on every run.** `quarantine_events` stays append-only and nothing is ever deleted from it — a detection log that gets tidied stops being evidence of what was detected when. The `quarantine` model rebuilds membership each run, asking **whichever source actually knows** for each stage (amendment 5):
+   - **E2:** the canonical table's `quality_grade = 'quarantined'`, because grading is recomputed from the current rules on every materialization.
+   - **C1, C2:** `parsed_documents.status = 'quarantined'` among rows seen by the latest run (amendment 10), which is recomputed on every run too. These files have no canonical rows. The reason code comes from the matching `quarantine_events` row.
+   - **A1, A2, A3:** nothing downstream records these failures, so the latest event per key in `quarantine_events` is the only source. A2 and A3 never retry a quarantined key, so these rows leave the current set only when that retry rule changes. That is acquisition behaviour, not this plan's to fix.
    - This is why no `DELETE` is needed and why the plan-0004 close-out's hand-written SQL is dropped: rows describing files the current rules no longer quarantine simply stop being selected. They remain in the log, which is the point — the log answers "what did we reject, and when", the model answers "what is rejected now".
    - It also means the model is a full rebuild, not an incremental one. Decision 5's `known_from` keying applies to the staging layer, not to this.
 
 5. **Incremental models are keyed on `known_from`, not `fiscal_year`.** §6F asks that a late-arriving filing for an old period trigger a correct partial rebuild. `known_from` is the axis on which data actually arrives (§4.7); a 2019 statement filed in 2026 is new data for an old period. The model processes by `known_from` range and rebuilds whichever `fiscal_year` partitions that touches.
+   - This applies to the staging layer only. `quarantine` and `dq_mart` are full rebuilds (decision 4, amendment 9): both are aggregates or current-state sets that a grading-rule change rewrites all the way back.
 
 6. **`as_of_month` partitioning and `valid_from`/`valid_to` are not in this plan.** §6F lists them as F's output shape, but they describe the point-in-time snapshot models that H consumes, and H is Phase 5. Building a bitemporal snapshot now, with no consumer, would fix its shape before the feature store can say what it needs. This plan builds the `known_from`-keyed staging layer those models will sit on, and says so in the ADR.
 
@@ -70,6 +101,7 @@ Three things are outstanding and they resolve together.
 ### A. Persist the identity-check results (prerequisite, no SQLMesh yet)
 
 - Add a third derived dataset, `identity_check_results`, written by the `financial_statements_canonical` asset from the `run_identity_checks` frame it already computes: one row per (file, check, column) with `status` (`pass`/`fail`/`not_applicable`), the expected/actual/difference it already carries, and the file's lineage columns.
+- **Add a `severity` column** (amendment 8): `material` or `immaterial` on `fail` rows, null otherwise. Use the rule `grade()` applies inline today: a current-year tie failure is material, and so is a current-year subtotal failure above `SUBTOTAL_WARN_RELATIVE` of total assets (or with no total assets to compare); every other failure is immaterial. `grade()` then becomes a roll-up (any material → `quarantined`, any fail → `warn`, else `pass`). That is a refactor, not a rule change: every file's grade must come out the same, and so must both value hashes.
 - `not_applicable` is a real outcome and must be recorded, not omitted: a small-form filing has no cash-flow statement (plan 0005), and "this check did not apply" is different from "this check passed". A pass rate that silently counts exemptions as passes is wrong.
 - **Rename `skipped` → `not_applicable` at the source** (owner decision 1): `accounting_identities._row`, `RESULT_SCHEMA`'s documented values, the asset-check metadata counters in `dagster_defs/checks/`, and the tests that assert on it. One name, used by the rule, the dataset and the mart. It is a pure rename — no row changes status — so the canonical values and both value hashes must be unchanged afterwards (`notebooks/exploration/canonical_value_hash.py`).
 - Amend **AGENT_SPEC §5** with the dataset, and add a Pandera contract in `parsing/contracts.py` beside the other two.
@@ -79,28 +111,39 @@ Three things are outstanding and they resolve together.
 
 - Add `sqlmesh` to `[project].dependencies`; `make lock`.
 - `transform/config.yaml`: DuckDB gateway for execution, Postgres for state (decision 2), `WAREHOUSE_DIR` resolved from the same setting the Python side uses so there is one source of truth for the path.
-- External models for `financial_statements_canonical`, `restatement_events`, `identity_check_results` (Parquet) and `quarantine_events` (Postgres), with their columns declared so SQLMesh can type-check the models above them.
+- External models for `financial_statements_canonical`, `restatement_events`, `identity_check_results` (Parquet), plus `quarantine_events` and `parsed_documents` (Postgres). Declare their columns so SQLMesh can type-check the models above them. `parsed_documents` feeds the coverage grain, the body-set dimension and the C1/C2 half of `quarantine`.
+- DuckDB reads the Postgres tables through its `postgres` extension, attached as a catalog in the gateway config. The extension is fetched on first `INSTALL`, so pin how it gets installed (a `make` step, not an implicit download inside a run) and record that in ADR 0010.
 - `make` targets: `transform-plan`, `transform-run`, and `transform-test` wired into `make check` so a broken model fails the gate like anything else.
+- **`make check` must still run without `make dev-up`.** Today the gate is lint, typecheck and unit tests, with anything that needs Postgres in `make test-integration`. First confirm whether `sqlmesh test` opens the state connection. If it does, `transform-test` runs against a test-only gateway: in-memory DuckDB for both execution and state, fixtures in place of the Postgres external models.
 - SQLMesh installs **pandas and numpy** transitively (0.236 resolves on this Python; probed 2026-09-21). That is accepted, and the prohibition is being removed from the specs (decision 8). Add the replacement guard here: a test asserting no module under `src/` or `dagster_defs/` imports pandas, so the Polars idiom is enforced where it matters.
 
 ### C. Rename `quarantine` → `quarantine_events`
 
-- Migration in the Postgres schema modules, following ADR 0006's pattern; update A2, A3, C1, C2 and E2 writers and `QuarantineRecord`.
+- Migration in the Postgres schema modules, following ADR 0006's pattern. Update every writer and reader: `QuarantineRecord`, the A1 (`universe_discovery`), A2, A3, C1, C2 and E2 writers, the A2/A3 pending-work queries in `acquisition/manifest.py`, `table_counts()`, and the `UPDATE` in `redaction_migration.py`.
+- **`quarantine_events` gains nullable `krs` and `document_ref`** (amendment 7), written by every writer from now on. Existing rows are backfilled from `entity_key`: the KRS alone for A2/A3, `krs:document_ref` for C1/C2/E2, and both null for A1's `file#index`. A key that parses as none of these fails the migration; it is not skipped.
 - Integration test: the migration is idempotent and preserves every row (68 at 2026-09-21 — assert against the count read before the migration, not a literal).
-- **Same migration adds the filed body to `parsed_documents`** (owner decision 2): which body each statement was filed in, for the specs that accept alternatives. The asset already resolves it per statement while mapping (`mapping_engine`) and E2 reads it back off `source_element_path`, so this is recording what is already known, not deriving anything new. Nullable, and null for a spec with one body. Plan 0006's `tier` column joins the same set when that plan is built.
+- **Same migration adds the filed body set to `parsed_documents`** (owner decision 2, amendment 6): column `filed_bodies`, holding the distinct bodies the file's statements were filed in, sorted and joined with `+`. For a spec with one body it is that body, so SQL never needs the mapping config to fill it in. It is null only for rows with no spec. The asset already resolves the body per statement (`_bodies_filed`, from `source_element_path`), so this records what is already known. Plan 0006's `tier` column joins the same set when that plan is built.
+- **Same migration adds `last_seen_run_id`** to `parsed_documents` (amendment 10), set on every upsert, next to the never-overwritten `first_ingestion_run_id`. The latest run's id identifies the current rows. Before the migration, measure how many rows the latest run did not touch, and record that count here; the stale `spec_hash ''` rows are the expected case.
 
 ### D. `quarantine` model
 
-- `transform/models/quarantine/`: the current quarantined set, union of the graded source (canonical `quality_grade = 'quarantined'`, with the failing check names from `identity_check_results`) and the ungraded stages (latest event per key from `quarantine_events`).
-- Columns: stage, reason code, entity key, `krs`, `document_ref`, `known_from`, first-detected and last-seen timestamps.
-- Audits: no row without a reason code; no key appearing in both halves; the row count for C2/E2 equals the distinct quarantined file count on the canonical table.
+- `transform/models/quarantine/`: the current quarantined set, a union of three sources (decision 4):
+  - E2: canonical `quality_grade = 'quarantined'`, with the failing check names from `identity_check_results`.
+  - C1/C2: `parsed_documents.status = 'quarantined'` on the latest run, with the reason from `quarantine_events`.
+  - A1–A3: the latest event per key from `quarantine_events`.
+- Columns: stage, reason code, entity key, `krs`, `document_ref`, `known_from` (null for A stages), and first-detected (the earliest matching `quarantine_events.created_at`). There is no last-seen (amendment 7).
+- Audits:
+  - no row without a reason code;
+  - no file appears under more than one of the C1, C2 and E2 sources;
+  - the E2 file count equals the distinct quarantined file count on the canonical table;
+  - the C1/C2 file count equals the latest-run `quarantined` count in `parsed_documents`.
 
 ### E. `dq_mart` model
 
-- Grain: structure version × **filed body** × fiscal year × check type (decision 2). Measures: files checked, passed, warned, failed, not-applicable, pass rate, and distinct entities. The body matters because a small envelope carrying full-form statements is a different parsing path with its own failure modes, and `structure_version` alone hides it.
-- A companion coverage grain: files stored, parsed, `not_yet_mapped`, `needs_pdf_tier`, by fiscal year — which is the number that makes plans 0005 and 0006 legible, and which today can only be got by hand-querying `parsed_documents`. With plan 0006 deferred, this grain is also how its triggers get counted: a `needs_pdf_tier` file with no later filing for the same entity is the case that would justify building the PDF tier.
+- Grain: structure version × **filed body set** × fiscal year × check type (owner decision 2, amendment 6). Measures: files checked, passed, failed materially, failed immaterially, not applicable, pass rate, and distinct entities. Failures are split by `severity` (amendment 8), so the material failures are the quarantine drivers and the immaterial ones the warn drivers. A file counts once per check: it fails a check if any of its rows for that check fails, and the failure is material if any failing row is. A check is not applicable to a file only if every one of its rows for that check is `not_applicable`. The body matters because a small envelope carrying full-form statements is a different parsing path with its own failure modes, and `structure_version` alone hides it.
+- A companion coverage grain: files stored, parsed, `not_yet_mapped`, `needs_pdf_tier`, by fiscal year, counted over `parsed_documents` rows seen by the latest run (amendment 10) so a file mapped since its `not_yet_mapped` row was written is not counted twice — which is the number that makes plans 0005 and 0006 legible, and which today can only be got by hand-querying `parsed_documents`. With plan 0006 deferred, this grain is also how its triggers get counted: a `needs_pdf_tier` file with no later filing for the same entity is the case that would justify building the PDF tier.
 - Small-cell suppression per decision 9, as a model-level rule with its threshold in settings, plus an audit that no cell has an entity count below it while it is not flagged `suppressed`. The setting is nullable and **defaults to `null` (suppression off)**; its definition carries a comment stating that it must be set to at least 5 before Phase 9 publishes, and that the publish step must refuse to run while it is `null`. Test both states: `null` suppresses nothing, and a set threshold suppresses and flags exactly the cells below it.
-- Incremental by `known_from` (decision 5).
+- Full rebuild on every run, not incremental (amendment 9).
 
 ### F. Dagster wiring
 
@@ -118,19 +161,25 @@ Three things are outstanding and they resolve together.
 
 ## Tests
 
-- **`identity_check_results`:** contract holds; `not_applicable` is emitted for a small-form filing's cash-flow check; the dataset reproduces byte-identically on re-run.
-- **SQLMesh model tests** (fixtures, not the live seed): the `quarantine` model drops a key whose grade improved between runs — the 9-stale-row scenario, as a test; a file failing two checks appears once with both reasons; an ungraded A3 failure survives.
-- **`dq_mart`:** pass rates computed against a hand-built fixture; `not_applicable` excluded from the denominator; with a threshold set, a 1-entity cell is suppressed and flagged, not dropped; with the threshold `null` (the shipped default), nothing is suppressed and every `suppressed` flag is false.
+- **`identity_check_results`:** contract holds; `not_applicable` is emitted for a small-form filing's cash-flow check; `severity` is set on exactly the `fail` rows; rolling `severity` up reproduces every file's current `quality_grade` over the seed; the dataset reproduces byte-identically on re-run.
+- **Migration (step C):** the `entity_key` backfill fills `krs`/`document_ref` correctly for each stage's key format and fails on a key that matches none; `filed_bodies` is `a+b` for a small envelope carrying one full-form statement.
+- **SQLMesh model tests** (fixtures, not the live seed):
+  - the `quarantine` model drops a key whose grade improved between runs (the stale-log-row scenario, as a test);
+  - a file failing two checks appears once with both reasons;
+  - an ungraded A3 failure survives;
+  - a C2 `MappingError` file appears although it has no canonical rows, and disappears once a later run maps it;
+  - a `parsed_documents` row the latest run did not touch counts in neither `quarantine` nor the coverage grain.
+- **`dq_mart`:** pass rates computed against a hand-built fixture; `not_applicable` excluded from the denominator; material and immaterial failures counted apart; with a threshold set, a 1-entity cell is suppressed and flagged, not dropped; with the threshold `null` (the shipped default), nothing is suppressed and every `suppressed` flag is false.
 - **Audits run in CI** via `make check`.
 - **Idempotence:** `transform-run` twice over unchanged input produces identical output.
 
 ## Definition of done
 
-- [ ] `identity_check_results` persisted, contracted and in §5.
-- [ ] SQLMesh project runs from `make`, state in Postgres, DuckDB reading `WAREHOUSE_DIR`.
-- [ ] Postgres `quarantine` renamed `quarantine_events`, all 46 rows preserved.
-- [ ] `quarantine` model materializes and **excludes all 9 stale rows with no manual SQL**.
-- [ ] `dq_mart` materializes with pass rates by structure version × filed body × fiscal year × check type, plus the coverage grain; the suppression mechanism is built and tested, and ships switched off (threshold `null`) with the Phase 9 instruction recorded.
+- [ ] `identity_check_results` persisted with `severity`, contracted and in §5; grades and value hashes unchanged.
+- [ ] SQLMesh project runs from `make`, state in Postgres, DuckDB reading `WAREHOUSE_DIR`; `make check` still needs no running Postgres.
+- [ ] Postgres `quarantine` renamed `quarantine_events`, every row preserved (count taken before the migration), `krs`/`document_ref` backfilled; `parsed_documents` has `filed_bodies` and `last_seen_run_id`.
+- [ ] `quarantine` model materializes and **excludes every stale log row with no manual SQL**. Count the stale rows against the log before the migration, record the figure here, and check the model against it.
+- [ ] `dq_mart` materializes with pass rates by structure version × filed body set × fiscal year × check type, plus the coverage grain; the suppression mechanism is built and tested, and ships switched off (threshold `null`) with the Phase 9 instruction recorded.
 - [ ] Dagster runs the models; audits surface as asset checks.
 - [ ] ADR 0010 accepted; docs from step G updated, including the plan-0004 supersession pointer.
 - [ ] `make check` and `make test-integration` green; re-running is byte-identical.
@@ -138,8 +187,8 @@ Three things are outstanding and they resolve together.
 ## Risks
 
 - **SQLMesh's state in Postgres is new operational surface.** If it proves awkward for a single-developer local loop, the fallback is a DuckDB state file — a config change, not a redesign. ADR 0010 should record that fallback so it is not re-litigated.
-- **The rename in step C touches five writers.** It is mechanical, but it is the one step here that can break acquisition, which is otherwise untouched by Phase 3. Land it on its own, with the integration tests green, before the models are built on top.
-- **`dq_mart` will make the seed's quality look poor** — 21 of 81 files quarantined today, all traced to genuine filing defects. That is an accurate picture of Polish small-company filings, and the mart should present it alongside the coverage grain so a reader sees "21 files with defects" rather than inferring "the parser is broken". Worth getting the framing right before anything is published in Phase 9.
+- **The rename in step C touches six writers, two pending-work queries and the redaction migration.** It is mechanical, but it is the one step here that can break acquisition, which is otherwise untouched by Phase 3. Land it on its own, with the integration tests green, before the models are built on top.
+- **`dq_mart` will make the seed's quality look poor** — 28 of 129 files quarantined at 2026-09-21, all traced to genuine filing defects. That is an accurate picture of Polish small-company filings, and the mart should present it alongside the coverage grain so a reader sees "21 files with defects" rather than inferring "the parser is broken". Worth getting the framing right before anything is published in Phase 9.
 
 ## After Phase 3
 
