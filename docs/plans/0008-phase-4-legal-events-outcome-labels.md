@@ -10,7 +10,41 @@
 deferred to "no earlier than Phase 4, when MSiG forces a PDF text layer". Whether MSiG forces it is now a question
 this plan answers in step A, not an assumption (decision 2).
 
-## Status: draft — owner decisions below are pending (2026-09-22)
+## Status: step A done (2026-09-22); owner decisions pending before step B
+
+**Step A close-out, 2026-09-22.** Full findings, the per-entity table, and the terms are in
+**ADR 0011** (`proposed`). `notebooks/exploration/legal_sources_probe.py` is the probe. It held every response in
+memory and printed only structure, dates and case signatures. Four redacted KRS extracts are in
+`tests/fixtures/legal/krs/`, gated by `tests/acquisition/test_legal_fixtures.py`. What it changes here:
+- **The KRS extract holds up across the seed.** It returned all 17 extracts over plain `httpx`, with no key and no
+  wall, and **every one of the 9 hinted entities has its event in it**. 8 of 9 have a usable date:
+  - `0000507997`'s declaration has only an entry date;
+  - the restructuring openings' date field is named `dataNadaniaKlauzuliWykonalnosci`, which needs confirming.
+
+  Decision 1 as recommended.
+- **Decision 2 resolved: MSiG is a JSON API that returns notice text. The PDF tier is not needed,** and plan 0006's
+  Phase 4 trigger does not fire. Step E becomes an MSiG JSON adapter.
+- **The registry carries petition-stage evidence after all.** `dzial4.zabezpieczenieMajatkuOddalenieWnioskuOUpadlosc`
+  (asset-security orders while a petition is pending, and dismissals) means "petitions never produce a registry
+  entry" was wrong. The taxonomy gains `bankruptcy_petition_asset_security` and
+  `restructuring_petition_asset_security` as petition-stage event types.
+- **KRZ sits behind Imperva, like RDF.** It is not built in Phase 4 (ADR 0011 decision 4). Seed acceptance does not
+  need it; `source_era` keeps the gap visible.
+- **Decision 3 changes shape.** Notaries are named in free text (articles of association, liquidation and
+  dissolution resolutions), and MSiG notice bodies name trustees. Redaction must be a key list **plus an allowlist
+  of generic free-text fields**, with everything else reduced to its leading date. For MSiG, store the structured
+  fields plus the extracted date and signature, not the body (ADR 0011 decision 3). The fixtures follow exactly
+  this rule.
+- **Deregistration has no structured field.** It is read from an entry's `opis` (`WYKREŚL…`). 3 of the 17 are
+  deregistered, and 2 of them are the "in liquidation" hints, which are stale.
+- **Registry lag is 14 days to 21 months** from decision to entry. `known_from` by entry date is safe but can be
+  very late, and MSiG's earlier publication date matters for features.
+- **Corrections to the text below:**
+  - the header key is `naglowekP.wpis`, not `wpisy`;
+  - `0000225354` (no hint) shows arrears with enforcement and court curators: a Phase 5 feature finding, not a
+    label.
+- **New open question for step B:** a declaration with no decision date. Proposed rule: `event_date` null,
+  `known_from` the entry date, and labels treat the event as happening on or before `known_from`.
 
 ## Why
 
@@ -312,7 +346,7 @@ unredacted is committed, and `test_no_fixture_contains_personal_data` must cover
 
 ## Definition of done
 
-- [ ] ADR 0011 accepted: access and terms confirmed for every source used, and the gap table recorded.
+- [ ] ADR 0011 accepted: access and terms confirmed for every source used, and the gap table recorded. *(Written 2026-09-22, `proposed`; awaiting the owner.)*
 - [ ] The procedure taxonomy and label config are written, validated and tested.
 - [ ] KRS extracts (and KRZ, and MSiG if built) acquired for the 17-entity seed, redacted and content-addressed.
 - [ ] `legal_events` persisted and contracted, with full lineage and deduplication.

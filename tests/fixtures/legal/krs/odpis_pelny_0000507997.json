@@ -1,0 +1,1805 @@
+{
+ "odpis": {
+  "dane": {
+   "dzial1": {
+    "danePodmiotu": {
+     "czyPosiadaStatusOPP": [
+      {
+       "czyPosiadaStatusOPP": false,
+       "nrWpisuWprow": "1"
+      }
+     ],
+     "czyProwadziDzialalnoscZInnymiPodmiotami": [
+      {
+       "czyProwadziDzialalnoscZInnymiPodmiotami": false,
+       "nrWpisuWprow": "1"
+      }
+     ],
+     "formaPrawna": [
+      {
+       "formaPrawna": "SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ",
+       "nrWpisuWprow": "1"
+      }
+     ],
+     "identyfikatory": [
+      {
+       "identyfikatory": {
+        "nip": "9452179060"
+       },
+       "nrWpisuWprow": "2",
+       "nrWpisuWykr": "3"
+      },
+      {
+       "identyfikatory": {
+        "nip": "9452179054"
+       },
+       "nrWpisuWprow": "3",
+       "nrWpisuWykr": "5"
+      },
+      {
+       "identyfikatory": {
+        "nip": "9452179060"
+       },
+       "nrWpisuWprow": "5",
+       "nrWpisuWykr": "6"
+      },
+      {
+       "identyfikatory": {
+        "nip": "9452179060",
+        "regon": "12310988800000"
+       },
+       "nrWpisuWprow": "6",
+       "nrWpisuWykr": "7"
+      },
+      {
+       "identyfikatory": {
+        "nip": "9452179054",
+        "regon": "12310988800000"
+       },
+       "nrWpisuWprow": "7",
+       "nrWpisuWykr": "8"
+      },
+      {
+       "identyfikatory": {
+        "dataDecyzji": "2015-11-17",
+        "nip": "9452179060",
+        "regon": "12310988800000",
+        "statusNip": "UNIEWAŻNIONY"
+       },
+       "nrWpisuWprow": "8",
+       "nrWpisuWykr": "9"
+      },
+      {
+       "identyfikatory": {
+        "nip": "9452179054",
+        "regon": "12310988800000"
+       },
+       "nrWpisuWprow": "9"
+      }
+     ],
+     "nazwa": [
+      {
+       "nazwa": "STALBUD-KONSTRUKCJE SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ",
+       "nrWpisuWprow": "1",
+       "nrWpisuWykr": "44"
+      },
+      {
+       "nazwa": "STALBUD-KONSTRUKCJE SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ W UPADŁOŚCI",
+       "nrWpisuWprow": "44"
+      }
+     ]
+    },
+    "kapital": {
+     "wysokoscKapitaluZakladowego": [
+      {
+       "nrWpisuWprow": "1",
+       "waluta": "PLN",
+       "wartosc": "100000,00"
+      }
+     ]
+    },
+    "pozostaleInformacje": {
+     "informacjaOCzasieNaJakiZostalUtworzonyPodmiot": [
+      {
+       "czasNaJakiUtworzonyZostalPodmiot": "NIEOZNACZONY",
+       "nrWpisuWprow": "1"
+      }
+     ],
+     "informacjaOLiczbieUdzialow": [
+      {
+       "informacjaOLiczbieUdzialow": "WIĘKSZĄ LICZBĘ UDZIAŁÓW",
+       "nrWpisuWprow": "1"
+      }
+     ],
+     "informacjaOPismieDoOgloszen": []
+    },
+    "siedzibaIAdres": {
+     "adres": [
+      {
+       "kodPocztowy": "31-231",
+       "kraj": "POLSKA",
+       "miejscowosc": "KRAKÓW",
+       "nrDomu": "17",
+       "nrWpisuWprow": "1",
+       "poczta": "KRAKÓW",
+       "ulica": "BOCIANA"
+      }
+     ],
+     "adresDoDoreczenElektronicznychWpisanyDoBAE": [],
+     "adresPocztyElektronicznej": [],
+     "adresStronyInternetowej": [],
+     "siedziba": [
+      {
+       "gmina": "M. KRAKÓW",
+       "kraj": "POLSKA",
+       "miejscowosc": "KRAKÓW",
+       "nrWpisuWprow": "1",
+       "powiat": "M. KRAKÓW",
+       "wojewodztwo": "MAŁOPOLSKIE"
+      }
+     ]
+    },
+    "umowaStatut": {
+     "informacjaOZawarciuZmianieUmowyStatutu": [
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "1",
+         "zawarcieZmianaUmowyStatutu": "[REDACTED] 28.02.2014"
+        }
+       ]
+      }
+     ]
+    },
+    "wspolnicySpzoo": [
+     {
+      "czyPosiadaCaloscUdzialow": [
+       {
+        "czyPosiadaCaloscUdzialow": false,
+        "nrWpisuWprow": "1",
+        "nrWpisuWykr": "25"
+       }
+      ],
+      "identyfikator": [
+       {
+        "nrWpisuWprow": "1",
+        "nrWpisuWykr": "25",
+        "pesel": "[REDACTED]"
+       }
+      ],
+      "imiona": [
+       {
+        "imiona": {
+         "imie": "[REDACTED]",
+         "imieDrugie": "[REDACTED]"
+        },
+        "nrWpisuWprow": "1",
+        "nrWpisuWykr": "25"
+       }
+      ],
+      "nazwisko": [
+       {
+        "nazwisko": {
+         "nazwiskoICzlon": "[REDACTED]"
+        },
+        "nrWpisuWprow": "1",
+        "nrWpisuWykr": "25"
+       }
+      ],
+      "posiadaneUdzialy": [
+       {
+        "nrWpisuWprow": "1",
+        "nrWpisuWykr": "25",
+        "posiadaneUdzialy": "50 UDZIAŁÓW O ŁĄCZNEJ WARTOŚCI 50.000 ZŁ"
+       }
+      ]
+     },
+     {
+      "czyPosiadaCaloscUdzialow": [
+       {
+        "czyPosiadaCaloscUdzialow": false,
+        "nrWpisuWprow": "1"
+       }
+      ],
+      "identyfikator": [
+       {
+        "nrWpisuWprow": "1",
+        "pesel": "[REDACTED]"
+       }
+      ],
+      "imiona": [
+       {
+        "imiona": {
+         "imie": "[REDACTED]",
+         "imieDrugie": "[REDACTED]"
+        },
+        "nrWpisuWprow": "1"
+       }
+      ],
+      "nazwisko": [
+       {
+        "nazwisko": {
+         "nazwiskoICzlon": "[REDACTED]"
+        },
+        "nrWpisuWprow": "1"
+       }
+      ],
+      "posiadaneUdzialy": [
+       {
+        "nrWpisuWprow": "1",
+        "posiadaneUdzialy": "50 UDZIAŁÓW O ŁĄCZNEJ WARTOŚCI 50.000 ZŁ"
+       }
+      ]
+     },
+     {
+      "czyPosiadaCaloscUdzialow": [
+       {
+        "czyPosiadaCaloscUdzialow": false,
+        "nrWpisuWprow": "25"
+       }
+      ],
+      "identyfikator": [
+       {
+        "nrWpisuWprow": "25",
+        "pesel": "[REDACTED]"
+       }
+      ],
+      "imiona": [
+       {
+        "imiona": {
+         "imie": "[REDACTED]",
+         "imieDrugie": "[REDACTED]"
+        },
+        "nrWpisuWprow": "25"
+       }
+      ],
+      "nazwisko": [
+       {
+        "nazwisko": {
+         "nazwiskoICzlon": "[REDACTED]"
+        },
+        "nrWpisuWprow": "25"
+       }
+      ],
+      "posiadaneUdzialy": [
+       {
+        "nrWpisuWprow": "25",
+        "posiadaneUdzialy": "50 UDZIAŁÓW O ŁĄCZNEJ WARTOŚCI 50.000,00 ZŁ"
+       }
+      ]
+     }
+    ]
+   },
+   "dzial2": {
+    "prokurenci": [
+     {
+      "identyfikator": [
+       {
+        "nrWpisuWprow": "1",
+        "nrWpisuWykr": "29",
+        "pesel": "[REDACTED]"
+       }
+      ],
+      "imiona": [
+       {
+        "imiona": {
+         "imie": "[REDACTED]",
+         "imieDrugie": "[REDACTED]"
+        },
+        "nrWpisuWprow": "1",
+        "nrWpisuWykr": "29"
+       }
+      ],
+      "nazwisko": [
+       {
+        "nazwisko": {
+         "nazwiskoICzlon": "[REDACTED]"
+        },
+        "nrWpisuWprow": "1",
+        "nrWpisuWykr": "29"
+       }
+      ],
+      "rodzajProkury": [
+       {
+        "nrWpisuWprow": "1",
+        "nrWpisuWykr": "29",
+        "rodzajProkury": "PROKURA SAMOISTNA"
+       }
+      ]
+     },
+     {
+      "identyfikator": [
+       {
+        "nrWpisuWprow": "1",
+        "nrWpisuWykr": "44",
+        "pesel": "[REDACTED]"
+       }
+      ],
+      "imiona": [
+       {
+        "imiona": {
+         "imie": "[REDACTED]"
+        },
+        "nrWpisuWprow": "1",
+        "nrWpisuWykr": "44"
+       }
+      ],
+      "nazwisko": [
+       {
+        "nazwisko": {
+         "nazwiskoICzlon": "[REDACTED]"
+        },
+        "nrWpisuWprow": "1",
+        "nrWpisuWykr": "44"
+       }
+      ],
+      "rodzajProkury": [
+       {
+        "nrWpisuWprow": "1",
+        "nrWpisuWykr": "44",
+        "rodzajProkury": "PROKURA SAMOISTNA"
+       }
+      ]
+     }
+    ],
+    "reprezentacja": [
+     {
+      "nazwaOrganu": [
+       {
+        "nazwaOrganu": "ZARZĄD",
+        "nrWpisuWprow": "1"
+       }
+      ],
+      "sklad": [
+       {
+        "czyZawieszona": [
+         {
+          "czyZawieszona": false,
+          "nrWpisuWprow": "1",
+          "nrWpisuWykr": "11"
+         }
+        ],
+        "dataZawieszeniaDo": [],
+        "funkcjaWOrganie": [
+         {
+          "funkcjaWOrganie": "PREZES ZARZĄDU",
+          "nrWpisuWprow": "1",
+          "nrWpisuWykr": "11"
+         }
+        ],
+        "identyfikator": [
+         {
+          "nrWpisuWprow": "1",
+          "nrWpisuWykr": "11",
+          "pesel": "[REDACTED]"
+         }
+        ],
+        "imiona": [
+         {
+          "imiona": {
+           "imie": "[REDACTED]"
+          },
+          "nrWpisuWprow": "1",
+          "nrWpisuWykr": "11"
+         }
+        ],
+        "nazwisko": [
+         {
+          "nazwisko": {
+           "nazwiskoICzlon": "[REDACTED]"
+          },
+          "nrWpisuWprow": "1",
+          "nrWpisuWykr": "11"
+         }
+        ]
+       },
+       {
+        "czyZawieszona": [
+         {
+          "czyZawieszona": false,
+          "nrWpisuWprow": "11",
+          "nrWpisuWykr": "13"
+         }
+        ],
+        "dataZawieszeniaDo": [],
+        "funkcjaWOrganie": [
+         {
+          "funkcjaWOrganie": "PREZES ZARZĄDU",
+          "nrWpisuWprow": "11",
+          "nrWpisuWykr": "13"
+         }
+        ],
+        "identyfikator": [
+         {
+          "nrWpisuWprow": "11",
+          "nrWpisuWykr": "13",
+          "pesel": "[REDACTED]"
+         }
+        ],
+        "imiona": [
+         {
+          "imiona": {
+           "imie": "[REDACTED]",
+           "imieDrugie": "[REDACTED]"
+          },
+          "nrWpisuWprow": "11",
+          "nrWpisuWykr": "13"
+         }
+        ],
+        "nazwisko": [
+         {
+          "nazwisko": {
+           "nazwiskoICzlon": "[REDACTED]"
+          },
+          "nrWpisuWprow": "11",
+          "nrWpisuWykr": "13"
+         }
+        ]
+       },
+       {
+        "czyZawieszona": [
+         {
+          "czyZawieszona": false,
+          "nrWpisuWprow": "13"
+         }
+        ],
+        "dataZawieszeniaDo": [],
+        "funkcjaWOrganie": [
+         {
+          "funkcjaWOrganie": "PREZES ZARZĄDU",
+          "nrWpisuWprow": "13"
+         }
+        ],
+        "identyfikator": [
+         {
+          "nrWpisuWprow": "13",
+          "pesel": "[REDACTED]"
+         }
+        ],
+        "imiona": [
+         {
+          "imiona": {
+           "imie": "[REDACTED]",
+           "imieDrugie": "[REDACTED]"
+          },
+          "nrWpisuWprow": "13"
+         }
+        ],
+        "nazwisko": [
+         {
+          "nazwisko": {
+           "nazwiskoICzlon": "[REDACTED]"
+          },
+          "nrWpisuWprow": "13"
+         }
+        ]
+       }
+      ],
+      "sposobReprezentacji": [
+       {
+        "nrWpisuWprow": "1",
+        "sposobReprezentacji": "[REDACTED]"
+       }
+      ]
+     }
+    ]
+   },
+   "dzial3": {
+    "informacjaODniuKonczacymRokObrotowy": {
+     "dzienKonczacyPierwszyRokObrotowy": [
+      {
+       "dzienKonczacyPierwszyRokObrotowy": "31.12.2014",
+       "nrWpisuWprow": "4"
+      }
+     ]
+    },
+    "przedmiotDzialalnosci": {
+     "przedmiotPozostalejDzialalnosci": [
+      {
+       "pozycja": [
+        {
+         "kodDzial": "16",
+         "kodKlasa": "23",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "20",
+         "opis": "PRODUKCJA POZOSTAŁYCH WYROBÓW STOLARSKICH I CIESIELSKICH DLA BUDOWNICTWA"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "23",
+         "kodKlasa": "63",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "20",
+         "opis": "PRODUKCJA MASY BETONOWEJ PREFABRYKOWANEJ"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "23",
+         "kodKlasa": "64",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "20",
+         "opis": "PRODUKCJA ZAPRAWY MURARSKIEJ"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "24",
+         "kodKlasa": "34",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "20",
+         "opis": "PRODUKCJA DRUTU"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "25",
+         "kodKlasa": "94",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "20",
+         "opis": "PRODUKCJA ZŁĄCZY I ŚRUB"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "25",
+         "kodKlasa": "99",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "20",
+         "opis": "PRODUKCJA POZOSTAŁYCH GOTOWYCH WYROBÓW METALOWYCH, GDZIE INDZIEJ NIESKLASYFIKOWANA"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "28",
+         "kodKlasa": "25",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "20",
+         "opis": "PRODUKCJA PRZEMYSŁOWYCH URZĄDZEŃ CHŁODNICZYCH I WENTYLACYJNYCH"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "33",
+         "kodKlasa": "20",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "20",
+         "opis": "INSTALOWANIE MASZYN PRZEMYSŁOWYCH, SPRZĘTU I WYPOSAŻENIA"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "41",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "20",
+         "opis": "ROBOTY BUDOWLANE ZWIĄZANE ZE WZNOSZENIEM BUDYNKÓW"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "42",
+         "kodKlasa": "99",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "20",
+         "opis": "ROBOTY ZWIĄZANE Z BUDOWĄ POZOSTAŁYCH OBIEKTÓW INŻYNIERII LĄDOWEJ I WODNEJ, GDZIE INDZIEJ NIESKLASYFIKOWANE"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "43",
+         "kodKlasa": "1",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "20",
+         "opis": "ROZBIÓRKA I PRZYGOTOWANIE TERENU POD BUDOWĘ"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "43",
+         "kodKlasa": "2",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "20",
+         "opis": "WYKONYWANIE INSTALACJI ELEKTRYCZNYCH, WODNO-KANALIZACYJNYCH I POZOSTAŁYCH INSTALACJI BUDOWLANYCH"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "43",
+         "kodKlasa": "3",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "20",
+         "opis": "WYKONYWANIE ROBÓT BUDOWLANYCH WYKOŃCZENIOWYCH"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "43",
+         "kodKlasa": "9",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "20",
+         "opis": "POZOSTAŁE SPECJALISTYCZNE ROBOTY BUDOWLANE"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "46",
+         "kodKlasa": "72",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "20",
+         "opis": "SPRZEDAŻ HURTOWA METALI I RUD METALI"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "46",
+         "kodKlasa": "73",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "20",
+         "opis": "SPRZEDAŻ HURTOWA DREWNA, MATERIAŁÓW BUDOWLANYCH I WYPOSAŻENIA SANITARNEGO"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "46",
+         "kodKlasa": "74",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "20",
+         "opis": "SPRZEDAŻ HURTOWA WYROBÓW METALOWYCH ORAZ SPRZĘTU I DODATKOWEGO WYPOSAŻENIA HYDRAULICZNEGO I GRZEJNEGO"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "47",
+         "kodKlasa": "59",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "20",
+         "opis": "SPRZEDAŻ DETALICZNA MEBLI, SPRZĘTU OŚWIETLENIOWEGO I POZOSTAŁYCH ARTYKUŁÓW UŻYTKU DOMOWEGO PROWADZONA W WYSPECJALIZOWANYCH SKLEPACH"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "49",
+         "kodKlasa": "41",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "20",
+         "opis": "TRANSPORT DROGOWY TOWARÓW"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "52",
+         "kodKlasa": "10",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "20",
+         "opis": "MAGAZYNOWANIE I PRZECHOWYWANIE TOWARÓW"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "52",
+         "kodKlasa": "24",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "20",
+         "opis": "PRZEŁADUNEK TOWARÓW"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "68",
+         "kodKlasa": "10",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "20",
+         "opis": "KUPNO I SPRZEDAŻ NIERUCHOMOŚCI NA WŁASNY RACHUNEK"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "68",
+         "kodKlasa": "20",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "20",
+         "opis": "WYNAJEM I ZARZĄDZANIE NIERUCHOMOŚCIAMI WŁASNYMI LUB DZIERŻAWIONYMI"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "68",
+         "kodKlasa": "31",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "20",
+         "opis": "POŚREDNICTWO W OBROCIE NIERUCHOMOŚCIAMI"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "68",
+         "kodKlasa": "32",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "20",
+         "opis": "ZARZĄDZANIE NIERUCHOMOŚCIAMI WYKONYWANE NA ZLECENIE"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "71",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "20",
+         "opis": "DZIAŁALNOŚĆ W ZAKRESIE ARCHITEKTURY I INŻYNIERII; BADANIA I ANALIZY TECHNICZNE"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "43",
+         "kodKlasa": "1",
+         "nrWpisuWprow": "20",
+         "opis": "ROZBIÓRKA I PRZYGOTOWANIE TERENU POD BUDOWĘ"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "43",
+         "kodKlasa": "2",
+         "nrWpisuWprow": "20",
+         "opis": "WYKONYWANIE INSTALACJI ELEKTRYCZNYCH, WODNO-KANALIZACYJNYCH I POZOSTAŁYCH INSTALACJI BUDOWLANYCH"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "43",
+         "kodKlasa": "3",
+         "nrWpisuWprow": "20",
+         "opis": "WYKONYWANIE ROBÓT BUDOWLANYCH WYKOŃCZENIOWYCH"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "43",
+         "kodKlasa": "9",
+         "nrWpisuWprow": "20",
+         "opis": "POZOSTAŁE SPECJALISTYCZNE ROBOTY BUDOWLANE"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "33",
+         "kodKlasa": "20",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "20",
+         "opis": "INSTALOWANIE MASZYN PRZEMYSŁOWYCH, SPRZĘTU I WYPOSAŻENIA"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "46",
+         "kodKlasa": "73",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "20",
+         "opis": "SPRZEDAŻ HURTOWA DREWNA, MATERIAŁÓW BUDOWLANYCH I WYPOSAŻENIA SANITARNEGO"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "49",
+         "kodKlasa": "41",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "20",
+         "opis": "TRANSPORT DROGOWY TOWARÓW"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "68",
+         "kodKlasa": "20",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "20",
+         "opis": "WYNAJEM I ZARZĄDZANIE NIERUCHOMOŚCIAMI WŁASNYMI LUB DZIERŻAWIONYMI"
+        }
+       ]
+      }
+     ],
+     "przedmiotPrzewazajacejDzialalnosci": [
+      {
+       "pozycja": [
+        {
+         "kodDzial": "42",
+         "kodKlasa": "99",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "20",
+         "opis": "ROBOTY ZWIĄZANE Z BUDOWĄ POZOSTAŁYCH OBIEKTÓW INŻYNIERII LĄDOWEJ I WODNEJ, GDZIE INDZIEJ NIESKLASYFIKOWANE"
+        }
+       ]
+      }
+     ]
+    },
+    "sprawozdaniaGrupyKapitalowej": {
+     "wzmiankaOZlozeniuSkonsolidowanegoRocznegoSprawozdaniaFinansowego": [
+      {
+       "pozycja": [
+        {
+         "dataZlozenia": "20.04.2016",
+         "nrWpisuWprow": "10",
+         "zaOkresOdDo": "OD 01.01.2015 DO 31.12.2015"
+        }
+       ]
+      }
+     ],
+     "wzmiankaOZlozeniuSprawozdaniaZDzialalnosciGrupyKapitalowejSpolkiDominujacejLacznie": [
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "10",
+         "zaOkresOdDo": "OD 01.01.2015 DO 31.12.2015"
+        }
+       ]
+      }
+     ],
+     "wzmiankaOZlozeniuUchwalyPostanowieniaOZatwierdzeniuSkonsolidowanegoRocznegoSprawozdaniaFinansowego": [
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "10",
+         "zaOkresOdDo": "OD 01.01.2015 DO 31.12.2015"
+        }
+       ]
+      }
+     ]
+    },
+    "wzmiankiOZlozonychDokumentach": {
+     "wzmiankaOZlozeniuOpiniiBieglegoRewidentaSprawozdaniaZBadania": [
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "22",
+         "zaOkresOdDo": "OD 01.01.2019 DO 31.12.2019"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "27",
+         "zaOkresOdDo": "OD 01.01.2020 DO 31.12.2020"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "31",
+         "zaOkresOdDo": "OD 01.01.2021 DO 31.12.2021"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "34",
+         "zaOkresOdDo": "OD 01.01.2022 DO 31.12.2022"
+        }
+       ]
+      }
+     ],
+     "wzmiankaOZlozeniuRocznegoSprawozdaniaFinansowego": [
+      {
+       "pozycja": [
+        {
+         "dataZlozenia": "26.06.2015",
+         "nrWpisuWprow": "4",
+         "zaOkresOdDo": "OD 01.06.2014 DO 31.12.2014"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "dataZlozenia": "28.06.2017",
+         "nrWpisuWprow": "12",
+         "zaOkresOdDo": "OD 01.01.2016 DO 31.12.2016"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "dataZlozenia": "04.06.2018",
+         "nrWpisuWprow": "14",
+         "zaOkresOdDo": "OD 01.01.2017 DO 31.12.2017"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "dataZlozenia": "12.04.2019",
+         "nrWpisuWprow": "17",
+         "zaOkresOdDo": "OD 01.01.2018 DO 31.12.2018"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "dataZlozenia": "14.07.2020",
+         "nrWpisuWprow": "21",
+         "zaOkresOdDo": "OD 01.01.2019 DO 31.12.2019"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "dataZlozenia": "14.07.2020",
+         "nrWpisuWprow": "24",
+         "zaOkresOdDo": "OD 01.01.2019 DO 31.12.2019"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "dataZlozenia": "29.03.2021",
+         "nrWpisuWprow": "26",
+         "zaOkresOdDo": "OD 01.01.2020 DO 31.12.2020"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "dataZlozenia": "27.09.2022",
+         "nrWpisuWprow": "30",
+         "zaOkresOdDo": "OD 01.01.2021 DO 31.12.2021"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "dataZlozenia": "17.07.2023",
+         "nrWpisuWprow": "33",
+         "zaOkresOdDo": "OD 01.01.2022 DO 31.12.2022"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "dataZlozenia": "29.03.2024",
+         "nrWpisuWprow": "38",
+         "zaOkresOdDo": "OD 01.01.2023 DO 31.12.2023"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "dataZlozenia": "31.03.2025",
+         "nrWpisuWprow": "40",
+         "zaOkresOdDo": "OD 01.01.2024 DO 31.12.2024"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "dataZlozenia": "14.04.2026",
+         "nrWpisuWprow": "46",
+         "zaOkresOdDo": "OD 05.08.2025 DO 31.12.2025"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "dataZlozenia": "07.05.2026",
+         "nrWpisuWprow": "47",
+         "zaOkresOdDo": "OD 01.01.2025 DO 04.08.2025"
+        }
+       ]
+      }
+     ],
+     "wzmiankaOZlozeniuSprawozdaniaZDzialalnosci": [
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "4",
+         "zaOkresOdDo": "OD 01.06.2014 DO 31.12.2014"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "12",
+         "zaOkresOdDo": "OD 01.01.2016 DO 31.12.2016"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "16",
+         "zaOkresOdDo": "OD 01.01.2017 DO 31.12.2017"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "19",
+         "zaOkresOdDo": "OD 01.01.2018 DO 31.12.2018"
+        }
+       ]
+      }
+     ],
+     "wzmiankaOZlozeniuUchwalyPostanowieniaOZatwierdzeniuRocznegoSprawozdaniaFinansowego": [
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "4",
+         "zaOkresOdDo": "OD 01.06.2014 DO 31.12.2014"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "12",
+         "zaOkresOdDo": "OD 01.01.2016 DO 31.12.2016"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "15",
+         "zaOkresOdDo": "OD 01.01.2017 DO 31.12.2017"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "18",
+         "zaOkresOdDo": "OD 01.01.2018 DO 31.12.2018"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "23",
+         "zaOkresOdDo": "OD 01.01.2019 DO 31.12.2019"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "28",
+         "zaOkresOdDo": "OD 01.01.2020 DO 31.12.2020"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "32",
+         "zaOkresOdDo": "OD 01.01.2021 DO 31.12.2021"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "35",
+         "zaOkresOdDo": "OD 01.01.2022 DO 31.12.2022"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "39",
+         "zaOkresOdDo": "OD 01.01.2023 DO 31.12.2023"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "43",
+         "zaOkresOdDo": "OD 01.01.2024 DO 31.12.2024"
+        }
+       ]
+      }
+     ]
+    }
+   },
+   "dzial4": {
+    "zaleglosci": [
+     {
+      "charakterZaleglosci": [
+       {
+        "charakterZaleglosci": "PODATKOWA",
+        "nrWpisuWprow": "42"
+       }
+      ],
+      "wszczecieEgzekucji": [
+       {
+        "dataWszczeciaEgzekucji": "09.10.2024",
+        "nrWpisuWprow": "42",
+        "numerTytuluWykonawczego": "1271-SEW.723.886253.2024",
+        "organWydajacyTytulWykonawczy": "NACZELNIK URZĘDU SKARBOWEGO KRAKÓW PRĄDNIK"
+       }
+      ],
+      "wysokoscZaleglosci": [
+       {
+        "nrWpisuWprow": "42",
+        "waluta": "PLN",
+        "wartosc": "6900,00"
+       }
+      ]
+     },
+     {
+      "charakterZaleglosci": [
+       {
+        "charakterZaleglosci": "PODATKOWA",
+        "nrWpisuWprow": "42"
+       }
+      ],
+      "wszczecieEgzekucji": [
+       {
+        "dataWszczeciaEgzekucji": "09.10.2024",
+        "nrWpisuWprow": "42",
+        "numerTytuluWykonawczego": "1271-SEW.723.886250.2024",
+        "organWydajacyTytulWykonawczy": "NACZELNIK URZĘDU SKARBOWEGO KRAKÓW PRĄDNIK"
+       }
+      ],
+      "wysokoscZaleglosci": [
+       {
+        "nrWpisuWprow": "42",
+        "waluta": "PLN",
+        "wartosc": "21637,00"
+       }
+      ]
+     },
+     {
+      "charakterZaleglosci": [
+       {
+        "charakterZaleglosci": "PODATKOWA",
+        "nrWpisuWprow": "42"
+       }
+      ],
+      "wszczecieEgzekucji": [
+       {
+        "dataWszczeciaEgzekucji": "09.10.2024",
+        "nrWpisuWprow": "42",
+        "numerTytuluWykonawczego": "1271-SEW.723.886244.2024",
+        "organWydajacyTytulWykonawczy": "NACZELNIK URZĘDU SKARBOWEGO KRAKÓW PRĄDNIK"
+       }
+      ],
+      "wysokoscZaleglosci": [
+       {
+        "nrWpisuWprow": "42",
+        "waluta": "PLN",
+        "wartosc": "7488,00"
+       }
+      ]
+     },
+     {
+      "charakterZaleglosci": [
+       {
+        "charakterZaleglosci": "PODATKOWA",
+        "nrWpisuWprow": "45"
+       }
+      ],
+      "wszczecieEgzekucji": [
+       {
+        "dataWszczeciaEgzekucji": "13.10.2023",
+        "nrWpisuWprow": "45",
+        "numerTytuluWykonawczego": "1271-723.902937.2023",
+        "organWydajacyTytulWykonawczy": "NACZELNIK MAŁOPOLSKIEGO URZĘDU SKARBOWEGO"
+       }
+      ],
+      "wysokoscZaleglosci": [
+       {
+        "nrWpisuWprow": "45",
+        "waluta": "PLN",
+        "wartosc": "61002,31"
+       }
+      ]
+     },
+     {
+      "charakterZaleglosci": [
+       {
+        "charakterZaleglosci": "PODATKOWA",
+        "nrWpisuWprow": "45"
+       }
+      ],
+      "wszczecieEgzekucji": [
+       {
+        "dataWszczeciaEgzekucji": "07.12.2023",
+        "nrWpisuWprow": "45",
+        "numerTytuluWykonawczego": "1271-723.1043324.2023",
+        "organWydajacyTytulWykonawczy": "NACZELNIK MAŁOPOLSKIEGO URZĘDU SKARBOWEGO"
+       }
+      ],
+      "wysokoscZaleglosci": [
+       {
+        "nrWpisuWprow": "45",
+        "waluta": "PLN",
+        "wartosc": "13816,63"
+       }
+      ]
+     },
+     {
+      "charakterZaleglosci": [
+       {
+        "charakterZaleglosci": "PODATKOWA",
+        "nrWpisuWprow": "45"
+       }
+      ],
+      "wszczecieEgzekucji": [
+       {
+        "dataWszczeciaEgzekucji": "09.01.2024",
+        "nrWpisuWprow": "45",
+        "numerTytuluWykonawczego": "1271-SEW.723.14818.2024",
+        "organWydajacyTytulWykonawczy": "NACZELNIK MAŁOPOLSKIEGO URZĘDU SKARBOWEGO"
+       }
+      ],
+      "wysokoscZaleglosci": [
+       {
+        "nrWpisuWprow": "45",
+        "waluta": "PLN",
+        "wartosc": "10249,00"
+       }
+      ]
+     },
+     {
+      "charakterZaleglosci": [
+       {
+        "charakterZaleglosci": "PODATKOWA",
+        "nrWpisuWprow": "45"
+       }
+      ],
+      "wszczecieEgzekucji": [
+       {
+        "dataWszczeciaEgzekucji": "01.02.2024",
+        "nrWpisuWprow": "45",
+        "numerTytuluWykonawczego": "1271-SEW.723.63822.2024",
+        "organWydajacyTytulWykonawczy": "NACZELNIK MAŁOPOLSKIEGO URZĘDU SKARBOWEGO"
+       }
+      ],
+      "wysokoscZaleglosci": [
+       {
+        "nrWpisuWprow": "45",
+        "waluta": "PLN",
+        "wartosc": "11235,00"
+       }
+      ]
+     },
+     {
+      "charakterZaleglosci": [
+       {
+        "charakterZaleglosci": "PODATKOWA",
+        "nrWpisuWprow": "45"
+       }
+      ],
+      "wszczecieEgzekucji": [
+       {
+        "dataWszczeciaEgzekucji": "01.02.2024",
+        "nrWpisuWprow": "45",
+        "numerTytuluWykonawczego": "1271-SEW.723.63846.2024",
+        "organWydajacyTytulWykonawczy": "NACZELNIK MAŁOPOLSKIEGO URZĘDU SKARBOWEGO"
+       }
+      ],
+      "wysokoscZaleglosci": [
+       {
+        "nrWpisuWprow": "45",
+        "waluta": "PLN",
+        "wartosc": "26572,00"
+       }
+      ]
+     },
+     {
+      "charakterZaleglosci": [
+       {
+        "charakterZaleglosci": "PODATKOWA",
+        "nrWpisuWprow": "45"
+       }
+      ],
+      "wszczecieEgzekucji": [
+       {
+        "dataWszczeciaEgzekucji": "01.02.2024",
+        "nrWpisuWprow": "45",
+        "numerTytuluWykonawczego": "1271-SEW.723.63859.2024",
+        "organWydajacyTytulWykonawczy": "NACZELNIK MAŁOPOLSKIEGO URZĘDU SKARBOWEGO"
+       }
+      ],
+      "wysokoscZaleglosci": [
+       {
+        "nrWpisuWprow": "45",
+        "waluta": "PLN",
+        "wartosc": "14473,00"
+       }
+      ]
+     }
+    ]
+   },
+   "dzial5": {},
+   "dzial6": {
+    "postepowanieUpadlosciowe": [
+     {
+      "daneSyndyka": [
+       {
+        "identyfikator": [
+         {
+          "nrWpisuWprow": "44",
+          "pesel": "[REDACTED]"
+         }
+        ],
+        "imiona": [
+         {
+          "imiona": {
+           "imie": "[REDACTED]"
+          },
+          "nrWpisuWprow": "44"
+         }
+        ],
+        "nazwisko": [
+         {
+          "nazwisko": {
+           "nazwiskoICzlon": "[REDACTED]"
+          },
+          "nrWpisuWprow": "44"
+         }
+        ]
+       }
+      ],
+      "informacjaOOgloszeniuUpadlosci": [
+       {
+        "nrWpisuWprow": "44",
+        "organWydajacy": "SĄD  REJONOWY  DLA  KRAKOWA – ŚRÓDMIEŚCIA  W  KRAKOWIE VIII WYDZIAŁ   GOSPODARCZY  DLA SPRAW UPADŁOŚCIOWYCH I RESTRUKTURYZACYJNYCH  5 SIERPNIA 2025 R.,  SYGN.  AKT  KR1S/GU/977/202"
+       }
+      ],
+      "opisZakonczeniaProcesuUpadlosci": [
+       {
+        "nrWpisuWprow": "44"
+       }
+      ],
+      "sposobProwadzeniaPostepowania": [
+       {
+        "nrWpisuWprow": "44",
+        "sposobProwadzeniaPostepowania": "UPADŁOŚĆ"
+       }
+      ]
+     }
+    ],
+    "rozwiazanieUniewaznienie": {
+     "okreslenieOkolicznosci": []
+    }
+   }
+  },
+  "naglowekP": {
+   "dataCzasOdpisu": "22.09.2026 15:55:57",
+   "numerKRS": "0000507997",
+   "rejestr": "RejP",
+   "stanPozycji": 1,
+   "stanZDnia": "07.05.2026",
+   "wpis": [
+    {
+     "dataWpisu": "05.05.2014",
+     "numerWpisu": 1,
+     "opis": "REJESTRACJA W KRAJOWYM REJESTRZE SĄDOWYM",
+     "oznaczenieSaduDokonujacegoWpisu": "SĄD REJONOWY DLA KRAKOWA-ŚRÓDMIEŚCIA W KRAKOWIE, XI WYDZIAŁ GOSPODARCZY KRAJOWEGO  REJESTRU SĄDOWEGO",
+     "sygnaturaAktSprawyDotyczacejWpisu": "KR.XI NS-REJ.KRS/7808/14/526"
+    },
+    {
+     "dataWpisu": "27.05.2014",
+     "numerWpisu": 2,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SĄD REJONOWY DLA KRAKOWA-ŚRÓDMIEŚCIA W KRAKOWIE, XI WYDZIAŁ GOSPODARCZY KRAJOWEGO  REJESTRU SĄDOWEGO",
+     "sygnaturaAktSprawyDotyczacejWpisu": "KR.XI NS-REJ.KRS/11182/14/562"
+    },
+    {
+     "dataWpisu": "29.12.2014",
+     "numerWpisu": 3,
+     "opis": "SPROSTOWANIE WPISU",
+     "oznaczenieSaduDokonujacegoWpisu": "SĄD REJONOWY DLA KRAKOWA-ŚRÓDMIEŚCIA W KRAKOWIE, XI WYDZIAŁ GOSPODARCZY KRAJOWEGO  REJESTRU SĄDOWEGO",
+     "sygnaturaAktSprawyDotyczacejWpisu": "KR.XI NS-REJ.KRS/27619/14/60"
+    },
+    {
+     "dataWpisu": "07.07.2015",
+     "numerWpisu": 4,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SĄD REJONOWY DLA KRAKOWA-ŚRÓDMIEŚCIA W KRAKOWIE, XI WYDZIAŁ GOSPODARCZY KRAJOWEGO  REJESTRU SĄDOWEGO",
+     "sygnaturaAktSprawyDotyczacejWpisu": "KR.XI NS-REJ.KRS/16075/15/701"
+    },
+    {
+     "dataWpisu": "07.07.2015",
+     "numerWpisu": 5,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "sygnaturaAktSprawyDotyczacejWpisu": "KR.XI NS-REJ.KRS/16075/15/701/NIP"
+    },
+    {
+     "dataWpisu": "16.07.2015",
+     "numerWpisu": 6,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "sygnaturaAktSprawyDotyczacejWpisu": "KR.XI NS-REJ.KRS/16075/15/701/REGON"
+    },
+    {
+     "dataWpisu": "30.10.2015",
+     "numerWpisu": 7,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SĄD REJONOWY DLA KRAKOWA-ŚRÓDMIEŚCIA W KRAKOWIE, XI WYDZIAŁ GOSPODARCZY KRAJOWEGO  REJESTRU SĄDOWEGO",
+     "sygnaturaAktSprawyDotyczacejWpisu": "KR.XI NS-REJ.KRS/23948/15/644"
+    },
+    {
+     "dataWpisu": "17.11.2015",
+     "numerWpisu": 8,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "sygnaturaAktSprawyDotyczacejWpisu": "KR.XI NS-REJ.KRS/23948/15/644/NIP"
+    },
+    {
+     "dataWpisu": "08.12.2015",
+     "numerWpisu": 9,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "sygnaturaAktSprawyDotyczacejWpisu": "KR.XI NS-REJ.KRS/16075/15/701/NIP"
+    },
+    {
+     "dataWpisu": "16.05.2016",
+     "numerWpisu": 10,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SĄD REJONOWY DLA KRAKOWA-ŚRÓDMIEŚCIA W KRAKOWIE, XI WYDZIAŁ GOSPODARCZY KRAJOWEGO  REJESTRU SĄDOWEGO",
+     "sygnaturaAktSprawyDotyczacejWpisu": "KR.XI NS-REJ.KRS/12291/16/660"
+    },
+    {
+     "dataWpisu": "25.07.2016",
+     "numerWpisu": 11,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SĄD REJONOWY DLA KRAKOWA-ŚRÓDMIEŚCIA W KRAKOWIE, XI WYDZIAŁ GOSPODARCZY KRAJOWEGO  REJESTRU SĄDOWEGO",
+     "sygnaturaAktSprawyDotyczacejWpisu": "KR.XI NS-REJ.KRS/22150/16/881"
+    },
+    {
+     "dataWpisu": "31.08.2017",
+     "numerWpisu": 12,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SĄD REJONOWY DLA KRAKOWA-ŚRÓDMIEŚCIA W KRAKOWIE, XI WYDZIAŁ GOSPODARCZY KRAJOWEGO  REJESTRU SĄDOWEGO",
+     "sygnaturaAktSprawyDotyczacejWpisu": "KR.XI NS-REJ.KRS/31744/17/709"
+    },
+    {
+     "dataWpisu": "04.01.2018",
+     "numerWpisu": 13,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SĄD REJONOWY DLA KRAKOWA-ŚRÓDMIEŚCIA W KRAKOWIE, XI WYDZIAŁ GOSPODARCZY KRAJOWEGO  REJESTRU SĄDOWEGO",
+     "sygnaturaAktSprawyDotyczacejWpisu": "KR.XI NS-REJ.KRS/101/18/527"
+    },
+    {
+     "dataWpisu": "04.06.2018",
+     "numerWpisu": 14,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/96323/18/662"
+    },
+    {
+     "dataWpisu": "04.06.2018",
+     "numerWpisu": 15,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/96324/18/63"
+    },
+    {
+     "dataWpisu": "04.06.2018",
+     "numerWpisu": 16,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/96325/18/464"
+    },
+    {
+     "dataWpisu": "12.04.2019",
+     "numerWpisu": 17,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/106332/19/334"
+    },
+    {
+     "dataWpisu": "12.04.2019",
+     "numerWpisu": 18,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/106332/19/735"
+    },
+    {
+     "dataWpisu": "12.04.2019",
+     "numerWpisu": 19,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/106332/19/136"
+    },
+    {
+     "dataWpisu": "13.03.2020",
+     "numerWpisu": 20,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SĄD REJONOWY DLA KRAKOWA-ŚRÓDMIEŚCIA W KRAKOWIE, XI WYDZIAŁ GOSPODARCZY KRAJOWEGO  REJESTRU SĄDOWEGO",
+     "sygnaturaAktSprawyDotyczacejWpisu": "KR.XI NS-REJ.KRS/9503/20/349"
+    },
+    {
+     "dataWpisu": "14.07.2020",
+     "numerWpisu": 21,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/224573/20/402"
+    },
+    {
+     "dataWpisu": "14.07.2020",
+     "numerWpisu": 22,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/224573/20/803"
+    },
+    {
+     "dataWpisu": "14.07.2020",
+     "numerWpisu": 23,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/224573/20/204"
+    },
+    {
+     "dataWpisu": "18.07.2020",
+     "numerWpisu": 24,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/226742/20/330"
+    },
+    {
+     "dataWpisu": "15.03.2021",
+     "numerWpisu": 25,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SĄD REJONOWY DLA KRAKOWA-ŚRÓDMIEŚCIA W KRAKOWIE, XI WYDZIAŁ GOSPODARCZY KRAJOWEGO  REJESTRU SĄDOWEGO",
+     "sygnaturaAktSprawyDotyczacejWpisu": "KR.XI NS-REJ.KRS/8314/21/801"
+    },
+    {
+     "dataWpisu": "29.03.2021",
+     "numerWpisu": 26,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/283118/21/929"
+    },
+    {
+     "dataWpisu": "29.03.2021",
+     "numerWpisu": 27,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/283118/21/330"
+    },
+    {
+     "dataWpisu": "29.03.2021",
+     "numerWpisu": 28,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/283118/21/731"
+    },
+    {
+     "dataWpisu": "23.09.2022",
+     "numerWpisu": 29,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SĄD REJONOWY DLA KRAKOWA ŚRÓDMIEŚCIA W KRAKOWIE, XI WYDZIAŁ GOSPODARCZY KRAJOWEGO REJESTRU SĄDOWEGO",
+     "sygnaturaAktSprawyDotyczacejWpisu": "KR.XI NS-REJ.KRS/27218/22/250"
+    },
+    {
+     "dataWpisu": "27.09.2022",
+     "numerWpisu": 30,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/425967/22/683"
+    },
+    {
+     "dataWpisu": "27.09.2022",
+     "numerWpisu": 31,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/425967/22/84"
+    },
+    {
+     "dataWpisu": "27.09.2022",
+     "numerWpisu": 32,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/425968/22/796"
+    },
+    {
+     "dataWpisu": "17.07.2023",
+     "numerWpisu": 33,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/548093/23/927"
+    },
+    {
+     "dataWpisu": "17.07.2023",
+     "numerWpisu": 34,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/548093/23/328"
+    },
+    {
+     "dataWpisu": "17.07.2023",
+     "numerWpisu": 35,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/548094/23/40"
+    },
+    {
+     "dataWpisu": "15.12.2023",
+     "numerWpisu": 36,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SĄD REJONOWY DLA KRAKOWA ŚRÓDMIEŚCIA W KRAKOWIE, XI WYDZIAŁ GOSPODARCZY KRAJOWEGO REJESTRU SĄDOWEGO",
+     "sygnaturaAktSprawyDotyczacejWpisu": "KR.XI NS-REJ.KRS/42045/23/470"
+    },
+    {
+     "dataWpisu": "28.02.2024",
+     "numerWpisu": 37,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SĄD REJONOWY DLA KRAKOWA ŚRÓDMIEŚCIA W KRAKOWIE, XI WYDZIAŁ GOSPODARCZY KRAJOWEGO REJESTRU SĄDOWEGO",
+     "sygnaturaAktSprawyDotyczacejWpisu": "KR.XI NS-REJ.KRS/6111/24/263"
+    },
+    {
+     "dataWpisu": "29.03.2024",
+     "numerWpisu": 38,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/589851/24/536"
+    },
+    {
+     "dataWpisu": "27.06.2024",
+     "numerWpisu": 39,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/627476/24/726"
+    },
+    {
+     "dataWpisu": "31.03.2025",
+     "numerWpisu": 40,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/707172/25/391"
+    },
+    {
+     "dataWpisu": "17.06.2025",
+     "numerWpisu": 41,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SĄD REJONOWY DLA KRAKOWA ŚRÓDMIEŚCIA W KRAKOWIE, XI WYDZIAŁ GOSPODARCZY KRAJOWEGO REJESTRU SĄDOWEGO",
+     "sygnaturaAktSprawyDotyczacejWpisu": "KR.XI NS-REJ.KRS/23713/25/475"
+    },
+    {
+     "dataWpisu": "18.06.2025",
+     "numerWpisu": 42,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SĄD REJONOWY DLA KRAKOWA ŚRÓDMIEŚCIA W KRAKOWIE, XI WYDZIAŁ GOSPODARCZY KRAJOWEGO REJESTRU SĄDOWEGO",
+     "sygnaturaAktSprawyDotyczacejWpisu": "KR.XI NS-REJ.KRS/8831/25/757"
+    },
+    {
+     "dataWpisu": "27.06.2025",
+     "numerWpisu": 43,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/746219/25/980"
+    },
+    {
+     "dataWpisu": "13.08.2025",
+     "numerWpisu": 44,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SĄD REJONOWY DLA KRAKOWA ŚRÓDMIEŚCIA W KRAKOWIE, XI WYDZIAŁ GOSPODARCZY KRAJOWEGO REJESTRU SĄDOWEGO",
+     "sygnaturaAktSprawyDotyczacejWpisu": "KR.XI NS-REJ.KRS/29105/25/776"
+    },
+    {
+     "dataWpisu": "27.08.2025",
+     "numerWpisu": 45,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SĄD REJONOWY DLA KRAKOWA ŚRÓDMIEŚCIA W KRAKOWIE, XI WYDZIAŁ GOSPODARCZY KRAJOWEGO REJESTRU SĄDOWEGO",
+     "sygnaturaAktSprawyDotyczacejWpisu": "KR.XI NS-REJ.KRS/20733/25/904"
+    },
+    {
+     "dataWpisu": "14.04.2026",
+     "numerWpisu": 46,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/811582/26/705"
+    },
+    {
+     "dataWpisu": "07.05.2026",
+     "numerWpisu": 47,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/817321/26/683"
+    }
+   ]
+  },
+  "rodzaj": "Pełny"
+ }
+}
