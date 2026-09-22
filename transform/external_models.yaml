@@ -92,3 +92,14 @@
     filed_bodies: TEXT
     last_seen_run_id: TEXT
     last_seen_at: TIMESTAMPTZ
+- name: ext.filing_index
+  description: "A3 filing list (Postgres), the columns the models use: period and submission date per filing."
+  columns:
+    krs: TEXT
+    document_ref: TEXT
+    rdf_type_code: TEXT
+    period_start: DATE
+    period_end: DATE
+    submission_date: DATE
+    deleted_on: DATE
+    is_correction: BOOLEAN

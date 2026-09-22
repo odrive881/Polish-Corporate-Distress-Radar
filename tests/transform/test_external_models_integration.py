@@ -22,12 +22,16 @@ from distress_radar.settings import Settings
 pytestmark = pytest.mark.integration
 
 TRANSFORM = Path(__file__).parent.parent.parent / "transform"
-POSTGRES_TABLES = ("quarantine_events", "parsed_documents")
+# Tables whose view exposes a column subset are compared on that subset.
+POSTGRES_TABLES = ("quarantine_events", "parsed_documents", "filing_index")
 # information_schema.data_type → the type DuckDB's postgres extension reads it as.
 DUCKDB_TYPES = {
     "text": "TEXT",
     "character": "TEXT",
     "timestamp with time zone": "TIMESTAMPTZ",
+    "date": "DATE",
+    "boolean": "BOOLEAN",
+    "jsonb": "JSON",
 }
 
 
@@ -54,4 +58,7 @@ def test_postgres_external_models_match_the_ddl(conn: psycopg.Connection) -> Non
             "WHERE table_schema = current_schema() AND table_name = %s ORDER BY ordinal_position",
             (table,),
         ).fetchall()
-        assert declared[table] == {name: DUCKDB_TYPES[dtype] for name, dtype in actual}, table
+        columns = {name: DUCKDB_TYPES[dtype] for name, dtype in actual}
+        if table == "filing_index":
+            columns = {name: columns[name] for name in declared[table]}
+        assert declared[table] == columns, table

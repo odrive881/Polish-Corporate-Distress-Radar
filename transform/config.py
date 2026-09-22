@@ -37,11 +37,23 @@ PARQUET_DATASETS = (
     "restatement_events",
     "identity_check_results",
 )
-# Postgres manifest tables (ADR 0006).
-POSTGRES_TABLES = (
-    "quarantine_events",
-    "parsed_documents",
-)
+# Postgres manifest tables (ADR 0006), each with the columns its view exposes:
+# None for all of them, or an explicit subset where the table carries columns
+# the models have no use for (`filing_index`'s JSON and raw-detail columns).
+POSTGRES_TABLES: dict[str, tuple[str, ...] | None] = {
+    "quarantine_events": None,
+    "parsed_documents": None,
+    "filing_index": (
+        "krs",
+        "document_ref",
+        "rdf_type_code",
+        "period_start",
+        "period_end",
+        "submission_date",
+        "deleted_on",
+        "is_correction",
+    ),
+}
 
 settings = Settings()
 warehouse = settings.warehouse_dir.resolve()
@@ -57,8 +69,9 @@ def _parquet_view(name: str) -> str:
     )
 
 
-def _postgres_view(name: str) -> str:
-    return f"CREATE OR REPLACE VIEW ext.{name} AS SELECT * FROM manifest.public.{name}"
+def _postgres_view(name: str, columns: tuple[str, ...] | None) -> str:
+    selected = ", ".join(columns) if columns else "*"
+    return f"CREATE OR REPLACE VIEW ext.{name} AS SELECT {selected} FROM manifest.public.{name}"
 
 
 config = Config(
@@ -96,6 +109,6 @@ config = Config(
     before_all=[
         "CREATE SCHEMA IF NOT EXISTS ext",
         *(_parquet_view(name) for name in PARQUET_DATASETS),
-        *(_postgres_view(name) for name in POSTGRES_TABLES),
+        *(_postgres_view(name, columns) for name, columns in POSTGRES_TABLES.items()),
     ],
 )

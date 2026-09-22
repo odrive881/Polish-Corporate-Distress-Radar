@@ -4,7 +4,7 @@
 
 **Order:** after plan 0005, which is done. `dq_mart` reports coverage and pass rates by structure version, and every XML version in the seed is now mapped, so its first published numbers describe the corpus as it is. It no longer waits for the PDF route: plan 0006 is deferred, and the single `needs_pdf_tier` file is something `dq_mart` should **report**, not something it needs resolved first — its coverage grain is where that gap becomes visible and measurable, which is also how plan 0006's triggers get counted.
 
-## Status: steps A–C done (2026-09-22); D–G not started
+## Status: steps A–D done (2026-09-22); E–G not started
 
 **Step A close-out, 2026-09-22.** `identity_check_results` is written beside the canonical table, contracted
 (`IDENTITY_CHECK_RESULTS`) and in AGENT_SPEC §5. Against the seed warehouse, the refactored `grade()` reproduces
@@ -55,6 +55,22 @@ touches shares that run's timestamp. The backfill validates before it writes, an
 step rather than being skipped: an A2/A3 key that is not a KRS, a C-stage key with no `:`, and a C2/E2 key whose
 reference `filing_index` does not know. A C1 key whose tail is a `source_member` is backfilled with a null
 `document_ref`, which is correct: that file has no filing row.
+
+**Step D close-out, 2026-09-22.** `quarantine.quarantine` (FULL) is in `transform/models/quarantine/`. It reads
+a new staging view, `staging.parsed_documents_current` (the latest run's rows, joined to their filings), and a
+sixth external view, `ext.filing_index`, limited to the columns the models use. That view gives C-stage rows their
+`known_from`, and step E's coverage grain the fiscal year of files that never reach the canonical table. On the
+seed the model holds **29 rows, 28 E2 and 1 C1** (`xsd_invalid`). It leaves out **exactly the 22 stale E2 log
+rows over 19 files** counted before step C, with no hand-written SQL. All six audits pass, and a restatement
+rebuilds it to identical contents. SQLMesh unit tests (`transform/tests/`) cover a stale row dropped, one row per
+file with both reasons, an A3 failure surviving, a C2 file shown without canonical rows and dropped once
+mapped, a C1 file keyed by its member, and the staging view's latest-run selection. A deliberately wrong
+expectation fails `make transform-test`.
+
+One choice beyond the step text: **E2 reason codes are the checks with a `material` failure**, the ones that
+quarantine the file. The log recorded every failing check of a quarantined file, so it lists 10 more reasons on
+the seed, all immaterial. Every reason the model gives is also in the log. Custom audits live in
+`transform/audits/`; `DIRECTORY_STRUCTURE.md` gains it, and `transform/tests/`, in step G.
 
 **Owner decisions, 2026-09-21.** The three premises flagged at plan 0005's close-out are settled, and the
 stale figures are corrected:
@@ -228,7 +244,7 @@ Three things are outstanding and they resolve together.
 - [x] `identity_check_results` persisted with `severity`, contracted and in §5; grades and value hashes unchanged.
 - [x] SQLMesh project runs from `make`, state in Postgres, DuckDB reading `WAREHOUSE_DIR`; `make check` still needs no running Postgres.
 - [x] Postgres `quarantine` renamed `quarantine_events`, every row preserved (count taken before the migration), `krs`/`document_ref` backfilled; `parsed_documents` has `filed_bodies` and `last_seen_run_id`.
-- [ ] `quarantine` model materializes and **excludes every stale log row with no manual SQL**. Count the stale rows against the log before the migration, record the figure here, and check the model against it: **22 rows over 19 files** (step C close-out).
+- [x] `quarantine` model materializes and **excludes every stale log row with no manual SQL**. Count the stale rows against the log before the migration, record the figure here, and check the model against it: **22 rows over 19 files** (step C close-out).
 - [ ] `dq_mart` materializes with pass rates by structure version × filed body set × fiscal year × check type, plus the coverage grain; the suppression mechanism is built and tested, and ships switched off (threshold `null`) with the Phase 9 instruction recorded.
 - [ ] Dagster runs the models; audits surface as asset checks.
 - [ ] ADR 0010 accepted; docs from step G updated, including the plan-0004 supersession pointer.
