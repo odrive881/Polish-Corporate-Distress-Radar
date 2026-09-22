@@ -1,15 +1,22 @@
 """E2: accounting identity checks on canonical facts (AGENT_SPEC §4.3).
 
 Each check is a pure function over the canonical frame and returns one row per
-evaluated identity (`status` = `pass` | `fail` | `skipped`), so an asset check
-can report both the failures and how much was actually checked. Identities
-are evaluated per statement file (`source_document_hash` + `source_member`)
-and per amount column.
+evaluated identity (`status` = `pass` | `fail` | `not_applicable`), so an asset
+check can report both the failures and how much was actually checked.
+Identities are evaluated per statement file (`source_document_hash` +
+`source_member`) and per amount column. `not_applicable` is an outcome of its
+own, never a pass: a small or micro filing has no cash-flow statement to tie,
+and counting that as a pass would inflate every pass rate built on these rows.
 
 Absent items are never imputed (invariant 4): a sum is checked over the
 children that were reported (including the filer's own extra lines, unless the
 parent is a "w tym" line), a parent with no reported statutory children is not
-checked, and a cross-statement tie with a missing side is `skipped`.
+checked, and a cross-statement tie with a missing side is `not_applicable`.
+
+`run_identity_checks` also judges each failure `material` or `immaterial`
+(`severity`), and `grade` rolls that up into the per-file `quality_grade`. The
+full frame is persisted as `identity_check_results` (AGENT_SPEC §5), the
+per-check source `dq_mart` reports from (plan 0007 step A).
 
 `prior_year_consistency` compares a statement's prior-year column with the
 previously filed statement for the adjacent period; a difference is a
@@ -53,6 +60,10 @@ IDENTITY_CHECKS: tuple[CheckName, ...] = (
 # current total assets is immaterial: it grades `warn`, not `quarantined`.
 SUBTOTAL_WARN_RELATIVE = Decimal("0.01")
 DOCUMENT_KEY = ["source_document_hash", "source_member"]
+CheckStatus = Literal["pass", "fail", "not_applicable"]
+CHECK_STATUSES: tuple[CheckStatus, ...] = ("pass", "fail", "not_applicable")
+Severity = Literal["material", "immaterial"]
+SEVERITIES: tuple[Severity, ...] = ("material", "immaterial")
 
 RESULT_SCHEMA: dict[str, pl.DataType | type[pl.DataType]] = {
     "krs": pl.String,
@@ -68,6 +79,40 @@ RESULT_SCHEMA: dict[str, pl.DataType | type[pl.DataType]] = {
     "actual": VALUE_DTYPE,
     "difference": VALUE_DTYPE,
 }
+# `run_identity_checks` output: `RESULT_SCHEMA` plus the judgement `grade` rolls up.
+SEVERITY_SCHEMA: dict[str, pl.DataType | type[pl.DataType]] = {
+    **RESULT_SCHEMA,
+    "severity": pl.String,
+}
+# The persisted dataset: each result with the lineage of the file it checks.
+IDENTITY_CHECK_RESULTS_SCHEMA: dict[str, pl.DataType | type[pl.DataType]] = {
+    "krs": pl.String,
+    "fiscal_year": pl.Int32,
+    "period_end": pl.Date,
+    "document_ref": pl.String,
+    "source_document_hash": pl.String,
+    "source_member": pl.String,
+    "structure_version": pl.String,
+    "known_from": pl.Date,
+    "ingestion_run_id": pl.String,
+    "column": pl.String,
+    "check": pl.String,
+    "line_item": pl.String,
+    "status": pl.String,
+    "severity": pl.String,
+    "expected": VALUE_DTYPE,
+    "actual": VALUE_DTYPE,
+    "difference": VALUE_DTYPE,
+}
+IDENTITY_CHECK_RESULTS_SORT_KEY = [
+    "krs",
+    "period_end",
+    "document_ref",
+    "source_member",
+    "column",
+    "check",
+    "line_item",
+]
 UNRESOLVED_BODY_SCHEMA: dict[str, pl.DataType | type[pl.DataType]] = {
     "krs": pl.String,
     "document_ref": pl.String,
@@ -216,8 +261,9 @@ def _row(
     actual: Decimal | None,
     tolerance: Decimal,
 ) -> dict[str, object]:
+    status: CheckStatus
     if expected is None or actual is None:
-        status, difference = "skipped", None
+        status, difference = "not_applicable", None
     else:
         difference = actual - expected
         status = "pass" if abs(difference) <= tolerance else "fail"
@@ -271,7 +317,11 @@ def profit_ties(frame: pl.DataFrame, config: MappingConfig, tolerance: Decimal) 
 
 
 def cashflow_ties(frame: pl.DataFrame, config: MappingConfig, tolerance: Decimal) -> pl.DataFrame:
-    """Net cash flow == closing cash − opening cash. No cash flow statement: no row.
+    """Net cash flow == closing cash − opening cash.
+
+    No side reported at all (no cash-flow statement, as in every small and
+    micro filing) is one `not_applicable` row per column: recorded, so the
+    exemption is visible, and never counted as a pass.
 
     A difference exactly explained by the reported exchange-rate effect on cash
     (the "w tym" line under the balance-sheet change) passes: filers present
@@ -284,6 +334,7 @@ def cashflow_ties(frame: pl.DataFrame, config: MappingConfig, tolerance: Decimal
         _, closing = _role_value(g, config, "cash_closing")
         _, fx = _role_value(g, config, "cash_fx_effect")
         if net is None and opening is None and closing is None:
+            rows.append(_row(g, "cashflow_ties", "CF", None, None, tolerance))
             continue
         movement = None if opening is None or closing is None else closing - opening
         row = _row(g, "cashflow_ties", code or "CF", movement, net, tolerance)
@@ -369,19 +420,23 @@ CHECKS = {
 def run_identity_checks(
     frame: pl.DataFrame, config: MappingConfig, tolerance: Decimal
 ) -> pl.DataFrame:
+    """Every identity check over `frame`, with each failure's `severity` (`SEVERITY_SCHEMA`)."""
     parts = [CHECKS[name](frame, config, tolerance) for name in IDENTITY_CHECKS]
-    return pl.concat(parts).sort([*DOCUMENT_KEY, "column", "check", "line_item"])
+    results = pl.concat(parts).sort([*DOCUMENT_KEY, "column", "check", "line_item"])
+    return _with_severity(frame, results, config)
 
 
-def grade(frame: pl.DataFrame, results: pl.DataFrame, config: MappingConfig) -> pl.DataFrame:
-    """Set `quality_grade` per statement file from its identity results.
+def _with_severity(
+    frame: pl.DataFrame, results: pl.DataFrame, config: MappingConfig
+) -> pl.DataFrame:
+    """Judge each `fail` row `material` or `immaterial`; null on every other row.
 
-    `quarantined`: a failure in the current-year column that is either a tie
-    or a subtotal off by more than 1% of the file's total assets (or with no
-    total assets to compare). `warn`: every other failure: immaterial subtotal
-    differences, and anything confined to the prior-year columns, whose
-    authority is the earlier filing (differences there are restatement
-    findings). `pass`: nothing failed.
+    `material`: a failure in the current-year column that is either a tie or a
+    subtotal off by more than `SUBTOTAL_WARN_RELATIVE` of the file's current
+    total assets (or with no total assets to compare). `immaterial`: every
+    other failure: small subtotal differences, and anything confined to the
+    prior-year columns, whose authority is the earlier filing (differences
+    there are restatement findings).
     """
     assets_codes = config.chart.codes_with_role("total_assets")
     scale: dict[tuple[str, str], Decimal] = {
@@ -392,20 +447,43 @@ def grade(frame: pl.DataFrame, results: pl.DataFrame, config: MappingConfig) -> 
         .select(*DOCUMENT_KEY, "value")
         .iter_rows()
     }
-    severe: set[tuple[str, str]] = set()
-    failed: set[tuple[str, str]] = set()
-    for row in results.filter(pl.col("status") == "fail").iter_rows(named=True):
-        key = (row["source_document_hash"], row["source_member"])
-        failed.add(key)
+
+    def judge(row: dict[str, object]) -> Severity | None:
+        if row["status"] != "fail":
+            return None
         if row["column"] != "current_year":
-            continue
+            return "immaterial"
         if row["check"] != "subtotals_consistent":
-            severe.add(key)
-            continue
-        assets = scale.get(key)
-        difference: Decimal = row["difference"]
+            return "material"
+        assets = scale.get((str(row["source_document_hash"]), str(row["source_member"])))
+        difference = row["difference"]
+        assert isinstance(difference, Decimal)
         if assets is None or abs(difference) > abs(assets) * SUBTOTAL_WARN_RELATIVE:
-            severe.add(key)
+            return "material"
+        return "immaterial"
+
+    severities = [judge(row) for row in results.iter_rows(named=True)]
+    return results.with_columns(pl.Series("severity", severities, dtype=pl.String)).select(
+        list(SEVERITY_SCHEMA)
+    )
+
+
+def grade(frame: pl.DataFrame, results: pl.DataFrame) -> pl.DataFrame:
+    """Set `quality_grade` per statement file from its judged identity results.
+
+    `quarantined`: any `material` failure. `warn`: failures, all `immaterial`.
+    `pass`: nothing failed. `results` is `run_identity_checks` output: the
+    materiality rule lives in `_with_severity`, so the grade and the persisted
+    `severity` can never disagree.
+    """
+    failures = results.filter(pl.col("status") == "fail")
+    severe = {
+        (str(row[0]), str(row[1]))
+        for row in failures.filter(pl.col("severity") == "material")
+        .select(DOCUMENT_KEY)
+        .iter_rows()
+    }
+    failed = {(str(row[0]), str(row[1])) for row in failures.select(DOCUMENT_KEY).iter_rows()}
     keys = frame.select(DOCUMENT_KEY).unique(maintain_order=True)
     grades = [
         "quarantined" if key in severe else "warn" if key in failed else "pass"
@@ -417,6 +495,26 @@ def grade(frame: pl.DataFrame, results: pl.DataFrame, config: MappingConfig) -> 
         .with_columns(pl.col("_grade").alias("quality_grade"))
         .drop("_grade")
         .select(frame.columns)
+    )
+
+
+def identity_check_results(results: pl.DataFrame, facts: pl.DataFrame) -> pl.DataFrame:
+    """`run_identity_checks` output with its file's lineage, as persisted (AGENT_SPEC §5).
+
+    Lineage is taken per file from the canonical facts the checks ran on, so
+    every row can be joined back to its statement without the facts. Sorted by
+    `IDENTITY_CHECK_RESULTS_SORT_KEY` for a byte-stable write (ADR 0008).
+    """
+    lineage = facts.select(
+        *DOCUMENT_KEY, "fiscal_year", "structure_version", "known_from", "ingestion_run_id"
+    ).unique()
+    per_file = lineage.group_by(DOCUMENT_KEY).len().filter(pl.col("len") > 1)
+    if not per_file.is_empty():
+        raise ValueError(f"{per_file.height} statement files carry more than one lineage")
+    return (
+        results.join(lineage, on=DOCUMENT_KEY, how="left", validate="m:1")
+        .select(list(IDENTITY_CHECK_RESULTS_SCHEMA))
+        .sort(IDENTITY_CHECK_RESULTS_SORT_KEY)
     )
 
 

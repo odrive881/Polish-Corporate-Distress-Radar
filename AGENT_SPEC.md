@@ -106,7 +106,7 @@ Run on every parsed statement. Tolerance: absolute difference ≤ 1 currency uni
 | `cashflow_ties` | net cash movement == closing cash − opening cash |
 | `prior_year_consistency` | prior-year column matches the previously filed current-year column; mismatch emits a row into `restatement_events`, not a failure |
 
-A statement a form does not declare is **absent, not empty**: the small and micro structures have no cash-flow and no equity-changes statement at all (ADR 0005 second addendum §1), so those checks are `skipped` for such a filing, never failed, and no zero rows are written for the missing lines (invariant 4). The same applies to a tie whose other side is missing. Grading (plan 0004): a statement file is `quarantined` when a tie fails in the current-year column, or a current-year subtotal is off by more than 1% of its total assets. Every other failure grades it `warn`: immaterial subtotal gaps, and anything confined to the prior-year columns, whose authority is the earlier filing. A cash difference exactly explained by the reported exchange-rate effect on cash passes `cashflow_ties`. Sums include the filer's own extra lines (`PozycjaUszczegolawiajaca_N`), except under "w tym" (of which) lines.
+A statement a form does not declare is **absent, not empty**: the small and micro structures have no cash-flow and no equity-changes statement at all (ADR 0005 second addendum §1), so those checks are `not_applicable` for such a filing, never failed and never passed, and no zero rows are written for the missing lines (invariant 4). `cashflow_ties` records one `not_applicable` row per column rather than none, so the exemption is counted, not hidden (plan 0007). The same applies to a tie whose other side is missing. Grading (plan 0004): each failure is judged `material` or `immaterial`, and a statement file is `quarantined` on any material failure: a tie failing in the current-year column, or a current-year subtotal off by more than 1% of its total assets. Every other failure is immaterial and grades it `warn`: immaterial subtotal gaps, and anything confined to the prior-year columns, whose authority is the earlier filing. A cash difference exactly explained by the reported exchange-rate effect on cash passes `cashflow_ties`. Sums include the filer's own extra lines (`PozycjaUszczegolawiajaca_N`), except under "w tym" (of which) lines.
 
 ### 4.4 Size classification
 
@@ -200,6 +200,12 @@ Computed per §4.4. Never sourced from a registry.
 `krs`, `fiscal_year`, `period_start`, `period_end`, `line_item`, `restated_column` (`prior_year` \| `prior_year_restated`), `originally_reported_value`, `restated_value`, `original_document_hash`, `original_source_member`, `original_document_ref`, `restating_document_hash`, `restating_source_member`, `restating_document_ref`, `known_from`.
 
 Emitted by the `prior_year_consistency` check (§4.3). A restatement is a finding, not a validation failure. The earlier filing is found by period adjacency (its period ends the day before the restating one starts), not by `fiscal_year - 1`, and must have been public no later than the restating one. Only files graded `pass` or `warn` take part.
+
+### `identity_check_results`
+
+`krs`, `fiscal_year`, `period_end`, `document_ref`, `source_document_hash`, `source_member`, `structure_version`, `known_from`, `ingestion_run_id`, `column`, `check`, `line_item`, `status` (`pass` \| `fail` \| `not_applicable`), `severity` (`material` \| `immaterial`, on `fail` rows only), `expected`, `actual`, `difference`.
+
+One row per evaluated identity (§4.3) per statement file, amount column and line item, written with `financial_statements_canonical` from the same run (plan 0007 step A). `quality_grade` is the per-file roll-up of `severity`; this is the per-check detail behind it, and the source of `dq_mart`'s pass rates by check type. `not_applicable` is never counted as a pass. `expected`/`actual` are null where a side of the identity was not reported; `difference` is null exactly on `not_applicable` rows.
 
 ### `outcome_labels`
 

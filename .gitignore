@@ -29,3 +29,6 @@ mlruns/
 site/build/
 site/.evidence/
 report/_output/
+
+# SQLMesh writes run logs to ./logs when called directly (make targets use .cache/)
+logs/

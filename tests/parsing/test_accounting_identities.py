@@ -5,6 +5,7 @@ from datetime import date
 from decimal import Decimal
 from pathlib import Path
 
+import pandera.errors as pa_errors
 import polars as pl
 import pytest
 from lxml import etree
@@ -13,6 +14,7 @@ from distress_radar.parsing.accounting_identities import (
     balance_sheet_balances,
     cashflow_ties,
     grade,
+    identity_check_results,
     prior_year_consistency,
     profit_ties,
     run_identity_checks,
@@ -21,6 +23,7 @@ from distress_radar.parsing.accounting_identities import (
 )
 from distress_radar.parsing.canonical_schema import MappingConfig
 from distress_radar.parsing.containers import safe_parser
+from distress_radar.parsing.contracts import IDENTITY_CHECK_RESULTS
 from distress_radar.parsing.mapping_engine import (
     DocumentContext,
     Fact,
@@ -103,8 +106,15 @@ def _statuses(result: pl.DataFrame) -> dict[str, str]:
 def test_balanced_statement_passes_every_check(mapping_config: MappingConfig) -> None:
     frame = _frame(BALANCED, mapping_config)
     results = run_identity_checks(frame, mapping_config, TOLERANCE)
-    assert set(results["status"].to_list()) == {"pass"}
-    assert grade(frame, results, mapping_config)["quality_grade"].unique().to_list() == ["pass"]
+    # No cash-flow statement in the fixture: that tie is not applicable, not passed.
+    by_check = dict(results.group_by("check").agg(pl.col("status").unique()).iter_rows())
+    assert {c: sorted(v) for c, v in by_check.items()} == {
+        "balance_sheet_balances": ["pass"],
+        "subtotals_consistent": ["pass"],
+        "profit_ties": ["pass"],
+        "cashflow_ties": ["not_applicable"],
+    }
+    assert grade(frame, results)["quality_grade"].unique().to_list() == ["pass"]
 
 
 def test_tolerance_boundary_is_inclusive(mapping_config: MappingConfig) -> None:
@@ -130,12 +140,14 @@ def test_profit_must_tie(mapping_config: MappingConfig) -> None:
     )
 
 
-def test_missing_side_of_a_tie_is_skipped_not_imputed(mapping_config: MappingConfig) -> None:
+def test_missing_side_of_a_tie_is_not_applicable_not_imputed(
+    mapping_config: MappingConfig,
+) -> None:
     values = {k: v for k, v in BALANCED.items() if k[0] != "BS.EQUITY_LIABILITIES.A.VI"}
     [row] = profit_ties(_frame(values, mapping_config), mapping_config, TOLERANCE).iter_rows(
         named=True
     )
-    assert row["status"] == "skipped"
+    assert row["status"] == "not_applicable"
 
 
 def test_subtotals_sum_reported_children_and_follow_formulas(mapping_config: MappingConfig) -> None:
@@ -167,7 +179,14 @@ def test_of_which_lines_are_not_summed(mapping_config: MappingConfig) -> None:
 
 
 def test_cashflow_tie_only_when_a_cash_flow_exists(mapping_config: MappingConfig) -> None:
-    assert cashflow_ties(_frame(BALANCED, mapping_config), mapping_config, TOLERANCE).is_empty()
+    [absent] = cashflow_ties(
+        _frame(BALANCED, mapping_config), mapping_config, TOLERANCE
+    ).iter_rows(named=True)
+    assert (absent["status"], absent["line_item"], absent["difference"]) == (
+        "not_applicable",
+        "CF",
+        None,
+    )
     with_cf = {
         **BALANCED,
         ("CF.IND.D", "current_year"): "10.00",
@@ -190,12 +209,15 @@ def test_immaterial_subtotal_difference_warns_material_one_quarantines(
     # Total assets are 100.00, so up to 1.00 is immaterial.
     small = _frame({**BALANCED, ("IS.COMP.C", "current_year"): "5.50"}, mapping_config)
     large = _frame({**BALANCED, ("IS.COMP.C", "current_year"): "7.00"}, mapping_config)
-    for frame, expected in ((small, "warn"), (large, "quarantined")):
+    for frame, expected, severity in (
+        (small, "warn", "immaterial"),
+        (large, "quarantined", "material"),
+    ):
         results = run_identity_checks(frame, mapping_config, Decimal("0.00"))
-        assert set(results.filter(pl.col("status") == "fail")["check"].to_list()) == {
-            "subtotals_consistent"
-        }
-        assert grade(frame, results, mapping_config)["quality_grade"].unique().to_list() == [
+        failed = results.filter(pl.col("status") == "fail")
+        assert set(failed["check"].to_list()) == {"subtotals_consistent"}
+        assert set(failed["severity"].to_list()) == {severity}
+        assert grade(frame, results)["quality_grade"].unique().to_list() == [
             expected
         ]
 
@@ -210,7 +232,7 @@ def test_subtotal_failure_without_total_assets_quarantines(mapping_config: Mappi
         mapping_config,
     )
     results = run_identity_checks(frame, mapping_config, Decimal("0.00"))
-    assert grade(frame, results, mapping_config)["quality_grade"].unique().to_list() == [
+    assert grade(frame, results)["quality_grade"].unique().to_list() == [
         "quarantined"
     ]
 
@@ -240,7 +262,7 @@ def test_altered_micro_total_assets_quarantines(mapping_config: MappingConfig) -
     results = run_identity_checks(frame, mapping_config, TOLERANCE)
     failed = results.filter(pl.col("status") == "fail")
     assert "balance_sheet_balances" in failed["check"].to_list()
-    assert grade(frame, results, mapping_config)["quality_grade"].unique().to_list() == [
+    assert grade(frame, results)["quality_grade"].unique().to_list() == [
         "quarantined"
     ]
 
@@ -280,8 +302,77 @@ def test_golden_statements_pass(xml: Path, mapping_config: MappingConfig) -> Non
     assert results.filter(pl.col("check") == "balance_sheet_balances")[
         "status"
     ].unique().to_list() == ["pass"]
-    grades = grade(frame, results, mapping_config)["quality_grade"].unique().to_list()
+    grades = grade(frame, results)["quality_grade"].unique().to_list()
     assert grades == (["warn"] if expected else ["pass"])
+
+
+def test_severity_is_set_on_failures_only(mapping_config: MappingConfig) -> None:
+    """Only a `fail` row is judged; `pass` and `not_applicable` rows carry no severity."""
+    frame = _frame(
+        {
+            **BALANCED,
+            ("BS.ASSETS", "current_year"): "101.00",  # a current-year tie failure: material
+            # A prior-year profit tie off by 4.00: immaterial, whatever its size.
+            ("BS.EQUITY_LIABILITIES.A.VI", "prior_year"): "9.00",
+            ("IS.COMP.L", "prior_year"): "5.00",
+        },
+        mapping_config,
+    )
+    results = run_identity_checks(frame, mapping_config, Decimal("0.00"))
+    failed = results.filter(pl.col("status") == "fail")
+    judged = {
+        (r["check"], r["line_item"], r["column"]): r["severity"]
+        for r in failed.iter_rows(named=True)
+    }
+    assert judged == {
+        # A current-year tie: material whatever its size.
+        ("balance_sheet_balances", "BS.ASSETS", "current_year"): "material",
+        # 60 + 40 against 101: off by 1.00, within 1% of total assets.
+        ("subtotals_consistent", "BS.ASSETS", "current_year"): "immaterial",
+        # Confined to the prior-year column: immaterial, whatever its size.
+        ("profit_ties", "IS.COMP.L", "prior_year"): "immaterial",
+    }
+    rest = results.filter(pl.col("status") != "fail")
+    assert set(rest["status"].to_list()) == {"pass", "not_applicable"}
+    assert rest["severity"].null_count() == rest.height
+
+
+def test_identity_check_results_carry_each_files_lineage(mapping_config: MappingConfig) -> None:
+    one = _frame(BALANCED, mapping_config, ref="one")
+    two = _frame(
+        {**BALANCED, ("IS.COMP.C", "current_year"): "7.00"},
+        mapping_config,
+        ref="two",
+        period=(date(2023, 1, 1), date(2023, 12, 31)),
+        known_from=date(2024, 7, 1),
+    )
+    facts = pl.concat([one, two])
+    results = run_identity_checks(facts, mapping_config, TOLERANCE)
+    persisted = IDENTITY_CHECK_RESULTS.validate(identity_check_results(results, facts))
+    assert persisted.height == results.height
+    by_ref = {
+        r["document_ref"]: (r["fiscal_year"], r["known_from"], r["structure_version"])
+        for r in persisted.iter_rows(named=True)
+    }
+    assert by_ref == {
+        "one": (2022, date(2023, 6, 30), "full-2018-v1-2"),
+        "two": (2023, date(2024, 7, 1), "full-2018-v1-2"),
+    }
+    assert persisted.filter(pl.col("status") == "fail")["document_ref"].unique().to_list() == [
+        "two"
+    ]
+
+
+def test_identity_check_results_contract_rejects_a_pass_with_a_severity(
+    mapping_config: MappingConfig,
+) -> None:
+    facts = _frame(BALANCED, mapping_config)
+    persisted = identity_check_results(
+        run_identity_checks(facts, mapping_config, TOLERANCE), facts
+    )
+    IDENTITY_CHECK_RESULTS.validate(persisted)
+    with pytest.raises(pa_errors.SchemaError):
+        IDENTITY_CHECK_RESULTS.validate(persisted.with_columns(severity=pl.lit("material")))
 
 
 def test_known_bad_statement_is_quarantined(mapping_config: MappingConfig) -> None:
@@ -297,7 +388,7 @@ def test_known_bad_statement_is_quarantined(mapping_config: MappingConfig) -> No
     results = run_identity_checks(frame, mapping_config, TOLERANCE)
     failed = results.filter(pl.col("status") == "fail")
     assert set(failed["check"].to_list()) == {"balance_sheet_balances", "subtotals_consistent"}
-    assert grade(frame, results, mapping_config)["quality_grade"].unique().to_list() == [
+    assert grade(frame, results)["quality_grade"].unique().to_list() == [
         "quarantined"
     ]
 
@@ -422,7 +513,7 @@ def test_prior_year_only_failures_warn(mapping_config: MappingConfig) -> None:
     frame = _frame(values, mapping_config)
     results = run_identity_checks(frame, mapping_config, TOLERANCE)
     assert results.filter(pl.col("status") == "fail")["column"].unique().to_list() == ["prior_year"]
-    assert grade(frame, results, mapping_config)["quality_grade"].unique().to_list() == ["warn"]
+    assert grade(frame, results)["quality_grade"].unique().to_list() == ["warn"]
 
 
 # --- Short forms (plan 0005 step F) -----------------------------------------
@@ -452,20 +543,26 @@ def test_short_forms_write_no_cash_flow_or_equity_rows(
 
 
 @pytest.mark.parametrize("xml", SHORT_FORM, ids=lambda p: p.stem)
-def test_absent_statements_are_skipped_never_failed(
+def test_absent_statements_are_not_applicable_never_failed_or_passed(
     xml: Path, mapping_config: MappingConfig
 ) -> None:
     """`cashflow_ties` and the equity walk must not fail a form that has neither.
 
-    `cashflow_ties` emits no row at all when no side of the tie was reported,
-    and the equity walk is a subtotal tree that does not exist here — so the
-    absence must show up as nothing checked, never as a failure.
+    Nor may they pass it (plan 0007 owner decision 1): `cashflow_ties` records
+    one `not_applicable` row per column, so a pass rate built on these rows
+    cannot count an exempt filing as a passed tie. The equity walk is a
+    subtotal tree that does not exist here, so it produces no row at all.
     """
-    assert cashflow_ties(_golden_frame(xml, mapping_config), mapping_config, TOLERANCE).is_empty()
-
     frame = _golden_frame(xml, mapping_config)
+    cash = cashflow_ties(frame, mapping_config, TOLERANCE)
+    assert not cash.is_empty()
+    assert set(cash["status"].to_list()) == {"not_applicable"}
+    assert set(cash["column"].to_list()) == set(frame["column"].to_list())
+
     results = run_identity_checks(frame, mapping_config, TOLERANCE)
-    assert "cashflow_ties" not in results["check"].to_list()
+    cash_rows = results.filter(pl.col("check") == "cashflow_ties")
+    assert set(cash_rows["status"].to_list()) == {"not_applicable"}
+    assert cash_rows["severity"].null_count() == cash_rows.height
     assert not [c for c in results["line_item"].to_list() if c.startswith(("CF.", "EQ."))]
 
 
@@ -516,19 +613,19 @@ def test_the_full_form_sums_what_the_micro_form_only_notes(
     )
 
 
-def test_micro_profit_ties_is_skipped_with_no_balance_sheet_result(
+def test_micro_profit_ties_is_not_applicable_with_no_balance_sheet_result(
     mapping_config: MappingConfig,
 ) -> None:
     """The micro balance sheet declares no net-result line, so the tie has one side.
 
     `IS.MIKRO.F` is the income statement's result; nothing in the 13-line micro
-    balance sheet restates it. That is a `skipped` row, not a failure, and not
+    balance sheet restates it. That is a `not_applicable` row, not a failure, and not
     an excuse to impute the missing side (invariant 4).
     """
     frame = _golden_frame(STATEMENTS_DIR / "micro_2018_v1_2_2019.xml", mapping_config)
     results = profit_ties(frame, mapping_config, TOLERANCE)
     assert set(results["line_item"].to_list()) == {"IS.MIKRO.F"}
-    assert set(results["status"].to_list()) == {"skipped"}
+    assert set(results["status"].to_list()) == {"not_applicable"}
 
 
 def test_small_form_subtotals_walk_its_own_shorter_profit_chain(

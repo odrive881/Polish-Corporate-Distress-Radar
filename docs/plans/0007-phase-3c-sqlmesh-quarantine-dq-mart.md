@@ -4,7 +4,36 @@
 
 **Order:** after plan 0005, which is done. `dq_mart` reports coverage and pass rates by structure version, and every XML version in the seed is now mapped, so its first published numbers describe the corpus as it is. It no longer waits for the PDF route: plan 0006 is deferred, and the single `needs_pdf_tier` file is something `dq_mart` should **report**, not something it needs resolved first — its coverage grain is where that gap becomes visible and measurable, which is also how plan 0006's triggers get counted.
 
-## Status: not started
+## Status: steps A and B done (2026-09-22); C–G not started
+
+**Step A close-out, 2026-09-22.** `identity_check_results` is written beside the canonical table, contracted
+(`IDENTITY_CHECK_RESULTS`) and in AGENT_SPEC §5. Against the seed warehouse, the refactored `grade()` reproduces
+all 129 stored grades (82 pass, 19 warn, 28 quarantined), and the recomputed canonical frame equals the stored one
+row for row, so both value hashes are unchanged. The seed gives 12,597 result rows. One behaviour change beyond the
+rename: `cashflow_ties` used to emit no row for a file with no cash-flow statement, and now records one
+`not_applicable` row per column (173 on the seed). Without it, owner decision 1 had nothing to count.
+
+**Step B close-out, 2026-09-22.** SQLMesh 0.236.2 is in `[project].dependencies` with the `local` and `test`
+gateways, the external models, the `transform-*` targets (`transform-test` is in `make check`) and the pandas
+guard (`tests/test_no_pandas.py`). Three departures from the step text, all for ADR 0010 to record:
+- **`transform/config.py`, not `config.yaml`.** A Python config reads `WAREHOUSE_DIR` and the Postgres credentials
+  from `Settings` itself, which is the single source of truth the step asks for. `DIRECTORY_STRUCTURE.md` already
+  names `config.py`.
+- **`psycopg2-binary`, not `sqlmesh[postgres]`.** The extra pulls `psycopg2`, which builds from source and needs
+  `pg_config`. The binary wheel provides the same module. SQLMesh's state connection is its only user; project
+  code stays on psycopg 3.
+- **The external boundary is the DuckDB schema `ext`.** `before_all` recreates one view per upstream dataset
+  at the start of every `plan` and `run`: `read_parquet` over `WAREHOUSE_DIR`, and the Postgres tables through
+  the attached catalog `manifest` (read-only). DuckDB's extension auto-install is off, and `make transform-setup`
+  installs `postgres` explicitly. `before_all` does not run for `sqlmesh test`, so the test gateway (in-memory
+  DuckDB for execution and state) replaces the `ext` views with fixtures; `make transform-test` passes with
+  Postgres unreachable.
+
+Checked against the seed: the three Parquet views match their declared columns exactly (43,611 / 130 / 12,597
+rows), and re-materializing `financial_statements_canonical` left its Parquet byte-identical. Step C still owes two
+things here: the `quarantine_events` view and the two new `parsed_documents` columns, which are already declared
+in `external_models.yaml` but do not exist until the migration lands. The integration test comparing the
+Postgres declarations with `information_schema` lands with it.
 
 **Owner decisions, 2026-09-21.** The three premises flagged at plan 0005's close-out are settled, and the
 stale figures are corrected:
@@ -175,8 +204,8 @@ Three things are outstanding and they resolve together.
 
 ## Definition of done
 
-- [ ] `identity_check_results` persisted with `severity`, contracted and in §5; grades and value hashes unchanged.
-- [ ] SQLMesh project runs from `make`, state in Postgres, DuckDB reading `WAREHOUSE_DIR`; `make check` still needs no running Postgres.
+- [x] `identity_check_results` persisted with `severity`, contracted and in §5; grades and value hashes unchanged.
+- [x] SQLMesh project runs from `make`, state in Postgres, DuckDB reading `WAREHOUSE_DIR`; `make check` still needs no running Postgres.
 - [ ] Postgres `quarantine` renamed `quarantine_events`, every row preserved (count taken before the migration), `krs`/`document_ref` backfilled; `parsed_documents` has `filed_bodies` and `last_seen_run_id`.
 - [ ] `quarantine` model materializes and **excludes every stale log row with no manual SQL**. Count the stale rows against the log before the migration, record the figure here, and check the model against it.
 - [ ] `dq_mart` materializes with pass rates by structure version × filed body set × fiscal year × check type, plus the coverage grain; the suppression mechanism is built and tested, and ships switched off (threshold `null`) with the Phase 9 instruction recorded.
