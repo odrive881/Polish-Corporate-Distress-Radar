@@ -207,6 +207,29 @@ Emitted by the `prior_year_consistency` check (§4.3). A restatement is a findin
 
 One row per evaluated identity (§4.3) per statement file, amount column and line item, written with `financial_statements_canonical` from the same run (plan 0007 step A). `quality_grade` is the per-file roll-up of `severity`; this is the per-check detail behind it, and the source of `dq_mart`'s pass rates by check type. `not_applicable` is never counted as a pass. `expected`/`actual` are null where a side of the identity was not reported; `difference` is null exactly on `not_applicable` rows.
 
+### `quarantine`
+
+`stage`, `entity_key`, `krs`, `document_ref`, `source_document_hash`, `source_member`, `reason_codes` (list), `known_from`, `first_detected_at`.
+
+The **current** quarantined set: SQLMesh model `quarantine.quarantine`, recomputed from scratch on every run (plan 0007 decision 4). Each stage's answer comes from the source that knows it now:
+- E2: `quality_grade = 'quarantined'` on the canonical table, with the checks that failed materially as reasons;
+- C1/C2: `parsed_documents` on the latest parsing run;
+- A1–A3: the latest event per key in the log.
+
+The log itself is the Postgres table **`quarantine_events`**: append-only, one row per first detection, never updated or deleted. A log row describing a file the current rules no longer quarantine is simply not selected. Never answer "is this quarantined now?" from the log (ADR 0006 addendum, ADR 0010).
+
+### `dq_mart`
+
+Two SQLMesh models (plan 0007 step E), both rebuilt in full on every run:
+- **`marts.dq_mart`**: one row per `structure_version` × `filed_bodies` × `fiscal_year` × `check`. Columns `files`, `passed`, `failed_material`, `failed_immaterial`, `not_applicable`, `pass_rate` = passed / (passed + failed), `entities`, `suppressed`.
+- **`marts.dq_mart_coverage`**: one row per `fiscal_year`. Columns `files_stored`, `parsed` and its split `graded_pass` / `graded_warn` / `graded_quarantined`, `not_yet_mapped`, `needs_pdf_tier`, `needs_pdf_tier_without_later_filing`, `quarantined_before_grading`, `entities`, `suppressed`.
+
+Rules:
+- A file counts once per check.
+- `not_applicable` is never in a pass rate's denominator.
+- No entity identifiers appear, only counts.
+- A cell covering fewer entities than `DQ_MART_MIN_CELL_ENTITIES` publishes every measure as null, flagged `suppressed`, and is kept rather than dropped. The setting ships null (off), and must be set before anything is published (§10, phase 9).
+
 ### `outcome_labels`
 
 `krs`, `as_of_date`, `horizon_months` (12 | 24), `outcome_class` (§4.6 enum), `censored` (bool), `event_date`, `proceeding_id`, `regime_flag`, `label_version`, `label_set_hash`.
@@ -320,13 +343,17 @@ marimo notebooks in `notebooks/`, `.py` format, reading via DuckDB. Not part of 
 
 - **E1** Pandera schemas at every Python stage boundary.
 - **E2** Accounting identities (§4.3) as **Dagster asset checks**, one named check per rule. Each check is independently testable and reports the failing entity/year set.
-- **E3** SQLMesh models producing `quarantine` (with reason codes) and `dq_mart` (pass rates by structure version, fiscal year, check type). `dq_mart` is published to the public site.
+- **E3** SQLMesh models producing `quarantine` (with reason codes) and `dq_mart` (pass rates by structure version, filed body set, fiscal year, check type, plus a coverage grain), defined in §5.
+  - The current quarantined set is **derived, never stored**. It is recomputed on every run from the sources that know each stage's answer. The Postgres `quarantine_events` log is never cleaned and is not the source of "quarantined now".
+  - Each SQLMesh audit is non-blocking and runs as a Dagster asset check on the model it audits (ADR 0010).
+  - `dq_mart` is built in Phase 3 with a publish-safe shape. Publishing it to the public site is Phase 9, behind the suppression threshold.
 
 ### F — Transformation and storage
 
-- SQLMesh project in `transform/`, DuckDB engine.
-- Incremental models keyed by time range so a late-arriving filing for an old period triggers a correct partial rebuild.
-- Output: Parquet partitioned by `fiscal_year` and `as_of_month`, with `valid_from`, `valid_to`, `known_from` columns and content-hashed snapshot manifests.
+- SQLMesh project in `transform/`: DuckDB engine, SQLMesh state in Postgres (ADR 0010).
+- **Boundary:** SQLMesh starts where the data becomes tabular. `financial_statements_canonical`, `restatement_events` and `identity_check_results` are Python (Dagster/Polars) outputs. SQLMesh reads them, and the Postgres manifest tables, only through the `ext.*` views declared in `transform/external_models.yaml`, and never writes them.
+- Incremental models keyed by time range so a late-arriving filing for an old period triggers a correct partial rebuild. The key is `known_from`, the axis on which data arrives (§4.7), not `fiscal_year`. Current-state and aggregate models (`quarantine`, `dq_mart`) are full rebuilds instead: a rule change rewrites them all the way back.
+- Output for the point-in-time layer H consumes: Parquet partitioned by `fiscal_year` and `as_of_month`, with `valid_from`, `valid_to`, `known_from` columns and content-hashed snapshot manifests. **Deferred to Phase 5**, when the feature store can say what shape it needs (ADR 0010 decision 6).
 
 ### G — Semantic extraction
 
@@ -489,7 +516,7 @@ Each phase must be demonstrable before the next begins.
 | 0 | Repo skeleton, Docker Compose, CI, ADR template, Dagster hello-world asset |
 | 1 | Acquisition for 20 hand-picked entities; raw documents in MinIO, manifest in Postgres |
 | 2 | Two structure versions parsed end-to-end into canonical model, accounting identities passing |
-| 3 | Remaining structure versions, `dq_mart` published (the C3 PDF tier moved to phase 4, where MSiG's pre-2021 notices need a PDF text layer regardless — plan 0006) |
+| 3 | Remaining structure versions, `quarantine` and `dq_mart` built in SQLMesh; `dq_mart` is published in phase 9 (plan 0007) (the C3 PDF tier moved to phase 4, where MSiG's pre-2021 notices need a PDF text layer regardless — plan 0006) |
 | 4 | Legal events, outcome labels, censoring, regime flags |
 | 5 | Feature store with ASOF assembly and blocking leakage tests |
 | 6 | Baseline and classical models, out-of-time backtest report |

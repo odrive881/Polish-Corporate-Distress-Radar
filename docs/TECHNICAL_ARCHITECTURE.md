@@ -338,6 +338,8 @@ These are domain rules. They deserve named, documented, individually-testable im
 
 **→ Pick: SQLMesh models** producing a quarantine table with reason codes and a DQ mart aggregating pass rates by structure version, fiscal year, and check type. Failing records are never deleted, and the DQ mart feeds the public dashboard — publishing your own coverage gaps is a credibility signal, not a weakness.
 
+*As built (plan 0007, ADR 0010):* the quarantine model is the current set, derived on every run. The Postgres `quarantine_events` table is the append-only detection log beside it, never cleaned. SQLMesh audits are non-blocking and surface as Dagster asset checks, like the E2 identities. `dq_mart` adds a filed-body-set dimension and a coverage grain, and suppresses small cells before anything is published.
+
 ---
 
 ### F. Transformation and storage

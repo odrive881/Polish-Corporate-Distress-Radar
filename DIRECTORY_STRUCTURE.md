@@ -88,6 +88,9 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 ├── src/
 │   └── distress_radar/                # the installable package — see §2
 │       ├── __init__.py
+│       ├── settings.py                # typed runtime settings (.env)
+│       ├── warehouse.py               # Parquet datasets under WAREHOUSE_DIR (ADR 0008)
+│       ├── transform_project.py       # runs/audits the SQLMesh project from Python (ADR 0010)
 │       ├── acquisition/
 │       ├── parsing/
 │       ├── extraction/
@@ -95,18 +98,22 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │       ├── models/
 │       └── api/
 │
-├── transform/                         # SQLMesh project
-│   ├── config.py
-│   └── models/
-│       ├── staging/
-│       ├── marts/
-│       └── quarantine/
+├── transform/                         # SQLMesh project (ADR 0010)
+│   ├── config.py                      # gateways (local: DuckDB + Postgres state; test: in-memory)
+│   ├── external_models.yaml           # columns of the ext.* views over Parquet and Postgres
+│   ├── models/
+│   │   ├── staging/                   # parsed_documents_current
+│   │   ├── marts/                     # dq_mart, dq_mart_coverage
+│   │   └── quarantine/                # quarantine — the current set, not the log
+│   ├── audits/                        # custom SQLMesh audits, non-blocking (Dagster reports them)
+│   └── tests/                         # SQLMesh unit tests, YAML fixtures (make transform-test)
 │
 ├── dagster_defs/
 │   ├── __init__.py
 │   ├── assets/                        # one module per stage group, mirrors src/
 │   │   ├── acquisition.py
 │   │   ├── parsing.py
+│   │   ├── dq.py                      # E3/F: SQLMesh DQ models, audits as asset checks
 │   │   ├── extraction.py
 │   │   ├── features.py
 │   │   └── models.py
@@ -137,6 +144,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
     ├── features/
     │   └── test_leakage.py             # §9.1 of AGENT_SPEC.md — blocking
     ├── models/
+    ├── transform/                      # SQLMesh boundary and Dagster DQ wiring (pytest side)
     ├── fixtures/                       # golden XML/PDF documents for mapping tests
     └── conftest.py
 ```
@@ -224,6 +232,9 @@ Use this table before creating any new file. If a file doesn't clearly fit one r
 | Serves an HTTP endpoint | `src/distress_radar/api/` | `app/` |
 | Declares a Dagster `@asset`, `@asset_check`, schedule, or sensor | `dagster_defs/` | `src/` |
 | Is a SQL transformation on already-canonical data | `transform/` | `src/distress_radar/parsing/` |
+| Is a data-quality assertion on a SQLMesh model | `transform/audits/` (non-blocking; ADR 0010) | `dagster_defs/checks/` |
+| Tests a SQLMesh model's logic on fixtures | `transform/tests/` (YAML) | `tests/` |
+| Runs or inspects the SQLMesh project from Python | `src/distress_radar/transform_project.py` | `dagster_defs/` |
 | Is a mapping table, threshold, or taxonomy that changes by legislation, not by engineering | `config/` | hardcoded in `src/` |
 | Is a Streamlit page | `app/` | `site/` |
 | Is a public static chart/table definition | `site/` | `app/` |

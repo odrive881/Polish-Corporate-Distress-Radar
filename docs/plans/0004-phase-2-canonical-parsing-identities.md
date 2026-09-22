@@ -237,7 +237,9 @@ The step A research and the first seed runs changed the design. In summary:
 > record of it. Plan 0005 mapped all 49 `not_yet_mapped` files (full 1-3, small, micro) and the seed now
 > stands at 129 valid files, 43,611 rows and all 17 entities. This plan's decision 4 ("SQLMesh takes over
 > `financial_statements_canonical` in Phase 3") is superseded by plan 0007 decision 1, and the hand-written
-> `DELETE` of stale quarantine rows it recorded is superseded by plan 0007 decision 4.
+> `DELETE` of stale quarantine rows it recorded is superseded by plan 0007 decision 4. **Do not run it**: the
+> SQLMesh `quarantine` model leaves those rows out without touching the log, and the table it names has since been
+> renamed `quarantine_events` (plan 0007 decision 3). By 2026-09-22 the stale rows numbered 22, not 9.
 
 **Checks.**
 - `make check`: ruff clean, pyright 0 errors, 221 passed.
