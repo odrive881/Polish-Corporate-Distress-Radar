@@ -106,6 +106,9 @@ config = Config(
         ),
     },
     model_defaults=ModelDefaultsConfig(dialect="duckdb"),
+    # `dq_mart` small-cell suppression threshold; None (NULL) suppresses nothing.
+    # See `Settings.dq_mart_min_cell_entities` before changing how it is set.
+    variables={"dq_mart_min_cell_entities": settings.dq_mart_min_cell_entities},
     before_all=[
         "CREATE SCHEMA IF NOT EXISTS ext",
         *(_parquet_view(name) for name in PARQUET_DATASETS),

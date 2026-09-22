@@ -4,7 +4,7 @@
 
 **Order:** after plan 0005, which is done. `dq_mart` reports coverage and pass rates by structure version, and every XML version in the seed is now mapped, so its first published numbers describe the corpus as it is. It no longer waits for the PDF route: plan 0006 is deferred, and the single `needs_pdf_tier` file is something `dq_mart` should **report**, not something it needs resolved first — its coverage grain is where that gap becomes visible and measurable, which is also how plan 0006's triggers get counted.
 
-## Status: steps A–D done (2026-09-22); E–G not started
+## Status: steps A–E done (2026-09-22); F–G not started
 
 **Step A close-out, 2026-09-22.** `identity_check_results` is written beside the canonical table, contracted
 (`IDENTITY_CHECK_RESULTS`) and in AGENT_SPEC §5. Against the seed warehouse, the refactored `grade()` reproduces
@@ -71,6 +71,34 @@ One choice beyond the step text: **E2 reason codes are the checks with a `materi
 quarantine the file. The log recorded every failing check of a quarantined file, so it lists 10 more reasons on
 the seed, all immaterial. Every reason the model gives is also in the log. Custom audits live in
 `transform/audits/`; `DIRECTORY_STRUCTURE.md` gains it, and `transform/tests/`, in step G.
+
+**Step E close-out, 2026-09-22.** `dq_mart` is two FULL models in `transform/models/marts/`. `marts.dq_mart` is the
+check grain (structure version × filed body set × fiscal year × check); `marts.dq_mart_coverage` is one row per
+fiscal year. The threshold is `Settings.dq_mart_min_cell_entities` (env `DQ_MART_MIN_CELL_ENTITIES`), passed to
+the models as the SQLMesh variable of the same name. It defaults to None, and 0 is rejected: off is spelled empty,
+never as a number that suppresses nothing. The Phase 9 instruction is in the setting's definition and in
+`.env.example`, as well as AGENT_SPEC §10.
+
+On the seed:
+- **Coverage:** 131 files stored = 129 parsed (82 pass, 19 warn, 28 quarantined) + 1 `needs_pdf_tier` + 1 quarantined
+  before grading. `not_yet_mapped` is 0, because the 49 stale rows are excluded. Plan 0006's trigger count is **0**:
+  the one PDF has a later filing.
+- **Check grain:** 148 cells over 5 body sets, none suppressed. Every check covers all 129 files. Pass rates:
+  `balance_sheet_balances` 99.2%, `cashflow_ties` 95.6% (84 files not applicable, outside the denominator),
+  `profit_ties` 85.5%, `subtotals_consistent` 65.9% (22 material failures, 22 immaterial). Cross-checked against
+  the raw results: 28 files have a material failure and 47 have any failure, matching the grades.
+- All twelve audits pass (six per model), and a restatement rebuilds both to identical contents.
+
+Unit tests cover pass rates on a hand-built fixture, `not_applicable` outside the denominator (a cell where every
+file is exempt has no pass rate, never 100%), a file counting once per check, the suppression mechanism in both
+states, and the coverage grain including plan 0006's trigger. Setting the threshold to 1 against the threshold-2
+expectation fails the test, so it really depends on the variable.
+
+Departures from the step text:
+- The measures are `failed_material` and `failed_immaterial` rather than "warned" (amendment 8).
+- The coverage grain also carries the graded outcome and `needs_pdf_tier_without_later_filing`. The graded outcome
+  gives the "28 defects out of 129 parsed" framing the risks section asks for.
+- Suppression also applies to the coverage grain, which is just as publishable.
 
 **Owner decisions, 2026-09-21.** The three premises flagged at plan 0005's close-out are settled, and the
 stale figures are corrected:
@@ -245,7 +273,7 @@ Three things are outstanding and they resolve together.
 - [x] SQLMesh project runs from `make`, state in Postgres, DuckDB reading `WAREHOUSE_DIR`; `make check` still needs no running Postgres.
 - [x] Postgres `quarantine` renamed `quarantine_events`, every row preserved (count taken before the migration), `krs`/`document_ref` backfilled; `parsed_documents` has `filed_bodies` and `last_seen_run_id`.
 - [x] `quarantine` model materializes and **excludes every stale log row with no manual SQL**. Count the stale rows against the log before the migration, record the figure here, and check the model against it: **22 rows over 19 files** (step C close-out).
-- [ ] `dq_mart` materializes with pass rates by structure version × filed body set × fiscal year × check type, plus the coverage grain; the suppression mechanism is built and tested, and ships switched off (threshold `null`) with the Phase 9 instruction recorded.
+- [x] `dq_mart` materializes with pass rates by structure version × filed body set × fiscal year × check type, plus the coverage grain; the suppression mechanism is built and tested, and ships switched off (threshold `null`) with the Phase 9 instruction recorded.
 - [ ] Dagster runs the models; audits surface as asset checks.
 - [ ] ADR 0010 accepted; docs from step G updated, including the plan-0004 supersession pointer.
 - [ ] `make check` and `make test-integration` green; re-running is byte-identical.

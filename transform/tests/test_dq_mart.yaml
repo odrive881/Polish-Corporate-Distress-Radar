@@ -1,0 +1,90 @@
+# `marts.dq_mart` and `marts.dq_mart_coverage` (plan 0007 step E). Hand-built fixtures.
+#
+# Check grain. Three files, FY2022:
+#   A (krs 1, small, jednostka_mala): cash flow not applicable; profit tie passes;
+#     subtotals: two lines pass and one fails immaterially -> an immaterial failure.
+#   B (krs 2, small, jednostka_mala): cash flow not applicable; profit tie fails
+#     materially; subtotals pass.
+#   C (krs 3, full, jednostka_inna): cash flow and profit tie pass.
+
+test_pass_rates_by_check_with_suppression_off:
+  model: marts.dq_mart
+  vars:
+    dq_mart_min_cell_entities: null
+  inputs: &check_inputs
+    ext.identity_check_results:
+      rows:
+        - {krs: "0000000001", structure_version: small-2018-v1-2, fiscal_year: 2022, source_document_hash: a, source_member: m, check: cashflow_ties, line_item: CF, status: not_applicable}
+        - {krs: "0000000001", structure_version: small-2018-v1-2, fiscal_year: 2022, source_document_hash: a, source_member: m, check: profit_ties, line_item: IS, status: pass}
+        - {krs: "0000000001", structure_version: small-2018-v1-2, fiscal_year: 2022, source_document_hash: a, source_member: m, check: subtotals_consistent, line_item: BS.1, status: pass}
+        - {krs: "0000000001", structure_version: small-2018-v1-2, fiscal_year: 2022, source_document_hash: a, source_member: m, check: subtotals_consistent, line_item: BS.2, status: pass}
+        - {krs: "0000000001", structure_version: small-2018-v1-2, fiscal_year: 2022, source_document_hash: a, source_member: m, check: subtotals_consistent, line_item: BS.3, status: fail, severity: immaterial}
+        - {krs: "0000000002", structure_version: small-2018-v1-2, fiscal_year: 2022, source_document_hash: b, source_member: m, check: cashflow_ties, line_item: CF, status: not_applicable}
+        - {krs: "0000000002", structure_version: small-2018-v1-2, fiscal_year: 2022, source_document_hash: b, source_member: m, check: profit_ties, line_item: IS, status: fail, severity: material}
+        - {krs: "0000000002", structure_version: small-2018-v1-2, fiscal_year: 2022, source_document_hash: b, source_member: m, check: subtotals_consistent, line_item: BS.1, status: pass}
+        - {krs: "0000000003", structure_version: full-2018-v1-2, fiscal_year: 2022, source_document_hash: c, source_member: m, check: cashflow_ties, line_item: CF, status: pass}
+        - {krs: "0000000003", structure_version: full-2018-v1-2, fiscal_year: 2022, source_document_hash: c, source_member: m, check: profit_ties, line_item: IS, status: pass}
+    staging.parsed_documents_current:
+      rows:
+        - {sha256: a, source_member: m, krs: "0000000001", status: valid, filed_bodies: jednostka_mala}
+        - {sha256: b, source_member: m, krs: "0000000002", status: valid, filed_bodies: jednostka_mala}
+        - {sha256: c, source_member: m, krs: "0000000003", status: valid, filed_bodies: jednostka_inna}
+  outputs:
+    query:
+      rows:
+        - {structure_version: full-2018-v1-2, filed_bodies: jednostka_inna, fiscal_year: 2022, check: cashflow_ties, files: 1, passed: 1, failed_material: 0, failed_immaterial: 0, not_applicable: 0, pass_rate: 1.0, entities: 1, suppressed: false}
+        - {structure_version: full-2018-v1-2, filed_bodies: jednostka_inna, fiscal_year: 2022, check: profit_ties, files: 1, passed: 1, failed_material: 0, failed_immaterial: 0, not_applicable: 0, pass_rate: 1.0, entities: 1, suppressed: false}
+        # Not applicable to both files: no pass rate at all, never 100%.
+        - {structure_version: small-2018-v1-2, filed_bodies: jednostka_mala, fiscal_year: 2022, check: cashflow_ties, files: 2, passed: 0, failed_material: 0, failed_immaterial: 0, not_applicable: 2, pass_rate: null, entities: 2, suppressed: false}
+        - {structure_version: small-2018-v1-2, filed_bodies: jednostka_mala, fiscal_year: 2022, check: profit_ties, files: 2, passed: 1, failed_material: 1, failed_immaterial: 0, not_applicable: 0, pass_rate: 0.5, entities: 2, suppressed: false}
+        # A counts once, as failed: one failing line fails the file's check.
+        - {structure_version: small-2018-v1-2, filed_bodies: jednostka_mala, fiscal_year: 2022, check: subtotals_consistent, files: 2, passed: 1, failed_material: 0, failed_immaterial: 1, not_applicable: 0, pass_rate: 0.5, entities: 2, suppressed: false}
+
+test_cells_below_the_threshold_are_suppressed_not_dropped:
+  model: marts.dq_mart
+  vars:
+    dq_mart_min_cell_entities: 2
+  inputs: *check_inputs
+  outputs:
+    query:
+      rows:
+        # One entity each: kept, flagged, every measure null.
+        - {structure_version: full-2018-v1-2, filed_bodies: jednostka_inna, fiscal_year: 2022, check: cashflow_ties, files: null, passed: null, failed_material: null, failed_immaterial: null, not_applicable: null, pass_rate: null, entities: null, suppressed: true}
+        - {structure_version: full-2018-v1-2, filed_bodies: jednostka_inna, fiscal_year: 2022, check: profit_ties, files: null, passed: null, failed_material: null, failed_immaterial: null, not_applicable: null, pass_rate: null, entities: null, suppressed: true}
+        # Two entities: at the threshold, published.
+        - {structure_version: small-2018-v1-2, filed_bodies: jednostka_mala, fiscal_year: 2022, check: cashflow_ties, files: 2, passed: 0, failed_material: 0, failed_immaterial: 0, not_applicable: 2, pass_rate: null, entities: 2, suppressed: false}
+        - {structure_version: small-2018-v1-2, filed_bodies: jednostka_mala, fiscal_year: 2022, check: profit_ties, files: 2, passed: 1, failed_material: 1, failed_immaterial: 0, not_applicable: 0, pass_rate: 0.5, entities: 2, suppressed: false}
+        - {structure_version: small-2018-v1-2, filed_bodies: jednostka_mala, fiscal_year: 2022, check: subtotals_consistent, files: 2, passed: 1, failed_material: 0, failed_immaterial: 1, not_applicable: 0, pass_rate: 0.5, entities: 2, suppressed: false}
+
+# Coverage grain. FY2022: A graded pass, B graded quarantined, D not yet mapped,
+# E a PDF with a later stored statement for the same entity (FY2023, F).
+# FY2021: G a PDF with nothing later -> plan 0006's trigger. H: a C1 file with
+# no filing row, so no fiscal year.
+
+test_coverage_by_fiscal_year:
+  model: marts.dq_mart_coverage
+  vars:
+    dq_mart_min_cell_entities: null
+  inputs:
+    ext.financial_statements_canonical:
+      rows:
+        - {source_document_hash: a, source_member: m, quality_grade: pass, line_item: BS.ASSETS}
+        - {source_document_hash: a, source_member: m, quality_grade: pass, line_item: IS.COMP.L}
+        - {source_document_hash: b, source_member: m, quality_grade: quarantined, line_item: BS.ASSETS}
+        - {source_document_hash: f, source_member: m, quality_grade: warn, line_item: BS.ASSETS}
+    staging.parsed_documents_current:
+      rows:
+        - {sha256: a, source_member: m, krs: "0000000001", status: valid, fiscal_year: 2022, period_end: 2022-12-31}
+        - {sha256: b, source_member: m, krs: "0000000002", status: valid, fiscal_year: 2022, period_end: 2022-12-31}
+        - {sha256: d, source_member: m, krs: "0000000003", status: not_yet_mapped, fiscal_year: 2022, period_end: 2022-12-31}
+        - {sha256: e, source_member: m, krs: "0000000004", status: needs_pdf_tier, fiscal_year: 2022, period_end: 2022-12-31}
+        - {sha256: f, source_member: m, krs: "0000000004", status: valid, fiscal_year: 2023, period_end: 2023-12-31}
+        - {sha256: g, source_member: m, krs: "0000000005", status: needs_pdf_tier, fiscal_year: 2021, period_end: 2021-12-31}
+        - {sha256: h, source_member: stray, krs: "0000000006", status: quarantined}
+  outputs:
+    query:
+      rows:
+        - {fiscal_year: 2021, files_stored: 1, parsed: 0, graded_pass: 0, graded_warn: 0, graded_quarantined: 0, not_yet_mapped: 0, needs_pdf_tier: 1, needs_pdf_tier_without_later_filing: 1, quarantined_before_grading: 0, entities: 1, suppressed: false}
+        - {fiscal_year: 2022, files_stored: 4, parsed: 2, graded_pass: 1, graded_warn: 0, graded_quarantined: 1, not_yet_mapped: 1, needs_pdf_tier: 1, needs_pdf_tier_without_later_filing: 0, quarantined_before_grading: 0, entities: 4, suppressed: false}
+        - {fiscal_year: 2023, files_stored: 1, parsed: 1, graded_pass: 0, graded_warn: 1, graded_quarantined: 0, not_yet_mapped: 0, needs_pdf_tier: 0, needs_pdf_tier_without_later_filing: 0, quarantined_before_grading: 0, entities: 1, suppressed: false}
+        - {fiscal_year: null, files_stored: 1, parsed: 0, graded_pass: 0, graded_warn: 0, graded_quarantined: 0, not_yet_mapped: 0, needs_pdf_tier: 0, needs_pdf_tier_without_later_filing: 0, quarantined_before_grading: 1, entities: 1, suppressed: false}

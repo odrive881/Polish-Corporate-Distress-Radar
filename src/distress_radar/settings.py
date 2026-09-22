@@ -11,7 +11,7 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Literal
 
-from pydantic import SecretStr
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Published by GUS for the BIR1 test environment; not a secret.
@@ -49,6 +49,15 @@ class Settings(BaseSettings):
     # Accounting identity tolerance in złoty (AGENT_SPEC §4.3): absolute
     # differences up to this pass, to absorb rounding.
     identity_tolerance_pln: Decimal = Decimal("1.00")
+
+    # `dq_mart` small-cell suppression (plan 0007 decision 9): a cell covering
+    # fewer distinct entities than this publishes its measures as null, flagged
+    # `suppressed`, rather than being dropped. None means no cell is suppressed,
+    # which is right only while nothing leaves the building: with 17 seed
+    # entities a useful threshold would suppress almost every cell.
+    # MUST be set, to at least 5, before Phase 9 publishes `dq_mart` anywhere,
+    # and the publish step must refuse to run while it is None (AGENT_SPEC §10).
+    dq_mart_min_cell_entities: int | None = Field(default=None, ge=1)
 
     # Per-source request pacing (A2/A3).
     # BIR1 publishes no rate limit (ADR 0004): deliberately conservative.
