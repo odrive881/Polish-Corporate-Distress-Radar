@@ -1117,6 +1117,8 @@ def _quarantine(
         source_document_hash=source_hash,
         ingestion_run_id=run_id,
         created_at=at,
+        krs=krs,
+        document_ref=None,
     )
 
 

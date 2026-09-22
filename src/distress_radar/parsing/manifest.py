@@ -8,6 +8,13 @@ A mapping-config change gives a new `spec_hash`, hence a new row and run id.
 
 `status` is recomputed on every run and updated in place; the first run id is
 never overwritten. Same DDL conventions as `acquisition/manifest.py` (ADR 0006).
+
+Rows are only ever upserted, so a row a run does not touch keeps its old status:
+a file once `not_yet_mapped` under `spec_hash ''` keeps that row after a later
+config maps it. `last_seen_run_id` / `last_seen_at` are set on every upsert,
+and the rows carrying the latest run's id are the current ones (plan 0007
+amendment 10). `filed_bodies` is the file's body set: the distinct bodies its
+statements were filed in, sorted and joined with `+` (plan 0007 amendment 6).
 """
 
 from __future__ import annotations
@@ -37,6 +44,13 @@ SCHEMA_DDL: tuple[LiteralString, ...] = (
         first_parsed_at         timestamptz NOT NULL,
         PRIMARY KEY (sha256, source_member, spec_hash)
     )
+    """,
+    # Added by plan 0007 (step C); null on rows no run has touched since.
+    """
+    ALTER TABLE parsed_documents
+        ADD COLUMN IF NOT EXISTS filed_bodies text,
+        ADD COLUMN IF NOT EXISTS last_seen_run_id text,
+        ADD COLUMN IF NOT EXISTS last_seen_at timestamptz
     """,
 )
 
@@ -107,14 +121,17 @@ def record_parsed_document(
         """
         INSERT INTO parsed_documents
             (sha256, source_member, spec_hash, krs, document_ref, member_kind,
-             structure_key, structure_version, status, first_ingestion_run_id, first_parsed_at)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+             structure_key, structure_version, status, first_ingestion_run_id, first_parsed_at,
+             last_seen_run_id, last_seen_at)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         ON CONFLICT (sha256, source_member, spec_hash) DO UPDATE SET
             document_ref = EXCLUDED.document_ref,
             member_kind = EXCLUDED.member_kind,
             structure_key = EXCLUDED.structure_key,
             structure_version = EXCLUDED.structure_version,
-            status = EXCLUDED.status
+            status = EXCLUDED.status,
+            last_seen_run_id = EXCLUDED.last_seen_run_id,
+            last_seen_at = EXCLUDED.last_seen_at
         RETURNING first_ingestion_run_id
         """,
         (
@@ -129,8 +146,23 @@ def record_parsed_document(
             row.status,
             run_id,
             now,
+            run_id,
+            now,
         ),
     ).fetchone()
     if result is None:
         raise RuntimeError("upsert into parsed_documents returned no row")
     return str(result[0])
+
+
+def record_filed_bodies(
+    conn: Connection, sha256: str, source_member: str, spec_hash: str, filed_bodies: str | None
+) -> None:
+    """Set the body set of one file under one spec, recomputed on every run like `status`."""
+    conn.execute(
+        """
+        UPDATE parsed_documents SET filed_bodies = %s
+        WHERE sha256 = %s AND source_member = %s AND spec_hash = %s
+        """,
+        (filed_bodies, sha256, source_member, spec_hash),
+    )

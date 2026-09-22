@@ -12,6 +12,11 @@ from distress_radar.acquisition.raw_store import RawDocumentMeta
 KRS_LENGTH = 10
 
 
+def is_krs(value: object) -> bool:
+    """A zero-padded, 10-digit KRS number."""
+    return isinstance(value, str) and len(value) == KRS_LENGTH and value.isdigit()
+
+
 def _require_aware(value: datetime) -> datetime:
     if value.tzinfo is None:
         raise ValueError("timestamps must be timezone-aware (UTC)")
@@ -76,12 +81,20 @@ class UniverseCandidate(_Frozen):
     _aware = field_validator("discovered_at")(_require_aware)
 
 
-# --- Quarantine (Postgres landing table, ADR 0006) -------------------------------------------
+# --- Quarantine (Postgres detection log `quarantine_events`, ADR 0006, plan 0007) ------------
 
 QuarantineStage = Literal["A1", "A2", "A3", "C1", "C2", "E2"]
 
 
 class QuarantineRecord(_Frozen):
+    """One detection, appended to `quarantine_events` (never updated or deleted).
+
+    `krs` and `document_ref` are required fields that may be None, so every
+    writer states them explicitly: `krs` is None only where no valid KRS exists
+    (a malformed A1 seed entry); `document_ref` is None wherever there is no
+    RDF filing behind the row (A1–A3, and a C1 file with no filing row).
+    """
+
     stage: QuarantineStage
     entity_key: str
     reason_code: str
@@ -89,8 +102,17 @@ class QuarantineRecord(_Frozen):
     source_document_hash: str | None
     ingestion_run_id: str
     created_at: datetime
+    krs: str | None
+    document_ref: str | None
 
     _aware = field_validator("created_at")(_require_aware)
+
+    @field_validator("krs")
+    @classmethod
+    def _krs_format(cls, value: str | None) -> str | None:
+        if value is not None and not is_krs(value):
+            raise ValueError(f"krs must be {KRS_LENGTH} digits, got {value!r}")
+        return value
 
 
 # --- B2 --------------------------------------------------------------------------------------

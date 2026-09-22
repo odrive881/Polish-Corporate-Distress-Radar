@@ -13,6 +13,7 @@ from lxml import etree
 from distress_radar.parsing.accounting_identities import (
     balance_sheet_balances,
     cashflow_ties,
+    filed_bodies,
     grade,
     identity_check_results,
     prior_year_consistency,
@@ -732,3 +733,24 @@ def test_an_absent_statement_is_not_a_fallback(mapping_config: MappingConfig) ->
     frame = _golden_frame(STATEMENTS_DIR / "small_2018_v1_2_mala_por_2021.xml", mapping_config)
     assert "cash_flow" not in set(frame["statement_type"].to_list())
     assert unresolved_bodies(frame, mapping_config).is_empty()
+
+
+@pytest.mark.parametrize(
+    ("xml", "expected"),
+    [
+        # A small envelope carrying the full-form income statement (plan 0005 step D).
+        ("small_2018_v1_0_mixed_por_2018.xml", "jednostka_inna+jednostka_mala"),
+        ("small_2018_v1_2_inna_por_2022.xml", "jednostka_inna"),
+        ("small_2018_v1_2_mala_por_2021.xml", "jednostka_mala"),
+        # A single-body spec reads as that body, so SQL never needs the config.
+        ("full_2018_v1_2_por_2022.xml", "jednostka_inna"),
+    ],
+)
+def test_filed_bodies_is_the_files_body_set(
+    xml: str, expected: str, mapping_config: MappingConfig
+) -> None:
+    """The `parsed_documents.filed_bodies` value and `dq_mart`'s body dimension (amendment 6)."""
+    [row] = filed_bodies(
+        _golden_frame(STATEMENTS_DIR / xml, mapping_config), mapping_config
+    ).iter_rows(named=True)
+    assert row["filed_bodies"] == expected

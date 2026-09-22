@@ -122,6 +122,8 @@ def _write_everything(conn: psycopg.Connection, run_id: str) -> None:
                 source_document_hash=None,  # NULL must still dedupe
                 ingestion_run_id=run_id,
                 created_at=NOW,
+                krs="0000000000",
+                document_ref=None,
             )
         ],
     )
@@ -137,7 +139,7 @@ def test_ensure_schema_is_idempotent(conn: psycopg.Connection):
         "universe_candidates": 0,
         "entity_master": 0,
         "entity_reconciliation_log": 0,
-        "quarantine": 0,
+        "quarantine_events": 0,
         "filing_index": 0,
     }
 
@@ -156,7 +158,7 @@ def test_reinserts_are_noops(conn: psycopg.Connection):
         "universe_candidates": 2,
         "entity_master": 1,
         "entity_reconciliation_log": 1,
-        "quarantine": 1,
+        "quarantine_events": 1,
         "filing_index": 0,
     }
 
@@ -339,6 +341,8 @@ def test_no_rdf_filings_quarantine_marks_entity_indexed(conn: psycopg.Connection
                     source_document_hash=LIST_SHA,
                     ingestion_run_id="run-1",
                     created_at=NOW,
+                    krs=KRS,
+                    document_ref=None,
                 )
             ],
         ),

@@ -100,3 +100,36 @@ def test_statement_sources_group_rows_by_stored_file(conn: psycopg.Connection) -
         date(2022, 1, 1),
         date(2022, 12, 31),
     )
+
+
+def test_every_upsert_records_the_run_that_last_saw_the_row(conn: psycopg.Connection) -> None:
+    """A row the latest run did not touch keeps an older `last_seen_run_id` (amendment 10)."""
+    later = datetime(2026, 9, 18, 12, 0, tzinfo=UTC)
+    manifest.record_parsed_document(conn, _row("not_yet_mapped", spec_hash=""), "run-a", NOW)
+    manifest.record_parsed_document(conn, _row("valid", spec_hash="h1"), "run-a", NOW)
+    # A later config maps the file: only its new row is touched by run-b.
+    manifest.record_parsed_document(conn, _row("valid", spec_hash="h2"), "run-b", later)
+    rows = conn.execute(
+        "SELECT spec_hash, status, first_ingestion_run_id, last_seen_run_id, last_seen_at "
+        "FROM parsed_documents ORDER BY spec_hash"
+    ).fetchall()
+    assert rows == [
+        ("", "not_yet_mapped", "run-a", "run-a", NOW),
+        ("h1", "valid", "run-a", "run-a", NOW),
+        ("h2", "valid", "run-b", "run-b", later),
+    ]
+    manifest.record_parsed_document(conn, _row("valid", spec_hash="h1"), "run-c", later)
+    assert conn.execute(
+        "SELECT first_ingestion_run_id, last_seen_run_id FROM parsed_documents "
+        "WHERE spec_hash = 'h1'"
+    ).fetchone() == ("run-a", "run-c")
+
+
+def test_filed_bodies_are_recorded_per_file_and_spec(conn: psycopg.Connection) -> None:
+    manifest.record_parsed_document(conn, _row("valid", spec_hash="h1"), "run-a", NOW)
+    manifest.record_parsed_document(conn, _row("valid", spec_hash="h2"), "run-a", NOW)
+    manifest.record_filed_bodies(conn, SHA, "zip:a.xml", "h1", "jednostka_inna+jednostka_mala")
+    rows = conn.execute(
+        "SELECT spec_hash, filed_bodies FROM parsed_documents ORDER BY spec_hash"
+    ).fetchall()
+    assert rows == [("h1", "jednostka_inna+jednostka_mala"), ("h2", None)]

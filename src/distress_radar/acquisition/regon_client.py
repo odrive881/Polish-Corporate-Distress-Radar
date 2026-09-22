@@ -426,6 +426,8 @@ def resolve_entity(
                 source_document_hash=source_hash,
                 ingestion_run_id=ingestion_run_id,
                 created_at=clock(),
+                krs=krs,
+                document_ref=None,
             )
         )
         return result

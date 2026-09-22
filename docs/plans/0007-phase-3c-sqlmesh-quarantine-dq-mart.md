@@ -4,7 +4,7 @@
 
 **Order:** after plan 0005, which is done. `dq_mart` reports coverage and pass rates by structure version, and every XML version in the seed is now mapped, so its first published numbers describe the corpus as it is. It no longer waits for the PDF route: plan 0006 is deferred, and the single `needs_pdf_tier` file is something `dq_mart` should **report**, not something it needs resolved first — its coverage grain is where that gap becomes visible and measurable, which is also how plan 0006's triggers get counted.
 
-## Status: steps A and B done (2026-09-22); C–G not started
+## Status: steps A–C done (2026-09-22); D–G not started
 
 **Step A close-out, 2026-09-22.** `identity_check_results` is written beside the canonical table, contracted
 (`IDENTITY_CHECK_RESULTS`) and in AGENT_SPEC §5. Against the seed warehouse, the refactored `grade()` reproduces
@@ -34,6 +34,27 @@ rows), and re-materializing `financial_statements_canonical` left its Parquet by
 things here: the `quarantine_events` view and the two new `parsed_documents` columns, which are already declared
 in `external_models.yaml` but do not exist until the migration lands. The integration test comparing the
 Postgres declarations with `information_schema` lands with it.
+
+**Step C close-out, 2026-09-22.** Counts taken before the migration, against the live manifest:
+- **`quarantine`: 68 rows**, 1 C1 and 67 E2, with no A-stage rows. **22 E2 rows are stale**, over 19 files the
+  current rules grade `pass` (12) or `warn` (7). Every file quarantined today (28) has at least one log row. This
+  replaces the old "9 stale rows" figure; step D's model must exclude exactly these 22.
+- **`parsed_documents`: 451 rows, 131 live** (129 `valid`, 1 `needs_pdf_tier`, 1 C1 `quarantined`). The rest are
+  271 rows under old config hashes and **49 `not_yet_mapped` rows under `spec_hash ''` for files mapped since**:
+  the double count amendment 10 predicted.
+
+The migration ran on the live database through a normal `financial_statements_canonical` materialization.
+`quarantine` is now `quarantine_events`: all 68 rows are kept with their original columns byte-identical, and
+every row has `krs` and `document_ref` backfilled (the one C1 row had a filing). The run marked exactly the 131 live
+`parsed_documents` rows as seen; 129 carry a body set, 3 of them mixed (`jednostka_inna+jednostka_mala`). All five
+`ext` views now match their declarations, and `make transform-plan` applied the external models to `prod`.
+
+One addition to the step text: **`parsed_documents` also gets `last_seen_at`**. Run ids are UUIDs, so they have
+no order; the latest run is the `last_seen_run_id` on the row with the newest `last_seen_at`. Every row one run
+touches shares that run's timestamp. The backfill validates before it writes, and three shapes fail the schema
+step rather than being skipped: an A2/A3 key that is not a KRS, a C-stage key with no `:`, and a C2/E2 key whose
+reference `filing_index` does not know. A C1 key whose tail is a `source_member` is backfilled with a null
+`document_ref`, which is correct: that file has no filing row.
 
 **Owner decisions, 2026-09-21.** The three premises flagged at plan 0005's close-out are settled, and the
 stale figures are corrected:
@@ -206,8 +227,8 @@ Three things are outstanding and they resolve together.
 
 - [x] `identity_check_results` persisted with `severity`, contracted and in §5; grades and value hashes unchanged.
 - [x] SQLMesh project runs from `make`, state in Postgres, DuckDB reading `WAREHOUSE_DIR`; `make check` still needs no running Postgres.
-- [ ] Postgres `quarantine` renamed `quarantine_events`, every row preserved (count taken before the migration), `krs`/`document_ref` backfilled; `parsed_documents` has `filed_bodies` and `last_seen_run_id`.
-- [ ] `quarantine` model materializes and **excludes every stale log row with no manual SQL**. Count the stale rows against the log before the migration, record the figure here, and check the model against it.
+- [x] Postgres `quarantine` renamed `quarantine_events`, every row preserved (count taken before the migration), `krs`/`document_ref` backfilled; `parsed_documents` has `filed_bodies` and `last_seen_run_id`.
+- [ ] `quarantine` model materializes and **excludes every stale log row with no manual SQL**. Count the stale rows against the log before the migration, record the figure here, and check the model against it: **22 rows over 19 files** (step C close-out).
 - [ ] `dq_mart` materializes with pass rates by structure version × filed body set × fiscal year × check type, plus the coverage grain; the suppression mechanism is built and tested, and ships switched off (threshold `null`) with the Phase 9 instruction recorded.
 - [ ] Dagster runs the models; audits surface as asset checks.
 - [ ] ADR 0010 accepted; docs from step G updated, including the plan-0004 supersession pointer.

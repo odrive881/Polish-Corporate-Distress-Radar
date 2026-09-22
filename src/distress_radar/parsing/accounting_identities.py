@@ -113,6 +113,12 @@ IDENTITY_CHECK_RESULTS_SORT_KEY = [
     "check",
     "line_item",
 ]
+FILED_BODIES_SCHEMA: dict[str, pl.DataType | type[pl.DataType]] = {
+    "source_document_hash": pl.String,
+    "source_member": pl.String,
+    "structure_version": pl.String,
+    "filed_bodies": pl.String,
+}
 UNRESOLVED_BODY_SCHEMA: dict[str, pl.DataType | type[pl.DataType]] = {
     "krs": pl.String,
     "document_ref": pl.String,
@@ -187,6 +193,37 @@ def _bodies_filed(spec: StructureSpec, paths: list[str]) -> tuple[tuple[Statemen
         # `unresolved_bodies` reports where that fallback was actually used.
         filed.append((name, (_filed_alternative(spec, name, paths) or alts[0]).body))
     return tuple(filed)
+
+
+def filed_bodies(frame: pl.DataFrame, config: MappingConfig) -> pl.DataFrame:
+    """Each statement file's body set: the distinct bodies its statements were filed in.
+
+    Sorted and joined with `+`, so a small envelope carrying one full-form
+    statement reads e.g. `jednostka_inna+jednostka_mala`, and a single-body
+    file reads as that body (plan 0007 amendment 6). Only statements the file
+    actually contains count. A statement whose own shape cannot be read counts
+    under the fallback body the checks used (`_bodies_filed`), which
+    `unresolved_bodies` reports.
+    """
+    rows: list[dict[str, object]] = []
+    for keys, part in frame.sort(DOCUMENT_KEY).group_by(DOCUMENT_KEY, maintain_order=True):
+        spec = config.specs[part.row(0, named=True)["structure_version"]]
+        paths = part["source_element_path"].to_list()
+        present = set(part["statement_type"].to_list())
+        bodies = {
+            body
+            for name, body in _bodies_filed(spec, paths)
+            if STATEMENT_TYPES[name] in present
+        }
+        rows.append(
+            {
+                "source_document_hash": str(keys[0]),
+                "source_member": str(keys[1]),
+                "structure_version": spec.structure_version,
+                "filed_bodies": "+".join(sorted(bodies)),
+            }
+        )
+    return _frame(rows, FILED_BODIES_SCHEMA)
 
 
 def unresolved_bodies(frame: pl.DataFrame, config: MappingConfig) -> pl.DataFrame:
