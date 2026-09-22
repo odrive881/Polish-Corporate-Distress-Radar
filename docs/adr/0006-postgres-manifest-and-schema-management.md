@@ -1,6 +1,6 @@
 # 0006 — Postgres manifest and schema management
 
-- **Status:** accepted
+- **Status:** accepted; decision 4 superseded (addendum, 2026-09-22)
 - **Date:** 2026-09-14
 
 ## Context
@@ -42,3 +42,28 @@ Two smaller choices, recorded so they are not rediscovered:
 - Schema changes to existing tables need a hand-written, idempotent `ALTER` in `SCHEMA_DDL` until a migration tool is justified. That is the trigger to revisit this ADR.
 - E3 must treat the Postgres `quarantine` table as an upstream source, not recreate it.
 - `PostgresBucket` creates its own `ratelimit___<source>` tables on first use; they share the manifest database.
+
+## Addendum, 2026-09-22 — `quarantine` renamed `quarantine_events` (plan 0007)
+
+Decision 4 is superseded. Once the SQLMesh `quarantine` model existed, one name covered two objects with opposite
+semantics: the Postgres table is an append-only log of *first detection*, and the model is the *current*
+quarantined set, recomputed on every run. That is exactly what the canonical-names rule exists to prevent. Plan
+0007 decision 3 gave the canonical name to the model, and the table became **`quarantine_events`**. Its role, its
+natural key `(stage, entity_key, reason_code, source_document_hash)` and its append-only rule (never updated, never
+deleted) are unchanged. It gained nullable `krs` and `document_ref` columns, which every writer now sets, and old
+rows were backfilled from `entity_key`.
+
+The rename was the first change to an existing table that `IF NOT EXISTS` cannot express, which is this ADR's
+stated trigger for a migration tool. It was still done in plain idempotent DDL: a `DO` block renames the table
+only if the old name exists and the new one does not, and a validating backfill fails on a key in no known format
+rather than skipping it. Both sit in `SCHEMA_DDL` and are no-ops once applied. A migration tool is still not
+justified for one rename on a single-developer database, but the next such change should re-ask the question
+rather than add a third `DO` block by default.
+
+`parsed_documents` (C1) also gained `filed_bodies`, `last_seen_run_id` and `last_seen_at` in the same plan, all
+nullable and added by `ADD COLUMN IF NOT EXISTS`.
+
+The consequence above that "E3 must treat the Postgres `quarantine` table as an upstream source" now reads
+`quarantine_events`, and it is what `transform/models/quarantine/quarantine.sql` does: the log is the only source
+for A-stage rejects, and supplies stage and reason codes for C-stage files. It is never the source of *whether* a
+parsed or graded file is currently quarantined (ADR 0010, plan 0007 decision 4).

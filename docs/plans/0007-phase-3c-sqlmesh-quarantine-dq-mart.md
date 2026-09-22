@@ -4,7 +4,7 @@
 
 **Order:** after plan 0005, which is done. `dq_mart` reports coverage and pass rates by structure version, and every XML version in the seed is now mapped, so its first published numbers describe the corpus as it is. It no longer waits for the PDF route: plan 0006 is deferred, and the single `needs_pdf_tier` file is something `dq_mart` should **report**, not something it needs resolved first — its coverage grain is where that gap becomes visible and measurable, which is also how plan 0006's triggers get counted.
 
-## Status: steps A–F done (2026-09-22); G not started
+## Status: complete (2026-09-22)
 
 **Step A close-out, 2026-09-22.** `identity_check_results` is written beside the canonical table, contracted
 (`IDENTITY_CHECK_RESULTS`) and in AGENT_SPEC §5. Against the seed warehouse, the refactored `grade()` reproduces
@@ -123,6 +123,24 @@ The asset check list is static, so loading definitions never starts SQLMesh. `te
 holds it equal to the project's audits (read on the `test` gateway). That test is the first to import
 `dagster_defs`, so pytest's `pythonpath` now includes the repo root; `distress_radar` still resolves only from the
 installed src layout. The four assets cannot be subset: they come from one SQLMesh build.
+
+**Step G close-out, 2026-09-22 — plan complete.**
+- **ADR 0010** (accepted) records the SQLMesh gateway and state, the Python/SQL boundary (decision 1), the `ext`
+  views, the service-free test gateway, the deferred bitemporal layer (decision 6), full rebuilds as two plans,
+  and non-blocking audits enforced by Dagster.
+- **ADR 0006** gains an addendum: decision 4 is superseded by the rename. The addendum also notes that its
+  migration-tool trigger was met and handled with idempotent DDL, and why the next such change should re-ask.
+- **AGENT_SPEC** §5 gains `quarantine` and `dq_mart` (canonical names that had no definition), §6E3 the
+  derived-current-set semantics, §6F the boundary note, the known_from key and the deferral, and §10's Phase 3 row
+  now says `dq_mart` is built, not published.
+- **`DIRECTORY_STRUCTURE.md`** shows the `transform/` tree as built, the package-root modules and `dagster_defs/assets/dq.py`,
+  with three new placement rows (audits, SQLMesh unit tests, Python access to the project).
+- **Plan 0004** already pointed to its supersession; it now also says not to run its `DELETE`.
+- **README** has the status and how to run the `dq` group. **CLAUDE.md** now says `quarantine_events` is the log
+  and `quarantine` the current set. **TECHNICAL_ARCHITECTURE** E3 has an as-built note.
+
+Final check: a full `--select "financial_statements_canonical*"` re-run reproduced all 25 outputs (every Parquet
+file byte for byte, and the three SQLMesh tables by content hash) with 25 of 25 checks passing.
 
 **Owner decisions, 2026-09-21.** The three premises flagged at plan 0005's close-out are settled, and the
 stale figures are corrected:
@@ -299,8 +317,8 @@ Three things are outstanding and they resolve together.
 - [x] `quarantine` model materializes and **excludes every stale log row with no manual SQL**. Count the stale rows against the log before the migration, record the figure here, and check the model against it: **22 rows over 19 files** (step C close-out).
 - [x] `dq_mart` materializes with pass rates by structure version × filed body set × fiscal year × check type, plus the coverage grain; the suppression mechanism is built and tested, and ships switched off (threshold `null`) with the Phase 9 instruction recorded.
 - [x] Dagster runs the models; audits surface as asset checks.
-- [ ] ADR 0010 accepted; docs from step G updated, including the plan-0004 supersession pointer.
-- [ ] `make check` and `make test-integration` green; re-running is byte-identical.
+- [x] ADR 0010 accepted; docs from step G updated, including the plan-0004 supersession pointer.
+- [x] `make check` and `make test-integration` green; re-running is byte-identical.
 
 ## Risks
 
