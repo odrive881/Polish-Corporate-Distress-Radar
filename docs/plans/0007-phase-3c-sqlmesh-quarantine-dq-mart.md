@@ -4,7 +4,7 @@
 
 **Order:** after plan 0005, which is done. `dq_mart` reports coverage and pass rates by structure version, and every XML version in the seed is now mapped, so its first published numbers describe the corpus as it is. It no longer waits for the PDF route: plan 0006 is deferred, and the single `needs_pdf_tier` file is something `dq_mart` should **report**, not something it needs resolved first — its coverage grain is where that gap becomes visible and measurable, which is also how plan 0006's triggers get counted.
 
-## Status: steps A–E done (2026-09-22); F–G not started
+## Status: steps A–F done (2026-09-22); G not started
 
 **Step A close-out, 2026-09-22.** `identity_check_results` is written beside the canonical table, contracted
 (`IDENTITY_CHECK_RESULTS`) and in AGENT_SPEC §5. Against the seed warehouse, the refactored `grade()` reproduces
@@ -99,6 +99,30 @@ Departures from the step text:
 - The coverage grain also carries the graded outcome and `needs_pdf_tier_without_later_filing`. The graded outcome
   gives the "28 defects out of 129 parsed" framing the risks section asks for.
 - Suppression also applies to the coverage grain, which is just as publishable.
+
+**Step F close-out, 2026-09-22.** `dagster_defs/assets/dq.py` is one multi-asset in the group `dq`. Its four assets
+(`parsed_documents_current`, `quarantine`, `dq_mart`, `dq_mart_coverage`) depend on
+`financial_statements_canonical` and `restatement_events`, and each of the 20 SQLMesh audits is an asset check on
+its model's asset. The logic is in `src/distress_radar/transform_project.py` (`build_dq_models`), callable without
+Dagster. One Dagster run (`--select "financial_statements_canonical*"`) now goes from stored bytes to quality metrics
+with 25 checks passing: 20 audits plus the 5 identity checks.
+
+Three things the step text did not anticipate, all for ADR 0010:
+- **All audits are non-blocking in SQLMesh** (`blocking false`), and Dagster reports them. A blocking audit makes
+  `plan` raise, so the run would fail without saying which audit did. Non-blocking matches the identity checks:
+  the table is written and a red check flags it. Verified by breaking `quarantine_has_reasons` on purpose: the run
+  succeeded, all four assets materialized, only that check "did not pass", and restoring it brought back 20 of 20.
+- **A rebuild is two plans.** A plan with `restate_models` ignores local model changes and restates the versions
+  already in `prod`, so an ordinary plan applies code changes first, then a restatement plan rebuilds the tables.
+  Audits run from a fresh `Context`, because the planning one still holds the pre-plan snapshots, which SQLMesh
+  refuses to audit.
+- **`plan` runs the SQLMesh unit tests first**, so a model change that breaks them stops the Dagster run before
+  anything is rebuilt. That is kept deliberately.
+
+The asset check list is static, so loading definitions never starts SQLMesh. `tests/transform/test_dq_assets.py`
+holds it equal to the project's audits (read on the `test` gateway). That test is the first to import
+`dagster_defs`, so pytest's `pythonpath` now includes the repo root; `distress_radar` still resolves only from the
+installed src layout. The four assets cannot be subset: they come from one SQLMesh build.
 
 **Owner decisions, 2026-09-21.** The three premises flagged at plan 0005's close-out are settled, and the
 stale figures are corrected:
@@ -274,7 +298,7 @@ Three things are outstanding and they resolve together.
 - [x] Postgres `quarantine` renamed `quarantine_events`, every row preserved (count taken before the migration), `krs`/`document_ref` backfilled; `parsed_documents` has `filed_bodies` and `last_seen_run_id`.
 - [x] `quarantine` model materializes and **excludes every stale log row with no manual SQL**. Count the stale rows against the log before the migration, record the figure here, and check the model against it: **22 rows over 19 files** (step C close-out).
 - [x] `dq_mart` materializes with pass rates by structure version × filed body set × fiscal year × check type, plus the coverage grain; the suppression mechanism is built and tested, and ships switched off (threshold `null`) with the Phase 9 instruction recorded.
-- [ ] Dagster runs the models; audits surface as asset checks.
+- [x] Dagster runs the models; audits surface as asset checks.
 - [ ] ADR 0010 accepted; docs from step G updated, including the plan-0004 supersession pointer.
 - [ ] `make check` and `make test-integration` green; re-running is byte-identical.
 

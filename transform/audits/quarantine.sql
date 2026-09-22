@@ -1,7 +1,11 @@
-/* Audits on `quarantine.quarantine` (plan 0007 step D). Each returns the rows that break it. */
+/* Audits on `quarantine.quarantine` (plan 0007 step D). Each returns the rows that break it.
+
+All non-blocking: a failure leaves the table built and is reported as a Dagster asset
+check (`distress_radar/transform_project.py`, plan 0007 step F). */
 
 AUDIT (
-  name quarantine_has_reasons
+  name quarantine_has_reasons,
+  blocking false
 );
 /* Every quarantined key says why. */
 SELECT *
@@ -9,7 +13,8 @@ FROM @this_model
 WHERE reason_codes IS NULL OR LEN(reason_codes) = 0;
 
 AUDIT (
-  name quarantine_one_parsing_stage_per_file
+  name quarantine_one_parsing_stage_per_file,
+  blocking false
 );
 /* A file is rejected by one parsing stage: C1 and C2 files never reach grading. */
 SELECT source_document_hash, source_member
@@ -19,7 +24,8 @@ GROUP BY source_document_hash, source_member
 HAVING COUNT(DISTINCT stage) > 1;
 
 AUDIT (
-  name quarantine_e2_matches_canonical
+  name quarantine_e2_matches_canonical,
+  blocking false
 );
 /* One E2 row per file the canonical table grades `quarantined`, no more, no less. */
 WITH model AS (
@@ -37,7 +43,8 @@ FROM model, canonical
 WHERE model.n <> canonical.n;
 
 AUDIT (
-  name quarantine_c_matches_parsed_documents
+  name quarantine_c_matches_parsed_documents,
+  blocking false
 );
 /* One C1/C2 row per file the latest parsing run recorded `quarantined`. */
 WITH model AS (

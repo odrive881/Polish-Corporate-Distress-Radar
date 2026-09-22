@@ -29,8 +29,8 @@ MODEL (
   kind FULL,
   grain (structure_version, filed_bodies, fiscal_year, "check"),
   audits (
-    not_null(columns := (structure_version, filed_bodies, fiscal_year, "check", suppressed)),
-    unique_combination_of_columns(columns := (structure_version, filed_bodies, fiscal_year, "check")),
+    not_null(columns := (structure_version, filed_bodies, fiscal_year, "check", suppressed), blocking := false),
+    unique_combination_of_columns(columns := (structure_version, filed_bodies, fiscal_year, "check"), blocking := false),
     dq_no_cell_below_threshold_unsuppressed,
     dq_no_suppression_without_threshold,
     dq_suppressed_cells_carry_no_measures(

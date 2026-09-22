@@ -1,7 +1,11 @@
-/* Audits on the `dq_mart` models (plan 0007 step E). Each returns the rows that break it. */
+/* Audits on the `dq_mart` models (plan 0007 step E). Each returns the rows that break it.
+
+All non-blocking: a failure leaves the table built and is reported as a Dagster asset
+check (`distress_radar/transform_project.py`, plan 0007 step F). */
 
 AUDIT (
-  name dq_no_cell_below_threshold_unsuppressed
+  name dq_no_cell_below_threshold_unsuppressed,
+  blocking false
 );
 /* With a threshold set, no published cell covers fewer entities than it (decision 9). */
 SELECT *
@@ -9,7 +13,8 @@ FROM @this_model
 WHERE NOT suppressed AND entities < @VAR('dq_mart_min_cell_entities');
 
 AUDIT (
-  name dq_no_suppression_without_threshold
+  name dq_no_suppression_without_threshold,
+  blocking false
 );
 /* The shipped setting is null: then nothing is suppressed. */
 SELECT *
@@ -17,7 +22,8 @@ FROM @this_model
 WHERE suppressed AND @VAR('dq_mart_min_cell_entities') IS NULL;
 
 AUDIT (
-  name dq_suppressed_cells_carry_no_measures
+  name dq_suppressed_cells_carry_no_measures,
+  blocking false
 );
 /* A suppressed cell is kept, with every measure null; `entities` is null exactly there. */
 SELECT *
@@ -26,7 +32,8 @@ WHERE (suppressed AND NOT (@REDUCE(@EACH(@measures, m -> m IS NULL), (l, r) -> l
   OR (entities IS NULL) <> suppressed;
 
 AUDIT (
-  name dq_mart_outcomes_add_up
+  name dq_mart_outcomes_add_up,
+  blocking false
 );
 /* Every file checked has exactly one outcome per check. */
 SELECT *
@@ -35,7 +42,8 @@ WHERE NOT suppressed
   AND files <> passed + failed_material + failed_immaterial + not_applicable;
 
 AUDIT (
-  name dq_coverage_adds_up
+  name dq_coverage_adds_up,
+  blocking false
 );
 /* Every stored file has one fate, and every parsed file one grade. */
 SELECT *

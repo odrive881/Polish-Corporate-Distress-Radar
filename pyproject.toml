@@ -60,6 +60,10 @@ pythonVersion = "3.12"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "--import-mode=importlib -m 'not integration'"
+# The repo root, so tests can import `dagster_defs` (orchestration wiring, not an
+# installed package). `distress_radar` still resolves only from the installed
+# src layout: it is not importable from the root.
+pythonpath = ["."]
 markers = [
     "integration: needs live compose services (make dev-up); run with make test-integration",
 ]

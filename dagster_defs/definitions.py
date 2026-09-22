@@ -103,11 +103,12 @@ class RdfBrowserResource(dg.ConfigurableResource):
 
 
 from dagster_defs.assets.acquisition import acquisition_assets
+from dagster_defs.assets.dq import dq_assets
 from dagster_defs.assets.parsing import parsing_assets
 from dagster_defs.checks.accounting_identities import accounting_identity_checks
 
 defs = dg.Definitions(
-    assets=[*acquisition_assets, *parsing_assets],
+    assets=[*acquisition_assets, *parsing_assets, *dq_assets],
     asset_checks=accounting_identity_checks,
     resources={
         "postgres": PostgresResource(),
