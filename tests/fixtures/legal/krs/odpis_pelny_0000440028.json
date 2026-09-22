@@ -1,0 +1,1928 @@
+{
+ "odpis": {
+  "dane": {
+   "dzial1": {
+    "danePodmiotu": {
+     "czyPosiadaStatusOPP": [
+      {
+       "czyPosiadaStatusOPP": false,
+       "nrWpisuWprow": "1",
+       "nrWpisuWykr": "37"
+      }
+     ],
+     "czyProwadziDzialalnoscZInnymiPodmiotami": [
+      {
+       "czyProwadziDzialalnoscZInnymiPodmiotami": false,
+       "nrWpisuWprow": "1",
+       "nrWpisuWykr": "37"
+      }
+     ],
+     "formaPrawna": [
+      {
+       "formaPrawna": "SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ",
+       "nrWpisuWprow": "1",
+       "nrWpisuWykr": "37"
+      }
+     ],
+     "identyfikatory": [
+      {
+       "identyfikatory": {
+        "nip": "6981835930",
+        "regon": "30227864100000"
+       },
+       "nrWpisuWprow": "2",
+       "nrWpisuWykr": "37"
+      }
+     ],
+     "nazwa": [
+      {
+       "nazwa": "BUDOWNICTWO DROGOWE \"KASPRZAK\" SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ",
+       "nrWpisuWprow": "1",
+       "nrWpisuWykr": "29"
+      },
+      {
+       "nazwa": "BUDOWNICTWO DROGOWE \"KASPRZAK\" SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ W LIKWIDACJI",
+       "nrWpisuWprow": "29",
+       "nrWpisuWykr": "37"
+      }
+     ]
+    },
+    "kapital": {
+     "wysokoscKapitaluZakladowego": [
+      {
+       "nrWpisuWprow": "1",
+       "nrWpisuWykr": "5",
+       "waluta": "PLN",
+       "wartosc": "6000,00"
+      },
+      {
+       "nrWpisuWprow": "5",
+       "nrWpisuWykr": "37",
+       "waluta": "PLN",
+       "wartosc": "276000,00"
+      }
+     ]
+    },
+    "pozostaleInformacje": {
+     "informacjaOCzasieNaJakiZostalUtworzonyPodmiot": [
+      {
+       "czasNaJakiUtworzonyZostalPodmiot": "NIEOZNACZONY",
+       "nrWpisuWprow": "1",
+       "nrWpisuWykr": "37"
+      }
+     ],
+     "informacjaOLiczbieUdzialow": [
+      {
+       "informacjaOLiczbieUdzialow": "WIĘKSZĄ LICZBĘ UDZIAŁÓW",
+       "nrWpisuWprow": "1",
+       "nrWpisuWykr": "37"
+      }
+     ],
+     "informacjaOPismieDoOgloszen": []
+    },
+    "siedzibaIAdres": {
+     "adres": [
+      {
+       "kodPocztowy": "64-010",
+       "kraj": "POLSKA",
+       "miejscowosc": "JERKA",
+       "nrDomu": "29",
+       "nrWpisuWprow": "1",
+       "nrWpisuWykr": "37",
+       "poczta": "KRZYWIŃ",
+       "ulica": "ŁOWIECKA"
+      }
+     ],
+     "adresDoDoreczenElektronicznychWpisanyDoBAE": [
+      {
+       "adresDoDoreczenElektronicznychWpisanyDoBAE": "AE:PL-91798-92808-JUBGF-19",
+       "nrWpisuWprow": "34",
+       "nrWpisuWykr": "37"
+      }
+     ],
+     "adresPocztyElektronicznej": [],
+     "adresStronyInternetowej": [],
+     "siedziba": [
+      {
+       "gmina": "KRZYWIŃ",
+       "kraj": "POLSKA",
+       "miejscowosc": "JERKA",
+       "nrWpisuWprow": "1",
+       "nrWpisuWykr": "37",
+       "powiat": "KOŚCIAŃSKI",
+       "wojewodztwo": "WIELKOPOLSKIE"
+      }
+     ]
+    },
+    "umowaStatut": {
+     "informacjaOZawarciuZmianieUmowyStatutu": [
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "37",
+         "zawarcieZmianaUmowyStatutu": "[REDACTED]"
+        }
+       ]
+      }
+     ]
+    },
+    "wspolnicySpzoo": [
+     {
+      "czyPosiadaCaloscUdzialow": [
+       {
+        "czyPosiadaCaloscUdzialow": false,
+        "nrWpisuWprow": "1",
+        "nrWpisuWykr": "37"
+       }
+      ],
+      "identyfikator": [
+       {
+        "nrWpisuWprow": "1",
+        "nrWpisuWykr": "37",
+        "pesel": "[REDACTED]"
+       }
+      ],
+      "imiona": [
+       {
+        "imiona": {
+         "imie": "[REDACTED]"
+        },
+        "nrWpisuWprow": "1",
+        "nrWpisuWykr": "37"
+       }
+      ],
+      "nazwisko": [
+       {
+        "nazwisko": {
+         "nazwiskoICzlon": "[REDACTED]"
+        },
+        "nrWpisuWprow": "1",
+        "nrWpisuWykr": "37"
+       }
+      ],
+      "posiadaneUdzialy": [
+       {
+        "nrWpisuWprow": "1",
+        "nrWpisuWykr": "5",
+        "posiadaneUdzialy": "4 UDZIAŁY O ŁĄCZNEJ WARTOŚCI 4.000,00 ZŁ"
+       },
+       {
+        "nrWpisuWprow": "5",
+        "nrWpisuWykr": "8",
+        "posiadaneUdzialy": "184 UDZIAŁY O ŁĄCZNEJ WARTOŚCI 184.000,00 ZŁ"
+       },
+       {
+        "nrWpisuWprow": "8",
+        "nrWpisuWykr": "37",
+        "posiadaneUdzialy": "92 UDZIAŁY O ŁĄCZNEJ WARTOŚCI 92.000,00 ZŁ"
+       }
+      ]
+     },
+     {
+      "czyPosiadaCaloscUdzialow": [
+       {
+        "czyPosiadaCaloscUdzialow": false,
+        "nrWpisuWprow": "1",
+        "nrWpisuWykr": "37"
+       }
+      ],
+      "identyfikator": [
+       {
+        "nrWpisuWprow": "1",
+        "nrWpisuWykr": "37",
+        "pesel": "[REDACTED]"
+       }
+      ],
+      "imiona": [
+       {
+        "imiona": {
+         "imie": "[REDACTED]"
+        },
+        "nrWpisuWprow": "1",
+        "nrWpisuWykr": "37"
+       }
+      ],
+      "nazwisko": [
+       {
+        "nazwisko": {
+         "nazwiskoICzlon": "[REDACTED]"
+        },
+        "nrWpisuWprow": "1",
+        "nrWpisuWykr": "37"
+       }
+      ],
+      "posiadaneUdzialy": [
+       {
+        "nrWpisuWprow": "1",
+        "nrWpisuWykr": "5",
+        "posiadaneUdzialy": "1 UDZIAŁ O ŁĄCZNEJ WARTOŚCI 1.000,00 ZŁ"
+       },
+       {
+        "nrWpisuWprow": "5",
+        "nrWpisuWykr": "37",
+        "posiadaneUdzialy": "46 UDZIAŁÓW O ŁĄCZNEJ WARTOŚCI 46.000,00 ZŁ"
+       }
+      ]
+     },
+     {
+      "czyPosiadaCaloscUdzialow": [
+       {
+        "czyPosiadaCaloscUdzialow": false,
+        "nrWpisuWprow": "1",
+        "nrWpisuWykr": "37"
+       }
+      ],
+      "identyfikator": [
+       {
+        "nrWpisuWprow": "1",
+        "nrWpisuWykr": "37",
+        "pesel": "[REDACTED]"
+       }
+      ],
+      "imiona": [
+       {
+        "imiona": {
+         "imie": "[REDACTED]"
+        },
+        "nrWpisuWprow": "1",
+        "nrWpisuWykr": "37"
+       }
+      ],
+      "nazwisko": [
+       {
+        "nazwisko": {
+         "nazwiskoICzlon": "[REDACTED]"
+        },
+        "nrWpisuWprow": "1",
+        "nrWpisuWykr": "37"
+       }
+      ],
+      "posiadaneUdzialy": [
+       {
+        "nrWpisuWprow": "1",
+        "nrWpisuWykr": "5",
+        "posiadaneUdzialy": "1 UDZIAŁ O ŁĄCZNEJ WARTOŚCI 1.000,00 ZŁ"
+       },
+       {
+        "nrWpisuWprow": "5",
+        "nrWpisuWykr": "37",
+        "posiadaneUdzialy": "46 UDZIAŁÓW O ŁĄCZNEJ WARTOŚCI 46.000,00 ZŁ"
+       }
+      ]
+     },
+     {
+      "czyPosiadaCaloscUdzialow": [
+       {
+        "czyPosiadaCaloscUdzialow": false,
+        "nrWpisuWprow": "8",
+        "nrWpisuWykr": "37"
+       }
+      ],
+      "identyfikator": [
+       {
+        "nrWpisuWprow": "8",
+        "nrWpisuWykr": "37",
+        "pesel": "[REDACTED]"
+       }
+      ],
+      "imiona": [
+       {
+        "imiona": {
+         "imie": "[REDACTED]"
+        },
+        "nrWpisuWprow": "8",
+        "nrWpisuWykr": "37"
+       }
+      ],
+      "nazwisko": [
+       {
+        "nazwisko": {
+         "nazwiskoICzlon": "[REDACTED]"
+        },
+        "nrWpisuWprow": "8",
+        "nrWpisuWykr": "37"
+       }
+      ],
+      "posiadaneUdzialy": [
+       {
+        "nrWpisuWprow": "8",
+        "nrWpisuWykr": "37",
+        "posiadaneUdzialy": "46 UDZIAŁÓW O ŁĄCZNEJ WARTOŚCI 46.000,00 ZŁ"
+       }
+      ]
+     },
+     {
+      "czyPosiadaCaloscUdzialow": [
+       {
+        "czyPosiadaCaloscUdzialow": false,
+        "nrWpisuWprow": "8",
+        "nrWpisuWykr": "37"
+       }
+      ],
+      "identyfikator": [
+       {
+        "nrWpisuWprow": "8",
+        "nrWpisuWykr": "37",
+        "pesel": "[REDACTED]"
+       }
+      ],
+      "imiona": [
+       {
+        "imiona": {
+         "imie": "[REDACTED]"
+        },
+        "nrWpisuWprow": "8",
+        "nrWpisuWykr": "37"
+       }
+      ],
+      "nazwisko": [
+       {
+        "nazwisko": {
+         "nazwiskoICzlon": "[REDACTED]"
+        },
+        "nrWpisuWprow": "8",
+        "nrWpisuWykr": "37"
+       }
+      ],
+      "posiadaneUdzialy": [
+       {
+        "nrWpisuWprow": "8",
+        "nrWpisuWykr": "37",
+        "posiadaneUdzialy": "46 UDZIAŁÓW O ŁĄCZNEJ WARTOŚCI 46.000,00 ZŁ"
+       }
+      ]
+     }
+    ]
+   },
+   "dzial2": {
+    "prokurenci": [
+     {
+      "identyfikator": [
+       {
+        "nrWpisuWprow": "3",
+        "nrWpisuWykr": "29",
+        "pesel": "[REDACTED]"
+       }
+      ],
+      "imiona": [
+       {
+        "imiona": {
+         "imie": "[REDACTED]"
+        },
+        "nrWpisuWprow": "3",
+        "nrWpisuWykr": "29"
+       }
+      ],
+      "nazwisko": [
+       {
+        "nazwisko": {
+         "nazwiskoICzlon": "[REDACTED]"
+        },
+        "nrWpisuWprow": "3",
+        "nrWpisuWykr": "29"
+       }
+      ],
+      "rodzajProkury": [
+       {
+        "nrWpisuWprow": "3",
+        "nrWpisuWykr": "29",
+        "rodzajProkury": "SAMOISTNA"
+       }
+      ]
+     },
+     {
+      "identyfikator": [
+       {
+        "nrWpisuWprow": "3",
+        "nrWpisuWykr": "29",
+        "pesel": "[REDACTED]"
+       }
+      ],
+      "imiona": [
+       {
+        "imiona": {
+         "imie": "[REDACTED]"
+        },
+        "nrWpisuWprow": "3",
+        "nrWpisuWykr": "29"
+       }
+      ],
+      "nazwisko": [
+       {
+        "nazwisko": {
+         "nazwiskoICzlon": "[REDACTED]"
+        },
+        "nrWpisuWprow": "3",
+        "nrWpisuWykr": "29"
+       }
+      ],
+      "rodzajProkury": [
+       {
+        "nrWpisuWprow": "3",
+        "nrWpisuWykr": "29",
+        "rodzajProkury": "SAMOISTNA"
+       }
+      ]
+     }
+    ],
+    "reprezentacja": [
+     {
+      "nazwaOrganu": [
+       {
+        "nazwaOrganu": "ZARZĄD",
+        "nrWpisuWprow": "1",
+        "nrWpisuWykr": "29"
+       }
+      ],
+      "sklad": [
+       {
+        "czyZawieszona": [
+         {
+          "czyZawieszona": false,
+          "nrWpisuWprow": "1",
+          "nrWpisuWykr": "29"
+         }
+        ],
+        "dataZawieszeniaDo": [],
+        "funkcjaWOrganie": [
+         {
+          "funkcjaWOrganie": "PREZES ZARZĄDU",
+          "nrWpisuWprow": "1",
+          "nrWpisuWykr": "29"
+         }
+        ],
+        "identyfikator": [
+         {
+          "nrWpisuWprow": "1",
+          "nrWpisuWykr": "29",
+          "pesel": "[REDACTED]"
+         }
+        ],
+        "imiona": [
+         {
+          "imiona": {
+           "imie": "[REDACTED]"
+          },
+          "nrWpisuWprow": "1",
+          "nrWpisuWykr": "29"
+         }
+        ],
+        "nazwisko": [
+         {
+          "nazwisko": {
+           "nazwiskoICzlon": "[REDACTED]"
+          },
+          "nrWpisuWprow": "1",
+          "nrWpisuWykr": "29"
+         }
+        ]
+       }
+      ],
+      "sposobReprezentacji": [
+       {
+        "nrWpisuWprow": "1",
+        "nrWpisuWykr": "29",
+        "sposobReprezentacji": "[REDACTED]"
+       }
+      ]
+     }
+    ]
+   },
+   "dzial3": {
+    "informacjaODniuKonczacymRokObrotowy": {
+     "dzienKonczacyPierwszyRokObrotowy": [
+      {
+       "dzienKonczacyPierwszyRokObrotowy": "31.12.2013",
+       "nrWpisuWprow": "5",
+       "nrWpisuWykr": "37"
+      }
+     ]
+    },
+    "przedmiotDzialalnosci": {
+     "przedmiotPozostalejDzialalnosci": [
+      {
+       "pozycja": [
+        {
+         "kodDzial": "41",
+         "kodKlasa": "20",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "ROBOTY BUDOWLANE ZWIĄZANE ZE WZNOSZENIEM BUDYNKÓW MIESZKALNYCH I NIEMIESZKALNYCH"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "42",
+         "kodKlasa": "11",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "ROBOTY ZWIĄZANE Z BUDOWĄ DRÓG I AUTOSTRAD"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "42",
+         "kodKlasa": "12",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "ROBOTY ZWIĄZANE Z BUDOWĄ DRÓG SZYNOWYCH I KOLEI PODZIEMNEJ"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "42",
+         "kodKlasa": "13",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "ROBOTY ZWIĄZANE Z BUDOWĄ MOSTÓW I TUNELI"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "42",
+         "kodKlasa": "21",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "ROBOTY ZWIĄZANE Z BUDOWĄ RUROCIĄGÓW PRZESYŁOWYCH I SIECI ROZDZIELCZYCH"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "42",
+         "kodKlasa": "22",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "ROBOTY ZWIĄZANE Z BUDOWĄ LINII TELEKOMUNIKACYJNYCH I ELEKTROENERGETYCZNYCH"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "42",
+         "kodKlasa": "91",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "ROBOTY ZWIĄZANE Z BUDOWĄ OBIEKTÓW INŻYNIERII WODNEJ"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "42",
+         "kodKlasa": "99",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "ROBOTY ZWIĄZANE Z BUDOWĄ POZOSTAŁYCH OBIEKTÓW INŻYNIERII LĄDOWEJ I WODNEJ, GDZIE INDZIEJ NIESKLASYFIKOWANE"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "43",
+         "kodKlasa": "11",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "ROZBIÓRKA I BURZENIE OBIEKTÓW BUDOWLANYCH"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "43",
+         "kodKlasa": "12",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "PRZYGOTOWANIE TERENU POD BUDOWĘ"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "43",
+         "kodKlasa": "13",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "WYKONYWANIE WYKOPÓW I WIERCEŃ GEOLOGICZNO-INŻYNIERSKICH"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "43",
+         "kodKlasa": "22",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "WYKONYWANIE INSTALACJI WODNO-KANALIZACYJNYCH, CIEPLNYCH, GAZOWYCH I KLIMATYZACYJNYCH"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "43",
+         "kodKlasa": "99",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "POZOSTAŁE SPECJALISTYCZNE ROBOTY BUDOWLANE, GDZIE INDZIEJ NIESKLASYFIKOWANE"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "49",
+         "kodKlasa": "41",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "TRANSPORT DROGOWY TOWARÓW"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "49",
+         "kodKlasa": "42",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "DZIAŁALNOŚĆ USŁUGOWA ZWIĄZANA Z PRZEPROWADZKAMI"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "52",
+         "kodKlasa": "21",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "DZIAŁALNOŚĆ USŁUGOWA WSPOMAGAJĄCA TRANSPORT LĄDOWY"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "52",
+         "kodKlasa": "24",
+         "kodPodklasa": "C",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "PRZEŁADUNEK TOWARÓW W POZOSTAŁYCH PUNKTACH PRZEŁADUNKOWYCH"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "77",
+         "kodKlasa": "12",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "WYNAJEM I DZIERŻAWA POZOSTAŁYCH POJAZDÓW SAMOCHODOWYCH, Z WYŁĄCZENIEM MOTOCYKLI"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "77",
+         "kodKlasa": "32",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "WYNAJEM I DZIERŻAWA MASZYN I URZĄDZEŃ BUDOWLANYCH"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "77",
+         "kodKlasa": "39",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "WYNAJEM I DZIERŻAWA POZOSTAŁYCH MASZYN, URZĄDZEŃ ORAZ DÓBR MATERIALNYCH, GDZIE INDZIEJ NIESKLASYFIKOWANE"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "38",
+         "kodKlasa": "11",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "ZBIERANIE ODPADÓW INNYCH NIŻ NIEBEZPIECZNE"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "38",
+         "kodKlasa": "12",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "ZBIERANIE ODPADÓW NIEBEZPIECZNYCH"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "38",
+         "kodKlasa": "32",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "ODZYSK SUROWCÓW Z MATERIAŁÓW SEGREGOWANYCH"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "39",
+         "kodKlasa": "00",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "DZIAŁALNOŚĆ ZWIĄZANA Z REKULTYWACJĄ I POZOSTAŁA DZIAŁALNOŚĆ USŁUGOWA ZWIĄZANA Z GOSPODARKĄ ODPADAMI"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "46",
+         "kodKlasa": "73",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "SPRZEDAŻ HURTOWA DREWNA, MATERIAŁÓW BUDOWLANYCH I WYPOSAŻENIA SANITARNEGO"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "81",
+         "kodKlasa": "10",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "DZIAŁALNOŚĆ POMOCNICZA ZWIĄZANA Z UTRZYMANIEM PORZĄDKU W BUDYNKACH"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "81",
+         "kodKlasa": "30",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "DZIAŁALNOŚĆ USŁUGOWA ZWIĄZANA Z ZAGOSPODAROWANIEM TERENÓW ZIELENI"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "68",
+         "kodKlasa": "10",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "KUPNO I SPRZEDAŻ NIERUCHOMOŚCI NA WŁASNY RACHUNEK"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "68",
+         "kodKlasa": "20",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "WYNAJEM I ZARZĄDZANIE NIERUCHOMOŚCIAMI WŁASNYMI LUB DZIERŻAWIONYMI"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "68",
+         "kodKlasa": "31",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "POŚREDNICTWO W OBROCIE NIERUCHOMOŚCIAMI"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "68",
+         "kodKlasa": "32",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "ZARZĄDZANIE NIERUCHOMOŚCIAMI WYKONYWANE NA ZLECENIE"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "82",
+         "kodKlasa": "19",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "WYKONYWANIE FOTOKOPII, PRZYGOTOWYWANIE DOKUMENTÓW I POZOSTAŁA SPECJALISTYCZNA DZIAŁALNOŚĆ WSPOMAGAJĄCA PROWADZENIE BIURA"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "82",
+         "kodKlasa": "30",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "DZIAŁALNOŚĆ ZWIĄZANA Z ORGANIZACJĄ TARGÓW, WYSTAW I KONGRESÓW"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "77",
+         "kodKlasa": "11",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "WYNAJEM I DZIERŻAWA SAMOCHODÓW OSOBOWYCH I FURGONETEK"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "70",
+         "kodKlasa": "21",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "STOSUNKI MIĘDZYLUDZKIE (PUBLIC RELATIONS) I KOMUNIKACJA"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "70",
+         "kodKlasa": "22",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "POZOSTAŁE DORADZTWO W ZAKRESIE PROWADZENIA DZIAŁALNOŚCI GOSPODARCZEJ I ZARZĄDZANIA"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "47",
+         "kodKlasa": "19",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "POZOSTAŁA SPRZEDAŻ DETALICZNA PROWADZONA W NIEWYSPECJALIZOWANYCH SKLEPACH"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "47",
+         "kodKlasa": "11",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "SPRZEDAŻ DETALICZNA PROWADZONA W NIEWYSPECJALIZOWANYCH SKLEPACH Z PRZEWAGĄ ŻYWNOŚCI, NAPOJÓW I WYROBÓW TYTONIOWYCH"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "45",
+         "kodKlasa": "40",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "SPRZEDAŻ HURTOWA I DETALICZNA MOTOCYKLI, ICH NAPRAWA I KONSERWACJA ORAZ SPRZEDAŻ HURTOWA I DETALICZNA CZĘŚCI I AKCESORIÓW DO NICH"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "45",
+         "kodKlasa": "20",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "KONSERWACJA I NAPRAWA POJAZDÓW SAMOCHODOWYCH, Z WYŁĄCZENIEM MOTOCYKLI"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "47",
+         "kodKlasa": "71",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "SPRZEDAŻ DETALICZNA ODZIEŻY PROWADZONA W WYSPECJALIZOWANYCH SKLEPACH"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "64",
+         "kodKlasa": "92",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "POZOSTAŁE FORMY UDZIELANIA KREDYTÓW"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "64",
+         "kodKlasa": "99",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "POZOSTAŁA FINANSOWA DZIAŁALNOŚĆ USŁUGOWA, GDZIE INDZIEJ NIESKLASYFIKOWANA, Z WYŁĄCZENIEM UBEZPIECZEŃ I FUNDUSZÓW EMERYTALNYCH"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "69",
+         "kodKlasa": "20",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "DZIAŁALNOŚĆ RACHUNKOWO-KSIĘGOWA; DORADZTWO PODATKOWE"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "77",
+         "kodKlasa": "40",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "DZIERŻAWA WŁASNOŚCI INTELEKTUALNEJ I PODOBNYCH PRODUKTÓW, Z WYŁĄCZENIEM PRAC CHRONIONYCH PRAWEM AUTORSKIM"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "33",
+         "kodKlasa": "12",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "NAPRAWA I KONSERWACJA MASZYN"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "33",
+         "kodKlasa": "20",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "INSTALOWANIE MASZYN PRZEMYSŁOWYCH, SPRZĘTU I WYPOSAŻENIA"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "45",
+         "kodKlasa": "31",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "SPRZEDAŻ HURTOWA CZĘŚCI I AKCESORIÓW DO POJAZDÓW SAMOCHODOWYCH, Z WYŁĄCZENIEM MOTOCYKLI"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "46",
+         "kodKlasa": "63",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "1",
+         "nrWpisuWykr": "5",
+         "opis": "SPRZEDAŻ HURTOWA MASZYN WYKORZYSTYWANYCH W GÓRNICTWIE, BUDOWNICTWIE ORAZ INŻYNIERII LĄDOWEJ I WODNEJ"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "41",
+         "kodKlasa": "20",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "5",
+         "nrWpisuWykr": "37",
+         "opis": "ROBOTY BUDOWLANE ZWIĄZANE ZE WZNOSZENIEM BUDYNKÓW MIESZKALNYCH I NIEMIESZKALNYCH"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "42",
+         "kodKlasa": "12",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "5",
+         "nrWpisuWykr": "37",
+         "opis": "ROBOTY ZWIĄZANE Z BUDOWĄ DRÓG SZYNOWYCH I KOLEI PODZIEMNEJ"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "42",
+         "kodKlasa": "13",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "5",
+         "nrWpisuWykr": "37",
+         "opis": "ROBOTY ZWIĄZANE Z BUDOWĄ MOSTÓW I TUNELI"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "42",
+         "kodKlasa": "21",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "5",
+         "nrWpisuWykr": "37",
+         "opis": "ROBOTY ZWIĄZANE Z BUDOWĄ RUROCIĄGÓW PRZESYŁOWYCH I SIECI ROZDZIELCZYCH"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "42",
+         "kodKlasa": "22",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "5",
+         "nrWpisuWykr": "37",
+         "opis": "ROBOTY ZWIĄZANE Z BUDOWĄ LINII TELEKOMUNIKACYJNYCH I ELEKTROENERGETYCZNYCH"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "42",
+         "kodKlasa": "91",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "5",
+         "nrWpisuWykr": "37",
+         "opis": "ROBOTY ZWIĄZANE Z BUDOWĄ OBIEKTÓW INŻYNIERII WODNEJ"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "42",
+         "kodKlasa": "99",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "5",
+         "nrWpisuWykr": "37",
+         "opis": "ROBOTY ZWIĄZANE Z BUDOWĄ POZOSTAŁYCH OBIEKTÓW INŻYNIERII LĄDOWEJ I WODNEJ, GDZIE INDZIEJ NIESKLASYFIKOWANE"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "43",
+         "kodKlasa": "11",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "5",
+         "nrWpisuWykr": "37",
+         "opis": "ROZBIÓRKA I BURZENIE OBIEKTÓW BUDOWLANYCH"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "kodDzial": "43",
+         "kodKlasa": "12",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "5",
+         "nrWpisuWykr": "37",
+         "opis": "PRZYGOTOWANIE OBIEKTU POD BUDOWĘ"
+        }
+       ]
+      }
+     ],
+     "przedmiotPrzewazajacejDzialalnosci": [
+      {
+       "pozycja": [
+        {
+         "kodDzial": "42",
+         "kodKlasa": "11",
+         "kodPodklasa": "Z",
+         "nrWpisuWprow": "5",
+         "nrWpisuWykr": "37",
+         "opis": "ROBOTY ZWIĄZANE Z BUDOWĄ DRÓG I AUTOSTRAD"
+        }
+       ]
+      }
+     ]
+    },
+    "wzmiankiOZlozonychDokumentach": {
+     "wzmiankaOZlozeniuOpiniiBieglegoRewidentaSprawozdaniaZBadania": [
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "7",
+         "nrWpisuWykr": "37",
+         "zaOkresOdDo": "OD 01.01.2016 DO 31.12.2016"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "10",
+         "nrWpisuWykr": "37",
+         "zaOkresOdDo": "OD 01.01.2017 DO 31.12.2017"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "14",
+         "nrWpisuWykr": "37",
+         "zaOkresOdDo": "OD 01.01.2018 DO 31.12.2018"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "18",
+         "nrWpisuWykr": "37",
+         "zaOkresOdDo": "OD 01.01.2019 DO 31.12.2019"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "23",
+         "nrWpisuWykr": "37",
+         "zaOkresOdDo": "OD 01.01.2020 DO 31.12.2020"
+        }
+       ]
+      }
+     ],
+     "wzmiankaOZlozeniuRocznegoSprawozdaniaFinansowego": [
+      {
+       "pozycja": [
+        {
+         "dataZlozenia": "23.05.2014",
+         "nrWpisuWprow": "4",
+         "nrWpisuWykr": "37",
+         "zaOkresOdDo": "OD 30.10.2012 DO 31.12.2013"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "dataZlozenia": "27.04.2015",
+         "nrWpisuWprow": "5",
+         "nrWpisuWykr": "37",
+         "zaOkresOdDo": "OD 01.01.2014 DO 31.12.2014"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "dataZlozenia": "12.04.2016",
+         "nrWpisuWprow": "6",
+         "nrWpisuWykr": "37",
+         "zaOkresOdDo": "OD 01.01.2015 DO 31.12.2015"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "dataZlozenia": "23.08.2017",
+         "nrWpisuWprow": "7",
+         "nrWpisuWykr": "37",
+         "zaOkresOdDo": "OD 01.01.2016 DO 31.12.2016"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "dataZlozenia": "27.09.2018",
+         "nrWpisuWprow": "9",
+         "nrWpisuWykr": "37",
+         "zaOkresOdDo": "OD 01.01.2017 DO 31.12.2017"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "dataZlozenia": "15.07.2019",
+         "nrWpisuWprow": "13",
+         "nrWpisuWykr": "37",
+         "zaOkresOdDo": "OD 01.01.2018 DO 31.12.2018"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "dataZlozenia": "15.10.2020",
+         "nrWpisuWprow": "17",
+         "nrWpisuWykr": "37",
+         "zaOkresOdDo": "OD 01.01.2019 DO 31.12.2019"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "dataZlozenia": "15.10.2021",
+         "nrWpisuWprow": "21",
+         "nrWpisuWykr": "37",
+         "zaOkresOdDo": "OD 01.01.2020 DO 31.12.2020"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "dataZlozenia": "04.10.2022",
+         "nrWpisuWprow": "25",
+         "nrWpisuWykr": "37",
+         "zaOkresOdDo": "OD 01.01.2021 DO 31.12.2021"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "dataZlozenia": "29.03.2023",
+         "nrWpisuWprow": "27",
+         "nrWpisuWykr": "37",
+         "zaOkresOdDo": "OD 01.01.2022 DO 31.12.2022"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "dataZlozenia": "19.03.2024",
+         "nrWpisuWprow": "30",
+         "nrWpisuWykr": "37",
+         "zaOkresOdDo": "OD 21.07.2023 DO 31.12.2023"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "dataZlozenia": "24.03.2025",
+         "nrWpisuWprow": "32",
+         "nrWpisuWykr": "37",
+         "zaOkresOdDo": "OD 01.01.2024 DO 31.12.2024"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "dataZlozenia": "08.05.2025",
+         "nrWpisuWprow": "35",
+         "nrWpisuWykr": "37",
+         "zaOkresOdDo": "OD 01.01.2023 DO 20.07.2023"
+        }
+       ]
+      }
+     ],
+     "wzmiankaOZlozeniuSprawozdaniaZDzialalnosci": [
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "5",
+         "nrWpisuWykr": "37",
+         "zaOkresOdDo": "OD 01.01.2014 DO 31.12.2014"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "6",
+         "nrWpisuWykr": "37",
+         "zaOkresOdDo": "OD 01.01.2015 DO 31.12.2015"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "7",
+         "nrWpisuWykr": "37",
+         "zaOkresOdDo": "OD 01.01.2016 DO 31.12.2016"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "12",
+         "nrWpisuWykr": "37",
+         "zaOkresOdDo": "OD 01.01.2017 DO 31.12.2017"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "16",
+         "nrWpisuWykr": "37",
+         "zaOkresOdDo": "OD 01.01.2018 DO 31.12.2018"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "20",
+         "nrWpisuWykr": "37",
+         "zaOkresOdDo": "OD 01.01.2019 DO 31.12.2019"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "24",
+         "nrWpisuWykr": "37",
+         "zaOkresOdDo": "OD 01.01.2020 DO 31.12.2020"
+        }
+       ]
+      }
+     ],
+     "wzmiankaOZlozeniuUchwalyPostanowieniaOZatwierdzeniuRocznegoSprawozdaniaFinansowego": [
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "4",
+         "nrWpisuWykr": "37",
+         "zaOkresOdDo": "OD 30.10.2012 DO 31.12.2013"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "5",
+         "nrWpisuWykr": "37",
+         "zaOkresOdDo": "OD 01.01.2014 DO 31.12.2014"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "6",
+         "nrWpisuWykr": "37",
+         "zaOkresOdDo": "OD 01.01.2015 DO 31.12.2015"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "7",
+         "nrWpisuWykr": "37",
+         "zaOkresOdDo": "OD 01.01.2016 DO 31.12.2016"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "11",
+         "nrWpisuWykr": "37",
+         "zaOkresOdDo": "OD 01.01.2017 DO 31.12.2017"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "15",
+         "nrWpisuWykr": "37",
+         "zaOkresOdDo": "OD 01.01.2018 DO 31.12.2018"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "19",
+         "nrWpisuWykr": "37",
+         "zaOkresOdDo": "OD 01.01.2019 DO 31.12.2019"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "22",
+         "nrWpisuWykr": "37",
+         "zaOkresOdDo": "OD 01.01.2020 DO 31.12.2020"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "26",
+         "nrWpisuWykr": "37",
+         "zaOkresOdDo": "OD 01.01.2021 DO 31.12.2021"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "28",
+         "nrWpisuWykr": "37",
+         "zaOkresOdDo": "OD 01.01.2022 DO 31.12.2022"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "31",
+         "nrWpisuWykr": "37",
+         "zaOkresOdDo": "OD 21.07.2023 DO 31.12.2023"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "33",
+         "nrWpisuWykr": "37",
+         "zaOkresOdDo": "OD 01.01.2024 DO 31.12.2024"
+        }
+       ]
+      },
+      {
+       "pozycja": [
+        {
+         "nrWpisuWprow": "36",
+         "nrWpisuWykr": "37",
+         "zaOkresOdDo": "OD 01.01.2023 DO 20.07.2023"
+        }
+       ]
+      }
+     ]
+    }
+   },
+   "dzial4": {},
+   "dzial5": {},
+   "dzial6": {
+    "likwidacja": [
+     {
+      "likwidatorzy": [
+       {
+        "identyfikator": [
+         {
+          "nrWpisuWprow": "29",
+          "nrWpisuWykr": "37",
+          "pesel": "[REDACTED]"
+         }
+        ],
+        "imiona": [
+         {
+          "imiona": {
+           "imie": "[REDACTED]"
+          },
+          "nrWpisuWprow": "29",
+          "nrWpisuWykr": "37"
+         }
+        ],
+        "nazwisko": [
+         {
+          "nazwisko": {
+           "nazwiskoICzlon": "[REDACTED]"
+          },
+          "nrWpisuWprow": "29",
+          "nrWpisuWykr": "37"
+         }
+        ]
+       }
+      ],
+      "otwarcieLikwidacji": [
+       {
+        "nrWpisuWprow": "29",
+        "nrWpisuWykr": "37",
+        "otwarcieLikwidacji": "[REDACTED]"
+       }
+      ],
+      "sposobReprezentacjiPodmiotuPrzezLikwidatorow": [
+       {
+        "nrWpisuWprow": "29",
+        "nrWpisuWykr": "37",
+        "sposobReprezentacjiPodmiotuPrzezLikwidatorow": "LIKWIDATOR SAMODZIELNIE"
+       }
+      ],
+      "zakonczenieLikwidacji": [
+       {
+        "nrWpisuWprow": "37",
+        "nrWpisuWykr": "37",
+        "zakonczenieLikwidacji": "[REDACTED]"
+       }
+      ]
+     }
+    ],
+    "rozwiazanieUniewaznienie": {
+     "informacjaORozwiazaniuUniewaznieniu": [
+      {
+       "informacjaORozwiazaniuUniewaznieniu": "[REDACTED]",
+       "nrWpisuWprow": "29",
+       "nrWpisuWykr": "37"
+      }
+     ],
+     "okreslenieOkolicznosci": [
+      {
+       "nrWpisuWprow": "29",
+       "nrWpisuWykr": "37",
+       "okreslenieOkolicznosci": "ROZWIĄZANIE"
+      }
+     ]
+    }
+   }
+  },
+  "naglowekP": {
+   "dataCzasOdpisu": "22.09.2026 15:56:30",
+   "numerKRS": "0000440028",
+   "rejestr": "RejP",
+   "stanPozycji": 2,
+   "stanZDnia": "21.11.2025",
+   "wpis": [
+    {
+     "dataWpisu": "15.11.2012",
+     "numerWpisu": 1,
+     "opis": "REJESTRACJA W KRAJOWYM REJESTRZE SĄDOWYM",
+     "oznaczenieSaduDokonujacegoWpisu": "SĄD REJONOWY POZNAŃ - NOWE MIASTO I WILDA W POZNANIU, IX WYDZIAŁ GOSPODARCZY KRAJOWEGO REJESTRU SĄDOWEGO",
+     "sygnaturaAktSprawyDotyczacejWpisu": "PO.IX NS-REJ.KRS/23523/12/584"
+    },
+    {
+     "dataWpisu": "12.12.2012",
+     "numerWpisu": 2,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SĄD REJONOWY POZNAŃ - NOWE MIASTO I WILDA W POZNANIU, IX WYDZIAŁ GOSPODARCZY KRAJOWEGO REJESTRU SĄDOWEGO",
+     "sygnaturaAktSprawyDotyczacejWpisu": "PO.IX NS-REJ.KRS/26318/12/279"
+    },
+    {
+     "dataWpisu": "16.01.2014",
+     "numerWpisu": 3,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SĄD REJONOWY POZNAŃ - NOWE MIASTO I WILDA W POZNANIU, IX WYDZIAŁ GOSPODARCZY KRAJOWEGO REJESTRU SĄDOWEGO",
+     "sygnaturaAktSprawyDotyczacejWpisu": "PO.IX NS-REJ.KRS/36275/13/911"
+    },
+    {
+     "dataWpisu": "10.07.2014",
+     "numerWpisu": 4,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SĄD REJONOWY POZNAŃ - NOWE MIASTO I WILDA W POZNANIU, IX WYDZIAŁ GOSPODARCZY KRAJOWEGO REJESTRU SĄDOWEGO",
+     "sygnaturaAktSprawyDotyczacejWpisu": "PO.IX NS-REJ.KRS/11924/14/246"
+    },
+    {
+     "dataWpisu": "18.05.2015",
+     "numerWpisu": 5,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SĄD REJONOWY POZNAŃ - NOWE MIASTO I WILDA W POZNANIU, IX WYDZIAŁ GOSPODARCZY KRAJOWEGO REJESTRU SĄDOWEGO",
+     "sygnaturaAktSprawyDotyczacejWpisu": "PO.IX NS-REJ.KRS/10204/15/829"
+    },
+    {
+     "dataWpisu": "06.05.2016",
+     "numerWpisu": 6,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SĄD REJONOWY POZNAŃ - NOWE MIASTO I WILDA W POZNANIU, IX WYDZIAŁ GOSPODARCZY KRAJOWEGO REJESTRU SĄDOWEGO",
+     "sygnaturaAktSprawyDotyczacejWpisu": "PO.IX NS-REJ.KRS/10807/16/641"
+    },
+    {
+     "dataWpisu": "16.10.2017",
+     "numerWpisu": 7,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SĄD REJONOWY POZNAŃ - NOWE MIASTO I WILDA W POZNANIU, IX WYDZIAŁ GOSPODARCZY KRAJOWEGO REJESTRU SĄDOWEGO",
+     "sygnaturaAktSprawyDotyczacejWpisu": "PO.IX NS-REJ.KRS/30394/17/839"
+    },
+    {
+     "dataWpisu": "31.01.2018",
+     "numerWpisu": 8,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SĄD REJONOWY POZNAŃ - NOWE MIASTO I WILDA W POZNANIU, IX WYDZIAŁ GOSPODARCZY KRAJOWEGO REJESTRU SĄDOWEGO",
+     "sygnaturaAktSprawyDotyczacejWpisu": "PO.IX NS-REJ.KRS/1416/18/227"
+    },
+    {
+     "dataWpisu": "27.09.2018",
+     "numerWpisu": 9,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/845265/18/101"
+    },
+    {
+     "dataWpisu": "27.09.2018",
+     "numerWpisu": 10,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/845266/18/502"
+    },
+    {
+     "dataWpisu": "27.09.2018",
+     "numerWpisu": 11,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/845267/18/903"
+    },
+    {
+     "dataWpisu": "27.09.2018",
+     "numerWpisu": 12,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/845268/18/304"
+    },
+    {
+     "dataWpisu": "15.07.2019",
+     "numerWpisu": 13,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/164418/19/530"
+    },
+    {
+     "dataWpisu": "15.07.2019",
+     "numerWpisu": 14,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/164418/19/931"
+    },
+    {
+     "dataWpisu": "15.07.2019",
+     "numerWpisu": 15,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/164418/19/332"
+    },
+    {
+     "dataWpisu": "15.07.2019",
+     "numerWpisu": 16,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/164418/19/733"
+    },
+    {
+     "dataWpisu": "17.10.2020",
+     "numerWpisu": 17,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/264592/20/563"
+    },
+    {
+     "dataWpisu": "17.10.2020",
+     "numerWpisu": 18,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/264592/20/964"
+    },
+    {
+     "dataWpisu": "03.11.2020",
+     "numerWpisu": 19,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/268640/20/114"
+    },
+    {
+     "dataWpisu": "03.11.2020",
+     "numerWpisu": 20,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/268640/20/515"
+    },
+    {
+     "dataWpisu": "15.10.2021",
+     "numerWpisu": 21,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/355736/21/216"
+    },
+    {
+     "dataWpisu": "15.10.2021",
+     "numerWpisu": 22,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/355736/21/617"
+    },
+    {
+     "dataWpisu": "18.10.2021",
+     "numerWpisu": 23,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/357356/21/554"
+    },
+    {
+     "dataWpisu": "19.10.2021",
+     "numerWpisu": 24,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/357734/21/994"
+    },
+    {
+     "dataWpisu": "04.10.2022",
+     "numerWpisu": 25,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/435289/22/298"
+    },
+    {
+     "dataWpisu": "04.10.2022",
+     "numerWpisu": 26,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/435289/22/699"
+    },
+    {
+     "dataWpisu": "29.03.2023",
+     "numerWpisu": 27,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/476078/23/420"
+    },
+    {
+     "dataWpisu": "29.03.2023",
+     "numerWpisu": 28,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/476078/23/821"
+    },
+    {
+     "dataWpisu": "18.08.2023",
+     "numerWpisu": 29,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SĄD REJONOWY POZNAŃ - NOWE MIASTO I WILDA W POZNANIU, IX WYDZIAŁ GOSPODARCZY KRAJOWEGO REJESTRU SĄDOWEGO",
+     "sygnaturaAktSprawyDotyczacejWpisu": "PO.IX NS-REJ.KRS/17061/23/842"
+    },
+    {
+     "dataWpisu": "19.03.2024",
+     "numerWpisu": 30,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/586375/24/448"
+    },
+    {
+     "dataWpisu": "19.03.2024",
+     "numerWpisu": 31,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/586375/24/849"
+    },
+    {
+     "dataWpisu": "24.03.2025",
+     "numerWpisu": 32,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/703275/25/1"
+    },
+    {
+     "dataWpisu": "24.03.2025",
+     "numerWpisu": 33,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/703276/25/713"
+    },
+    {
+     "dataWpisu": "14.04.2025",
+     "numerWpisu": 34,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "PO.IX NS-REJ.KRS/17061/23/842/ADE"
+    },
+    {
+     "dataWpisu": "08.05.2025",
+     "numerWpisu": 35,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/717756/25/766"
+    },
+    {
+     "dataWpisu": "08.05.2025",
+     "numerWpisu": 36,
+     "opis": "ZMIANA DANYCH W REJESTRZE",
+     "oznaczenieSaduDokonujacegoWpisu": "SYSTEM",
+     "sygnaturaAktSprawyDotyczacejWpisu": "RDF/717756/25/167"
+    },
+    {
+     "dataUprawomocnienia": "18.09.2025",
+     "dataWpisu": "10.09.2025",
+     "numerWpisu": 37,
+     "opis": "[REDACTED]",
+     "oznaczenieSaduDokonujacegoWpisu": "SĄD REJONOWY POZNAŃ - NOWE MIASTO I WILDA W POZNANIU, IX WYDZIAŁ GOSPODARCZY KRAJOWEGO REJESTRU SĄDOWEGO",
+     "sygnaturaAktSprawyDotyczacejWpisu": "PO.IX NS-REJ.KRS/19085/25/236"
+    }
+   ]
+  },
+  "rodzaj": "Pełny"
+ }
+}
