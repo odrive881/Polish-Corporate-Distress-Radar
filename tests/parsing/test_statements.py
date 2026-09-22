@@ -9,9 +9,16 @@ from pathlib import Path
 import polars as pl
 import pytest
 
-from distress_radar.parsing.accounting_identities import grade, run_identity_checks
+from distress_radar.parsing.accounting_identities import (
+    grade,
+    identity_check_results,
+    run_identity_checks,
+)
 from distress_radar.parsing.canonical_schema import MappingConfig
-from distress_radar.parsing.contracts import FINANCIAL_STATEMENTS_CANONICAL
+from distress_radar.parsing.contracts import (
+    FINANCIAL_STATEMENTS_CANONICAL,
+    IDENTITY_CHECK_RESULTS,
+)
 from distress_radar.parsing.manifest import StatementSource
 from distress_radar.parsing.mapping_engine import SORT_KEY, MappingError
 from distress_radar.parsing.statements import classify_download, map_file
@@ -144,10 +151,10 @@ def _pipeline(
     ]
     facts = pl.concat(frames)
     results = run_identity_checks(facts, mapping_config, Decimal("1.00"))
-    graded = FINANCIAL_STATEMENTS_CANONICAL.validate(
-        grade(facts, results, mapping_config).sort(SORT_KEY)
-    )
+    graded = FINANCIAL_STATEMENTS_CANONICAL.validate(grade(facts, results).sort(SORT_KEY))
+    checked = IDENTITY_CHECK_RESULTS.validate(identity_check_results(results, graded))
     write_dataset(graded, tmp_path, "financial_statements_canonical", "fiscal_year")
+    write_dataset(checked, tmp_path, "identity_check_results", "fiscal_year")
     return {
         str(p.relative_to(tmp_path)): p.read_bytes() for p in sorted(tmp_path.rglob("*.parquet"))
     }
@@ -159,4 +166,4 @@ def test_end_to_end_output_is_byte_identical(
     first = _pipeline(tmp_path / "one", mapping_config, validator)
     second = _pipeline(tmp_path / "two", mapping_config, validator)
     assert first == second
-    assert len(first) == 2  # fiscal years 2022 and 2023
+    assert len(first) == 4  # fiscal years 2022 and 2023, for both datasets

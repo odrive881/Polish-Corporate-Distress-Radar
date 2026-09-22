@@ -1,4 +1,4 @@
-"""E1: Pandera contracts for the C2 output tables (AGENT_SPEC §5, §6E1).
+"""E1: Pandera contracts for the C2 and E2 output tables (AGENT_SPEC §5, §6E1).
 
 A contract failure means a bug in this package, not bad input data (bad input
 is quarantined before it gets here), so callers let the error fail the run.
@@ -12,7 +12,13 @@ from __future__ import annotations
 import pandera.polars as pa
 import polars as pl
 
-from distress_radar.parsing.accounting_identities import RESTATEMENT_SCHEMA
+from distress_radar.parsing.accounting_identities import (
+    CHECK_STATUSES,
+    IDENTITY_CHECK_RESULTS_SCHEMA,
+    IDENTITY_CHECKS,
+    RESTATEMENT_SCHEMA,
+    SEVERITIES,
+)
 from distress_radar.parsing.mapping_engine import CANONICAL_COLUMNS
 
 _SHA256 = r"^[0-9a-f]{64}$"
@@ -38,6 +44,12 @@ def _column(name: str, dtype: pl.DataType | type[pl.DataType], nullable: bool) -
         checks.append(pa.Check.isin(["prior_year", "prior_year_restated"]))
     elif name == "quality_grade":
         checks.append(pa.Check.isin(["pass", "warn", "quarantined"]))
+    elif name == "check":
+        checks.append(pa.Check.isin(list(IDENTITY_CHECKS)))
+    elif name == "status":
+        checks.append(pa.Check.isin(list(CHECK_STATUSES)))
+    elif name == "severity":
+        checks.append(pa.Check.isin(list(SEVERITIES)))
     return pa.Column(dtype, checks=checks, nullable=nullable)
 
 
@@ -58,4 +70,36 @@ RESTATEMENT_EVENTS = pa.DataFrameSchema(
     strict=True,
     ordered=True,
     name="restatement_events",
+)
+
+
+def _severity_iff_failed(data: pa.PolarsData) -> pl.LazyFrame:
+    return data.lazyframe.select(
+        pl.col("severity").is_not_null() == (pl.col("status") == "fail")
+    )
+
+
+def _figures_iff_evaluated(data: pa.PolarsData) -> pl.LazyFrame:
+    return data.lazyframe.select(
+        pl.col("difference").is_null() == (pl.col("status") == "not_applicable")
+    )
+
+
+# `expected`/`actual` are null when a side of the identity was not reported, and
+# `difference` exactly when nothing was evaluated; `severity` only on failures.
+IDENTITY_CHECK_RESULTS = pa.DataFrameSchema(
+    {
+        name: _column(
+            name, dtype, nullable=name in ("expected", "actual", "difference", "severity")
+        )
+        for name, dtype in IDENTITY_CHECK_RESULTS_SCHEMA.items()
+    },
+    checks=[
+        pa.Check(_severity_iff_failed, name="severity_iff_failed"),
+        pa.Check(_figures_iff_evaluated, name="difference_iff_evaluated"),
+    ],
+    strict=True,
+    ordered=True,
+    unique=["source_document_hash", "source_member", "column", "check", "line_item"],
+    name="identity_check_results",
 )

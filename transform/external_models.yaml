@@ -1,0 +1,93 @@
+# External models: the `ext` views `config.py` creates in `before_all` (plan 0007 step B).
+# Parquet columns must match the Polars schemas the Dagster assets write
+# (tests/transform/test_external_models.py); Postgres columns must match the live
+# tables (tests/transform/test_external_models_integration.py).
+
+- name: ext.financial_statements_canonical
+  description: "Canonical facts (AGENT_SPEC §5), Parquet under WAREHOUSE_DIR."
+  columns:
+    krs: TEXT
+    nip: TEXT
+    regon: TEXT
+    fiscal_year: INT
+    period_start: DATE
+    period_end: DATE
+    line_item: TEXT
+    value: DECIMAL(20, 2)
+    statement_type: TEXT
+    variant: TEXT
+    column: TEXT
+    structure_version: TEXT
+    source_document_hash: TEXT
+    source_member: TEXT
+    source_element_path: TEXT
+    document_ref: TEXT
+    known_from: DATE
+    ingestion_run_id: TEXT
+    quality_grade: TEXT
+- name: ext.restatement_events
+  description: "prior_year_consistency findings (AGENT_SPEC §5), Parquet under WAREHOUSE_DIR."
+  columns:
+    krs: TEXT
+    fiscal_year: INT
+    period_start: DATE
+    period_end: DATE
+    line_item: TEXT
+    restated_column: TEXT
+    originally_reported_value: DECIMAL(20, 2)
+    restated_value: DECIMAL(20, 2)
+    original_document_hash: TEXT
+    original_source_member: TEXT
+    original_document_ref: TEXT
+    restating_document_hash: TEXT
+    restating_source_member: TEXT
+    restating_document_ref: TEXT
+    known_from: DATE
+- name: ext.identity_check_results
+  description: "Per-check identity results (AGENT_SPEC §5), Parquet under WAREHOUSE_DIR."
+  columns:
+    krs: TEXT
+    fiscal_year: INT
+    period_end: DATE
+    document_ref: TEXT
+    source_document_hash: TEXT
+    source_member: TEXT
+    structure_version: TEXT
+    known_from: DATE
+    ingestion_run_id: TEXT
+    column: TEXT
+    check: TEXT
+    line_item: TEXT
+    status: TEXT
+    severity: TEXT
+    expected: DECIMAL(20, 2)
+    actual: DECIMAL(20, 2)
+    difference: DECIMAL(20, 2)
+- name: ext.quarantine_events
+  description: "Append-only quarantine detection log (Postgres, ADR 0006; plan 0007 decision 3)."
+  columns:
+    stage: TEXT
+    entity_key: TEXT
+    reason_code: TEXT
+    detail: TEXT
+    source_document_hash: TEXT
+    ingestion_run_id: TEXT
+    created_at: TIMESTAMPTZ
+    krs: TEXT
+    document_ref: TEXT
+- name: ext.parsed_documents
+  description: "C1 manifest: one row per statement file and mapping-config hash (Postgres)."
+  columns:
+    sha256: TEXT
+    source_member: TEXT
+    spec_hash: TEXT
+    krs: TEXT
+    document_ref: TEXT
+    member_kind: TEXT
+    structure_key: TEXT
+    structure_version: TEXT
+    status: TEXT
+    first_ingestion_run_id: TEXT
+    first_parsed_at: TIMESTAMPTZ
+    filed_bodies: TEXT
+    last_seen_run_id: TEXT

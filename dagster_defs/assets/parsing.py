@@ -24,12 +24,17 @@ from distress_radar.acquisition.raw_store import raw_key
 from distress_radar.parsing import manifest
 from distress_radar.parsing.accounting_identities import (
     grade,
+    identity_check_results,
     prior_year_consistency,
     run_identity_checks,
     unresolved_bodies,
 )
 from distress_radar.parsing.canonical_schema import MappingConfig, load_mapping_config
-from distress_radar.parsing.contracts import FINANCIAL_STATEMENTS_CANONICAL, RESTATEMENT_EVENTS
+from distress_radar.parsing.contracts import (
+    FINANCIAL_STATEMENTS_CANONICAL,
+    IDENTITY_CHECK_RESULTS,
+    RESTATEMENT_EVENTS,
+)
 from distress_radar.parsing.mapping_engine import SORT_KEY, MappingError, empty_frame
 from distress_radar.parsing.statements import FileOutcome, classify_download, map_file
 from distress_radar.parsing.xsd_validation import XsdValidator
@@ -43,6 +48,7 @@ if TYPE_CHECKING:
 
 CANONICAL = "financial_statements_canonical"
 RESTATEMENTS = "restatement_events"
+IDENTITY_RESULTS = "identity_check_results"
 
 
 def _statement_type_codes() -> list[str]:
@@ -135,7 +141,11 @@ def financial_statements_canonical(context: dg.AssetExecutionContext) -> dg.Mate
     - `WAREHOUSE_DIR/financial_statements_canonical/fiscal_year=YYYY/`: the
       canonical facts (AGENT_SPEC §5 plus `document_ref`, `source_member`),
       with `quality_grade` set. Quarantined files keep their rows.
-    The whole dataset is rebuilt on each run.
+    - `WAREHOUSE_DIR/identity_check_results/fiscal_year=YYYY/`: every identity
+      result behind those grades, one row per (file, column, check, line item)
+      with `status` (`pass`, `fail`, `not_applicable`), the `severity` of each
+      failure and the file's lineage — the per-check source for `dq_mart`.
+    Both datasets are rebuilt on each run.
     Partition scheme: none (unpartitioned).
     """
     postgres = cast("PostgresResource", context.resources.postgres)
@@ -230,8 +240,9 @@ def financial_statements_canonical(context: dg.AssetExecutionContext) -> dg.Mate
         if not fallbacks.is_empty():
             context.log.warning(f"{fallbacks.height} statements checked against a fallback body")
         graded = FINANCIAL_STATEMENTS_CANONICAL.validate(
-            grade(facts, results, config).sort(SORT_KEY)
+            grade(facts, results).sort(SORT_KEY)
         )
+        checked = IDENTITY_CHECK_RESULTS.validate(identity_check_results(results, graded))
         failing = (
             results.filter(pl.col("status") == "fail")
             .group_by("source_document_hash", "source_member", "krs", "document_ref", "check")
@@ -261,6 +272,7 @@ def financial_statements_canonical(context: dg.AssetExecutionContext) -> dg.Mate
         conn.commit()
 
     write_dataset(graded, settings.warehouse_dir, CANONICAL, "fiscal_year")
+    write_dataset(checked, settings.warehouse_dir, IDENTITY_RESULTS, "fiscal_year")
     grades = graded.select("source_document_hash", "source_member", "quality_grade").unique()
     return dg.MaterializeResult(
         metadata={

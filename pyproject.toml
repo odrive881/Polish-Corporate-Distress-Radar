@@ -23,6 +23,9 @@ dependencies = [
     "xmlschema>=3.4",
     "pandera[polars]>=0.22",
     "duckdb>=1.1",
+    "sqlmesh>=0.236",
+    # SQLMesh state backend driver (ADR 0010). Project code uses psycopg 3.
+    "psycopg2-binary>=2.9.10",
     "pymupdf>=1.24",
 ]
 
