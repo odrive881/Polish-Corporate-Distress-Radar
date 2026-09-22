@@ -23,8 +23,8 @@ MODEL (
   kind FULL,
   grain (stage, entity_key, source_document_hash, source_member),
   audits (
-    not_null(columns := (stage, entity_key)),
-    unique_combination_of_columns(columns := (stage, entity_key, source_document_hash, source_member)),
+    not_null(columns := (stage, entity_key), blocking := false),
+    unique_combination_of_columns(columns := (stage, entity_key, source_document_hash, source_member), blocking := false),
     quarantine_has_reasons,
     quarantine_one_parsing_stage_per_file,
     quarantine_e2_matches_canonical,

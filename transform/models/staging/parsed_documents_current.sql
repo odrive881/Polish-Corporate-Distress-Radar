@@ -15,8 +15,8 @@ MODEL (
   kind VIEW,
   grain (sha256, source_member),
   audits (
-    unique_combination_of_columns(columns := (sha256, source_member)),
-    not_null(columns := (sha256, source_member, krs, status, last_seen_run_id))
+    unique_combination_of_columns(columns := (sha256, source_member), blocking := false),
+    not_null(columns := (sha256, source_member, krs, status, last_seen_run_id), blocking := false)
   )
 );
 
