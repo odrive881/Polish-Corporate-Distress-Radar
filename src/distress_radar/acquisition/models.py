@@ -83,7 +83,8 @@ class UniverseCandidate(_Frozen):
 
 # --- Quarantine (Postgres detection log `quarantine_events`, ADR 0006, plan 0007) ------------
 
-QuarantineStage = Literal["A1", "A2", "A3", "A4", "C1", "C2", "E2"]
+# C4: legal-event normalisation (plan 0008 step F); keyed `<krs>:<source>:<element path>`.
+QuarantineStage = Literal["A1", "A2", "A3", "A4", "C1", "C2", "C4", "E2"]
 
 
 class QuarantineRecord(_Frozen):

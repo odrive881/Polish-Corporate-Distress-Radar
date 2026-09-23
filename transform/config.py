@@ -31,11 +31,13 @@ from sqlmesh.core.config.connection import DuckDBAttachOptions
 
 from distress_radar.settings import Settings
 
-# Parquet datasets under WAREHOUSE_DIR, written by `dagster_defs/assets/parsing.py`.
+# Parquet datasets under WAREHOUSE_DIR, written by `dagster_defs/assets/parsing.py` and
+# (`legal_events`) `dagster_defs/assets/legal.py`.
 PARQUET_DATASETS = (
     "financial_statements_canonical",
     "restatement_events",
     "identity_check_results",
+    "legal_events",
 )
 # Postgres manifest tables (ADR 0006), each with the columns its view exposes:
 # None for all of them, or an explicit subset where the table carries columns

@@ -316,7 +316,7 @@ def _pdf_markers(data: bytes, where: str) -> list[str]:
 
 # --- Registry JSON: the KRS full extract (ADR 0009 addendum, plan 0008 decision 3) ---------------
 
-REGISTRY_REDACTION_VERSION = "krs-json-1"
+REGISTRY_REDACTION_VERSION = "krs-json-2"
 PLACEHOLDER = "[REDACTED]"
 _PERSON_KEYS = frozenset({"imie", "imieDrugie", "nazwiskoICzlon", "nazwiskoIICzlon", "pesel"})
 _TEXT_LIMIT = 40
@@ -339,6 +339,18 @@ _TEXT_ALLOWLIST = frozenset(
 # descriptions, which are the only deregistration signal (ADR 0011 decision 5).
 _OPIS_PATHS = ("odpis.naglowekP.wpis", "odpis.dane.dzial3.przedmiotDzialalnosci.")
 _DATE_IN_TEXT = re.compile(r"\b\d{2}\.\d{2}\.\d{4}\b")
+# krs-json-2: an allowlisted field can still quote an order that appoints someone (0000225506's
+# `organWydajacy` names a temporary court supervisor, a company there). A role word with no
+# legal-form marker in the next `_ROLE_WINDOW` characters may name a person, so the value is
+# reduced like any other free text: redaction errs towards removing.
+_ROLE_WORD = re.compile(
+    r"NADZORC|SYNDYK|KURATOR|NOTARIUSZ|ZARZĄDC|W OSOBIE|DORADC|ADWOKAT|RADC[AY]|LIKWIDATOR|PEŁNOMOCNIK",
+    re.IGNORECASE,
+)
+_LEGAL_FORM = re.compile(
+    r"SPÓŁK|SPÓŁDZIELNI|FUNDACJ|\bS\.\s?A\.|SP\.\s?Z\s?O\.\s?O\.|\bKRS\b", re.IGNORECASE
+)
+_ROLE_WINDOW = 80
 _PESEL_SHAPED = re.compile(r"(?<!\d)\d{11}(?!\d)")
 
 
@@ -354,6 +366,13 @@ def _allowlisted(key: str, path: str) -> bool:
     if key in _TEXT_ALLOWLIST:
         return True
     return key == "opis" and any(path.startswith(p) for p in _OPIS_PATHS)
+
+
+def _may_name_a_person(value: str) -> bool:
+    return any(
+        not _LEGAL_FORM.search(value[m.end() : m.end() + _ROLE_WINDOW])
+        for m in _ROLE_WORD.finditer(value)
+    )
 
 
 def redact_registry_extract(document: object) -> RegistryRedaction:
@@ -376,7 +395,7 @@ def redact_registry_extract(document: object) -> RegistryRedaction:
                 elif (
                     isinstance(value, str)
                     and len(value) > _TEXT_LIMIT
-                    and not _allowlisted(key, here)
+                    and (not _allowlisted(key, here) or _may_name_a_person(value))
                 ):
                     dated = _DATE_IN_TEXT.search(value)
                     result.reduced += 1

@@ -47,7 +47,7 @@ in free text (ADR 0011). The one exception to invariant 2 widens to cover them. 
 stored as downloaded *except for the documented, deterministic redactions of this ADR*.
 
 1. **KRS extracts are redacted before hashing** by `redaction.redact_registry_extract`
-   (`REGISTRY_REDACTION_VERSION = "krs-json-1"`). It is a key list plus an allowlist:
+   (`REGISTRY_REDACTION_VERSION = "krs-json-1"`, now `"krs-json-2"`). It is a key list plus an allowlist:
    - **Person keys** (`imie`, `imieDrugie`, `nazwiskoICzlon`, `nazwiskoIICzlon`, `pesel`) become `[REDACTED]`.
    - **Free text longer than 40 characters** is kept only on an allowlist of fields that are generic by
      construction: names of legal entities (`nazwa`), court and authority names, share counts, reporting
@@ -59,6 +59,12 @@ stored as downloaded *except for the documented, deterministic redactions of thi
      REJESTRU SĄDOWEGO"). The probe's 40-character rule had reduced one to a placeholder.
    - **Backstop:** each word of three or more letters from a removed name is searched for in every remaining
      string, and a string that contains one is blanked too.
+   - **Role words (`krs-json-2`, 2026-09-23, plan 0008 step F).** An allowlisted field can still quote an order that
+     appoints someone: 0000225506's `organWydajacy` names its temporary court supervisor, a company in that case.
+     An allowlisted value longer than 40 characters is now reduced too if a role word (supervisor, trustee,
+     curator, notary, administrator, adviser, liquidator, attorney) is not followed within 80 characters by a
+     legal-form marker (SPÓŁKA, S.A., KRS and the like). All 17 stored extracts re-redact byte-identically under
+     `krs-json-2`, so nothing stored needed replacing.
    - **Fail closed:** a result that still holds an 11-digit run (PESEL-shaped) or a removed value raises
      `RedactionError`, and nothing is stored. The fetch is quarantined (`krs_extract_unredactable`).
    - **Kept:** the structure, entry numbers (`nrWpisuWprow`, `nrWpisuWykr`), entry dates, and the identifiers of

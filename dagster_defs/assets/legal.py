@@ -1,11 +1,12 @@
 """Dagster assets for the `legal` group (plan 0008): legal-event sources, then `legal_events`.
 
-Thin wrappers: all logic lives in `distress_radar.acquisition`. Assets write to the B2
+Thin wrappers: all logic lives in `distress_radar.acquisition` and `distress_radar.parsing`. Assets write to the B2
 manifest in Postgres and return only materialization metadata. `ingestion_run_id` is the
 Dagster run id.
 """
 
 import asyncio
+import json
 from collections import Counter
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, cast
@@ -16,11 +17,25 @@ from dagster_defs.assets.acquisition import entity_master
 from distress_radar.acquisition import manifest
 from distress_radar.acquisition.base import PermanentSourceError, SourceError
 from distress_radar.acquisition.krs_extract import fetch_extract
+from distress_radar.acquisition.models import QuarantineRecord
 from distress_radar.acquisition.msig_client import (
     extraction_key,
     fetch_entity_notices,
     load_vocabulary,
 )
+from distress_radar.acquisition.raw_store import raw_key
+from distress_radar.parsing.contracts import LEGAL_EVENTS
+from distress_radar.parsing.legal_events import (
+    Normalised,
+    finalise,
+    from_krs_extract,
+    from_msig_notice,
+    to_frame,
+)
+from distress_radar.parsing.legal_taxonomy import load_procedure_taxonomy
+from distress_radar.parsing.msig_notice_kinds import load_notice_kinds
+from distress_radar.settings import Settings
+from distress_radar.warehouse import write_dataset
 
 if TYPE_CHECKING:
     from psycopg import Connection
@@ -55,7 +70,9 @@ async def _fetch_all(
                 previous=previous,
             )
         except SourceError as exc:
-            level = context.log.error if isinstance(exc, PermanentSourceError) else context.log.warning
+            level = (
+                context.log.error if isinstance(exc, PermanentSourceError) else context.log.warning
+            )
             level(f"KRS {krs}: {exc}")
             failures.append(krs)
             continue
@@ -200,3 +217,93 @@ def msig_notices(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
 
 
 legal_assets = [krs_extracts, msig_notices]
+
+
+LEGAL_EVENTS_DATASET = "legal_events"
+
+
+@dg.asset(
+    group_name="legal",
+    deps=[krs_extracts, msig_notices],
+    required_resource_keys={"postgres", "raw_object_store"},
+)
+def legal_events(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
+    """C (legal side) — `legal_events` from the stored KRS extracts and MSiG notice records.
+
+    Inputs: the latest `krs_extracts` object per entity and every `msig_notices` record under
+    the current extraction key (MinIO, via `legal_source_fetches` / `msig_notices`);
+    `config/statutory/procedure_taxonomy.yaml`, `config/mappings/msig_notice_kinds.yaml`.
+    Outputs: Parquet under `WAREHOUSE_DIR/legal_events/`, one file per `event_year`, rebuilt
+    whole and replaced atomically (ADR 0008), checked by the `LEGAL_EVENTS` contract;
+    C4 `quarantine_events` rows for records the taxonomy or the notice kinds do not map
+    (`legal_event_type_unmapped`, `msig_notice_unclassified`, `krs_entry_date_missing`).
+    `ingestion_run_id` on each row is the run that first stored its source document, so
+    unchanged input re-materializes to identical bytes.
+    Partition scheme: none (unpartitioned); files split by `event_year`.
+    """
+    postgres = cast("PostgresResource", context.resources.postgres)
+    store = cast("RawObjectStoreResource", context.resources.raw_object_store).store()
+    taxonomy = load_procedure_taxonomy()
+    vocabulary = load_vocabulary()
+    kinds = load_notice_kinds(vocabulary=vocabulary)
+    settings = Settings()
+    now = datetime.now(UTC)
+
+    normalised = Normalised()
+    with postgres.connect() as conn:
+        manifest.ensure_schema(conn)
+        for source, krs, sha256, first_run in manifest.legal_documents(
+            conn, extraction_key(vocabulary)
+        ):
+            document = json.loads(store.get(raw_key(sha256)))
+            if source == "KRS":
+                part = from_krs_extract(
+                    document,
+                    krs=krs,
+                    taxonomy=taxonomy,
+                    source_document_hash=sha256,
+                    ingestion_run_id=first_run,
+                )
+            else:
+                part = from_msig_notice(
+                    document,
+                    taxonomy=taxonomy,
+                    kinds=kinds,
+                    source_document_hash=sha256,
+                    ingestion_run_id=first_run,
+                )
+            normalised.extend(part)
+        manifest.insert_quarantine(
+            conn,
+            [
+                QuarantineRecord(
+                    stage="C4",
+                    entity_key=f"{r.krs}:{r.source}:{r.source_element_path}",
+                    reason_code=r.reason_code,
+                    detail=r.detail,
+                    source_document_hash=r.source_document_hash,
+                    ingestion_run_id=context.run_id,
+                    created_at=now,
+                    krs=r.krs,
+                    document_ref=None,
+                )
+                for r in normalised.rejects
+            ],
+        )
+        conn.commit()
+
+    frame = LEGAL_EVENTS.validate(to_frame(finalise(normalised)))
+    write_dataset(frame, settings.warehouse_dir, LEGAL_EVENTS_DATASET, "event_year")
+    reasons = Counter(r.reason_code for r in normalised.rejects)
+    return dg.MaterializeResult(
+        metadata={
+            "rows": frame.height,
+            "entities": frame["krs"].n_unique(),
+            "dedup_groups": frame["dedup_group_id"].n_unique(),
+            "rows_by_source": dict(Counter(frame["source"].to_list())),
+            "quarantined": dict(reasons),
+        }
+    )
+
+
+legal_assets.append(legal_events)

@@ -63,6 +63,25 @@
     expected: DECIMAL(20, 2)
     actual: DECIMAL(20, 2)
     difference: DECIMAL(20, 2)
+- name: ext.legal_events
+  description: "Legal events from KRS extracts and MSiG notices (AGENT_SPEC §5; plan 0008 step F), Parquet under WAREHOUSE_DIR."
+  columns:
+    krs: TEXT
+    event_type: TEXT
+    outcome_class: TEXT
+    stage: TEXT
+    event_date: DATE
+    known_from: DATE
+    removed_on: DATE
+    source: TEXT
+    case_signature: TEXT
+    proceeding_id: TEXT
+    statute: TEXT
+    dedup_group_id: TEXT
+    source_document_hash: TEXT
+    source_element_path: TEXT
+    ingestion_run_id: TEXT
+    event_year: INT
 - name: ext.quarantine_events
   description: "Append-only quarantine detection log (Postgres, ADR 0006; plan 0007 decision 3)."
   columns:

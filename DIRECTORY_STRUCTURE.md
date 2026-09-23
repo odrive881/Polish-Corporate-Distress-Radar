@@ -59,6 +59,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   ├── mappings/
 │   │   ├── canonical_chart.yaml       # the canonical chart of accounts
 │   │   ├── msig_vocabulary.yaml       # procedural terms kept from MSiG notice text (ADR 0009)
+│   │   ├── msig_notice_kinds.yaml     # rules typing a reduced MSiG notice (plan 0008 step F)
 │   │   ├── pkd_crosswalk.yaml         # PKD 2007 <-> PKD 2025
 │   │   ├── rdf_document_types.yaml    # observed RDF document types, A3 download scope
 │   │   ├── structure_catalog.yaml     # versions recognised but not mapped yet
@@ -179,6 +180,8 @@ src/distress_radar/
 │   ├── xsd_inventory.py         # statutory line items an XSD declares (coverage tests)
 │   ├── canonical_schema.py      # typed canonical chart, mirrors config/mappings/canonical_chart.yaml
 │   ├── legal_taxonomy.py        # typed config/statutory/procedure_taxonomy.yaml, dated lookups
+│   ├── msig_notice_kinds.py     # types reduced MSiG notices (config/mappings/msig_notice_kinds.yaml)
+│   ├── legal_events.py          # KRS extracts + MSiG notices → legal_events, linking, dedup groups
 │   ├── mapping_engine.py        # C2 — reads config/mappings/structures/*.yaml
 │   ├── statements.py            # C1 + C2 for one stored download, no I/O
 │   ├── accounting_identities.py # E2 — identity rules and grading, pure functions

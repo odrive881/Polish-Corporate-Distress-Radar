@@ -102,6 +102,15 @@ event_types:
     stage: opening
     outcome_class: restructuring
     precludes_silent_exit: true
+  # Closes a restructuring: discontinued, or ended when an approved arrangement became final.
+  - event_type: restructuring_proceeding_ended
+    stage: closing
+    ends: [restructuring]
+    precludes_silent_exit: false
+  # An arrangement approved inside an open proceeding (sanacja): its outcome, not an opening.
+  - event_type: restructuring_arrangement_confirmed
+    stage: signal
+    precludes_silent_exit: false
   # The KRS extract's "POSTĘPOWANIE RESTRUKTURYZACYJNE" does not say which of the four
   # Prawo restrukturyzacyjne procedures was opened; MSiG and KRZ do.
   - event_type: restructuring_proceedings_opened
@@ -143,9 +152,10 @@ event_types:
 # `date_field` means the event is dated by its registry entry. `known_from` is always the entry date
 # of the record's `nrWpisuWprow` (plan 0008 step F), whatever `date_field` says.
 #
-# KRZ and MSiG have no mappings yet: KRZ is not built in Phase 4 (ADR 0011 decision 4), and MSiG's
-# notice types are set by step E. MSiG chapters are coarse ("IX. OGŁOSZENIA WYMAGANE PRZEZ PRAWO
-# RESTRUKTURYZACYJNE"), so its notices will be typed from their text.
+# MSiG notices are typed first by `config/mappings/msig_notice_kinds.yaml` (from their reduced
+# records, ADR 0009 addendum); the mappings below read that kind as `notice_kind`, and a notice
+# is dated by the rule's date policy, `known_from` being its publication date. KRZ has no
+# mappings: it is not built in Phase 4 (ADR 0011 decision 4).
 mappings:
   # --- KRS: bankruptcy --------------------------------------------------------------------------
   - source: KRS
@@ -226,19 +236,79 @@ mappings:
     when: {field: okreslenieOkolicznosci, equals: ROZWIĄZANIE}
     event_type: dissolution_recorded
     statute: ksh_2000
-  # Leaf shape not yet seen in the seed; step F confirms it against a fixture.
+  # 0000225506's demerger: "[REDACTED] 29.12.2008" once redacted, the date kept (step F).
   - source: KRS
-    locator: dane.dzial6.polaczeniePodzialPrzeksztalcenie
+    locator: dane.dzial6.polaczeniePodzialPrzeksztalcenie.opisPolaczeniaPodzialuPrzeksztalcenia
     event_type: merger_division_transformation
     statute: ksh_2000
+    date_field: opisPolaczeniaPodzialuPrzeksztalcenia
+    date_parse: leading
   # --- KRS: distress signals (Phase 5) ----------------------------------------------------------
   - source: KRS
     locator: dane.dzial4.zaleglosci.wszczecieEgzekucji
     event_type: arrears_enforcement_started
     statute: krs_1997
     date_field: dataWszczeciaEgzekucji
-  # Seen for 0000225354 (ADR 0011), which has no fixture: step F confirms the leaf shape.
+  # One record per appointment (0000225354 has six, 2025).
   - source: KRS
-    locator: dane.dzial5.kurator
+    locator: dane.dzial5.kurator.dataPowolania
     event_type: curator_appointed
     statute: krs_1997
+    date_field: dataPowolania
+
+  # --- MSiG (plan 0008 step F) ----------------------------------------------------------------
+  - source: MSiG
+    locator: notice
+    when: {field: notice_kind, equals: bankruptcy_declared}
+    event_type: bankruptcy_declared
+    statute: pu_1934
+  - source: MSiG
+    locator: notice
+    when: {field: notice_kind, equals: bankruptcy_declared}
+    event_type: bankruptcy_declared
+    statute: pu_2003
+  - source: MSiG
+    locator: notice
+    when: {field: notice_kind, equals: bankruptcy_ended}
+    event_type: bankruptcy_proceeding_ended
+    statute: pu_2003
+  - source: MSiG
+    locator: notice
+    when: {field: notice_kind, equals: bankruptcy_petition_security}
+    event_type: bankruptcy_petition_asset_security
+    statute: pu_2003
+  - source: MSiG
+    locator: notice
+    when: {field: notice_kind, equals: simplified_restructuring_announced}
+    event_type: simplified_restructuring_announced
+    statute: upr_covid
+  - source: MSiG
+    locator: notice
+    when: {field: notice_kind, equals: restructuring_petition_security}
+    event_type: restructuring_petition_asset_security
+    statute: pr_2015
+  - source: MSiG
+    locator: notice
+    when: {field: notice_kind, equals: remedial_proceedings_opened}
+    event_type: remedial_proceedings_opened
+    statute: pr_2015
+  - source: MSiG
+    locator: notice
+    when: {field: notice_kind, equals: restructuring_arrangement_confirmed}
+    event_type: restructuring_arrangement_confirmed
+    statute: pr_2015
+  - source: MSiG
+    locator: notice
+    when: {field: notice_kind, equals: restructuring_ended}
+    event_type: restructuring_proceeding_ended
+    statute: pr_2015
+  - source: MSiG
+    locator: notice
+    when: {field: notice_kind, equals: liquidation_opened}
+    event_type: liquidation_opened
+    statute: ksh_2000
+  - source: MSiG
+    locator: notice
+    when: {field: notice_kind, equals: merger_division_transformation}
+    event_type: merger_division_transformation
+    statute: ksh_2000
