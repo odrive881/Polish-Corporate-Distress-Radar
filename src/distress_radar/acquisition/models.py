@@ -347,3 +347,15 @@ class LegalSourceFetch(_Frozen):
     stored_new: bool
 
     _aware = field_validator("fetched_at")(_require_aware)
+
+
+class MsigNoticeRow(_Frozen):
+    """One MSiG notice stored in reduced form (`msig_notices`, plan 0008 step E)."""
+
+    krs: str
+    notice_id: int
+    sha256: str  # the reduced record, never the notice text
+    published_on: date
+    chapter_code: str | None
+    extraction_version: str
+    ingestion_run_id: str

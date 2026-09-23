@@ -19,7 +19,8 @@ deterministic, so re-downloading the same file stores the same object.
 Free text (e.g. a board member named in the notes) is not touched; see ADR 0009.
 
 KRS registry extracts (JSON) have their own redactor, `redact_registry_extract`: person-keyed
-fields plus an allowlist for free text (ADR 0009 addendum, plan 0008 decision 3).
+fields plus an allowlist for free text (ADR 0009 addendum, plan 0008 decision 3). MSiG notices
+are never stored as text: `msig_client.reduce_notice` keeps only person-free extracts.
 
 `personal_data_markers()` is the independent check: it lists what is left.
 """

@@ -58,6 +58,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │   └── construction_sme_v1.yaml   # declarative universe spec
 │   ├── mappings/
 │   │   ├── canonical_chart.yaml       # the canonical chart of accounts
+│   │   ├── msig_vocabulary.yaml       # procedural terms kept from MSiG notice text (ADR 0009)
 │   │   ├── pkd_crosswalk.yaml         # PKD 2007 <-> PKD 2025
 │   │   ├── rdf_document_types.yaml    # observed RDF document types, A3 download scope
 │   │   ├── structure_catalog.yaml     # versions recognised but not mapped yet
@@ -168,6 +169,7 @@ src/distress_radar/
 │   ├── redaction.py             # invariant 6: strip signer data before storing (ADR 0009)
 │   ├── redaction_migration.py   # one-off replacement of unredacted stored files
 │   ├── krs_extract.py           # A4 — full KRS extracts (open KRS API), redacted, content-addressed
+│   ├── msig_client.py           # A4 — MSiG notices, reduced to person-free records at fetch time
 │   └── reference_data.py        # A5
 │
 ├── parsing/

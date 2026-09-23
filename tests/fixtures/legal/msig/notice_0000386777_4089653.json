@@ -1,0 +1,50 @@
+{
+ "extracted": {
+  "chapter_code": "IX",
+  "dates": [
+   {
+    "date": "2011-05-19",
+    "in": "position",
+    "terms_before": [
+     "wpis do rejestru"
+    ]
+   },
+   {
+    "date": "2018-08-24",
+    "in": "body",
+    "terms_before": [
+     "postanowieni",
+     "tymczasow",
+     "nadzorc"
+    ]
+   }
+  ],
+  "extraction_version": "msig-notice-1",
+  "signatures": [
+   "VI GR 27/18"
+  ],
+  "terms": [
+   "postanowieni",
+   "obwieszcz",
+   "wpis do rejestru",
+   "zabezpiecz",
+   "tymczasow",
+   "nadzorc",
+   "sanac",
+   "otwarci",
+   "wierzyciel"
+  ],
+  "vocabulary_sha256": "0fa06810ada8fa8096ff6dacd2ce4c7eedc88888584b3c263c9942de9362af3f"
+ },
+ "notice": {
+  "chapterName": "IX. OGŁOSZENIA WYMAGANE PRZEZ PRAWO RESTRUKTURYZACYJNE",
+  "dateOfPublication": "2018-09-07T00:00:00",
+  "entityName": "4 INVEST SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ w Warszawie.",
+  "id": 4089653,
+  "krs": "0000386777",
+  "monitorNumber": "174/2018",
+  "numberOfNotice": "39149",
+  "page": 71,
+  "signatureOfCase": "VI GR 27/18."
+ }
+}

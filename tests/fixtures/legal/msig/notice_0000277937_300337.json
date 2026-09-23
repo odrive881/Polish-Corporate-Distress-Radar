@@ -1,0 +1,49 @@
+{
+ "extracted": {
+  "chapter_code": "IX",
+  "dates": [
+   {
+    "date": "2007-04-03",
+    "in": "position",
+    "terms_before": [
+     "wpis do rejestru"
+    ]
+   },
+   {
+    "date": "2021-07-02",
+    "in": "body",
+    "terms_before": [
+     "postanowieni",
+     "upadłoś",
+     "restrukturyzac"
+    ]
+   }
+  ],
+  "extraction_version": "msig-notice-1",
+  "signatures": [
+   "VIII GR 7/21",
+   "VIII GRs 1/21"
+  ],
+  "terms": [
+   "postanowieni",
+   "wpis do rejestru",
+   "upadłoś",
+   "restrukturyzac",
+   "sanac",
+   "zarządc",
+   "otworzy"
+  ],
+  "vocabulary_sha256": "0fa06810ada8fa8096ff6dacd2ce4c7eedc88888584b3c263c9942de9362af3f"
+ },
+ "notice": {
+  "chapterName": "IX. OGŁOSZENIA WYMAGANE PRZEZ PRAWO RESTRUKTURYZACYJNE",
+  "dateOfPublication": "2021-07-15T00:00:00",
+  "entityName": "ISB BUDOWNICTWO SPÓŁKA Z OGRANICZONĄ  ODPOWIEDZIALNOŚCIĄ we Wrocławiu.",
+  "id": 300337,
+  "krs": "0000277937",
+  "monitorNumber": "135/2021",
+  "numberOfNotice": "45822",
+  "page": 98,
+  "signatureOfCase": "VIII GR 7/21, VIII GRs 1/21."
+ }
+}

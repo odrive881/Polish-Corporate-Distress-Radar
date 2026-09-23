@@ -70,6 +70,9 @@ class Settings(BaseSettings):
     # Open KRS API (A4): no published limit (ADR 0011). Conservative, below the BIR1
     # default; the step-A probe ran at the same pace.
     krs_api_requests_per_minute: int = 15
+    # MSiG search API (A4): no terms page, no published limit (ADR 0011). Treated like the
+    # KRS API: per entity, low rate, never an enumeration of the notice base.
+    msig_requests_per_minute: int = 15
 
     @property
     def postgres_conninfo(self) -> str:

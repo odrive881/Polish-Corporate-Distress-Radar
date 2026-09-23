@@ -1,0 +1,63 @@
+{
+ "extracted": {
+  "chapter_code": "IX",
+  "dates": [
+   {
+    "date": "2007-04-03",
+    "in": "position",
+    "terms_before": [
+     "wpis do rejestru"
+    ]
+   },
+   {
+    "date": "2015-05-15",
+    "in": "body",
+    "terms_before": [
+     "układ",
+     "zatwierdzeni"
+    ]
+   },
+   {
+    "date": "2020-06-19",
+    "in": "body",
+    "terms_before": [
+     "restrukturyzac"
+    ]
+   },
+   {
+    "date": "2020-10-26",
+    "in": "body",
+    "terms_before": [
+     "restrukturyzac",
+     "układ",
+     "dniem układowym"
+    ]
+   }
+  ],
+  "extraction_version": "msig-notice-1",
+  "signatures": [],
+  "terms": [
+   "zawiadamia",
+   "wpis do rejestru",
+   "nadzorc",
+   "restrukturyzac",
+   "układ",
+   "dniem układowym",
+   "zatwierdzeni",
+   "uproszczon",
+   "otwarci"
+  ],
+  "vocabulary_sha256": "0fa06810ada8fa8096ff6dacd2ce4c7eedc88888584b3c263c9942de9362af3f"
+ },
+ "notice": {
+  "chapterName": "IX. OGŁOSZENIA WYMAGANE PRZEZ PRAWO RESTRUKTURYZACYJNE",
+  "dateOfPublication": "2020-10-29T00:00:00",
+  "entityName": "ISB BUDOWNICTWO SPÓŁKA Z OGRANICZONĄ  ODPOWIEDZIALNOŚCIĄ we Wrocławiu.",
+  "id": 2155799,
+  "krs": "0000277937",
+  "monitorNumber": "212/2020",
+  "numberOfNotice": "58982",
+  "page": 102,
+  "signatureOfCase": null
+ }
+}

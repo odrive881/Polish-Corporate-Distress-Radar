@@ -1,0 +1,50 @@
+{
+ "extracted": {
+  "chapter_code": "III/9",
+  "dates": [
+   {
+    "date": "2001-12-12",
+    "in": "position",
+    "terms_before": [
+     "wpis do rejestru"
+    ]
+   },
+   {
+    "date": "2017-02-09",
+    "in": "body",
+    "terms_before": [
+     "postanowieni",
+     "ogłoszeni",
+     "upadłoś"
+    ]
+   }
+  ],
+  "extraction_version": "msig-notice-1",
+  "signatures": [
+   "VIII GU 45/17"
+  ],
+  "terms": [
+   "postanowieni",
+   "obwieszcz",
+   "ogłoszeni",
+   "wpis do rejestru",
+   "upadłoś",
+   "zabezpiecz",
+   "tymczasow",
+   "nadzorc",
+   "restrukturyzac"
+  ],
+  "vocabulary_sha256": "0fa06810ada8fa8096ff6dacd2ce4c7eedc88888584b3c263c9942de9362af3f"
+ },
+ "notice": {
+  "chapterName": "III. OGŁOSZENIA WYMAGANE PRZEZ PRAWO UPADŁOŚCIOWE/9. Inne",
+  "dateOfPublication": "2017-02-23T00:00:00",
+  "entityName": "PRZEDSIĘBIORSTWO BUDOWLANO-INWESTYCYJNE SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ  we Wrocławiu.",
+  "id": 5420042,
+  "krs": "0000070294",
+  "monitorNumber": "38/2017",
+  "numberOfNotice": "6756",
+  "page": 26,
+  "signatureOfCase": "VIII GU 45/17."
+ }
+}

@@ -21,11 +21,13 @@ from distress_radar.acquisition.models import (
     FilingDetail,
     FilingIndexRow,
     LegalSourceFetch,
+    MsigNoticeRow,
     QuarantineRecord,
     RawFetchRecord,
     ReconciliationRecord,
     UniverseCandidate,
 )
+from distress_radar.acquisition.msig_client import MsigResult
 from distress_radar.acquisition.raw_store import RawDocumentMeta
 from distress_radar.settings import Settings
 
@@ -144,6 +146,7 @@ def test_ensure_schema_is_idempotent(conn: psycopg.Connection):
         "quarantine_events": 0,
         "filing_index": 0,
         "legal_source_fetches": 0,
+        "msig_notices": 0,
     }
 
 
@@ -164,6 +167,7 @@ def test_reinserts_are_noops(conn: psycopg.Connection):
         "quarantine_events": 1,
         "filing_index": 0,
         "legal_source_fetches": 0,
+        "msig_notices": 0,
     }
 
 
@@ -192,8 +196,13 @@ def _a4(krs: str, run_id: str, sha: str, *, stored_new: bool, at: datetime) -> A
         krs,
         raw_fetches=[RawFetchRecord(sha256=sha, byte_size=10, meta=meta)] if stored_new else [],
         fetch=LegalSourceFetch(
-            krs=krs, source="KRS", sha256=sha, content_sha256="c1" * 32,
-            fetched_at=at, ingestion_run_id=run_id, stored_new=stored_new,
+            krs=krs,
+            source="KRS",
+            sha256=sha,
+            content_sha256="c1" * 32,
+            fetched_at=at,
+            ingestion_run_id=run_id,
+            stored_new=stored_new,
         ),
     )
 
@@ -203,7 +212,9 @@ def test_a4_fetches_reuse_unchanged_content_and_track_the_latest(conn: psycopg.C
     krs = "0000000042"
     assert manifest.latest_legal_fetch(conn, krs, "KRS") is None
     manifest.record_a4_result(conn, _a4(krs, "run-1", SHA, stored_new=True, at=NOW))
-    manifest.record_a4_result(conn, _a4(krs, "run-1", SHA, stored_new=True, at=NOW))  # re-run: no-op
+    manifest.record_a4_result(
+        conn, _a4(krs, "run-1", SHA, stored_new=True, at=NOW)
+    )  # re-run: no-op
     later = NOW.replace(hour=13)
     manifest.record_a4_result(conn, _a4(krs, "run-2", SHA, stored_new=False, at=later))
 
@@ -218,13 +229,77 @@ def test_a4_fetches_reuse_unchanged_content_and_track_the_latest(conn: psycopg.C
 def test_a4_not_found_is_quarantined_with_the_entity(conn: psycopg.Connection):
     manifest.ensure_schema(conn)
     record = QuarantineRecord(
-        stage="A4", entity_key="0000000001", reason_code="krs_extract_not_found",
-        detail="HTTP 404", source_document_hash=None, ingestion_run_id="run-1",
-        created_at=NOW, krs="0000000001", document_ref=None,
+        stage="A4",
+        entity_key="0000000001",
+        reason_code="krs_extract_not_found",
+        detail="HTTP 404",
+        source_document_hash=None,
+        ingestion_run_id="run-1",
+        created_at=NOW,
+        krs="0000000001",
+        document_ref=None,
     )
     manifest.record_a4_result(conn, A4Result("0000000001", quarantine=[record]))
     row = conn.execute("SELECT stage, krs, reason_code FROM quarantine_events").fetchone()
     assert row == ("A4", "0000000001", "krs_extract_not_found")
+
+
+def test_msig_notices_are_known_per_extraction_version(conn: psycopg.Connection):
+    manifest.ensure_schema(conn)
+    krs = "0000000042"
+    page = RawFetchRecord(sha256="a1" * 32, byte_size=10, meta=_msig_meta("run-1", None))
+    record = RawFetchRecord(
+        sha256="b2" * 32, byte_size=10, meta=_msig_meta("run-1", "msig-notice-1")
+    )
+    result = MsigResult(
+        krs,
+        raw_fetches=[page, record],
+        notices=[
+            MsigNoticeRow(
+                krs=krs,
+                notice_id=5420042,
+                sha256="b2" * 32,
+                published_on=date(2017, 2, 23),
+                chapter_code="III/9",
+                extraction_version="msig-notice-1",
+                ingestion_run_id="run-1",
+            )
+        ],
+        fetch=LegalSourceFetch(
+            krs=krs,
+            source="MSiG",
+            sha256="a1" * 32,
+            content_sha256="c3" * 32,
+            fetched_at=NOW,
+            ingestion_run_id="run-1",
+            stored_new=True,
+        ),
+    )
+    manifest.record_a4_result(conn, result)
+    manifest.record_a4_result(conn, result)  # re-run: no-op
+
+    assert manifest.known_msig_notices(conn, krs, "msig-notice-1") == {5420042: "b2" * 32}
+    assert manifest.known_msig_notices(conn, krs, "msig-notice-2") == {}
+    counts = manifest.table_counts(conn)
+    assert (counts["msig_notices"], counts["legal_source_fetches"], counts["raw_documents"]) == (
+        1,
+        1,
+        2,
+    )
+    assert manifest.latest_legal_fetch(conn, krs, "MSiG") == PreviousFetch("a1" * 32, "c3" * 32)
+
+
+def _msig_meta(run_id: str, redaction: str | None) -> RawDocumentMeta:
+    return RawDocumentMeta(
+        source="msig_api",
+        source_url="https://wyszukiwarka-msig.ms.gov.pl/api/Monitor/Search",
+        content_type="application/json",
+        fetched_at=NOW,
+        http_headers={},
+        ingestion_run_id=run_id,
+        redaction_version=redaction,
+        received_sha256="d4" * 32 if redaction else None,
+    )
 
 
 def test_unresolved_candidates_excludes_resolved_entities(conn: psycopg.Connection):

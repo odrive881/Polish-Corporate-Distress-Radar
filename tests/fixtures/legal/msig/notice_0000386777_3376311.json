@@ -1,0 +1,46 @@
+{
+ "extracted": {
+  "chapter_code": "III/9",
+  "dates": [
+   {
+    "date": "2011-05-19",
+    "in": "position",
+    "terms_before": [
+     "wpis do rejestru"
+    ]
+   },
+   {
+    "date": "2019-10-10",
+    "in": "body",
+    "terms_before": [
+     "ogłoszeni",
+     "upadłoś"
+    ]
+   }
+  ],
+  "extraction_version": "msig-notice-1",
+  "signatures": [
+   "VI GU 751/19"
+  ],
+  "terms": [
+   "ogłoszeni",
+   "wpis do rejestru",
+   "upadłoś",
+   "zabezpiecz",
+   "tymczasow",
+   "nadzorc"
+  ],
+  "vocabulary_sha256": "0fa06810ada8fa8096ff6dacd2ce4c7eedc88888584b3c263c9942de9362af3f"
+ },
+ "notice": {
+  "chapterName": "III. OGŁOSZENIA WYMAGANE PRZEZ PRAWO UPADŁOŚCIOWE/9. Inne",
+  "dateOfPublication": "2019-10-29T00:00:00",
+  "entityName": "4 INVEST SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ w Warszawie.",
+  "id": 3376311,
+  "krs": "0000386777",
+  "monitorNumber": "210/2019",
+  "numberOfNotice": "55801",
+  "page": 46,
+  "signatureOfCase": "VI GU 751/19/W."
+ }
+}
