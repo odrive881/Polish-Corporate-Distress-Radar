@@ -20,17 +20,32 @@ from distress_radar.labels import (
     load_label_config,
 )
 from distress_radar.parsing.canonical_schema import CONFIG_DIR
+from distress_radar.settings import Settings
 
 
 def _raw() -> dict[str, Any]:
     return yaml.safe_load((CONFIG_DIR / "labels" / "outcome_labels_v1.yaml").read_text("utf-8"))
 
 
-def test_repository_label_config_loads() -> None:
-    config = load_label_config()
-    assert config.label_version == "outcome_labels_v1"
-    assert config.horizons_months == (12, 24)
-    assert config.precedence[0] == "bankruptcy"
+def test_repository_label_configs_load() -> None:
+    v1 = load_label_config("outcome_labels_v1")
+    assert v1.label_version == "outcome_labels_v1"
+    assert v1.horizons_months == (12, 24)
+    assert v1.precedence[0] == "bankruptcy"
+    # Version 1 predates the lag allowance and petition expiry: both off.
+    assert (v1.alive_lag_months, v1.petition_expiry_months) == (0, None)
+
+
+def test_version_2_adds_only_the_lag_allowance_and_petition_expiry() -> None:
+    v1 = load_label_config("outcome_labels_v1")
+    v2 = load_label_config("outcome_labels_v2")
+    assert (v2.alive_lag_months, v2.petition_expiry_months) == (12, 24)
+    changed = {k for k, v in v2.model_dump().items() if v != v1.model_dump()[k]}
+    assert changed == {"label_version", "alive_lag_months", "petition_expiry_months"}
+
+
+def test_the_default_label_version_is_2() -> None:
+    assert Settings().label_version == "outcome_labels_v2"
 
 
 @pytest.mark.parametrize(
@@ -42,6 +57,8 @@ def test_repository_label_config_loads() -> None:
         ("precedence", ["bankruptcy", "restructuring", "liquidation", "alive"], "precedence"),
         ("as_of_grid", {"frequency": "month_end", "start": "2012-01-30"}, "month end"),
         ("cutoff", "latest_fetch", "cutoff"),
+        ("alive_lag_months", -1, "alive_lag_months"),
+        ("petition_expiry_months", 0, "petition_expiry_months"),
     ],
 )
 def test_rejects_bad_values(key: str, value: object, match: str) -> None:

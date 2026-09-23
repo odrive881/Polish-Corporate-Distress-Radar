@@ -27,7 +27,7 @@ from typing import Literal
 import polars as pl
 import yaml
 from psycopg import Connection
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from distress_radar.parsing.canonical_schema import CONFIG_DIR
 from distress_radar.parsing.legal_taxonomy import EVENT_OUTCOME_CLASSES, EventOutcomeClass
@@ -57,6 +57,9 @@ class LabelConfig(_Frozen):
     cutoff: Literal["earliest_last_complete_fetch"]
     exclude_in_proceeding: bool
     undated_event: Literal["on_or_before_known_from"]
+    # Version 2 (plan 0009). Absent from version 1, whose labels they leave unchanged.
+    alive_lag_months: int = Field(default=0, ge=0)
+    petition_expiry_months: int | None = Field(default=None, ge=1)
 
     @model_validator(mode="after")
     def _consistent(self) -> LabelConfig:
@@ -71,9 +74,7 @@ class LabelConfig(_Frozen):
         return self
 
 
-def load_label_config(
-    label_version: str = "outcome_labels_v1", config_dir: Path = CONFIG_DIR
-) -> LabelConfig:
+def load_label_config(label_version: str, config_dir: Path = CONFIG_DIR) -> LabelConfig:
     path = config_dir / "labels" / f"{label_version}.yaml"
     config = LabelConfig.model_validate(yaml.safe_load(path.read_text(encoding="utf-8")))
     if config.label_version != path.stem:

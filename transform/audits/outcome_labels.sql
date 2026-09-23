@@ -7,11 +7,23 @@ AUDIT (
   name labels_no_alive_past_cutoff,
   blocking false
 );
-/* §4.6: a row whose horizon passes the cutoff with no event is censored, never `alive`. */
+/* §4.6: a row whose horizon passes the cutoff with no event is censored, never `alive`. From
+version 2 (plan 0009) the limit is the cutoff moved back by the lag allowance for a window
+ending on or after KRZ's launch. */
+WITH rows AS (
+  SELECT
+    *,
+    LAST_DAY(as_of_date + TO_MONTHS(horizon_months)) AS window_end
+  FROM @this_model
+)
 SELECT *
-FROM @this_model
+FROM rows
 WHERE outcome_class = 'alive'
-  AND LAST_DAY(as_of_date + TO_MONTHS(horizon_months)) > cutoff_date;
+  AND window_end > CASE
+    WHEN window_end >= CAST(@VAR('krz_launch') AS DATE)
+    THEN CAST(cutoff_date - TO_MONTHS(@VAR('label_alive_lag_months', 0)) AS DATE)
+    ELSE cutoff_date
+  END;
 
 AUDIT (
   name labels_no_event_on_or_before_as_of,

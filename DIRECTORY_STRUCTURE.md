@@ -83,7 +83,8 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │       └── small-2025-v1-3.yaml   # a spec may bind more than one body (plan 0005 step D)
 │   ├── xsd/                           # official MF/CRWDE XSDs, vendored (catalog.yaml)
 │   ├── labels/
-│   │   └── outcome_labels_v1.yaml     # label parameters; the file name is the label_version
+│   │   ├── outcome_labels_v1.yaml     # label parameters; the file name is the label_version
+│   │   └── outcome_labels_v2.yaml     # v1 + lag allowance, petition expiry (plan 0009)
 │   └── statutory/
 │       ├── size_thresholds.yaml       # accounting-law size class thresholds, dated
 │       ├── ksh_tripwires.yaml         # Art. 233 / Art. 397 ratios, dated

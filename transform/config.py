@@ -69,9 +69,9 @@ settings = Settings()
 warehouse = settings.warehouse_dir.resolve()
 # Outcome labels read their parameters from config (plan 0008 decisions 5-6): the label config
 # and the statutory taxonomy, passed to the SQL as variables, never restated in it.
-labels = load_label_config()
+labels = load_label_config(settings.label_version)
 taxonomy = load_procedure_taxonomy()
-LABEL_VARIABLES: dict[str, str] = {
+LABEL_VARIABLES: dict[str, str | int | None] = {
     "label_version": labels.label_version,
     "label_grid_start": labels.as_of_grid.start.isoformat(),
     "label_horizons": ",".join(str(h) for h in labels.horizons_months),
@@ -81,6 +81,9 @@ LABEL_VARIABLES: dict[str, str] = {
     "regime_start": taxonomy.regime_window.start.isoformat(),
     "regime_end": taxonomy.regime_window.end.isoformat(),
     "krz_launch": taxonomy.krz_launch.isoformat(),
+    # Version 2 (plan 0009); 0 and None switch them off, which is version 1.
+    "label_alive_lag_months": labels.alive_lag_months,
+    "label_petition_expiry_months": labels.petition_expiry_months,
 }
 
 

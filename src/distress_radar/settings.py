@@ -74,6 +74,10 @@ class Settings(BaseSettings):
     # KRS API: per entity, low rate, never an enumeration of the notice base.
     msig_requests_per_minute: int = 15
 
+    # Which `config/labels/<label_version>.yaml` the label models build (plan 0009). A frozen set
+    # records its version, so switching back rebuilds the older version's labels.
+    label_version: str = "outcome_labels_v2"
+
     @property
     def postgres_conninfo(self) -> str:
         return (

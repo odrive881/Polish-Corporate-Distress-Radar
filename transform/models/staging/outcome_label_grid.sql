@@ -12,13 +12,17 @@ statutory taxonomy (`transform/config.py`), never restated here.
   - `deregistered`: the entity is gone by `as_of_date`;
   - `in_proceeding`: a petition-stage or opening event of some class happened on or before
     `as_of_date`, with no closing event for that class since. An event on `as_of_date`
-    itself counts as already happened.
+    itself counts as already happened. From version 2 (plan 0009), a petition-stage event
+    counts only for `label_petition_expiry_months`; an opening lasts until it is closed.
 - **Label.** The first event in `(as_of_date, window_end]` with a `label_class`, where
   `window_end` is the month-end `horizon` months on (29 Feb + 1 month is 31 Mar, not 29 Mar),
   by effective date, then by `label_precedence` on a tie. Its class is the label. A
   `merged_away` exit censors the row, since leaving by merger is not an outcome. With no
-  event, the row is `alive` if the whole window is before the cutoff, and censored (class
-  null) if not: never `alive` past the cutoff (§4.6).
+  event, the row is `alive` if the whole window ends by `alive_limit`, and censored (class
+  null) if not: never `alive` past the cutoff (§4.6). `alive_limit` is the cutoff, moved back
+  by `label_alive_lag_months` for a window ending on or after KRZ's launch (version 2, plan
+  0009): the registry enters decisions late, and after the launch nothing read here
+  publishes sooner.
 - **Flags.**
   - `regime_flag`: the horizon window overlaps the regime window (decision 6).
   - `source_era`: `pre_krz` if the window ends before KRZ's launch, `krz` if it starts after
@@ -68,7 +72,12 @@ WITH fetches AS (
     m.as_of_date,
     h.horizon_months,
     LAST_DAY(m.as_of_date + TO_MONTHS(h.horizon_months)) AS window_end,  -- a month-end, as the grid
-    c.cutoff_date
+    c.cutoff_date,
+    CASE
+      WHEN LAST_DAY(m.as_of_date + TO_MONTHS(h.horizon_months)) >= CAST(@VAR('krz_launch') AS DATE)
+      THEN CAST(c.cutoff_date - TO_MONTHS(@VAR('label_alive_lag_months', 0)) AS DATE)
+      ELSE c.cutoff_date
+    END AS alive_limit
   FROM cutoffs AS c
   CROSS JOIN month_ends AS m
   CROSS JOIN horizons AS h
@@ -89,6 +98,13 @@ WITH fetches AS (
         AND o.stage IN ('petition', 'opening')
         AND o.outcome_class IN ('bankruptcy', 'restructuring', 'liquidation')
         AND o.effective_date <= g.as_of_date
+        AND (
+          o.stage = 'opening'
+          OR @VAR('label_petition_expiry_months') IS NULL
+          OR g.as_of_date < CAST(
+            o.effective_date + TO_MONTHS(CAST(@VAR('label_petition_expiry_months') AS INT)) AS DATE
+          )
+        )
         AND NOT EXISTS (
           SELECT 1 FROM staging.legal_events_canonical AS c
           WHERE c.krs = o.krs
@@ -132,10 +148,10 @@ SELECT
   CASE
     WHEN t.label_class = 'merged_away' THEN NULL
     WHEN t.label_class IS NOT NULL THEN t.label_class
-    WHEN s.window_end <= s.cutoff_date THEN 'alive'
+    WHEN s.window_end <= s.alive_limit THEN 'alive'
   END AS outcome_class,
   COALESCE(t.label_class = 'merged_away', FALSE)
-    OR (t.label_class IS NULL AND s.window_end > s.cutoff_date) AS censored,
+    OR (t.label_class IS NULL AND s.window_end > s.alive_limit) AS censored,
   t.event_date,
   t.known_from AS event_known_from,
   t.event_type AS trigger_event_type,
