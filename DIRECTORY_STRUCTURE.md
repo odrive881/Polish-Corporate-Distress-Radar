@@ -152,6 +152,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
     ├── models/
     ├── transform/                      # SQLMesh boundary and Dagster DQ wiring (pytest side)
     ├── fixtures/                       # golden XML/PDF documents for mapping tests
+    │   └── legal/                      # redacted KRS extracts, reduced MSiG notices (plan 0008)
     └── conftest.py
 ```
 

@@ -129,14 +129,15 @@ Ratios live in `config/statutory/ksh_tripwires.yaml`.
 | `bankruptcy` | petition filed, bankruptcy declared, petition dismissed for insufficient assets |
 | `restructuring` | arrangement approval, accelerated arrangement, arrangement proceedings, remedial proceedings, COVID-era simplified restructuring |
 | `liquidation` | voluntary liquidation opened |
-| `silent_exit` | filings cease and the entity is later deregistered |
+| `silent_exit` | deregistered with no earlier event that rules it out: a bankruptcy, restructuring or liquidation (the deregistration then takes that class), or a merger (the row is censored). Filings ceasing is a Phase 5 feature, not a second label rule (plan 0008 decision 5) |
 | `alive` | none of the above within the horizon |
 
 Rules:
 
 - Labels are generated per `(entity, as_of_date, horizon)` for horizons of 12 and 24 months.
-- Entities alive but whose horizon extends past the data cutoff are **censored**, not `alive`. Survival models must receive the censoring flag.
-- Source break: insolvency register coverage begins late 2021. Earlier events come from the Monitor Sądowy i Gospodarczy archive (PDF). Deduplicate events describing the same proceeding across sources.
+- Entities alive but whose horizon extends past the data cutoff are **censored**, not `alive`: `outcome_class` is null and `censored` true. Survival models must receive the censoring flag. The cutoff is per entity: the earliest of the latest complete fetches across the sources used (`config/labels/`).
+- The window is `(as_of_date, as_of_date + horizon]`, ending on a month-end. An entity already in a proceeding at `as_of_date` (an event on `as_of_date` counts) or already deregistered is excluded, not labelled. An event with no decision date happened on or before its `known_from` (plan 0008).
+- Sources and the source break (ADR 0011): the **full KRS extract** records proceedings in both eras, per entity, each fact dated by its registry entry; **MSiG** (a JSON search API with notice text, from 2001) adds petition-stage orders, the COVID-era simplified restructuring and earlier publication dates; **KRZ** (from December 2021, behind a WAF, not built in Phase 4) would add post-2021 petitions and dismissals. Labels record the break in `source_era` (`pre_krz` \| `mixed` \| `krz`) and `trigger_event_type`. Deduplicate events describing the same proceeding across sources (`dedup_group_id`), keeping every source row.
 - Regime flag: mark 2020–2021, when simplified restructuring caused an artificial filing spike. Models must be able to exclude or control for it.
 - Every label set is frozen with a content hash. Models record which hash they trained on.
 
@@ -181,7 +182,7 @@ These names are canonical. `PROJECT_OVERVIEW.md` refers to the same datasets and
 
 ### `legal_events`
 
-`krs`, `event_type`, `event_date`, `published_date` (→ `known_from`), `source` (`KRZ` \| `MSiG` \| `KRS`), `proceeding_id`, `source_document_hash`, `dedup_group_id`.
+`krs`, `event_type`, `outcome_class`, `stage`, `ends`, `precludes_silent_exit`, `event_date` (nullable: no decision date), `known_from` (the source's publication: the KRS entry date or the MSiG publication date; the column this section once called `published_date`), `removed_on`, `source` (`KRZ` \| `MSiG` \| `KRS`), `case_signature`, `proceeding_id` (the linked case files' signature), `statute`, `dedup_group_id`, `source_document_hash`, `source_element_path`, `ingestion_run_id`, `event_year`. Built by `parsing/legal_events.py` (plan 0008 step F), contract `LEGAL_EVENTS`.
 
 ### `text_signals`
 
@@ -232,7 +233,7 @@ Rules:
 
 ### `outcome_labels`
 
-`krs`, `as_of_date`, `horizon_months` (12 | 24), `outcome_class` (§4.6 enum), `censored` (bool), `event_date`, `proceeding_id`, `regime_flag`, `label_version`, `label_set_hash`.
+`krs`, `as_of_date`, `horizon_months` (12 | 24), `outcome_class` (§4.6 enum; null exactly when censored), `censored` (bool), `event_date`, `event_known_from`, `trigger_event_type`, `proceeding_id`, `proceeding_id_note` (why a labelled event has none), `regime_flag`, `source_era` (`pre_krz` \| `mixed` \| `krz`), `cutoff_date`, `label_version`, `label_set_hash`. Built in SQLMesh (`marts.outcome_labels`), then frozen once per hash under `WAREHOUSE_DIR/outcome_labels/label_set_hash=<hash>/` and recorded in Postgres `label_sets` (plan 0008 step G).
 
 ### `scores_history`
 
@@ -265,13 +266,13 @@ Five adapters, one module each under `src/distress_radar/acquisition/`. All shar
 | A1 | Registry aggregators | HTTPS | `universe_candidates` (krs, discovery_source, discovered_at) |
 | A2 | GUS REGON BIR1 | SOAP (`zeep`) | `entity_master` — validated identifiers, PKD codes, legal form, status |
 | A3 | Financial document repository | HTTPS, per-entity lookup | Raw documents → object store; `filing_index` |
-| A4 | Insolvency register + MSiG archive | HTTPS | Raw notices → object store |
+| A4 | Full KRS extract (open KRS API) + MSiG notice search API; KRZ not built (WAF, ADR 0011) | HTTPS JSON (`krs_extract.py`, `msig_client.py`) | Redacted extracts and person-free notice records → object store; `legal_source_fetches`, `msig_notices` |
 | A5 | NBP, GUS BDL | HTTPS JSON | Reference and macro series |
 
 Requirements:
 
 - Rate limiting is persistent across process restarts (token bucket in Postgres or on disk).
-- HTTP cache is enabled in all environments. Re-running acquisition must not re-hit the source for unchanged documents.
+- HTTP cache is enabled in all environments. Re-running acquisition must not re-hit the source for unchanged documents. Where a source stamps every response (the KRS extract's `dataCzasOdpisu`) and no cache applies, unchanged content is recognised by a fingerprint and stored once (plan 0008 step C).
 - A2 session token acquisition and refresh is handled inside the adapter; callers never see it.
 - PKD codes are mapped across classification versions via `config/mappings/pkd_crosswalk.yaml`. The segment spec (`config/segments/<segment_name>.yaml`, e.g. `construction_sme_v1.yaml`) declares whether matching is on the predominant code only or any registered code.
 - Source conflicts (e.g. differing PKD between registries) resolve by documented precedence and are logged to `entity_reconciliation_log`.
@@ -333,7 +334,7 @@ CI tests: every known structure version has a spec; every spec's `canonical` tar
 2. Tables or layout needed → Docling.
 3. Scanned or degraded → vision LLM.
 
-Record which tier handled each document. IFRS filers and pre-2021 MSiG notices arrive here.
+Record which tier handled each document. IFRS filers arrive here. MSiG notices do not: the notice base is served as JSON with text (ADR 0011), so the tier stays deferred (plan 0006).
 
 ### D — Exploration
 
@@ -516,7 +517,7 @@ Each phase must be demonstrable before the next begins.
 | 0 | Repo skeleton, Docker Compose, CI, ADR template, Dagster hello-world asset |
 | 1 | Acquisition for 20 hand-picked entities; raw documents in MinIO, manifest in Postgres |
 | 2 | Two structure versions parsed end-to-end into canonical model, accounting identities passing |
-| 3 | Remaining structure versions, `quarantine` and `dq_mart` built in SQLMesh; `dq_mart` is published in phase 9 (plan 0007) (the C3 PDF tier moved to phase 4, where MSiG's pre-2021 notices need a PDF text layer regardless — plan 0006) |
+| 3 | Remaining structure versions, `quarantine` and `dq_mart` built in SQLMesh; `dq_mart` is published in phase 9 (plan 0007) (the C3 PDF tier stays deferred: MSiG turned out to serve notice text, not PDFs, so Phase 4 did not need it — plan 0006, ADR 0011) |
 | 4 | Legal events, outcome labels, censoring, regime flags |
 | 5 | Feature store with ASOF assembly and blocking leakage tests |
 | 6 | Baseline and classical models, out-of-time backtest report |
@@ -535,7 +536,7 @@ Three assumptions rest on a moving target. Confirm each in phase 0 and record fi
 
 1. ~~The financial statement repository was rebuilt in February 2026. Confirm current document formats, access patterns, and terms of use rather than assuming continuity with the previous platform.~~ **Verified in `docs/adr/0004-rdf-2026-platform-verification.md`:** public per-entity lookup by KRS number, no auth, XML/PDF, no bulk API — the per-entity design below stands. Bot protection on the search UI means A3 may need the `httpx`-first / `Playwright`-fallback tiering A1 already uses; confirm empirically once Phase 1 drives real traffic.
 2. ~~A new generation of Ministry of Finance XML structures applies to statements prepared from 1 January 2026. Confirm published XSDs and which entity types they cover.~~ **Verified in `docs/adr/0005-mf-xml-2026-structures-verification.md`, with a correction:** the trigger is financial statements for **fiscal years beginning 1 January 2025 or later**, not "prepared from 1 January 2026" as stated above — one year earlier than this document previously assumed. Published as CRWDE structure "wariant 2 / wersja 1-0E." `tests/fixtures/neobis_001.xml` already uses this generation; which UoR annex(es) it corresponds to for `sp. z o.o.` size classes is still open and deferred to stage C2.
-3. Confirm the current terms of use and rate expectations for every source in §6A before implementing its adapter. Access must stay within those terms; if bulk access is not permitted, the per-entity design in §6A stands.
+3. Confirm the current terms of use and rate expectations for every source in §6A before implementing its adapter. Access must stay within those terms; if bulk access is not permitted, the per-entity design in §6A stands. **KRS API, MSiG and KRZ: recorded in `docs/adr/0011-legal-event-sources.md` (accepted 2026-09-23):** the KRS API is open data under the 2021 open-data act, with no published rate limit (15 requests a minute here); MSiG has no terms page and is used as its own UI uses it, per entity; KRZ is behind a WAF and not accessed.
 
 ---
 

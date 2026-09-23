@@ -60,7 +60,7 @@ flowchart TD
         A1["A1 Universe discovery<br/>httpx + selectolax, Playwright fallback"]
         A2["A2 Registry lookup<br/>zeep for GUS BIR1 SOAP"]
         A3["A3 Document retrieval<br/>httpx + hishel cache + pyrate-limiter"]
-        A4["A4 Legal event feeds<br/>httpx, KRZ and MSiG"]
+        A4["A4 Legal event feeds<br/>httpx, KRS extract and MSiG"]
         A5["A5 Reference and macro<br/>httpx, NBP and GUS BDL"]
     end
 
@@ -242,7 +242,7 @@ Write every response body to the object store *before* parsing, keyed by content
 
 #### A4 — Legal event feeds
 
-**→ Pick: httpx** for KRZ. The historical MSiG archive is PDF, so it routes into stage C3 rather than being parsed here.
+**→ Pick: httpx** for the open KRS API and the MSiG search API, both JSON (ADR 0011); MSiG turned out not to need stage C3. KRZ sits behind a WAF and is not accessed automatically.
 
 #### A5 — Reference and macro data
 

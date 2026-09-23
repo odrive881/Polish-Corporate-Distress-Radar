@@ -97,9 +97,9 @@ Every XML statement must yield these components:
 
 | Item | Polish | Source | Stage | Event types needed | Feeds | Req. | Spec ref | Status |
 |---|---|---|---|---|---|---|---|---|
-| Full KRS extract with history | odpis pełny z KRS | KRS (Ministry of Justice) | A2, A4 (2, 7) | board changes, share capital changes, registered office moves, PKD changes, liquidation opened, deregistration | `legal_events` (source `KRS`), registry-dynamics features, `liquidation` / `silent_exit` labels | required | OVERVIEW stages 2, 7; SPEC §5 | not started |
-| KRZ insolvency and restructuring notices (late 2021 onward) | Krajowy Rejestr Zadłużonych | KRZ | A4 (7) | bankruptcy petition filed, bankruptcy declared, petition dismissed for insufficient assets, arrangement approval, accelerated arrangement, arrangement proceedings, remedial proceedings; plus `proceeding_id` and publication date | `legal_events` (source `KRZ`), `outcome_labels` | required | SPEC §4.6, §6A | not started |
-| MSiG archive notices (PDF, before KRZ) | Monitor Sądowy i Gospodarczy | MSiG archive | A4 → C3 (7) | same event types as KRZ, plus COVID-era simplified restructuring (2020–21, drives `regime_flag`), liquidation notices | `legal_events` (source `MSiG`), `outcome_labels` | required | SPEC §4.6, §6C3; TECH_ARCH §3 A4 | not started |
+| Full KRS extract with history | odpis pełny z KRS | KRS (Ministry of Justice) | A2, A4 (2, 7) | board changes, share capital changes, registered office moves, PKD changes, liquidation opened, deregistration | `legal_events` (source `KRS`), registry-dynamics features, `liquidation` / `silent_exit` labels | required | OVERVIEW stages 2, 7; SPEC §5 | built (plan 0008): open KRS API, redacted (`krs-json-2`), all 17 seed extracts; proceedings, liquidation, deregistration, registration, arrears and curators mapped; board, capital, office and PKD changes not yet |
+| KRZ insolvency and restructuring notices (late 2021 onward) | Krajowy Rejestr Zadłużonych | KRZ | A4 (7) | bankruptcy petition filed, bankruptcy declared, petition dismissed for insufficient assets, arrangement approval, accelerated arrangement, arrangement proceedings, remedial proceedings; plus `proceeding_id` and publication date | `legal_events` (source `KRZ`), `outcome_labels` | required | SPEC §4.6, §6A | not built: behind an Imperva WAF (ADR 0011 decision 4); manual capture or a sanctioned channel only |
+| MSiG notices (from 2001; JSON with text) | Monitor Sądowy i Gospodarczy | MSiG search API | A4 (7) | same event types as KRZ, plus COVID-era simplified restructuring (2020–21, drives `regime_flag`), liquidation notices | `legal_events` (source `MSiG`), `outcome_labels` | required | SPEC §4.6; ADR 0011 | built (plan 0008): 49 seed notices, stored as person-free records and typed by `config/mappings/msig_notice_kinds.yaml` |
 | GUS BIR1 reports: search result + full legal-entity report | — | GUS REGON BIR1 (SOAP) | A2 (2) | — | `entity_master` | required | SPEC §6A | built; fixtures in `tests/fixtures/bir1/` |
 
 The KRZ and MSiG sources both contain consumer bankruptcies. Natural persons must be filtered out at acquisition (SPEC §2.6). Events that describe the same proceeding in both sources are deduplicated through `dedup_group_id` (SPEC §4.6, §5).
@@ -147,7 +147,7 @@ The spec forbids bulk enumeration of any source. Acquisition is per entity, seed
 | Statement pair with a restated prior-year column | `tests/fixtures/` | required | SPEC §4.3 | missing |
 | Golden PDFs: text layer, table-heavy, scanned | `tests/fixtures/` | required | SPEC §6C3 | missing |
 | Hand-labelled text-signal eval sets, one per `signal_type` (9 files) | `evals/text_signals/<signal_type>.jsonl` | required | SPEC §6G3; DIR §5 | missing |
-| KRZ / MSiG notice fixtures for each outcome class, including a cross-source duplicate and a consumer bankruptcy to filter out | `tests/fixtures/` | required | SPEC §9.2 | missing |
+| KRS / MSiG fixtures for each outcome class, including a cross-source duplicate and a consumer bankruptcy to filter out | `tests/fixtures/legal/` | required | SPEC §9.2 | present (plan 0008): 4 redacted KRS extracts, 13 MSiG notice records and a search page; cross-source duplicates in `test_legal_events.py`. Search is by KRS, so no consumer record can arrive; a notice for another KRS is quarantined unstored (`test_msig_client.py`). KRZ none (not built) |
 | BIR1 responses | `tests/fixtures/bir1/` | required | — | present |
 
 ---
@@ -158,9 +158,9 @@ The spec forbids bulk enumeration of any source. Acquisition is per entity, seed
 |---|---|---|---|---|
 | GUS BIR1 **production** API key (issued by GUS on request) | `GUS_BIR1_API_KEY`, `GUS_BIR1_ENDPOINT=prod`, `BIR1_REQUESTS_PER_MINUTE` | A2 | required for real data | obtained 2026-09-16; set in the local `.env` (gitignored), verified with one production lookup |
 | RDF portal access | `RDF_REQUESTS_PER_MINUTE`, `RDF_MANUAL_INBOX` | A3 | required | no login; WAF blocks plain HTTP, and automated browsers get a CAPTCHA (ADR 0007), so captured by hand for now |
-| KRS extract access | — | A2, A4 | required | public; terms and rate expectations to confirm (SPEC §11.3) |
-| KRZ access | — | A4 | required | public; terms to confirm (SPEC §11.3) |
-| MSiG archive access | — | A4 | required | public; terms to confirm (SPEC §11.3) |
+| KRS extract access | `KRS_API_REQUESTS_PER_MINUTE` | A2, A4 | required | open KRS API, no key; open-data act basis, no published limit, 15/min here (ADR 0011) |
+| KRZ access | — | A4 | required | Imperva WAF; no automated access (ADR 0011); a sanctioned channel is the owner's to pursue |
+| MSiG search access | `MSIG_REQUESTS_PER_MINUTE` | A4 | required | public JSON API, no key, no terms page; per entity, 15/min (ADR 0011) |
 | NBP API | — | A5 | required | public, no key |
 | GUS BDL API (optional client key raises rate limits) | none yet; add one if a key is used | A5 | optional | not requested |
 | Registry aggregator account / ToS acceptance | none yet | A1 | required for scaled discovery | aggregator not chosen |
@@ -182,7 +182,7 @@ The spec forbids bulk enumeration of any source. Acquisition is per entity, seed
 2. ~~**No source named for average employment.**~~ Answered by C2 in plan 0004: no MF structure carries it as a field. Superseded by item 8, which records the candidate sources and what is still undecided.
 3. ~~**No pre-2025-generation XML fixture.**~~ Resolved in plan 0004: golden fixtures for schemas 1-0 and 1-2. ~~Small and micro forms still have none.~~ Ten short-form fixtures added in plan 0005 step E, covering every body-choice case; a committed fixture carrying signer data is now a test failure, not a manual check (`test_no_fixture_contains_personal_data`).
 4. **No LLM provider or key** in `.env.example`, yet C3 and G2 both need one.
-5. **Terms of use unconfirmed** for KRS, KRZ, MSiG and any aggregator (SPEC §11.3).
+5. ~~**Terms of use unconfirmed** for KRS, KRZ, MSiG~~ Recorded in ADR 0011 (accepted 2026-09-23); KRZ is WAF-blocked. Any aggregator's terms remain unconfirmed (SPEC §11.3).
 6. ~~**Full list of MF structure versions not enumerated.**~~ Enumerated in plan 0004 and completed in plan 0005 step B: 22 (form × unit × schema 1-0/1-2/1-3, plus CRWDE templates 13817, 13818, 13819 and 13821; 13820 is `JednostkaOp`, outside v1 scope), listed in `config/mappings/structures/` (12 mapped) and `structure_catalog.yaml` (10 recognised, not mapped).
 7. ~~**Stale wording** about structures applying "from 2026".~~ Fixed in plan 0004.
 8. **Average employment has no structured source.** No MF structure carries it as a field.
