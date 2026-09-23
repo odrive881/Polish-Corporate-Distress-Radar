@@ -29,9 +29,10 @@ decision 3; CLAUDE.md and AGENT_SPEC §2 now name the registry redaction. What i
   timestamp and 0000440028's restored deregistration entry, which the taxonomy now resolves (2025-09-10).
 - **Header entries carry their own date** (`dataWpisu`), while every other record is dated through its
   `nrWpisuWprow`. Step F dates the two differently.
-- **Not yet run against live services:** Docker is not reachable from this WSL distro. The manifest integration
-  tests (`make test-integration`) and a first `krs_extracts` materialization still need `make dev-up`. `make check`
-  is green.
+- **Live run, 2026-09-23.** `make test-integration` passes (39 tests). Dagster run `bd6b9c31` fetched all 17 seed
+  extracts: 17 stored, 0 quarantined, every one redacted (`krs-json-1`), and the three deregistrations present. A
+  second run (`9323bbe0`) fetched all 17 again and stored nothing new: 17 fetch rows, each pointing at the first
+  run's object.
 
 ## Step B close-out
 
@@ -406,7 +407,7 @@ unredacted is committed, and `test_no_fixture_contains_personal_data` must cover
 
 - [x] ADR 0011 accepted: access and terms confirmed for every source used, and the gap table recorded. *(Accepted 2026-09-23.)*
 - [x] The procedure taxonomy and label config are written, validated and tested. *(Step B, 2026-09-23; MSiG mappings follow in step E.)*
-- [ ] KRS extracts (and KRZ, and MSiG if built) acquired for the 17-entity seed, redacted and content-addressed. *(KRS adapter built in step C; the first live run waits for `make dev-up`.)*
+- [ ] KRS extracts (and KRZ, and MSiG if built) acquired for the 17-entity seed, redacted and content-addressed. *(KRS done 2026-09-23, run `bd6b9c31`; MSiG follows in step E.)*
 - [ ] `legal_events` persisted and contracted, with full lineage and deduplication.
 - [ ] **Seed acceptance:** each of the 9 entities with a distress status hint has a matching event, found
       independently, with a source document and a date. Every mismatch with a hint is investigated and recorded;
