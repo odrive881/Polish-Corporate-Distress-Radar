@@ -77,3 +77,44 @@ def test_the_test_gateway_needs_no_services() -> None:
         assert not connection.catalogs or all(
             not isinstance(v, str) or v == ":memory:" for v in connection.catalogs.values()
         )
+
+
+def test_a_dataset_not_yet_written_is_an_empty_typed_view(tmp_path: Path) -> None:
+    """A fresh clone: no Parquet yet. The view must still exist, empty, with its columns."""
+    import duckdb
+
+    config = _config()
+    con = duckdb.connect()
+    con.execute("CREATE SCHEMA ext")
+    con.execute(config._parquet_view("legal_events", root=tmp_path))  # pyright: ignore[reportPrivateUsage]
+    described = {row[0]: row[1] for row in con.execute("DESCRIBE ext.legal_events").fetchall()}
+    assert list(described) == list(_declared()["legal_events"])
+    assert described["ends"] == "VARCHAR[]" and described["event_date"] == "DATE"
+    assert con.execute("SELECT COUNT(*) FROM ext.legal_events").fetchone() == (0,)
+
+
+def test_a_written_dataset_is_read_from_its_files(tmp_path: Path) -> None:
+    import duckdb
+
+    config = _config()
+    (tmp_path / "legal_events" / "event_year=2020").mkdir(parents=True)
+    empty = pl.DataFrame(schema=PARQUET_SCHEMAS["legal_events"])
+    empty.write_parquet(tmp_path / "legal_events" / "event_year=2020" / "part-0.parquet")
+    statement = config._parquet_view("legal_events", root=tmp_path)  # pyright: ignore[reportPrivateUsage]
+    assert "read_parquet(" in statement
+    con = duckdb.connect()
+    con.execute("CREATE SCHEMA ext")
+    con.execute(statement)
+    assert con.execute("SELECT COUNT(*) FROM ext.legal_events").fetchone() == (0,)
+
+
+def test_every_parquet_view_builds_on_an_empty_warehouse(tmp_path: Path) -> None:
+    import duckdb
+
+    config = _config()
+    con = duckdb.connect()
+    con.execute("CREATE SCHEMA ext")
+    for name in config.PARQUET_DATASETS:
+        con.execute(config._parquet_view(name, root=tmp_path))  # pyright: ignore[reportPrivateUsage]
+        columns = [row[0] for row in con.execute(f"DESCRIBE ext.{name}").fetchall()]
+        assert columns == list(_declared()[name]), name

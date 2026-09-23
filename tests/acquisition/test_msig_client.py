@@ -219,7 +219,7 @@ def test_pages_are_stored_as_received_and_notices_reduced(tmp_path: Path) -> Non
     stored_page = store.get(raw_key(result.raw_fetches[0].sha256))
     assert json.loads(stored_page) == ROUTES["Search:1"]
     sidecar = json.loads(store.get(sidecar_key(result.notices[0].sha256)))
-    assert sidecar["redaction_version"] == MSIG_EXTRACTION_VERSION and sidecar["received_sha256"]
+    assert sidecar["redaction_version"] == extraction_key(VOCABULARY) and sidecar["received_sha256"]
     assert b"Przyk\xc5\x82adowskiego" not in store.get(raw_key(result.notices[0].sha256))
     assert result.fetch is not None and result.fetch.source == "MSiG" and result.fetch.stored_new
     assert result.fetch.sha256 == result.raw_fetches[0].sha256  # the first search page

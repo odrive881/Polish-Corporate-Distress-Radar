@@ -11,11 +11,10 @@ Three sources, for the 17-entity seed only, at human pace:
   script bundles it loads, the way a browser would, and stops at the first gate.
 
 Responses name natural persons (board members, shareholders, liquidators,
-trustees). Redacting them before storage is plan 0008 decision 3, not yet
-signed off, so **nothing fetched here is written anywhere**: bodies stay in
-memory, and only structure, dates, entry numbers and case signatures are
-printed. Free-text fields are reduced to a leading date. Findings:
-`docs/adr/0011-legal-event-sources.md`.
+trustees). **Nothing fetched here is stored**: bodies stay in memory, and only
+structure, dates, entry numbers and case signatures are printed. The one
+exception is the fixture cell, on request, which writes through the production
+redactor (ADR 0009 addendum). Findings: `docs/adr/0011-legal-event-sources.md`.
 
 Run interactively: `uv run marimo edit notebooks/exploration/legal_sources_probe.py`
 Run headless:      `uv run python notebooks/exploration/legal_sources_probe.py`
@@ -197,31 +196,18 @@ def _(Counter, extracts, person_paths, walk):
 
 
 @app.cell
-def _(PERSON_KEYS, extracts, walk):
-    # Redacted KRS fixtures for tests/fixtures/legal/ — only when asked
-    # (PROBE_WRITE_FIXTURES=1). Person-keyed leaves become a placeholder; then
-    # every removed name is searched for in the rest of the document, and any
-    # free-text field that still contains one is blanked too. A fixture is
-    # written only if nothing removed survives anywhere.
-    import json as _json
+def _(extracts):
+    # Redacted KRS fixtures for tests/fixtures/legal/krs/, only when asked
+    # (PROBE_WRITE_FIXTURES=1). They go through the production redactor
+    # (`redact_registry_extract`, ADR 0009 addendum), so a fixture is exactly what
+    # `krs_extract.fetch_extract` stores for that entity. This cell used to carry
+    # its own, earlier rule, which reduced entry descriptions and so hid the only
+    # deregistration signal; it must not come back.
     import os as _os
-    import re as _re
     from pathlib import Path as _Path
 
-    PLACEHOLDER = "[REDACTED]"
-    # Free text that is generic by construction: court names, PKD descriptions,
-    # share counts, reporting periods, dated resolution headers. Any other string
-    # longer than TEXT_LIMIT is reduced to its leading date: notarial citations
-    # in the articles, representation clauses and security orders can name
-    # people (notaries, supervisors) who appear in no structured field.
-    # Liquidation and dissolution resolutions are NOT on it: they cite the
-    # notarial deed, and with it the notary (seen in the seed).
-    TEXT_ALLOWLIST = {
-        "nazwa", "organWydajacy", "organWydajacyTytulWykonawczy", "oznaczenieSaduDokonujacegoWpisu",
-        "posiadaneUdzialy", "zaOkresOdDo", "sposobProwadzeniaPostepowania", "rodzajPostepowania",
-    }
-    TEXT_LIMIT = 40
-    DATE_IN_TEXT = _re.compile(r"\b\d{2}\.\d{2}\.\d{4}\b")
+    from distress_radar.acquisition.redaction import redact_registry_extract
+
     FIXTURE_ENTITIES = {
         "0000181328": "bankruptcy declared with a prior asset-security order and a 2010 liquidation",
         "0000507997": "bankruptcy entered without a decision date or signature",
@@ -229,61 +215,14 @@ def _(PERSON_KEYS, extracts, walk):
         "0000440028": "voluntary liquidation opened, closed and deregistered",
     }
 
-    def redact(obj, removed: set[str], reduced: list[str], path: str = ""):
-        if isinstance(obj, dict):
-            out = {}
-            for key, value in obj.items():
-                here = f"{path}.{key}"
-                if key in PERSON_KEYS and isinstance(value, str) and value:
-                    removed.add(value)
-                    out[key] = PLACEHOLDER
-                elif (
-                    isinstance(value, str)
-                    and len(value) > TEXT_LIMIT
-                    and key not in TEXT_ALLOWLIST
-                    # PKD activity descriptions; an entry's `opis` is not generic
-                    and not (key == "opis" and ".przedmiot" in path)
-                ):
-                    dated = DATE_IN_TEXT.search(value)
-                    reduced.append(here)
-                    out[key] = f"{PLACEHOLDER} {dated.group(0)}" if dated else PLACEHOLDER
-                else:
-                    out[key] = redact(value, removed, reduced, here)
-            return out
-        if isinstance(obj, list):
-            return [redact(v, removed, reduced, f"{path}[]") for v in obj]
-        return obj
-
-    def blank_leaks(obj, tokens: list[str], blanked: list[str], path: str = ""):
-        if isinstance(obj, dict):
-            return {k: blank_leaks(v, tokens, blanked, f"{path}.{k}") for k, v in obj.items()}
-        if isinstance(obj, list):
-            return [blank_leaks(v, tokens, blanked, f"{path}[]") for v in obj]
-        if isinstance(obj, str) and obj != PLACEHOLDER and any(
-            _re.search(rf"\b{_re.escape(t)}\b", obj, _re.IGNORECASE) for t in tokens
-        ):
-            blanked.append(path)
-            return PLACEHOLDER
-        return obj
-
     if _os.environ.get("PROBE_WRITE_FIXTURES") == "1":
         _out = _Path(__file__).resolve().parents[2] / "tests/fixtures/legal/krs"
         _out.mkdir(parents=True, exist_ok=True)
         for _krs, _why in FIXTURE_ENTITIES.items():
-            _removed: set[str] = set()
-            _reduced: list[str] = []
-            _doc = redact(extracts[_krs], _removed, _reduced)
-            _tokens = sorted({w for v in _removed if not v.isdigit() for w in v.split() if len(w) >= 3})
-            _blanked: list[str] = []
-            _doc = blank_leaks(_doc, _tokens, _blanked)
-            _text = _json.dumps(_doc, ensure_ascii=False, indent=1, sort_keys=True)
-            _survivors = [v for v in _removed if v in _text]
-            assert not _survivors, f"{_krs}: {len(_survivors)} removed values still present"
-            assert not _re.search(r"\b\d{11}\b", _text), f"{_krs}: 11-digit run"
-            (_out / f"odpis_pelny_{_krs}.json").write_text(_text + "\n", encoding="utf-8")
-            _kinds = sorted({_re.sub(r"\[\]", "", p).rsplit(".", 1)[-1] for p in _reduced})
-            print(f"{_krs} ({_why}): {len(_removed)} person values redacted, {len(_reduced)} texts reduced "
-                  f"to their date {_kinds}, {len(_blanked)} further fields blanked")
+            _redaction = redact_registry_extract(extracts[_krs])
+            (_out / f"odpis_pelny_{_krs}.json").write_bytes(_redaction.data)
+            print(f"{_krs} ({_why}): {_redaction.persons} person values redacted, "
+                  f"{_redaction.reduced} texts reduced, {_redaction.blanked} further fields blanked")
     else:
         print("fixtures not written (set PROBE_WRITE_FIXTURES=1)")
 

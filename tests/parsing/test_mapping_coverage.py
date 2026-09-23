@@ -212,9 +212,7 @@ def test_no_fixture_contains_personal_data(xml: Path) -> None:
     raw = xml.read_bytes()
     for marker in (b"PESEL", b"X509Certificate", b"SignatureValue", b"ds:Signature"):
         assert marker not in raw, f"{xml.name} contains {marker.decode()}"
-    text = " ".join(
-        t for t in etree.fromstring(raw, safe_parser()).itertext() if t and t.strip()
-    )
+    text = " ".join(t for t in etree.fromstring(raw, safe_parser()).itertext() if t and t.strip())
     assert not re.search(r"\b\d{11}\b", text), f"{xml.name} has an 11-digit run (PESEL-shaped)"
 
 

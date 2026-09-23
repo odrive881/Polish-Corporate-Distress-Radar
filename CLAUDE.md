@@ -36,7 +36,7 @@ A batch data platform that estimates the probability a Polish company enters ban
 These are build failures, not style preferences. Full detail in `AGENT_SPEC.md` §2.
 
 1. **Point-in-time correctness.** A feature for `as_of_date` may only use facts with `known_from <= as_of_date`. Enforced by a blocking test — never weaken or skip it.
-2. **Raw immutability.** Downloaded bytes are written to the object store unmodified and content-addressed. Never overwritten, never parsed straight from the network. Sole exception: natural persons' data is redacted before hashing, from filed documents (signer data) and from registry extracts (ADR 0009 and its addendum).
+2. **Raw immutability.** Downloaded bytes are written to the object store unmodified and content-addressed. Never overwritten, never parsed straight from the network. Sole exception: natural persons' data is removed before hashing: signer data from filed documents, people from KRS extracts, and MSiG notices are stored only as person-free records, never their text (ADR 0009 and its addendum).
 3. **Full lineage.** Every canonical fact carries its source document hash, source element path, and ingestion run id.
 4. **No silent data loss.** Failing records go to quarantine with a reason code. Never drop or impute to make a check pass — this applies especially to missing financial line items, which are often legitimately absent (small entities file simplified forms) rather than missing data to fill in.
 5. **Idempotence.** Re-running any stage on the same input reproduces the same output exactly.

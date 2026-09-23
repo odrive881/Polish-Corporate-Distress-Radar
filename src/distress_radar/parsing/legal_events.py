@@ -319,7 +319,7 @@ def from_msig_notice(
     source_document_hash: str,
     ingestion_run_id: str,
 ) -> Normalised:
-    """The event in one reduced MSiG notice, if it is one."""
+    """The events in one reduced MSiG notice: its kind's, and any further one it records."""
     out = Normalised()
     notice = cast("dict[str, Any]", record["notice"])
     extracted = cast("dict[str, Any]", record["extracted"])
@@ -339,8 +339,45 @@ def from_msig_notice(
             "msig_notice_unclassified",
             f"chapter {extracted.get('chapter_code')!r}, terms {extracted.get('terms')}",
         )
-    if not rule.event:
-        return out
+    signatures = cast("list[str]", extracted.get("signatures") or [])
+    # Aliases come from the structured field only; the text can cite other cases.
+    listed = [
+        normalise_signature(m)
+        for m in _SIGNATURE_FIELD.findall(str(notice.get("signatureOfCase") or ""))
+    ]
+    linked = tuple(sorted({s for s in listed if s}))
+    if len(linked) > 1:
+        out.aliases.append((krs, linked))
+    # The notice's kind, then any further event the same decision records.
+    rules = ([rule] if rule.event else []) + kinds.additional(extracted)
+    for index, current in enumerate(rules):
+        decided = event_date(current, extracted, published)
+        on = decided or published
+        resolved = taxonomy.resolve("MSiG", "notice", {"notice_kind": current.kind}, on)
+        if resolved is None:
+            reject("legal_event_type_unmapped", f"{current.kind} has no mapping in force on {on}")
+            continue
+        out.events.append(
+            LegalEvent(
+                krs=krs,
+                event_type=resolved.event_type.event_type,
+                outcome_class=resolved.event_type.outcome_class,
+                ends=resolved.event_type.ends,
+                precludes_silent_exit=resolved.event_type.precludes_silent_exit,
+                stage=resolved.event_type.stage,
+                event_date=decided,
+                known_from=published,
+                removed_on=None,
+                source="MSiG",
+                case_signature=normalise_signature(signatures[0]) if signatures else None,
+                statute=resolved.statute.id,
+                source_document_hash=source_document_hash,
+                # One element per event: a further event is addressed by its kind.
+                source_element_path=path if index == 0 and rule.event else f"{path}#{current.kind}",
+                ingestion_run_id=ingestion_run_id,
+            )
+        )
+    return out
     decided = event_date(rule, extracted, published)
     resolved = taxonomy.resolve("MSiG", "notice", {"notice_kind": rule.kind}, decided or published)
     if resolved is None:

@@ -320,7 +320,8 @@ async def fetch_entity_notices(
             url,
             reduced,
             fetched_at,
-            redaction_version=MSIG_EXTRACTION_VERSION,
+            # The extraction key, not the bare version: a vocabulary change is a new reduction.
+            redaction_version=extraction_key(vocabulary),
             received_sha256=sha256_hex(response.content),
         )
         held[notice_id] = digest

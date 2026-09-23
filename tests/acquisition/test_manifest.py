@@ -552,3 +552,73 @@ def test_corrections_get_their_own_rows_and_share_the_bundle(conn: psycopg.Conne
         "sf-2024",
         "aud-2025",  # still owed its detail
     ]
+
+
+def test_the_same_received_file_is_logged_once_per_redaction_version(conn: psycopg.Connection):
+    manifest.ensure_schema(conn)
+    for sha, version in (
+        ("a1" * 32, "msig-notice-1+aaaaaaaaaaaa"),
+        ("b2" * 32, "msig-notice-1+bbbbbbbbbbbb"),
+    ):
+        manifest.insert_raw_fetch(
+            conn, RawFetchRecord(sha256=sha, byte_size=10, meta=_msig_meta("run-1", version))
+        )
+    rows = conn.execute(
+        "SELECT redacted_sha256, redaction_version FROM raw_redactions ORDER BY 2"
+    ).fetchall()
+    assert rows == [
+        ("a1" * 32, "msig-notice-1+aaaaaaaaaaaa"),
+        ("b2" * 32, "msig-notice-1+bbbbbbbbbbbb"),
+    ]
+
+
+def test_an_old_raw_redactions_table_is_rekeyed_and_lost_rows_recovered(conn: psycopg.Connection):
+    # The table as it was before 2026-09-23: keyed by the received hash alone.
+    conn.execute(
+        """
+        CREATE TABLE raw_documents (
+            sha256 text PRIMARY KEY, object_key text NOT NULL, byte_size bigint NOT NULL,
+            content_type text NOT NULL, first_fetched_at timestamptz NOT NULL,
+            first_ingestion_run_id text NOT NULL)
+        """
+    )
+    conn.execute(
+        """
+        CREATE TABLE raw_redactions (
+            received_sha256 text PRIMARY KEY,
+            redacted_sha256 text NOT NULL REFERENCES raw_documents (sha256),
+            redaction_version text NOT NULL, redacted_at timestamptz NOT NULL,
+            ingestion_run_id text NOT NULL)
+        """
+    )
+    old, new, received = "a1" * 32, "b2" * 32, "d4" * 32
+    for sha in (old, new):
+        conn.execute(
+            "INSERT INTO raw_documents VALUES (%s, %s, 10, 'application/json', %s, 'run-1')",
+            (sha, f"raw/sha256/{sha[:2]}/{sha}", NOW),
+        )
+    conn.execute(
+        "INSERT INTO raw_redactions VALUES (%s, %s, 'msig-notice-1', %s, 'run-1')",
+        (received, old, NOW),
+    )
+    manifest.ensure_schema(conn)  # creates msig_notices, re-keys raw_redactions
+    for sha, version in ((old, "msig-notice-1"), (new, "msig-notice-1+cccccccccccc")):
+        conn.execute(
+            "INSERT INTO msig_notices VALUES ('0000000042', 7, %s, %s, '2020-01-01', 'IX', 'run-1')",
+            (version, sha),
+        )
+    manifest.ensure_schema(conn)  # the backfill finds the re-reduced record's row
+    manifest.ensure_schema(conn)  # and is idempotent
+
+    key = conn.execute(
+        """
+        SELECT array_agg(a.attname ORDER BY a.attname)
+        FROM pg_constraint c JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = ANY (c.conkey)
+        WHERE c.conrelid = to_regclass('raw_redactions') AND c.contype = 'p'
+        """
+    ).fetchone()
+    assert key == (["received_sha256", "redaction_version"],)
+    rows = conn.execute(
+        "SELECT received_sha256, redacted_sha256, redaction_version FROM raw_redactions ORDER BY 3"
+    ).fetchall()
+    assert rows == [(received, old, "msig-notice-1"), (received, new, "msig-notice-1+cccccccccccc")]

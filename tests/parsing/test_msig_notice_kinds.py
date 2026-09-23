@@ -38,3 +38,20 @@ def test_a_procedural_kind_has_no_date() -> None:
                 "rules": [{"kind": "x", "chapters": ["IX"], "event": False, "date": "publication"}],
             }
         )
+
+
+def test_an_additional_rule_is_never_the_kind_and_must_be_an_event() -> None:
+    kinds = load_notice_kinds()
+    assert all(not r.additional for r in kinds.rules if r.kind == "remedial_proceedings_opened")
+    extracted = {"chapter_code": "IX", "terms": ["oddal", "wniosek o ogłoszenie upadłości"]}
+    assert kinds.classify(extracted) is None  # additional rules never classify on their own
+    assert [r.kind for r in kinds.additional(extracted)] == [
+        "bankruptcy_petition_dismissed_by_restructuring"
+    ]
+    with pytest.raises(ValidationError, match="additional rule must be an event"):
+        NoticeKinds.model_validate(
+            {
+                "version": 1,
+                "rules": [{"kind": "x", "chapters": ["IX"], "event": False, "additional": True}],
+            }
+        )

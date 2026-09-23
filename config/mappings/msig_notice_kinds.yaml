@@ -5,9 +5,12 @@
 # a notice kind, which `config/statutory/procedure_taxonomy.yaml` then maps to an event type.
 # Loaded by `distress_radar.parsing.msig_notice_kinds`.
 #
-# Rules are tried in order and the first match wins. A rule matches when the chapter code is
-# one of `chapters`, every term in `all` occurs, at least one in `any` occurs (if given), and
-# none in `none` does. Terms are `config/mappings/msig_vocabulary.yaml` entries, and a term
+# Rules are tried in order and the first match wins: that is the notice's kind. A rule marked
+# `additional: true` is not part of that choice. Every additional rule that matches adds a
+# further event from the same notice, because one court decision can do two things.
+#
+# A rule matches when the chapter code is one of `chapters`, every term in `all` occurs, at
+# least one in `any` occurs (if given), and none in `none` does. Terms are `config/mappings/msig_vocabulary.yaml` entries, and a term
 # not in that list is a load error. A notice no rule matches is quarantined
 # (`msig_notice_unclassified`), never guessed.
 #
@@ -73,6 +76,16 @@ rules:
     all: [sanac, postanowieni]
     any: [otworzy, otwarci]
     none: [spis wierzytelności, zgromadzeni]
+    date: {prefer: [[postanowieni]]}
+  # Opening a restructuring disposes of a pending bankruptcy petition (Prawo
+  # restrukturyzacyjne art. 9a–9b), and the opening notice says so: 0000386777's sanacja notice
+  # of 2020 (VI GU 751/19, VI GRs 3/20) dismisses the bankruptcy petition. This closes the
+  # petition stage. It is not a dismissal for insufficient assets, which is an outcome.
+  - kind: bankruptcy_petition_dismissed_by_restructuring
+    additional: true
+    chapters: [IX]
+    all: [oddal]
+    any: [wniosek o ogłoszenie upadłości, wniosku o ogłoszenie upadłości]
     date: {prefer: [[postanowieni]]}
   # Claims lists, creditors' meetings, and an administrator's notices in an open proceeding.
   - kind: restructuring_procedural

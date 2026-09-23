@@ -20,6 +20,9 @@ for unit tests, so the `ext` tables there are the tests' own fixtures, and
 
 from __future__ import annotations
 
+from pathlib import Path
+
+import yaml
 from sqlmesh.core.config import (
     Config,
     DuckDBConnectionConfig,
@@ -81,10 +84,30 @@ LABEL_VARIABLES: dict[str, str] = {
 }
 
 
-def _parquet_view(name: str) -> str:
-    # Partition columns are stored inside the files (`warehouse.py`), so Hive
-    # parsing stays off; `**` also matches an empty dataset's root file.
-    glob = (warehouse / name / "**" / "*.parquet").as_posix()
+def _declared_columns() -> dict[str, dict[str, str]]:
+    """Each external model's columns and SQL types, from `external_models.yaml`."""
+    models = yaml.safe_load((Path(__file__).parent / "external_models.yaml").read_text("utf-8"))
+    return {m["name"].removeprefix("ext."): m["columns"] for m in models}
+
+
+def _parquet_view(name: str, root: Path | None = None) -> str:
+    """The `ext` view over a Parquet dataset under WAREHOUSE_DIR.
+
+    Partition columns are stored inside the files (`warehouse.py`), so Hive parsing stays
+    off; `**` also matches an empty dataset's root file. A dataset never written yet (a fresh
+    clone, before its asset first runs) becomes an empty relation with the declared columns:
+    DuckDB refuses a view over files that do not exist, and one missing dataset would
+    otherwise stop every plan in the project.
+    """
+    base = (root or warehouse) / name
+    written = base.exists() and any(base.rglob("*.parquet"))
+    if not written:
+        columns = ", ".join(
+            f'CAST(NULL AS {sql_type}) AS "{column}"'
+            for column, sql_type in _declared_columns()[name].items()
+        )
+        return f"CREATE OR REPLACE VIEW ext.{name} AS SELECT {columns} WHERE FALSE"
+    glob = (base / "**" / "*.parquet").as_posix()
     return (
         f"CREATE OR REPLACE VIEW ext.{name} AS "
         f"SELECT * FROM read_parquet('{glob}', hive_partitioning = false)"
