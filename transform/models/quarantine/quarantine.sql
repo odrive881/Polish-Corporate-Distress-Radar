@@ -98,7 +98,7 @@ WITH e2_files AS (
     *,
     MAX(created_at) OVER (PARTITION BY stage, entity_key) AS latest_at
   FROM ext.quarantine_events
-  WHERE stage IN ('A1', 'A2', 'A3')
+  WHERE stage IN ('A1', 'A2', 'A3', 'A4')
 ), a AS (
   SELECT
     stage,
@@ -123,7 +123,7 @@ WITH e2_files AS (
   SELECT
     CASE WHEN stage IN ('C1', 'C2') THEN 'C' ELSE stage END AS stage_group,
     entity_key,
-    CASE WHEN stage IN ('A1', 'A2', 'A3') THEN NULL ELSE source_document_hash END AS file_hash,
+    CASE WHEN stage IN ('A1', 'A2', 'A3', 'A4') THEN NULL ELSE source_document_hash END AS file_hash,
     MIN(created_at) AS first_detected_at
   FROM ext.quarantine_events
   GROUP BY ALL
@@ -143,7 +143,7 @@ LEFT JOIN first_detected AS d
   ON d.stage_group = CASE WHEN s.stage IN ('C1', 'C2') THEN 'C' ELSE s.stage END
   AND d.entity_key = s.entity_key
   AND d.file_hash IS NOT DISTINCT FROM CASE
-    WHEN s.stage IN ('A1', 'A2', 'A3') THEN NULL
+    WHEN s.stage IN ('A1', 'A2', 'A3', 'A4') THEN NULL
     ELSE s.source_document_hash
   END
 ORDER BY stage, entity_key, source_document_hash, source_member

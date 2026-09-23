@@ -18,6 +18,9 @@ A file with nothing to remove is returned byte for byte. The result is
 deterministic, so re-downloading the same file stores the same object.
 Free text (e.g. a board member named in the notes) is not touched; see ADR 0009.
 
+KRS registry extracts (JSON) have their own redactor, `redact_registry_extract`: person-keyed
+fields plus an allowlist for free text (ADR 0009 addendum, plan 0008 decision 3).
+
 `personal_data_markers()` is the independent check: it lists what is left.
 """
 
@@ -29,9 +32,11 @@ from __future__ import annotations
 import base64
 import binascii
 import io
+import json
 import re
 import zipfile
 from dataclasses import dataclass, field
+from typing import cast
 
 import pymupdf
 from lxml import etree
@@ -306,3 +311,106 @@ def _pdf_markers(data: bytes, where: str) -> list[str]:
             if _signature_widgets(doc[index]):
                 found.append(f"{where}: PDF signature field on page {index}")
     return found
+
+
+# --- Registry JSON: the KRS full extract (ADR 0009 addendum, plan 0008 decision 3) ---------------
+
+REGISTRY_REDACTION_VERSION = "krs-json-1"
+PLACEHOLDER = "[REDACTED]"
+_PERSON_KEYS = frozenset({"imie", "imieDrugie", "nazwiskoICzlon", "nazwiskoIICzlon", "pesel"})
+_TEXT_LIMIT = 40
+# Free text generic by construction: legal entities' names, courts and authorities, share
+# counts, reporting periods, procedure types. Any other string over `_TEXT_LIMIT` can cite a
+# notary or name a representative, so it is reduced to its first date.
+_TEXT_ALLOWLIST = frozenset(
+    {
+        "nazwa",
+        "organWydajacy",
+        "organWydajacyTytulWykonawczy",
+        "oznaczenieSaduDokonujacegoWpisu",
+        "posiadaneUdzialy",
+        "zaOkresOdDo",
+        "sposobProwadzeniaPostepowania",
+        "rodzajPostepowania",
+    }
+)
+# `opis` is generic in two places only: PKD descriptions, and the registry's entry
+# descriptions, which are the only deregistration signal (ADR 0011 decision 5).
+_OPIS_PATHS = ("odpis.naglowekP.wpis", "odpis.dane.dzial3.przedmiotDzialalnosci.")
+_DATE_IN_TEXT = re.compile(r"\b\d{2}\.\d{2}\.\d{4}\b")
+_PESEL_SHAPED = re.compile(r"(?<!\d)\d{11}(?!\d)")
+
+
+@dataclass
+class RegistryRedaction:
+    data: bytes  # canonical JSON: sorted keys, fixed indent, UTF-8
+    persons: int = 0  # person-keyed values replaced
+    reduced: int = 0  # free-text fields reduced to their first date
+    blanked: int = 0  # further strings holding a removed name
+
+
+def _allowlisted(key: str, path: str) -> bool:
+    if key in _TEXT_ALLOWLIST:
+        return True
+    return key == "opis" and any(path.startswith(p) for p in _OPIS_PATHS)
+
+
+def redact_registry_extract(document: object) -> RegistryRedaction:
+    """Redact a parsed KRS extract; deterministic, and a no-op on its own output.
+
+    Raises `RedactionError` if anything PESEL-shaped or any removed value survives.
+    """
+    removed: set[str] = set()
+    result = RegistryRedaction(b"")
+
+    def redact(node: object, path: str) -> object:
+        if isinstance(node, dict):
+            out: dict[str, object] = {}
+            for key, value in cast("dict[str, object]", node).items():
+                here = f"{path}.{key}" if path else key
+                if key in _PERSON_KEYS and isinstance(value, str) and value not in ("", PLACEHOLDER):
+                    removed.add(value)
+                    result.persons += 1
+                    out[key] = PLACEHOLDER
+                elif (
+                    isinstance(value, str)
+                    and len(value) > _TEXT_LIMIT
+                    and not _allowlisted(key, here)
+                ):
+                    dated = _DATE_IN_TEXT.search(value)
+                    result.reduced += 1
+                    out[key] = f"{PLACEHOLDER} {dated.group(0)}" if dated else PLACEHOLDER
+                else:
+                    out[key] = redact(value, here)
+            return out
+        if isinstance(node, list):
+            return [redact(item, path) for item in cast("list[object]", node)]
+        return node
+
+    redacted = redact(document, "")
+    tokens = sorted({w for v in removed if not v.isdigit() for w in v.split() if len(w) >= 3})
+    patterns = [re.compile(rf"\b{re.escape(t)}\b", re.IGNORECASE) for t in tokens]
+
+    def blank(node: object) -> object:
+        if isinstance(node, dict):
+            return {k: blank(v) for k, v in cast("dict[str, object]", node).items()}
+        if isinstance(node, list):
+            return [blank(v) for v in cast("list[object]", node)]
+        if isinstance(node, str) and node != PLACEHOLDER and any(p.search(node) for p in patterns):
+            result.blanked += 1
+            return PLACEHOLDER
+        return node
+
+    text = json.dumps(blank(redacted), ensure_ascii=False, indent=1, sort_keys=True) + "\n"
+    if _PESEL_SHAPED.search(text):
+        raise RedactionError("an 11-digit (PESEL-shaped) run survives redaction")
+    # Whole words, like the backstop: a first name inside a place name ("JAN" in "JANÓW") is not
+    # the person. PESEL numbers are covered by the 11-digit check above.
+    if any(
+        re.search(rf"\b{re.escape(value)}\b", text, re.IGNORECASE)
+        for value in removed
+        if not value.isdigit()
+    ):
+        raise RedactionError("a removed person value survives redaction")
+    result.data = text.encode("utf-8")
+    return result

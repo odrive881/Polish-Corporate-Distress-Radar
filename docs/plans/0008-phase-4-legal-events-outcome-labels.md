@@ -10,11 +10,34 @@
 deferred to "no earlier than Phase 4, when MSiG forces a PDF text layer". Whether MSiG forces it is now a question
 this plan answers in step A, not an assumption (decision 2).
 
-## Status: step B done (2026-09-23); step C next
+## Status: step C done (2026-09-23); step D (KRZ) is skipped per ADR 0011, so step E (MSiG) is next
+
+**Step C close-out, 2026-09-23.** `acquisition/krs_extract.py`, the registry redactor in
+`acquisition/redaction.py` (`REGISTRY_REDACTION_VERSION = "krs-json-1"`), the `legal_source_fetches` manifest table,
+and the `krs_extracts` asset (group `legal`, resource `krs_api`, 15 requests a minute). ADR 0009's addendum records
+decision 3; CLAUDE.md and AGENT_SPEC §2 now name the registry redaction. What it found:
+- **No two responses are byte-identical.** Every extract carries its generation time (`naglowekP.dataCzasOdpisu`),
+  and the API sends no cache headers, so the HTTP cache never answers. The plan's "refetches only through the
+  cache" could not hold. Instead each fetch is fingerprinted without that timestamp. An unchanged extract adds a
+  `legal_source_fetches` row that points at the object already stored, and no new raw object. It still counts as
+  a complete fetch for the cutoff.
+- **An unknown KRS returns 404 with a JSON body.** The shared base now raises `SourceNotFound`, a subclass of
+  `PermanentSourceError`, and A4 quarantines the entity (`krs_extract_not_found`).
+- **Entry descriptions are a closed set of phrases** (`REJESTRACJA W KRAJOWYM REJESTRZE SĄDOWYM`, `ZMIANA DANYCH W
+  REJESTRZE`, `WYKREŚLENIE Z KRAJOWEGO REJESTRU SĄDOWEGO`, `SPROSTOWANIE WPISU`), so they are allowlisted. The
+  four fixtures were regenerated with the production redactor. They differ from the probe's only in the
+  timestamp and 0000440028's restored deregistration entry, which the taxonomy now resolves (2025-09-10).
+- **Header entries carry their own date** (`dataWpisu`), while every other record is dated through its
+  `nrWpisuWprow`. Step F dates the two differently.
+- **Not yet run against live services:** Docker is not reachable from this WSL distro. The manifest integration
+  tests (`make test-integration`) and a first `krs_extracts` materialization still need `make dev-up`. `make check`
+  is green.
+
+## Step B close-out
 
 **Owner decisions, 2026-09-23: all five accepted as recommended**, with ADR 0011 (now `accepted`) and the rule
 for a declaration with no decision date (`event_date` null, `known_from` the entry date, labels treat the event as
-on or before `known_from`). Decision 3 is signed off; its ADR 0009 addendum is written before step C stores any
+on or before `known_from`). Decision 3 is signed off, and its ADR 0009 addendum was written in step C, before any
 bytes.
 
 **Step B close-out, 2026-09-23.** `config/statutory/procedure_taxonomy.yaml` and
@@ -383,7 +406,7 @@ unredacted is committed, and `test_no_fixture_contains_personal_data` must cover
 
 - [x] ADR 0011 accepted: access and terms confirmed for every source used, and the gap table recorded. *(Accepted 2026-09-23.)*
 - [x] The procedure taxonomy and label config are written, validated and tested. *(Step B, 2026-09-23; MSiG mappings follow in step E.)*
-- [ ] KRS extracts (and KRZ, and MSiG if built) acquired for the 17-entity seed, redacted and content-addressed.
+- [ ] KRS extracts (and KRZ, and MSiG if built) acquired for the 17-entity seed, redacted and content-addressed. *(KRS adapter built in step C; the first live run waits for `make dev-up`.)*
 - [ ] `legal_events` persisted and contracted, with full lineage and deduplication.
 - [ ] **Seed acceptance:** each of the 9 entities with a distress status hint has a matching event, found
       independently, with a source document and a date. Every mismatch with a hint is investigated and recorded;

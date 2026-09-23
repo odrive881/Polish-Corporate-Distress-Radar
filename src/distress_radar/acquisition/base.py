@@ -57,6 +57,10 @@ class PermanentSourceError(SourceError):
     """Retrying will not help: client error, malformed or unexpected response."""
 
 
+class SourceNotFound(PermanentSourceError):
+    """HTTP 404: the source does not know the requested record."""
+
+
 class ContentCheckFailed(SourceError):
     """Response received but not real content (challenge page, JS gate, empty shell)."""
 
@@ -89,6 +93,8 @@ def raise_for_status_class(response: httpx.Response) -> None:
     code = response.status_code
     if code == 429 or code >= 500:
         raise TransientSourceError(f"HTTP {code} from {response.request.url}")
+    if code == 404:
+        raise SourceNotFound(f"HTTP 404 from {response.request.url}")
     if code >= 400:
         raise PermanentSourceError(f"HTTP {code} from {response.request.url}")
 

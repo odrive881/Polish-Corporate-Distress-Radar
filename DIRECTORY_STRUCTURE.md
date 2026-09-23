@@ -114,6 +114,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   ├── __init__.py
 │   ├── assets/                        # one module per stage group, mirrors src/
 │   │   ├── acquisition.py
+│   │   ├── legal.py                   # plan 0008: A4 sources → legal_events
 │   │   ├── parsing.py
 │   │   ├── dq.py                      # E3/F: SQLMesh DQ models, audits as asset checks
 │   │   ├── extraction.py
@@ -166,7 +167,7 @@ src/distress_radar/
 │   ├── har_import.py            # A3, manual tier (HAR captures)
 │   ├── redaction.py             # invariant 6: strip signer data before storing (ADR 0009)
 │   ├── redaction_migration.py   # one-off replacement of unredacted stored files
-│   ├── legal_events.py          # A4
+│   ├── krs_extract.py           # A4 — full KRS extracts (open KRS API), redacted, content-addressed
 │   └── reference_data.py        # A5
 │
 ├── parsing/

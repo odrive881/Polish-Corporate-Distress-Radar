@@ -83,7 +83,7 @@ class UniverseCandidate(_Frozen):
 
 # --- Quarantine (Postgres detection log `quarantine_events`, ADR 0006, plan 0007) ------------
 
-QuarantineStage = Literal["A1", "A2", "A3", "C1", "C2", "E2"]
+QuarantineStage = Literal["A1", "A2", "A3", "A4", "C1", "C2", "E2"]
 
 
 class QuarantineRecord(_Frozen):
@@ -322,3 +322,28 @@ class FilingDocumentState(_Frozen):
 
 
 PendingFilingDocument = FilingDocumentState  # a state still owed a detail or a download
+
+
+# --- A4: legal-event sources -----------------------------------------------------------------
+
+LegalSource = Literal["KRS", "KRZ", "MSiG"]
+
+
+class LegalSourceFetch(_Frozen):
+    """One successful fetch of one entity from one legal-event source (`legal_source_fetches`).
+
+    `sha256` is the raw object holding the content: a new one, or the previous object when
+    the content is unchanged. `content_sha256` is the fingerprint that decides that (for KRS,
+    the redacted extract without its per-request timestamp). The latest fetch per
+    `(krs, source)` sets that source's cutoff for the entity.
+    """
+
+    krs: str
+    source: LegalSource
+    sha256: str
+    content_sha256: str
+    fetched_at: datetime
+    ingestion_run_id: str
+    stored_new: bool
+
+    _aware = field_validator("fetched_at")(_require_aware)

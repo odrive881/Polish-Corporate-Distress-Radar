@@ -36,11 +36,11 @@ A batch data platform that estimates the probability a Polish company enters ban
 These are build failures, not style preferences. Full detail in `AGENT_SPEC.md` §2.
 
 1. **Point-in-time correctness.** A feature for `as_of_date` may only use facts with `known_from <= as_of_date`. Enforced by a blocking test — never weaken or skip it.
-2. **Raw immutability.** Downloaded bytes are written to the object store unmodified and content-addressed. Never overwritten, never parsed straight from the network. Sole exception: signer data is redacted from filed documents before hashing (ADR 0009).
+2. **Raw immutability.** Downloaded bytes are written to the object store unmodified and content-addressed. Never overwritten, never parsed straight from the network. Sole exception: natural persons' data is redacted before hashing, from filed documents (signer data) and from registry extracts (ADR 0009 and its addendum).
 3. **Full lineage.** Every canonical fact carries its source document hash, source element path, and ingestion run id.
 4. **No silent data loss.** Failing records go to quarantine with a reason code. Never drop or impute to make a check pass — this applies especially to missing financial line items, which are often legitimately absent (small entities file simplified forms) rather than missing data to fill in.
 5. **Idempotence.** Re-running any stage on the same input reproduces the same output exactly.
-6. **Legal entities only.** Never ingest or store natural persons, including consumer bankruptcies in insolvency registers. Filter at acquisition. Filed documents go through `acquisition/redaction.py` before storing, and test fixtures must not contain real signatures (ADR 0009).
+6. **Legal entities only.** Never ingest or store natural persons, including consumer bankruptcies in insolvency registers. Filter at acquisition. Filed documents and KRS extracts go through `acquisition/redaction.py` before storing, and test fixtures must not contain real signatures or names (ADR 0009).
 7. **Statutory logic is versioned config, not code.** Size thresholds, KSH tripwire ratios, and procedure taxonomies live in `config/statutory/` as dated YAML, never as Python constants.
 
 ---

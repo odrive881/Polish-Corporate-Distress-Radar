@@ -8,6 +8,7 @@ from tenacity import wait_none
 from distress_radar.acquisition.base import (
     ContentCheckFailed,
     PermanentSourceError,
+    SourceNotFound,
     SourcePolicy,
     TransientSourceError,
     build_source_client,
@@ -83,6 +84,14 @@ def test_permanent_status_does_not_retry(tmp_path: Path, status: int):
     with pytest.raises(PermanentSourceError) as info:
         _get(tmp_path, handler)
     assert len(info.value.calls) == 1  # type: ignore[attr-defined]
+
+
+def test_not_found_is_its_own_permanent_error(tmp_path: Path):
+    with pytest.raises(SourceNotFound):
+        _get(tmp_path, lambda _, n: httpx.Response(404))
+    with pytest.raises(PermanentSourceError) as info:
+        _get(tmp_path, lambda _, n: httpx.Response(403))
+    assert not isinstance(info.value, SourceNotFound)
 
 
 def test_content_check_failure_is_distinct_and_not_retried(tmp_path: Path):

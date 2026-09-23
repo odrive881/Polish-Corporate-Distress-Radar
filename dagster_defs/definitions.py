@@ -14,23 +14,24 @@ import from `src/distress_radar/`, never the reverse. See
 
 Resources are built from `distress_radar.settings.Settings` (environment /
 `.env`), so they carry no Dagster config of their own. Assets reach them by
-resource key (`postgres`, `raw_object_store`, `bir1`, `rdf_browser`).
+resource key (`postgres`, `raw_object_store`, `bir1`, `rdf_browser`, `krs_api`).
 """
 
 from __future__ import annotations
 
-from collections.abc import Iterator
-from contextlib import contextmanager
+from collections.abc import AsyncIterator, Iterator
+from contextlib import asynccontextmanager, contextmanager
 
 import dagster as dg
 import psycopg
 
-from distress_radar.acquisition.base import postgres_limiter
+from distress_radar.acquisition.base import SourceClient, build_source_client, postgres_limiter
 from distress_radar.acquisition.document_retrieval import (
     RDF_SPA_SPEC,
     PlaywrightFilingBrowser,
     rdf_policy,
 )
+from distress_radar.acquisition.krs_extract import krs_api_policy
 from distress_radar.acquisition.raw_store import S3ObjectStore
 from distress_radar.acquisition.regon_client import ENDPOINTS, ZeepBir1Service, bir1_policy
 from distress_radar.settings import Settings
@@ -102,18 +103,37 @@ class RdfBrowserResource(dg.ConfigurableResource):
             limiter.close()
 
 
+class KrsApiResource(dg.ConfigurableResource):
+    """The open KRS API (A4) with Postgres-persistent pacing (ADR 0011)."""
+
+    @asynccontextmanager
+    async def client(self) -> AsyncIterator[SourceClient]:
+        settings = Settings()
+        policy = krs_api_policy(settings.krs_api_requests_per_minute)
+        limiter = postgres_limiter(settings, policy)
+        try:
+            async with build_source_client(
+                policy, cache_dir=settings.http_cache_dir, limiter=limiter
+            ) as client:
+                yield client
+        finally:
+            limiter.close()
+
+
 from dagster_defs.assets.acquisition import acquisition_assets
 from dagster_defs.assets.dq import dq_assets
+from dagster_defs.assets.legal import legal_assets
 from dagster_defs.assets.parsing import parsing_assets
 from dagster_defs.checks.accounting_identities import accounting_identity_checks
 
 defs = dg.Definitions(
-    assets=[*acquisition_assets, *parsing_assets, *dq_assets],
+    assets=[*acquisition_assets, *parsing_assets, *dq_assets, *legal_assets],
     asset_checks=accounting_identity_checks,
     resources={
         "postgres": PostgresResource(),
         "raw_object_store": RawObjectStoreResource(),
         "bir1": Bir1Resource(),
         "rdf_browser": RdfBrowserResource(),
+        "krs_api": KrsApiResource(),
     },
 )
