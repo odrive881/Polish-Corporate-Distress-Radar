@@ -10,16 +10,51 @@
 deferred to "no earlier than Phase 4, when MSiG forces a PDF text layer". Whether MSiG forces it is now a question
 this plan answers in step A, not an assumption (decision 2).
 
-## Status: step A done (2026-09-22); owner decisions pending before step B
+## Status: step B done (2026-09-23); step C next
 
-**Step A close-out, 2026-09-22.** Full findings, the per-entity table, and the terms are in
-**ADR 0011** (`proposed`). `notebooks/exploration/legal_sources_probe.py` is the probe. It held every response in
+**Owner decisions, 2026-09-23: all five accepted as recommended**, with ADR 0011 (now `accepted`) and the rule
+for a declaration with no decision date (`event_date` null, `known_from` the entry date, labels treat the event as
+on or before `known_from`). Decision 3 is signed off; its ADR 0009 addendum is written before step C stores any
+bytes.
+
+**Step B close-out, 2026-09-23.** `config/statutory/procedure_taxonomy.yaml` and
+`config/labels/outcome_labels_v1.yaml`, loaded by `parsing/legal_taxonomy.py` and `labels.py`, tested in
+`tests/parsing/test_legal_taxonomy.py` and `tests/test_labels.py`. What it found:
+- **The restructuring date field is the opening decision date.** One MSiG search per seed restructuring
+  (memory only, dates and keywords printed): 0000277937's `dataNadaniaKlauzuliWykonalnosci` 02.07.2021 is the day
+  MSiG 135/2021 says its sanacja opened, and its asset-security order's 01.04.2021 matches MSiG 88/2021.
+- **KRS still says "POSTĘPOWANIE NAPRAWCZE" for sanacja after 2016.** 0000386777's remedial proceedings of
+  17.04.2020 are the sanacja MSiG 87/2020 announces (VI GRs 3/20). The taxonomy maps the label under both the 2003
+  act (to 2015) and Prawo restrukturyzacyjne (from 2016). "POSTĘPOWANIE RESTRUKTURYZACYJNE" does not say which of the
+  four procedures opened, so it maps to a new generic `restructuring_proceedings_opened`.
+- **MSiG carries restructuring events the registry does not.** 0000277937 announced a COVID-era simplified
+  restructuring in MSiG 212/2020 (2020-10-29), nine months before the sanacja. 0000386777 had sanacja petitions with
+  asset-security orders in 2018 (VI GR 27/18, VI GR 40/18). Neither is in its KRS extract. Both move a label
+  earlier, so step E matters for pre-2021 restructurings, not only for publication dates.
+- **Every declaration adds an empty `opisZakonczeniaProcesuUpadlosci`.** Dated by its entry, it would end the
+  bankruptcy on the day it opened. The mapping applies only when `dataZakonczeniaPostepowania` is filled (`when:
+  present`).
+- **The production redactor must keep entry descriptions (`naglowekP.wpis[].opis`).** They are the only
+  deregistration signal, and the probe's 40-character rule reduced 0000440028's to `[REDACTED]`. Step C: put `opis`
+  on the allowlist, and regenerate that fixture.
+- **0000507997's court date and signature are in free text:** `organWydajacy` ends "5 SIERPNIA 2025 R., SYGN. AKT
+  KR1S/GU/977/202…", truncated by the registry. Step F may read the date from there; the signature is cut short, so
+  it cannot be the `proceeding_id`.
+- **Mergers preclude `silent_exit`** (`precludes_silent_exit` on `merger_division_transformation`): a merged-away
+  company is deregistered too, and that is not an exit. That goes one step past decision 5's wording; flag it if
+  you disagree.
+- The simplified-restructuring dates are 2020-06-24 to 2021-11-30 (the `upr_covid` statute).
+
+### Step A close-out
+
+**2026-09-22.** Full findings, the per-entity table, and the terms are in
+**ADR 0011** (`proposed` then, accepted 2026-09-23). `notebooks/exploration/legal_sources_probe.py` is the probe. It held every response in
 memory and printed only structure, dates and case signatures. Four redacted KRS extracts are in
 `tests/fixtures/legal/krs/`, gated by `tests/acquisition/test_legal_fixtures.py`. What it changes here:
 - **The KRS extract holds up across the seed.** It returned all 17 extracts over plain `httpx`, with no key and no
   wall, and **every one of the 9 hinted entities has its event in it**. 8 of 9 have a usable date:
   - `0000507997`'s declaration has only an entry date;
-  - the restructuring openings' date field is named `dataNadaniaKlauzuliWykonalnosci`, which needs confirming.
+  - the restructuring openings' date field is named `dataNadaniaKlauzuliWykonalnosci`, which needs confirming (confirmed in step B).
 
   Decision 1 as recommended.
 - **Decision 2 resolved: MSiG is a JSON API that returns notice text. The PDF tier is not needed,** and plan 0006's
@@ -346,8 +381,8 @@ unredacted is committed, and `test_no_fixture_contains_personal_data` must cover
 
 ## Definition of done
 
-- [ ] ADR 0011 accepted: access and terms confirmed for every source used, and the gap table recorded. *(Written 2026-09-22, `proposed`; awaiting the owner.)*
-- [ ] The procedure taxonomy and label config are written, validated and tested.
+- [x] ADR 0011 accepted: access and terms confirmed for every source used, and the gap table recorded. *(Accepted 2026-09-23.)*
+- [x] The procedure taxonomy and label config are written, validated and tested. *(Step B, 2026-09-23; MSiG mappings follow in step E.)*
 - [ ] KRS extracts (and KRZ, and MSiG if built) acquired for the 17-entity seed, redacted and content-addressed.
 - [ ] `legal_events` persisted and contracted, with full lineage and deduplication.
 - [ ] **Seed acceptance:** each of the 9 entities with a distress status hint has a matching event, found
