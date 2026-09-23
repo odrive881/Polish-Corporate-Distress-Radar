@@ -22,11 +22,13 @@ from distress_radar.acquisition.document_retrieval import (
     A3Download,
     A3IndexResult,
 )
+from distress_radar.acquisition.krs_extract import A4Result, PreviousFetch
 from distress_radar.acquisition.models import (
     EntityMasterRow,
     FilingDetail,
     FilingDocumentState,
     FilingIndexRow,
+    LegalSource,
     PendingFilingDocument,
     QuarantineRecord,
     RawFetchRecord,
@@ -203,6 +205,21 @@ SCHEMA_DDL: tuple[LiteralString, ...] = (
             ) THEN substring(q.entity_key FROM '^[0-9]{10}:(.+)$') END
         WHERE q.krs IS NULL AND (q.stage <> 'A1' OR q.entity_key ~ '^[0-9]{10}$');
     END $$
+    """,
+    # A4 (plan 0008 step C). One row per entity, source and run. `sha256` is the object that
+    # holds the content: new, or the previous one when `content_sha256` is unchanged. The
+    # latest row per (krs, source) sets that source's cutoff.
+    """
+    CREATE TABLE IF NOT EXISTS legal_source_fetches (
+        krs               char(10) NOT NULL,
+        source            text NOT NULL,
+        sha256            text NOT NULL REFERENCES raw_documents (sha256),
+        content_sha256    text NOT NULL,
+        fetched_at        timestamptz NOT NULL,
+        ingestion_run_id  text NOT NULL,
+        stored_new        boolean NOT NULL,
+        PRIMARY KEY (krs, source, ingestion_run_id)
+    )
     """,
 )
 
@@ -610,6 +627,45 @@ def filing_documents(conn: Connection, krs_numbers: Sequence[str]) -> list[Filin
     return _states(cur.fetchall())
 
 
+def latest_legal_fetch(conn: Connection, krs: str, source: LegalSource) -> PreviousFetch | None:
+    """The entity's latest fetch from `source`, whose content a new fetch is compared with."""
+    row = conn.execute(
+        """
+        SELECT sha256, content_sha256 FROM legal_source_fetches
+        WHERE krs = %s AND source = %s
+        ORDER BY fetched_at DESC LIMIT 1
+        """,
+        (krs, source),
+    ).fetchone()
+    return None if row is None else PreviousFetch(sha256=row[0], content_sha256=row[1])
+
+
+def record_a4_result(conn: Connection, result: A4Result) -> None:
+    """Write one entity's A4 rows; raw documents first so foreign keys resolve."""
+    for fetch in result.raw_fetches:
+        insert_raw_fetch(conn, fetch)
+    if result.fetch is not None:
+        row = result.fetch
+        conn.execute(
+            """
+            INSERT INTO legal_source_fetches
+                (krs, source, sha256, content_sha256, fetched_at, ingestion_run_id, stored_new)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT DO NOTHING
+            """,
+            (
+                row.krs,
+                row.source,
+                row.sha256,
+                row.content_sha256,
+                row.fetched_at,
+                row.ingestion_run_id,
+                row.stored_new,
+            ),
+        )
+    insert_quarantine(conn, result.quarantine)
+
+
 def resolved_entities(conn: Connection) -> list[str]:
     cur = conn.execute("SELECT krs FROM entity_master ORDER BY krs")
     return [str(krs).strip() for (krs,) in cur.fetchall()]
@@ -625,6 +681,7 @@ def table_counts(conn: Connection) -> dict[str, int]:
         "entity_reconciliation_log",
         "quarantine_events",
         "filing_index",
+        "legal_source_fetches",
     ):
         query = sql.SQL("SELECT count(*) FROM {}").format(sql.Identifier(table))
         row = conn.execute(query).fetchone()

@@ -19,11 +19,11 @@ It ingests statutory financial statements (XML and PDF) filed by KRS-registered 
 Violating any of these is a build failure, not a code-review comment.
 
 1. **Point-in-time correctness.** A feature computed for `as_of_date` may only use data whose `known_from <= as_of_date`. Enforced by a blocking test (§9.1). No exceptions, including for "obviously static" reference data.
-2. **Raw immutability.** Downloaded bytes are written to the object store unmodified, content-addressed, and never overwritten or deleted. All parsing reads from the object store, never from the network. The one exception is invariant 6's redaction: filed documents have signer data removed before hashing (ADR 0009). The ADR 0009 migration is the only code that deletes raw objects.
+2. **Raw immutability.** Downloaded bytes are written to the object store unmodified, content-addressed, and never overwritten or deleted. All parsing reads from the object store, never from the network. The one exception is invariant 6's redaction: filed documents have signer data removed, and KRS extracts have natural persons removed, before hashing (ADR 0009 and its addendum). The ADR 0009 migration is the only code that deletes raw objects.
 3. **Full lineage.** Every canonical fact carries the source document hash, the source element path, and the ingestion run id. A fact that cannot name its source is a bug.
 4. **No silent data loss.** Records failing validation go to a quarantine table with a reason code. Never drop, never impute to make a check pass.
 5. **Idempotence.** Every stage produces identical output from identical input. Re-running a stage is always safe.
-6. **Legal entities only.** Natural persons are never ingested or stored, including from insolvency registers which contain consumer bankruptcies. Filter at the acquisition boundary. This includes the signatures on filed documents (names, certificates, PESEL numbers), which `acquisition/redaction.py` strips before storing (ADR 0009).
+6. **Legal entities only.** Natural persons are never ingested or stored, including from insolvency registers which contain consumer bankruptcies. Filter at the acquisition boundary. This includes the signatures on filed documents (names, certificates, PESEL numbers), which `acquisition/redaction.py` strips before storing (ADR 0009), and the people named in KRS extracts (board members, shareholders, liquidators, trustees, notaries), which it redacts the same way (ADR 0009 addendum).
 7. **Versioned statutory config.** Size thresholds, KSH tripwire ratios, and procedure taxonomies live in `config/statutory/` as dated YAML. Never hardcode them in Python or SQL.
 
 ---

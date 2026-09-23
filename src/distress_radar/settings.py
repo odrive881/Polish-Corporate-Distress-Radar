@@ -59,7 +59,7 @@ class Settings(BaseSettings):
     # and the publish step must refuse to run while it is None (AGENT_SPEC §10).
     dq_mart_min_cell_entities: int | None = Field(default=None, ge=1)
 
-    # Per-source request pacing (A2/A3).
+    # Per-source request pacing (A2–A4).
     # BIR1 publishes no rate limit (ADR 0004): deliberately conservative.
     bir1_requests_per_minute: int = 30
     # RDF: KRS support confirmed, informally, 3 documents/minute for a
@@ -67,6 +67,9 @@ class Settings(BaseSettings):
     # every filing-list open and every document download spends one token, not
     # one per entity. Do not raise without a new ADR.
     rdf_requests_per_minute: int = 3
+    # Open KRS API (A4): no published limit (ADR 0011). Conservative, below the BIR1
+    # default; the step-A probe ran at the same pace.
+    krs_api_requests_per_minute: int = 15
 
     @property
     def postgres_conninfo(self) -> str:

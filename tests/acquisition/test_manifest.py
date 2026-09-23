@@ -14,11 +14,13 @@ from psycopg.types.json import Jsonb
 
 from distress_radar.acquisition import manifest
 from distress_radar.acquisition.document_retrieval import A3Detail, A3Download, A3IndexResult
+from distress_radar.acquisition.krs_extract import A4Result, PreviousFetch
 from distress_radar.acquisition.models import (
     Bir1PkdCode,
     EntityMasterRow,
     FilingDetail,
     FilingIndexRow,
+    LegalSourceFetch,
     QuarantineRecord,
     RawFetchRecord,
     ReconciliationRecord,
@@ -141,6 +143,7 @@ def test_ensure_schema_is_idempotent(conn: psycopg.Connection):
         "entity_reconciliation_log": 0,
         "quarantine_events": 0,
         "filing_index": 0,
+        "legal_source_fetches": 0,
     }
 
 
@@ -160,6 +163,7 @@ def test_reinserts_are_noops(conn: psycopg.Connection):
         "entity_reconciliation_log": 1,
         "quarantine_events": 1,
         "filing_index": 0,
+        "legal_source_fetches": 0,
     }
 
 
@@ -171,6 +175,56 @@ def test_repeat_fetch_in_a_new_run_keeps_lineage_without_new_document(conn: psyc
     counts = manifest.table_counts(conn)
     assert counts["raw_documents"] == 1
     assert counts["raw_document_fetches"] == 2
+
+
+def _a4(krs: str, run_id: str, sha: str, *, stored_new: bool, at: datetime) -> A4Result:
+    meta = RawDocumentMeta(
+        source="krs_api",
+        source_url=f"https://api-krs.ms.gov.pl/api/krs/OdpisPelny/{krs}?rejestr=P&format=json",
+        content_type="application/json",
+        fetched_at=at,
+        http_headers={},
+        ingestion_run_id=run_id,
+        redaction_version="krs-json-1",
+        received_sha256="ef" * 32 if stored_new else None,
+    )
+    return A4Result(
+        krs,
+        raw_fetches=[RawFetchRecord(sha256=sha, byte_size=10, meta=meta)] if stored_new else [],
+        fetch=LegalSourceFetch(
+            krs=krs, source="KRS", sha256=sha, content_sha256="c1" * 32,
+            fetched_at=at, ingestion_run_id=run_id, stored_new=stored_new,
+        ),
+    )
+
+
+def test_a4_fetches_reuse_unchanged_content_and_track_the_latest(conn: psycopg.Connection):
+    manifest.ensure_schema(conn)
+    krs = "0000000042"
+    assert manifest.latest_legal_fetch(conn, krs, "KRS") is None
+    manifest.record_a4_result(conn, _a4(krs, "run-1", SHA, stored_new=True, at=NOW))
+    manifest.record_a4_result(conn, _a4(krs, "run-1", SHA, stored_new=True, at=NOW))  # re-run: no-op
+    later = NOW.replace(hour=13)
+    manifest.record_a4_result(conn, _a4(krs, "run-2", SHA, stored_new=False, at=later))
+
+    counts = manifest.table_counts(conn)
+    assert counts["raw_documents"] == 1
+    assert counts["legal_source_fetches"] == 2
+    assert manifest.latest_legal_fetch(conn, krs, "KRS") == PreviousFetch(SHA, "c1" * 32)
+    redactions = conn.execute("SELECT redaction_version FROM raw_redactions").fetchall()
+    assert redactions == [("krs-json-1",)]
+
+
+def test_a4_not_found_is_quarantined_with_the_entity(conn: psycopg.Connection):
+    manifest.ensure_schema(conn)
+    record = QuarantineRecord(
+        stage="A4", entity_key="0000000001", reason_code="krs_extract_not_found",
+        detail="HTTP 404", source_document_hash=None, ingestion_run_id="run-1",
+        created_at=NOW, krs="0000000001", document_ref=None,
+    )
+    manifest.record_a4_result(conn, A4Result("0000000001", quarantine=[record]))
+    row = conn.execute("SELECT stage, krs, reason_code FROM quarantine_events").fetchone()
+    assert row == ("A4", "0000000001", "krs_extract_not_found")
 
 
 def test_unresolved_candidates_excludes_resolved_entities(conn: psycopg.Connection):

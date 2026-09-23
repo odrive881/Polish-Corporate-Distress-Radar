@@ -1,9 +1,10 @@
 # KRS full extracts (`OdpisPelny`), redacted
 
-Captured 2026-09-22 from the open KRS API
-(`https://api-krs.ms.gov.pl/api/krs/OdpisPelny/{krs}?rejestr=P&format=json`) by
-`notebooks/exploration/legal_sources_probe.py` (plan 0008 step A, ADR 0011), with
-`PROBE_WRITE_FIXTURES=1`. Re-running that notebook regenerates them.
+Captured from the open KRS API
+(`https://api-krs.ms.gov.pl/api/krs/OdpisPelny/{krs}?rejestr=P&format=json`), first by
+`notebooks/exploration/legal_sources_probe.py` (plan 0008 step A, ADR 0011) and regenerated on 2026-09-23 with
+the production redactor, `distress_radar.acquisition.redaction.redact_registry_extract` (plan 0008 step C). Each
+file is exactly what `krs_extract.fetch_extract` would store for that entity on that day.
 
 | File | Why it is here |
 |---|---|
@@ -12,15 +13,14 @@ Captured 2026-09-22 from the open KRS API
 | `odpis_pelny_0000277937.json` | restructuring (sanacja) opened after an asset-security order |
 | `odpis_pelny_0000440028.json` | voluntary liquidation opened, closed, and the entity deregistered |
 
-**Redaction (invariant 6).** These are public extracts of legal entities, but they name natural persons, so:
+**Redaction (invariant 6, ADR 0009 addendum).** These are public extracts of legal entities, but they name
+natural persons, so:
 - every `imie`, `imieDrugie`, `nazwiskoICzlon`, `nazwiskoIICzlon` and `pesel` value is replaced with `[REDACTED]`;
-- every free-text field longer than 40 characters and not on a short allowlist of generic fields (court names,
-  PKD descriptions, share counts, reporting periods, procedure types) is reduced to `[REDACTED]` plus its leading
-  date. Notarial citations, representation clauses, security orders, and liquidation and dissolution resolutions
-  can all name people who appear in no structured field. The seed showed notaries named in both of the latter.
+- every free-text field longer than 40 characters and not on the allowlist (legal entities' names, courts and
+  authorities, share counts, reporting periods, procedure types, PKD descriptions, registry entry descriptions) is
+  reduced to `[REDACTED]` plus the first date it contains. Notarial citations, representation clauses, security
+  orders, and liquidation and dissolution resolutions can all name people who appear in no structured field.
 
-Structure, entry numbers (`nrWpisuWprow` / `nrWpisuWykr`) and entry dates are kept.
+Structure, entry numbers (`nrWpisuWprow` / `nrWpisuWykr`), entry dates and entry descriptions are kept; the
+latter carry the only deregistration signal (0000440028's `WYKREŚLENIE Z KRAJOWEGO REJESTRU SĄDOWEGO`).
 `tests/acquisition/test_legal_fixtures.py` is the gate.
-
-This is the probe's redaction, not the production one. That one is plan 0008 decision 3 (an ADR 0009 addendum),
-and the allowlist approach here is its proposed starting point.

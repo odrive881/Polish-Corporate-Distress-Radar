@@ -175,7 +175,9 @@ def _events(taxonomy: ProcedureTaxonomy, krs: str) -> set[tuple[str, date]]:
             fields = {k: v for k, v in record.items() if isinstance(v, str)}
             text = fields.get(mapping.date_field) if mapping.date_field else None
             match = DATE.search(text) if text else None
-            raw = match.group() if match else entry_dates.get(fields.get("nrWpisuWprow", ""))
+            # A header entry carries its own date; any other record is dated by its entry.
+            entry = fields.get("dataWpisu") or entry_dates.get(fields.get("nrWpisuWprow", ""))
+            raw = match.group() if match else entry
             if raw is None:
                 continue
             day, month, year = (int(p) for p in raw.split("."))
@@ -202,13 +204,15 @@ def test_seed_extracts_resolve_to_the_expected_events(taxonomy: ProcedureTaxonom
     events = _events(taxonomy, "0000507997")
     assert ("bankruptcy_declared", date(2025, 8, 13)) in events
     assert {e for e, _ in events} == {"bankruptcy_declared", "arrears_enforcement_started"}
-    # The probe's redaction reduced this fixture's deregistration `opis` to `[REDACTED]`, so the
-    # entry is not visible here. The production redactor must keep entry descriptions (step C).
-    assert {e for e, _ in _events(taxonomy, "0000440028")} == {
+    # The production redactor keeps entry descriptions, the only deregistration signal.
+    events = _events(taxonomy, "0000440028")
+    assert {e for e, _ in events} == {
         "liquidation_opened",
         "liquidation_closed",
         "dissolution_recorded",
+        "deregistered",
     }
+    assert ("deregistered", date(2025, 9, 10)) in events
 
 
 # --- rejected configs ----------------------------------------------------------------------------
