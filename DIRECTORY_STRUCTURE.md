@@ -80,10 +80,12 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │       ├── small-2018-v1-2.yaml
 │   │       └── small-2025-v1-3.yaml   # a spec may bind more than one body (plan 0005 step D)
 │   ├── xsd/                           # official MF/CRWDE XSDs, vendored (catalog.yaml)
+│   ├── labels/
+│   │   └── outcome_labels_v1.yaml     # label parameters; the file name is the label_version
 │   └── statutory/
 │       ├── size_thresholds.yaml       # accounting-law size class thresholds, dated
 │       ├── ksh_tripwires.yaml         # Art. 233 / Art. 397 ratios, dated
-│       └── procedure_taxonomy.yaml    # bankruptcy/restructuring/liquidation event mapping
+│       └── procedure_taxonomy.yaml    # source event → event type → §4.6 class, dated by statute
 │
 ├── src/
 │   └── distress_radar/                # the installable package — see §2
@@ -173,6 +175,7 @@ src/distress_radar/
 │   ├── xsd_validation.py        # C1 — offline, against config/xsd/
 │   ├── xsd_inventory.py         # statutory line items an XSD declares (coverage tests)
 │   ├── canonical_schema.py      # typed canonical chart, mirrors config/mappings/canonical_chart.yaml
+│   ├── legal_taxonomy.py        # typed config/statutory/procedure_taxonomy.yaml, dated lookups
 │   ├── mapping_engine.py        # C2 — reads config/mappings/structures/*.yaml
 │   ├── statements.py            # C1 + C2 for one stored download, no I/O
 │   ├── accounting_identities.py # E2 — identity rules and grading, pure functions
@@ -214,7 +217,7 @@ src/distress_radar/
 
 Subfolder names match the stage groups in `AGENT_SPEC.md` §6 exactly (acquisition = A, parsing = C, extraction = G, features = H, models = I, api = J). This is intentional and must be preserved: an agent implementing a stage should never need to guess which folder it belongs in.
 
-Two modules sit at the package root because every stage uses them: `settings.py` (typed runtime settings from the environment) and `warehouse.py` (derived Parquet datasets under `WAREHOUSE_DIR`, ADR 0008).
+Two modules sit at the package root because every stage uses them: `settings.py` (typed runtime settings from the environment) and `warehouse.py` (derived Parquet datasets under `WAREHOUSE_DIR`, ADR 0008). `labels.py` sits there too: outcome labels are built in SQLMesh (stage F), so there is no stage folder for their parameters and the label-set freeze (plan 0008).
 
 ---
 

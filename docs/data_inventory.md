@@ -130,7 +130,7 @@ The spec forbids bulk enumeration of any source. Acquisition is per entity, seed
 | Official MF XSD schemas, one per structure version | Ministry of Finance | C1 | committed reference files | XSD validation | required | SPEC §6C1 | collected (`config/xsd/`, plan 0004; small, micro and the two remaining CRWDE templates added in plan 0005) |
 | UoR size-class thresholds (balance sheet total, revenue, average employment; multi-year rule), dated | Ustawa o rachunkowości | E / H | `config/statutory/size_thresholds.yaml` | `entity_size_class_history` | required | SPEC §4.4 | not written |
 | KSH tripwire ratios: Art. 233 (sp. z o.o., ½ share capital), Art. 397 (S.A., ⅓ share capital), dated | Kodeks spółek handlowych | H | `config/statutory/ksh_tripwires.yaml` | tripwire features, `tripwire_triggered` alerts | required | SPEC §4.5 | not written |
-| Insolvency / restructuring procedure taxonomy, dated | Prawo upadłościowe, Prawo restrukturyzacyjne, COVID-era acts | F | `config/statutory/procedure_taxonomy.yaml` | `outcome_labels` | required | SPEC §4.6 | not written |
+| Insolvency / restructuring procedure taxonomy, dated | Prawo upadłościowe, Prawo restrukturyzacyjne, COVID-era acts | F | `config/statutory/procedure_taxonomy.yaml` | `outcome_labels` | required | SPEC §4.6 | written for KRS (plan 0008 step B); MSiG in step E |
 | Canonical chart of line items | built from the UoR annexes | C2 | `config/mappings/canonical_chart.yaml` | every mapping spec | required | SPEC §5, §6C2 | not written |
 | Altman Z-score variants and Polish discriminant model coefficients | academic literature | I | model code / config | baseline models | required | SPEC §6I | not collected |
 

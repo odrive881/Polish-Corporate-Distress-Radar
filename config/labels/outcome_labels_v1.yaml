@@ -1,0 +1,32 @@
+# Outcome label parameters, version 1 (plan 0008 decision 5 in "Decisions this plan makes").
+#
+# Engineering choices, not statute, so they live here and not in config/statutory/. The file name
+# is the `label_version`: change a value, and it is a new file with a new version, never an edit.
+# Loaded by `distress_radar.labels.load_label_config`.
+
+label_version: outcome_labels_v1
+
+# AGENT_SPEC §4.6 and §5.
+horizons_months: [12, 24]
+
+# Month-ends from the first electronic MSiG issue to the data cutoff. Phase 5 intersects the grid
+# with whatever features exist.
+as_of_grid:
+  frequency: month_end
+  start: 2012-01-31
+
+# The earliest qualifying event in (as_of_date, as_of_date + horizon] sets the class. On the same
+# date, earlier in this list wins.
+precedence: [bankruptcy, restructuring, liquidation, silent_exit]
+
+# The cutoff is the earliest last-complete-fetch date across the sources used. A row whose horizon
+# passes it with no event seen is censored, never `alive`.
+cutoff: earliest_last_complete_fetch
+
+# An entity already in a proceeding at `as_of_date` is not a prediction target for that date: the
+# row is excluded and counted, not labelled with an event that has already happened.
+exclude_in_proceeding: true
+
+# An event with no decision date (e.g. 0000507997's declaration) happened on or before its
+# `known_from`; its `event_date` stays null (plan 0008 owner decision, 2026-09-23).
+undated_event: on_or_before_known_from

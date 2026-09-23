@@ -1,0 +1,244 @@
+# Procedure taxonomy: which source event means which project event, and which outcome class.
+#
+# AGENT_SPEC §4.6, plan 0008 step B. Statutory data, not code (invariant 7): an event type changes
+# meaning when a statute changes, so every source mapping is dated by the statute it falls under.
+# Loaded and cross-checked by `distress_radar.parsing.legal_taxonomy.load_procedure_taxonomy`.
+#
+# A mapping is looked up by (source, locator, `when`) on the event's date: its `event_date`, or its
+# `known_from` when the source gives no decision date. A source event that no mapping resolves is
+# quarantined (`legal_event_type_unmapped`), never mapped by guess and never dropped.
+
+version: 1
+
+# Acts and procedures, with the dates they applied. A mapping's range must lie inside its statute's.
+statutes:
+  - id: pu_1934
+    act: Rozporządzenie Prezydenta RP z 24 października 1934 r. — Prawo upadłościowe
+    effective_from: 1935-01-01
+    effective_to: 2003-09-30
+  - id: pu_2003
+    act: Ustawa z 28 lutego 2003 r. — Prawo upadłościowe (Prawo upadłościowe i naprawcze until 2015)
+    effective_from: 2003-10-01
+  - id: pu_2003_naprawcze
+    act: Ustawa z 28 lutego 2003 r. — Prawo upadłościowe i naprawcze, part two (postępowanie naprawcze)
+    effective_from: 2003-10-01
+    effective_to: 2015-12-31
+  - id: pr_2015
+    act: Ustawa z 15 maja 2015 r. — Prawo restrukturyzacyjne
+    effective_from: 2016-01-01
+  - id: upr_covid
+    act: >-
+      Ustawa z 19 czerwca 2020 r. (tarcza 4.0), art. 15–17 — uproszczone postępowanie
+      restrukturyzacyjne; announcements accepted until 30 November 2021
+    effective_from: 2020-06-24
+    effective_to: 2021-11-30
+  - id: ksh_2000
+    act: Ustawa z 15 września 2000 r. — Kodeks spółek handlowych (likwidacja spółki)
+    effective_from: 2001-01-01
+  - id: krs_1997
+    act: Ustawa z 20 sierpnia 1997 r. o Krajowym Rejestrze Sądowym
+    effective_from: 2001-01-01
+
+# KRZ went live on 1 December 2021 (ustawa z 6 grudnia 2018 r. o Krajowym Rejestrze Zadłużonych).
+# Before it, petitions and dismissals are largely invisible: `outcome_labels.source_era` is
+# `pre_krz` or `krz` by this date (plan 0008 decision 4).
+krz_launch: 2021-12-01
+
+# §4.6: the 2020–2021 simplified-restructuring spike. A label row is flagged when its horizon
+# window overlaps this window (plan 0008 decision 6). The procedure's own dates are `upr_covid`.
+regime_window:
+  start: 2020-01-01
+  end: 2021-12-31
+
+# Project event types. `outcome_class` is the §4.6 class an event starts (null: recorded, never a
+# label). `ends` names the classes an event closes, so an entity is no longer "already in a
+# proceeding" after it. `precludes_silent_exit`: a later deregistration is not a `silent_exit`
+# (plan 0008 decision 5); true for every classed event, and for a merger, whose deregistration is
+# not an exit at all.
+event_types:
+  # --- bankruptcy -------------------------------------------------------------------------------
+  - event_type: bankruptcy_petition
+    stage: petition
+    outcome_class: bankruptcy
+    precludes_silent_exit: true
+  - event_type: bankruptcy_petition_asset_security
+    stage: petition
+    outcome_class: bankruptcy
+    precludes_silent_exit: true
+  - event_type: bankruptcy_petition_dismissed_no_assets
+    stage: petition
+    outcome_class: bankruptcy
+    precludes_silent_exit: true
+  - event_type: bankruptcy_declared
+    stage: opening
+    outcome_class: bankruptcy
+    precludes_silent_exit: true
+  - event_type: bankruptcy_proceeding_ended
+    stage: closing
+    ends: [bankruptcy]
+    precludes_silent_exit: false
+  # --- restructuring ----------------------------------------------------------------------------
+  - event_type: restructuring_petition_asset_security
+    stage: petition
+    outcome_class: restructuring
+    precludes_silent_exit: true
+  - event_type: arrangement_approved
+    stage: opening
+    outcome_class: restructuring
+    precludes_silent_exit: true
+  - event_type: accelerated_arrangement_opened
+    stage: opening
+    outcome_class: restructuring
+    precludes_silent_exit: true
+  - event_type: arrangement_proceedings_opened
+    stage: opening
+    outcome_class: restructuring
+    precludes_silent_exit: true
+  - event_type: remedial_proceedings_opened
+    stage: opening
+    outcome_class: restructuring
+    precludes_silent_exit: true
+  - event_type: simplified_restructuring_announced
+    stage: opening
+    outcome_class: restructuring
+    precludes_silent_exit: true
+  # The KRS extract's "POSTĘPOWANIE RESTRUKTURYZACYJNE" does not say which of the four
+  # Prawo restrukturyzacyjne procedures was opened; MSiG and KRZ do.
+  - event_type: restructuring_proceedings_opened
+    stage: opening
+    outcome_class: restructuring
+    precludes_silent_exit: true
+  # --- liquidation and exit ---------------------------------------------------------------------
+  - event_type: liquidation_opened
+    stage: opening
+    outcome_class: liquidation
+    precludes_silent_exit: true
+  - event_type: liquidation_closed
+    stage: closing
+    ends: [liquidation]
+    precludes_silent_exit: false
+  # A silent exit only when no event that precludes it came earlier (plan 0008 decision 5).
+  - event_type: deregistered
+    stage: exit
+    outcome_class: silent_exit
+    ends: [bankruptcy, restructuring, liquidation]
+    precludes_silent_exit: false
+  # --- registry dynamics: Phase 5 features, never labels ----------------------------------------
+  - event_type: dissolution_recorded
+    stage: signal
+    precludes_silent_exit: false
+  - event_type: merger_division_transformation
+    stage: signal
+    precludes_silent_exit: true
+  - event_type: arrears_enforcement_started
+    stage: signal
+    precludes_silent_exit: false
+  - event_type: curator_appointed
+    stage: signal
+    precludes_silent_exit: false
+
+# Source event types. `locator` is the JSON path under the KRS extract's `odpis` (list indices
+# dropped); `when` narrows it by a categorical field of the record. `date_field` is the record field
+# that holds `event_date` (`date_parse: leading` reads the date a free-text field starts with); no
+# `date_field` means the event is dated by its registry entry. `known_from` is always the entry date
+# of the record's `nrWpisuWprow` (plan 0008 step F), whatever `date_field` says.
+#
+# KRZ and MSiG have no mappings yet: KRZ is not built in Phase 4 (ADR 0011 decision 4), and MSiG's
+# notice types are set by step E. MSiG chapters are coarse ("IX. OGŁOSZENIA WYMAGANE PRZEZ PRAWO
+# RESTRUKTURYZACYJNE"), so its notices will be typed from their text.
+mappings:
+  # --- KRS: bankruptcy --------------------------------------------------------------------------
+  - source: KRS
+    locator: dane.dzial4.zabezpieczenieMajatkuOddalenieWnioskuOUpadlosc.zabezpieczenieMajatkuDluznikaWPostepowaniuUpadlosciowym
+    event_type: bankruptcy_petition_asset_security
+    statute: pu_2003
+    # Named for an enforceability clause, but it is the order's date: on 0000277937's restructuring
+    # order, 01.04.2021 is the day MSiG 88/2021 gives for the order.
+    date_field: dataNadaniaKlauzuliWykonalnosci
+  - source: KRS
+    locator: dane.dzial6.postepowanieUpadlosciowe.informacjaOOgloszeniuUpadlosci
+    event_type: bankruptcy_declared
+    statute: pu_1934
+    date_field: data
+  - source: KRS
+    locator: dane.dzial6.postepowanieUpadlosciowe.informacjaOOgloszeniuUpadlosci
+    event_type: bankruptcy_declared
+    statute: pu_2003
+    date_field: data
+  - source: KRS
+    locator: dane.dzial6.postepowanieUpadlosciowe.opisZakonczeniaProcesuUpadlosci
+    # Every declaration entry adds this record empty; it is an ending only once it has a date.
+    when: {field: dataZakonczeniaPostepowania, present: true}
+    event_type: bankruptcy_proceeding_ended
+    statute: pu_2003
+    date_field: dataZakonczeniaPostepowania
+  # --- KRS: restructuring -----------------------------------------------------------------------
+  - source: KRS
+    locator: dane.dzial4.zabezpieczenieMajatkuOddalenieWnioskuOUpadlosc.zabezpieczenieMajatkuDluznikaWPostepowaniuRestrukturyzacyjnym
+    event_type: restructuring_petition_asset_security
+    statute: pr_2015
+    date_field: dataNadaniaKlauzuliWykonalnosci
+  - source: KRS
+    locator: dane.dzial6.postepowanieRestrukturyzacyjneNaprawczePrzymusowaRestrukturyzacjaUporzadkowanaLikwidacja.otwarciePostepowaniaRestrukturyzacyjnegoNaprawczegoPrzymusowejRestrukturyzacjiUporzadkowanejLikwidacji
+    when: {field: rodzajPostepowania, equals: POSTĘPOWANIE NAPRAWCZE}
+    event_type: remedial_proceedings_opened
+    statute: pu_2003_naprawcze
+    date_field: dataNadaniaKlauzuliWykonalnosci
+  # The registry kept the old label for sanacja after 2016: 0000386777's "POSTĘPOWANIE NAPRAWCZE" of
+  # 17.04.2020 is the sanacja MSiG 87/2020 announces (VI GRs 3/20), opened that day.
+  - source: KRS
+    locator: dane.dzial6.postepowanieRestrukturyzacyjneNaprawczePrzymusowaRestrukturyzacjaUporzadkowanaLikwidacja.otwarciePostepowaniaRestrukturyzacyjnegoNaprawczegoPrzymusowejRestrukturyzacjiUporzadkowanejLikwidacji
+    when: {field: rodzajPostepowania, equals: POSTĘPOWANIE NAPRAWCZE}
+    event_type: remedial_proceedings_opened
+    statute: pr_2015
+    date_field: dataNadaniaKlauzuliWykonalnosci
+  # The date is the opening decision: 0000277937's 02.07.2021 is the day MSiG 135/2021 says the
+  # court opened its sanacja (VIII GRs 1/21).
+  - source: KRS
+    locator: dane.dzial6.postepowanieRestrukturyzacyjneNaprawczePrzymusowaRestrukturyzacjaUporzadkowanaLikwidacja.otwarciePostepowaniaRestrukturyzacyjnegoNaprawczegoPrzymusowejRestrukturyzacjiUporzadkowanejLikwidacji
+    when: {field: rodzajPostepowania, equals: POSTĘPOWANIE RESTRUKTURYZACYJNE}
+    event_type: restructuring_proceedings_opened
+    statute: pr_2015
+    date_field: dataNadaniaKlauzuliWykonalnosci
+  # "PRZYMUSOWA RESTRUKTURYZACJA" and "UPORZĄDKOWANA LIKWIDACJA" are bank resolution (BFG), outside
+  # sp. z o.o.: left unmapped, so one would be quarantined and looked at.
+  # --- KRS: liquidation and exit ----------------------------------------------------------------
+  - source: KRS
+    locator: dane.dzial6.likwidacja.otwarcieLikwidacji
+    event_type: liquidation_opened
+    statute: ksh_2000
+    date_field: otwarcieLikwidacji
+    date_parse: leading
+  - source: KRS
+    locator: dane.dzial6.likwidacja.zakonczenieLikwidacji
+    event_type: liquidation_closed
+    statute: ksh_2000
+    date_field: zakonczenieLikwidacji
+    date_parse: leading
+  # The only deregistration signal the API gives (ADR 0011 decision 5).
+  - source: KRS
+    locator: naglowekP.wpis
+    when: {field: opis, contains: WYKREŚL}
+    event_type: deregistered
+    statute: krs_1997
+  - source: KRS
+    locator: dane.dzial6.rozwiazanieUniewaznienie.okreslenieOkolicznosci
+    when: {field: okreslenieOkolicznosci, equals: ROZWIĄZANIE}
+    event_type: dissolution_recorded
+    statute: ksh_2000
+  # Leaf shape not yet seen in the seed; step F confirms it against a fixture.
+  - source: KRS
+    locator: dane.dzial6.polaczeniePodzialPrzeksztalcenie
+    event_type: merger_division_transformation
+    statute: ksh_2000
+  # --- KRS: distress signals (Phase 5) ----------------------------------------------------------
+  - source: KRS
+    locator: dane.dzial4.zaleglosci.wszczecieEgzekucji
+    event_type: arrears_enforcement_started
+    statute: krs_1997
+    date_field: dataWszczeciaEgzekucji
+  # Seen for 0000225354 (ADR 0011), which has no fixture: step F confirms the leaf shape.
+  - source: KRS
+    locator: dane.dzial5.kurator
+    event_type: curator_appointed
+    statute: krs_1997

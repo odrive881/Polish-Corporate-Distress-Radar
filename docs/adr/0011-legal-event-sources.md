@@ -1,6 +1,6 @@
 # 0011 — Legal-event sources: the KRS extract, MSiG and KRZ
 
-- **Status:** proposed (2026-09-22). Accept once the owner has read the terms section; KRZ stays open either way.
+- **Status:** accepted (2026-09-23, by the owner, with plan 0008's decisions). KRZ stays open.
 - **Date:** 2026-09-22
 
 ## Context
@@ -172,3 +172,19 @@ truth, but it can be very late. An earlier publication (MSiG before 2021, KRZ af
   the owner's sign-off before any extract is stored (plan 0008 decision 3).
 - Labels for post-2021 bankruptcies start at the declaration or the registry's petition-stage order, not at the
   petition itself. `source_era` and `trigger_event_type` make that explicit.
+
+## Addendum, 2026-09-23: the open questions after plan 0008 step B
+
+- **The restructuring date field is resolved.** `dataNadaniaKlauzuliWykonalnosci` is the decision date, despite its
+  name. On 0000277937 the opening (02.07.2021) and the asset-security order (01.04.2021) match the dates MSiG
+  135/2021 and 88/2021 give.
+- **0000386777's "POSTĘPOWANIE NAPRAWCZE" of 17.04.2020 is a sanacja** (MSiG 87/2020, VI GRs 3/20). The registry kept
+  the pre-2016 label, and the taxonomy maps it for both eras.
+- **A declaration with no decision date:** the owner accepted the proposed rule (`event_date` null, `known_from` the
+  entry date, on or before it for labels).
+- **MSiG coverage grows the gap table.** The KRS extracts miss 0000277937's simplified restructuring (MSiG 212/2020)
+  and 0000386777's 2018 sanacja petitions (VI GR 27/18, VI GR 40/18). Both are earlier than anything in the
+  registry, so MSiG is a source of pre-2021 events, not only of publication dates. MSiG also still publishes
+  Prawo restrukturyzacyjne notices after KRZ's launch (for example 0000386777 in 2025).
+- **The MSiG search requires `from` and `to`** (HTTP 444, "Daty publikacji od i Daty publikacji do - Wymagane",
+  without them).
