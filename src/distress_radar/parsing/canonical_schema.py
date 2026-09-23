@@ -286,9 +286,7 @@ class MappingConfig(_Frozen):
         for spec in self.specs.values():
             unknown_bodies = spec.bodies_used - set(self.bodies)
             if unknown_bodies:
-                raise ValueError(
-                    f"{spec.structure_version}: unknown body {sorted(unknown_bodies)}"
-                )
+                raise ValueError(f"{spec.structure_version}: unknown body {sorted(unknown_bodies)}")
             # An override may target any body the spec can reach, since which one
             # applies is decided per statement from the document (plan 0005 step D).
             body_codes = {c for b in spec.bodies_used for c in self.bodies[b].codes()}

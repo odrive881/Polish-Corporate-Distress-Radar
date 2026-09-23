@@ -34,6 +34,8 @@ class NoticeRule(_Frozen):
     any: tuple[str, ...] = ()
     none: tuple[str, ...] = ()
     event: bool = True
+    # Not a candidate for the notice's kind: a further event whenever it matches.
+    additional: bool = False
     date: Literal["publication"] | PreferDates | None = None
 
     # No `date` on an event kind: the first body date, else none.
@@ -41,6 +43,8 @@ class NoticeRule(_Frozen):
     def _procedural_is_undated(self) -> NoticeRule:
         if not self.event and self.date is not None:
             raise ValueError(f"{self.kind}: a procedural kind has no date")
+        if self.additional and not self.event:
+            raise ValueError(f"{self.kind}: an additional rule must be an event")
         return self
 
     def terms(self) -> set[str]:
@@ -61,9 +65,19 @@ class NoticeKinds(_Frozen):
     rules: tuple[NoticeRule, ...]
 
     def classify(self, extracted: Mapping[str, Any]) -> NoticeRule | None:
+        """The notice's kind: the first matching rule that is not `additional`."""
+        chapter, terms = self._read(extracted)
+        return next((r for r in self.rules if not r.additional and r.matches(chapter, terms)), None)
+
+    def additional(self, extracted: Mapping[str, Any]) -> list[NoticeRule]:
+        """Every `additional` rule the notice matches: further events from the same notice."""
+        chapter, terms = self._read(extracted)
+        return [r for r in self.rules if r.additional and r.matches(chapter, terms)]
+
+    @staticmethod
+    def _read(extracted: Mapping[str, Any]) -> tuple[str | None, set[str]]:
         terms: set[str] = set(cast("list[str]", extracted.get("terms") or []))
-        chapter = extracted.get("chapter_code")
-        return next((r for r in self.rules if r.matches(chapter, terms)), None)
+        return cast("str | None", extracted.get("chapter_code")), terms
 
 
 def event_date(rule: NoticeRule, extracted: Mapping[str, Any], published: date) -> date | None:

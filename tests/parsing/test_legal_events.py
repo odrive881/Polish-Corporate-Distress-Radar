@@ -206,13 +206,41 @@ def test_each_fixture_notice_is_typed_and_dated(
 ) -> None:
     out = _msig(taxonomy, kinds, name)
     assert out.rejects == []
-    [event] = out.events
+    event = out.events[0]  # the notice's kind; 0000386777_2109633 records a second event
+    assert len(out.events) == (2 if name == "0000386777_2109633" else 1)
     assert (event.event_type, event.event_date, event.known_from, event.source) == (
         event_type,
         event_date,
         known_from,
         "MSiG",
     )
+
+
+def test_one_notice_can_record_two_events(taxonomy: ProcedureTaxonomy, kinds: NoticeKinds) -> None:
+    """0000386777's sanacja opening also dismisses its pending bankruptcy petition."""
+    opened, dismissed = _msig(taxonomy, kinds, "0000386777_2109633").events
+    assert opened.event_type == "remedial_proceedings_opened"
+    assert (dismissed.event_type, dismissed.stage, dismissed.ends) == (
+        "bankruptcy_petition_dismissed",
+        "closing",
+        ("bankruptcy",),
+    )
+    assert dismissed.event_date == date(2020, 4, 17)
+    assert dismissed.source_element_path == (
+        f"{opened.source_element_path}#bankruptcy_petition_dismissed_by_restructuring"
+    )
+
+
+def test_the_dismissal_closes_the_petition_it_dismissed(
+    taxonomy: ProcedureTaxonomy, kinds: NoticeKinds
+) -> None:
+    out = Normalised()
+    for name in ("0000386777_3376311", "0000386777_2109633"):
+        out.extend(_msig(taxonomy, kinds, name))
+    events = finalise(out)
+    [petition] = _by_type(events, "bankruptcy_petition_asset_security")
+    [dismissal] = _by_type(events, "bankruptcy_petition_dismissed")
+    assert petition.proceeding_id == dismissal.proceeding_id == "VI/GU/751/19"
 
 
 def test_a_procedural_notice_is_neither_an_event_nor_a_reject(

@@ -10,7 +10,33 @@
 deferred to "no earlier than Phase 4, when MSiG forces a PDF text layer". Whether MSiG forces it is now a question
 this plan answers in step A, not an assumption (decision 2).
 
-## Status: complete (2026-09-23)
+## Status: complete (2026-09-23); review fixes applied the same day
+
+**Review fixes, 2026-09-23.** A review of the whole phase found six problems; all are fixed and each has a test that
+fails without its fix:
+1. **A fresh clone could not plan.** DuckDB refuses a view over Parquet that does not exist yet, so the
+   `ext.legal_events` view stopped every SQLMesh plan, the DQ group's included, until `legal_events` had run once.
+   `transform/config.py` now builds an empty view with the declared columns for a dataset not yet written.
+   Tested for all four Parquet views on an empty warehouse.
+2. **`raw_redactions` pointed at the old MSiG records** after the vocabulary change. The table was keyed by the
+   received hash alone, so re-reducing the same bytes lost its row. It is now keyed by (received hash, redaction
+   version); MSiG records carry their extraction key as the version; the 49 missing rows were recovered from
+   `msig_notices` (ADR 0009 addendum).
+3. **One notice, one event, lost a dismissal.** 0000386777's 2020 sanacja notice also dismissed the pending
+   bankruptcy petition, and the company stayed excluded after its sanacja ended. The notice-kind rules now have
+   `additional` rules, and one notice can record several events. The first is
+   `bankruptcy_petition_dismissed_by_restructuring`, which maps to a new closing event type,
+   `bankruptcy_petition_dismissed`. 0000386777 is labelled again from 2025-09-30. The label set moved to
+   `a1ac9fb07f79…` (4,694 rows); `a5da757f8341…` stays frozen.
+4. **Invariant 2 did not name MSiG's reduced records.** It now does, in CLAUDE.md and AGENT_SPEC §2.
+5. **The fixture gate was weaker than the redactor.** Its pattern let "NADZORCY SĄDOWEGO" and a name through. It now
+   applies the production rule (`redaction.may_name_a_person`) to every long string a fixture keeps, and a test
+   proves it catches that case.
+6. **The probe notebook still carried the old redactor.** Its fixture cell now writes through
+   `redact_registry_extract`.
+
+Checked afterwards: 89 `legal_events` rows in 70 groups, all 15 checks pass, and nothing is quarantined.
+
 
 **Step I close-out, 2026-09-23.** Docs brought in line with what was built:
 - **AGENT_SPEC:**

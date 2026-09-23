@@ -211,9 +211,7 @@ def filed_bodies(frame: pl.DataFrame, config: MappingConfig) -> pl.DataFrame:
         paths = part["source_element_path"].to_list()
         present = set(part["statement_type"].to_list())
         bodies = {
-            body
-            for name, body in _bodies_filed(spec, paths)
-            if STATEMENT_TYPES[name] in present
+            body for name, body in _bodies_filed(spec, paths) if STATEMENT_TYPES[name] in present
         }
         rows.append(
             {

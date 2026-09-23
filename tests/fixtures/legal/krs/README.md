@@ -5,6 +5,7 @@ Captured from the open KRS API
 `notebooks/exploration/legal_sources_probe.py` (plan 0008 step A, ADR 0011) and regenerated on 2026-09-23 with
 the production redactor, `distress_radar.acquisition.redaction.redact_registry_extract` (plan 0008 step C). Each
 file is exactly what `krs_extract.fetch_extract` would store for that entity on that day.
+Re-running the notebook with `PROBE_WRITE_FIXTURES=1` regenerates them through the same redactor.
 
 | File | Why it is here |
 |---|---|

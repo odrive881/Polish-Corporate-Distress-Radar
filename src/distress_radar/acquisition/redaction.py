@@ -368,7 +368,8 @@ def _allowlisted(key: str, path: str) -> bool:
     return key == "opis" and any(path.startswith(p) for p in _OPIS_PATHS)
 
 
-def _may_name_a_person(value: str) -> bool:
+def may_name_a_person(value: str) -> bool:
+    """A role word (supervisor, trustee, notary…) with no legal-form marker after it."""
     return any(
         not _LEGAL_FORM.search(value[m.end() : m.end() + _ROLE_WINDOW])
         for m in _ROLE_WORD.finditer(value)
@@ -395,7 +396,7 @@ def redact_registry_extract(document: object) -> RegistryRedaction:
                 elif (
                     isinstance(value, str)
                     and len(value) > _TEXT_LIMIT
-                    and (not _allowlisted(key, here) or _may_name_a_person(value))
+                    and (not _allowlisted(key, here) or may_name_a_person(value))
                 ):
                     dated = _DATE_IN_TEXT.search(value)
                     result.reduced += 1

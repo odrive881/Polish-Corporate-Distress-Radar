@@ -180,9 +180,9 @@ def test_of_which_lines_are_not_summed(mapping_config: MappingConfig) -> None:
 
 
 def test_cashflow_tie_only_when_a_cash_flow_exists(mapping_config: MappingConfig) -> None:
-    [absent] = cashflow_ties(
-        _frame(BALANCED, mapping_config), mapping_config, TOLERANCE
-    ).iter_rows(named=True)
+    [absent] = cashflow_ties(_frame(BALANCED, mapping_config), mapping_config, TOLERANCE).iter_rows(
+        named=True
+    )
     assert (absent["status"], absent["line_item"], absent["difference"]) == (
         "not_applicable",
         "CF",
@@ -218,9 +218,7 @@ def test_immaterial_subtotal_difference_warns_material_one_quarantines(
         failed = results.filter(pl.col("status") == "fail")
         assert set(failed["check"].to_list()) == {"subtotals_consistent"}
         assert set(failed["severity"].to_list()) == {severity}
-        assert grade(frame, results)["quality_grade"].unique().to_list() == [
-            expected
-        ]
+        assert grade(frame, results)["quality_grade"].unique().to_list() == [expected]
 
 
 def test_subtotal_failure_without_total_assets_quarantines(mapping_config: MappingConfig) -> None:
@@ -233,9 +231,7 @@ def test_subtotal_failure_without_total_assets_quarantines(mapping_config: Mappi
         mapping_config,
     )
     results = run_identity_checks(frame, mapping_config, Decimal("0.00"))
-    assert grade(frame, results)["quality_grade"].unique().to_list() == [
-        "quarantined"
-    ]
+    assert grade(frame, results)["quality_grade"].unique().to_list() == ["quarantined"]
 
 
 def test_altered_micro_total_assets_quarantines(mapping_config: MappingConfig) -> None:
@@ -263,9 +259,7 @@ def test_altered_micro_total_assets_quarantines(mapping_config: MappingConfig) -
     results = run_identity_checks(frame, mapping_config, TOLERANCE)
     failed = results.filter(pl.col("status") == "fail")
     assert "balance_sheet_balances" in failed["check"].to_list()
-    assert grade(frame, results)["quality_grade"].unique().to_list() == [
-        "quarantined"
-    ]
+    assert grade(frame, results)["quality_grade"].unique().to_list() == ["quarantined"]
 
 
 def _golden_frame(
@@ -368,9 +362,7 @@ def test_identity_check_results_contract_rejects_a_pass_with_a_severity(
     mapping_config: MappingConfig,
 ) -> None:
     facts = _frame(BALANCED, mapping_config)
-    persisted = identity_check_results(
-        run_identity_checks(facts, mapping_config, TOLERANCE), facts
-    )
+    persisted = identity_check_results(run_identity_checks(facts, mapping_config, TOLERANCE), facts)
     IDENTITY_CHECK_RESULTS.validate(persisted)
     with pytest.raises(pa_errors.SchemaError):
         IDENTITY_CHECK_RESULTS.validate(persisted.with_columns(severity=pl.lit("material")))
@@ -389,9 +381,7 @@ def test_known_bad_statement_is_quarantined(mapping_config: MappingConfig) -> No
     results = run_identity_checks(frame, mapping_config, TOLERANCE)
     failed = results.filter(pl.col("status") == "fail")
     assert set(failed["check"].to_list()) == {"balance_sheet_balances", "subtotals_consistent"}
-    assert grade(frame, results)["quality_grade"].unique().to_list() == [
-        "quarantined"
-    ]
+    assert grade(frame, results)["quality_grade"].unique().to_list() == ["quarantined"]
 
 
 def test_real_consecutive_years_restatements(mapping_config: MappingConfig) -> None:

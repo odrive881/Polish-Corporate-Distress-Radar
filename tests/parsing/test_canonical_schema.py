@@ -141,5 +141,7 @@ def test_every_chart_code_is_used(mapping_config: MappingConfig) -> None:
     sitting in the chart looking like a mapped line.
     """
     used = set[str]().union(*(body.codes() for body in mapping_config.bodies.values()))
-    used |= {code for spec in mapping_config.specs.values() for code in spec.code_overrides.values()}
+    used |= {
+        code for spec in mapping_config.specs.values() for code in spec.code_overrides.values()
+    }
     assert set(mapping_config.chart.by_code()) - used == set()

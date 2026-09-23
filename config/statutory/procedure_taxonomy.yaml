@@ -77,6 +77,12 @@ event_types:
     stage: closing
     ends: [bankruptcy]
     precludes_silent_exit: false
+  # A pending petition disposed of by a restructuring opening: it closes the petition stage.
+  # A dismissal for insufficient assets is `bankruptcy_petition_dismissed_no_assets`, an outcome.
+  - event_type: bankruptcy_petition_dismissed
+    stage: closing
+    ends: [bankruptcy]
+    precludes_silent_exit: false
   # --- restructuring ----------------------------------------------------------------------------
   - event_type: restructuring_petition_asset_security
     stage: petition
@@ -321,3 +327,8 @@ mappings:
     when: {field: notice_kind, equals: merger_division_transformation}
     event_type: merger_division_transformation
     statute: ksh_2000
+  - source: MSiG
+    locator: notice
+    when: {field: notice_kind, equals: bankruptcy_petition_dismissed_by_restructuring}
+    event_type: bankruptcy_petition_dismissed
+    statute: pr_2015

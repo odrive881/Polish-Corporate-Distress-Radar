@@ -14,6 +14,8 @@ from typing import Any
 
 import pytest
 
+from distress_radar.acquisition.redaction import may_name_a_person
+
 LEGAL = Path(__file__).parent.parent / "fixtures" / "legal"
 FIXTURES = sorted(LEGAL.rglob("*.json"))
 PERSON_KEYS = {"imie", "imieDrugie", "nazwiskoICzlon", "nazwiskoIICzlon", "pesel"}
@@ -54,4 +56,39 @@ def test_no_pesel_or_named_role_in_free_text(fixture: Path) -> None:
     raw = fixture.read_text(encoding="utf-8")
     assert not re.search(r"\b\d{11}\b", raw), f"{fixture.name} has an 11-digit run (PESEL-shaped)"
     match = ROLE_THEN_NAME.search(raw)
-    assert match is None, f"{fixture.name}: a role word followed by a possible name ({match.group(1)})"
+    assert match is None, (
+        f"{fixture.name}: a role word followed by a possible name ({match.group(1)})"
+    )
+
+
+# Long free text is where a person can hide outside the person keys; the production redactor
+# reduces it unless it is allowlisted and names no role without a legal form (krs-json-2).
+# The gate applies the same rule to every long string a fixture keeps. MSiG's `terms` are
+# fixed vocabulary stems ("nadzorc"), checked by the vocabulary itself, not here.
+LONG_TEXT = 40
+
+
+def named_roles(doc: Any) -> list[str]:
+    """Long strings in a fixture that may name a person by their role."""
+    found: list[str] = []
+    for key, value in _leaves(doc):
+        if key in ("terms", "terms_before") or not isinstance(value, str):
+            continue
+        if len(value) > LONG_TEXT and may_name_a_person(value):
+            found.append(f"{key}: {value[:60]}")
+    return found
+
+
+@pytest.mark.parametrize("fixture", FIXTURES, ids=lambda p: p.name)
+def test_no_long_text_names_a_role_without_a_legal_form(fixture: Path) -> None:
+    doc = json.loads(fixture.read_text(encoding="utf-8"))
+    assert named_roles(doc) == [], fixture.name
+
+
+def test_the_gate_catches_a_supervisor_named_after_the_court() -> None:
+    """The case the role-word regex above lets through ("NADZORCY SĄDOWEGO …")."""
+    order = "POSTANOWIENIE Z DNIA 25.03.2022 R. O USTANOWIENIU TYMCZASOWEGO NADZORCY SĄDOWEGO ALOJZEGO WYMYŚLONEGO"
+    assert ROLE_THEN_NAME.search(order) is None  # the old gate misses it
+    assert named_roles({"organWydajacy": order}) == [f"organWydajacy: {order[:60]}"]
+    company = order.replace("ALOJZEGO WYMYŚLONEGO", "PRZYKŁADOWA SPÓŁKA Z O.O.")
+    assert named_roles({"organWydajacy": company}) == []

@@ -60,14 +60,33 @@ SCHEMA_DDL: tuple[LiteralString, ...] = (
         PRIMARY KEY (sha256, source_url, ingestion_run_id)
     )
     """,
+    # One row per received file and redaction version: the same bytes reduced under a new
+    # version (an MSiG vocabulary change) are a new row, not a lost one. Keyed by the received
+    # hash alone until 2026-09-23; an older database is re-keyed in place.
     """
     CREATE TABLE IF NOT EXISTS raw_redactions (
-        received_sha256    text PRIMARY KEY,
+        received_sha256    text NOT NULL,
         redacted_sha256    text NOT NULL REFERENCES raw_documents (sha256),
         redaction_version  text NOT NULL,
         redacted_at        timestamptz NOT NULL,
-        ingestion_run_id   text NOT NULL
+        ingestion_run_id   text NOT NULL,
+        PRIMARY KEY (received_sha256, redaction_version)
     )
+    """,
+    """
+    DO $$
+    DECLARE
+        pkey text;
+    BEGIN
+        SELECT c.conname INTO pkey
+        FROM pg_constraint AS c
+        WHERE c.conrelid = to_regclass('raw_redactions') AND c.contype = 'p'
+          AND array_length(c.conkey, 1) = 1;
+        IF pkey IS NOT NULL THEN
+            EXECUTE format('ALTER TABLE raw_redactions DROP CONSTRAINT %I', pkey);
+            ALTER TABLE raw_redactions ADD PRIMARY KEY (received_sha256, redaction_version);
+        END IF;
+    END $$
     """,
     """
     CREATE TABLE IF NOT EXISTS universe_candidates (
@@ -236,6 +255,24 @@ SCHEMA_DDL: tuple[LiteralString, ...] = (
         first_ingestion_run_id  text NOT NULL,
         PRIMARY KEY (krs, notice_id, extraction_version)
     )
+    """,
+    # Plan 0008 review, 2026-09-23: notices re-reduced under a new vocabulary were stored, but
+    # their redaction rows were dropped by the old single-column key (the received bytes had not
+    # changed). Recover them: the same notice's earlier row gives the received hash. Idempotent;
+    # a record that already has its row is left alone.
+    """
+    INSERT INTO raw_redactions
+        (received_sha256, redacted_sha256, redaction_version, redacted_at, ingestion_run_id)
+    SELECT DISTINCT r.received_sha256, cur.sha256, cur.extraction_version, d.first_fetched_at,
+           cur.first_ingestion_run_id
+    FROM msig_notices AS cur
+    JOIN msig_notices AS old
+      ON old.krs = cur.krs AND old.notice_id = cur.notice_id
+     AND old.extraction_version <> cur.extraction_version
+    JOIN raw_redactions AS r ON r.redacted_sha256 = old.sha256
+    JOIN raw_documents AS d ON d.sha256 = cur.sha256
+    WHERE NOT EXISTS (SELECT 1 FROM raw_redactions AS x WHERE x.redacted_sha256 = cur.sha256)
+    ON CONFLICT DO NOTHING
     """,
 )
 
