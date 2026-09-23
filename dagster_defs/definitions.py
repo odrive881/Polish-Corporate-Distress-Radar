@@ -151,8 +151,17 @@ from dagster_defs.assets.legal import legal_assets
 from dagster_defs.assets.parsing import parsing_assets
 from dagster_defs.checks.accounting_identities import accounting_identity_checks
 
+# Plan 0008: registry bytes to a frozen label set in one run (KRS and MSiG fetched, legal
+# events rebuilt, label models rebuilt and audited, the set frozen).
+legal_to_labels = dg.define_asset_job(
+    "legal_to_labels",
+    selection=dg.AssetSelection.groups("legal", "labels"),
+    description="A4 fetches → legal_events → label models and audits → frozen outcome_labels.",
+)
+
 defs = dg.Definitions(
     assets=[*acquisition_assets, *parsing_assets, *dq_assets, *legal_assets, *label_assets],
+    jobs=[legal_to_labels],
     asset_checks=accounting_identity_checks,
     resources={
         "postgres": PostgresResource(),

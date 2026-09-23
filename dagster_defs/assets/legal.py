@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, cast
 
 import dagster as dg
 
-from dagster_defs.assets.acquisition import entity_master
+from dagster_defs.assets.acquisition import SEGMENTS_DIR, entity_master
 from distress_radar.acquisition import manifest
 from distress_radar.acquisition.base import PermanentSourceError, SourceError
 from distress_radar.acquisition.krs_extract import fetch_extract
@@ -25,6 +25,7 @@ from distress_radar.acquisition.msig_client import (
 )
 from distress_radar.acquisition.raw_store import raw_key
 from distress_radar.parsing.contracts import LEGAL_EVENTS
+from distress_radar.parsing.legal_acceptance import load_seed_hints, seed_acceptance
 from distress_radar.parsing.legal_events import (
     Normalised,
     finalise,
@@ -48,6 +49,23 @@ if TYPE_CHECKING:
     )
     from distress_radar.acquisition.base import SourceClient
     from distress_radar.acquisition.raw_store import ObjectStore
+
+
+SEED = SEGMENTS_DIR / "construction_sme_v1_seed.yaml"
+_REASON = "reason:"
+
+
+def _quarantine_check(name: str, counts: Counter[str]) -> dg.AssetCheckResult:
+    """This run's quarantined records by reason: a warning, since quarantine is by design."""
+    reasons = {
+        k.removeprefix(_REASON): v for k, v in sorted(counts.items()) if k.startswith(_REASON)
+    }
+    return dg.AssetCheckResult(
+        check_name=name,
+        passed=not reasons,
+        severity=dg.AssetCheckSeverity.WARN,
+        metadata={"quarantined": sum(reasons.values()), "by_reason": reasons},
+    )
 
 
 async def _fetch_all(
@@ -78,6 +96,7 @@ async def _fetch_all(
             continue
         manifest.record_a4_result(conn, result)
         conn.commit()
+        outcomes.update(f"{_REASON}{q.reason_code}" for q in result.quarantine)
         if result.fetch is None:
             outcomes["quarantined"] += 1
         else:
@@ -89,6 +108,7 @@ async def _fetch_all(
     group_name="legal",
     deps=[entity_master],
     required_resource_keys={"postgres", "raw_object_store", "krs_api"},
+    check_specs=[dg.AssetCheckSpec("krs_extracts_quarantine", asset="krs_extracts")],
 )
 def krs_extracts(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
     """A4 — full KRS extracts from the open KRS API, redacted and content-addressed.
@@ -134,7 +154,8 @@ def krs_extracts(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
             "unchanged": outcomes["unchanged"],
             "quarantined": outcomes["quarantined"],
             "legal_source_fetches_rows": counts["legal_source_fetches"],
-        }
+        },
+        check_results=[_quarantine_check("krs_extracts_quarantine", outcomes)],
     )
 
 
@@ -142,6 +163,7 @@ def krs_extracts(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
     group_name="legal",
     deps=[entity_master],
     required_resource_keys={"postgres", "raw_object_store", "msig_api"},
+    check_specs=[dg.AssetCheckSpec("msig_notices_quarantine", asset="msig_notices")],
 )
 def msig_notices(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
     """A4 — MSiG notices per entity, searched by KRS, stored in reduced, person-free form.
@@ -197,6 +219,7 @@ def msig_notices(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
                     outcomes["new_notices"] += len(result.notices)
                     outcomes["known_notices"] += len(known)
                     outcomes["quarantined"] += len(result.quarantine)
+                    outcomes.update(f"{_REASON}{q.reason_code}" for q in result.quarantine)
                     outcomes["entities_with_notices"] += bool(result.notices or known)
 
         asyncio.run(run())
@@ -210,9 +233,10 @@ def msig_notices(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
     return dg.MaterializeResult(
         metadata={
             "entities": len(entities),
-            **dict(outcomes),
+            **{k: v for k, v in outcomes.items() if not k.startswith(_REASON)},
             "msig_notices_rows": counts["msig_notices"],
-        }
+        },
+        check_results=[_quarantine_check("msig_notices_quarantine", outcomes)],
     )
 
 
@@ -226,6 +250,14 @@ LEGAL_EVENTS_DATASET = "legal_events"
     group_name="legal",
     deps=[krs_extracts, msig_notices],
     required_resource_keys={"postgres", "raw_object_store"},
+    check_specs=[
+        dg.AssetCheckSpec("legal_events_quarantine", asset="legal_events"),
+        dg.AssetCheckSpec(
+            "seed_acceptance",
+            asset="legal_events",
+            description="Each seed entity with a status hint has a matching event, and no other does.",
+        ),
+    ],
 )
 def legal_events(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
     """C (legal side) — `legal_events` from the stored KRS extracts and MSiG notice records.
@@ -294,15 +326,34 @@ def legal_events(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
 
     frame = LEGAL_EVENTS.validate(to_frame(finalise(normalised)))
     write_dataset(frame, settings.warehouse_dir, LEGAL_EVENTS_DATASET, "event_year")
-    reasons = Counter(r.reason_code for r in normalised.rejects)
+    reasons = Counter(f"{_REASON}{r.reason_code}" for r in normalised.rejects)
+    verdicts = seed_acceptance(frame, load_seed_hints(SEED))
+    acceptance = dg.AssetCheckResult(
+        check_name="seed_acceptance",
+        passed=all(v.passed for v in verdicts),
+        metadata={
+            "matched": sum(v.status == "matched" for v in verdicts),
+            "clear": sum(v.status == "clear" for v in verdicts),
+            "missing": [v.krs for v in verdicts if v.status == "missing"],
+            "unexpected": [v.krs for v in verdicts if v.status == "unexpected"],
+            "verdicts": dg.MetadataValue.md(
+                "| KRS | hint | status | classes found | first matching event |\n|---|---|---|---|---|\n"
+                + "\n".join(
+                    f"| {v.krs} | {v.hint or ''} | {v.status} | {', '.join(v.found_classes)} | "
+                    f"{v.first_event or ''} |"
+                    for v in verdicts
+                )
+            ),
+        },
+    )
     return dg.MaterializeResult(
         metadata={
             "rows": frame.height,
             "entities": frame["krs"].n_unique(),
             "dedup_groups": frame["dedup_group_id"].n_unique(),
             "rows_by_source": dict(Counter(frame["source"].to_list())),
-            "quarantined": dict(reasons),
-        }
+        },
+        check_results=[_quarantine_check("legal_events_quarantine", reasons), acceptance],
     )
 
 

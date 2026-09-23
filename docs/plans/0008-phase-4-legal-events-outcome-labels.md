@@ -10,9 +10,28 @@
 deferred to "no earlier than Phase 4, when MSiG forces a PDF text layer". Whether MSiG forces it is now a question
 this plan answers in step A, not an assumption (decision 2).
 
-## Status: step G done (2026-09-23); step H (Dagster wiring) next
+## Status: step H done (2026-09-23); step I (docs) next
 
-**Step G close-out, 2026-09-23.** The SQLMesh models `staging.legal_events_canonical` (view),
+**Step H close-out, 2026-09-23.**
+- **One job:** `legal_to_labels`, the `legal` and `labels` groups: A4 fetches, then `legal_events`, then the label
+  models and their audits, then the frozen set.
+- **Checks the assets report about their own run:** `krs_extracts_quarantine`, `msig_notices_quarantine` and
+  `legal_events_quarantine` count this run's quarantined records by reason, at severity warn, because quarantine
+  is by design. They are yielded by the assets rather than read from `quarantine_events`, whose append-only rows
+  would count old detections.
+- **`seed_acceptance` on `legal_events`** (`parsing/legal_acceptance.py`): each hinted entity must have an event of
+  the class its hint names, and every other entity must have no qualifying event. It publishes a table of
+  verdicts, so a mismatch is a finding to investigate, not a bare failure.
+- **Live, run `cde2a23f`:**
+  - all 17 checks pass (4 from the assets, 13 SQLMesh audits);
+  - every KRS and MSiG fetch found unchanged content;
+  - the label set came out as `a5da757f8341…` again, "already frozen", still one `label_sets` row.
+
+  Registry bytes to a frozen label set, reproducibly, in one run.
+
+### Step G close-out
+
+**2026-09-23.** The SQLMesh models `staging.legal_events_canonical` (view),
 `staging.outcome_label_grid`, `marts.outcome_labels`, `marts.outcome_label_exclusions` and
 `marts.legal_event_coverage`; five audits in `transform/audits/outcome_labels.sql`; four SQLMesh unit tests;
 `freeze_label_set` and `label_sets` in `labels.py`; the `labels` Dagster group (`label_models` with 13 asset
@@ -526,15 +545,15 @@ unredacted is committed, and `test_no_fixture_contains_personal_data` must cover
 
 - [x] ADR 0011 accepted: access and terms confirmed for every source used, and the gap table recorded. *(Accepted 2026-09-23.)*
 - [x] The procedure taxonomy and label config are written, validated and tested. *(Step B, 2026-09-23; MSiG mappings follow in step E.)*
-- [ ] KRS extracts (and KRZ, and MSiG if built) acquired for the 17-entity seed, redacted and content-addressed. *(KRS 2026-09-23, run `bd6b9c31`; MSiG 2026-09-23, 49 notices; KRZ not built, ADR 0011.)*
+- [x] KRS extracts (and KRZ, and MSiG if built) acquired for the 17-entity seed, redacted and content-addressed. *(KRS 2026-09-23, run `bd6b9c31`; MSiG 2026-09-23, 49 notices; KRZ not built, ADR 0011.)*
 - [x] `legal_events` persisted and contracted, with full lineage and deduplication. *(Step F, 2026-09-23.)*
-- [ ] **Seed acceptance:** each of the 9 entities with a distress status hint has a matching event, found
+- [x] **Seed acceptance:** each of the 9 entities with a distress status hint has a matching event, found
       independently, with a source document and a date. Every mismatch with a hint is investigated and recorded;
       the hints are hints, not ground truth. The 8 others have no qualifying event, or any event found is
-      explained.
+      explained. *(The `seed_acceptance` check, run `cde2a23f`: 9 matched, 8 clear.)*
 - [x] `outcome_labels` built, audited and frozen, with a reproducible `label_set_hash` and censoring and regime
       flags per §4.6. *(Step G, 2026-09-23: set `a5da757f8341…`.)*
-- [ ] Dagster runs the `legal` and `labels` groups end to end; audits and acceptance surface as asset checks.
+- [x] Dagster runs the `legal` and `labels` groups end to end; audits and acceptance surface as asset checks. *(Job `legal_to_labels`, 2026-09-23.)*
 - [ ] Docs from step I updated.
 - [ ] `make check` and `make test-integration` green; re-running is byte-identical.
 
