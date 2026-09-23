@@ -106,8 +106,8 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   ├── config.py                      # gateways (local: DuckDB + Postgres state; test: in-memory)
 │   ├── external_models.yaml           # columns of the ext.* views over Parquet and Postgres
 │   ├── models/
-│   │   ├── staging/                   # parsed_documents_current
-│   │   ├── marts/                     # dq_mart, dq_mart_coverage
+│   │   ├── staging/                   # parsed_documents_current, legal_events_canonical, outcome_label_grid
+│   │   ├── marts/                     # dq_mart, dq_mart_coverage, outcome_labels (+ exclusions, event coverage)
 │   │   └── quarantine/                # quarantine — the current set, not the log
 │   ├── audits/                        # custom SQLMesh audits, non-blocking (Dagster reports them)
 │   └── tests/                         # SQLMesh unit tests, YAML fixtures (make transform-test)
@@ -117,6 +117,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   ├── assets/                        # one module per stage group, mirrors src/
 │   │   ├── acquisition.py
 │   │   ├── legal.py                   # plan 0008: A4 sources → legal_events
+│   │   ├── labels.py                  # plan 0008: SQLMesh label models, audits, frozen label set
 │   │   ├── parsing.py
 │   │   ├── dq.py                      # E3/F: SQLMesh DQ models, audits as asset checks
 │   │   ├── extraction.py

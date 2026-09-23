@@ -133,6 +133,10 @@ event_types:
     ends: [bankruptcy, restructuring, liquidation]
     precludes_silent_exit: false
   # --- registry dynamics: Phase 5 features, never labels ----------------------------------------
+  # The entity's first KRS entry: labels start from it (plan 0008 step G).
+  - event_type: registered
+    stage: signal
+    precludes_silent_exit: false
   - event_type: dissolution_recorded
     stage: signal
     precludes_silent_exit: false
@@ -230,6 +234,11 @@ mappings:
     locator: naglowekP.wpis
     when: {field: opis, contains: WYKREŚL}
     event_type: deregistered
+    statute: krs_1997
+  - source: KRS
+    locator: naglowekP.wpis
+    when: {field: opis, contains: REJESTRACJA W KRAJOWYM REJESTRZE}
+    event_type: registered
     statute: krs_1997
   - source: KRS
     locator: dane.dzial6.rozwiazanieUniewaznienie.okreslenieOkolicznosci

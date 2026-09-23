@@ -1,0 +1,154 @@
+# Outcome labels (plan 0008 step G; AGENT_SPEC §9.2 "Label construction"). Fixtures, never the
+# live seed. `vars` shrink the grid: month-ends from 2012-01-31, horizons of 1 and 2 months,
+# one source (KRS), a regime window of March 2012, and KRZ "launching" on 2012-03-01. Window
+# ends: 01-31 → 02-29 (h1) / 03-31 (h2); 02-29 → 03-31 / 04-30; 03-31 → 04-30 / 05-31;
+# 04-30 → 05-31 / 06-30.
+
+test_classes_censoring_exclusion_and_flags:
+  model: staging.outcome_label_grid
+  vars: &vars
+    label_grid_start: "2012-01-31"
+    label_horizons: "1,2"
+    label_sources: KRS
+    label_precedence: bankruptcy,restructuring,liquidation,silent_exit
+    regime_start: "2012-03-01"
+    regime_end: "2012-03-31"
+    krz_launch: "2012-03-01"
+    label_version: test_v
+  inputs:
+    ext.entity_master:
+      rows:
+        - {krs: "000000000A"}
+        - {krs: "000000000C"}
+    ext.legal_source_fetches:
+      rows:
+        - {krs: "000000000A", source: KRS, fetched_at: "2012-04-30 12:00:00+00"}
+        - {krs: "000000000C", source: KRS, fetched_at: "2012-02-29 12:00:00+00"}
+        - {krs: "000000000C", source: MSiG, fetched_at: "2012-01-01 12:00:00+00"}  # not a label source here
+    staging.legal_events_canonical:
+      rows:
+        - {dedup_group_id: a0, krs: "000000000A", event_type: registered, stage: signal, ends: [], effective_date: 2005-01-01, known_from: 2005-01-01}
+        - {dedup_group_id: a1, krs: "000000000A", event_type: bankruptcy_declared, outcome_class: bankruptcy, stage: opening, ends: [], event_date: 2012-03-10, known_from: 2012-03-20, effective_date: 2012-03-10, proceeding_id: P1, label_class: bankruptcy}
+  outputs:
+    query:
+      partial: true
+      rows:
+        # A: alive before the bankruptcy is in view; labelled while it is ahead; excluded after.
+        - {krs: "000000000A", as_of_date: 2012-01-31, horizon_months: 1, excluded_reason: null, outcome_class: alive, censored: false, trigger_event_type: null, proceeding_id: null, regime_flag: false, source_era: pre_krz}
+        - {krs: "000000000A", as_of_date: 2012-01-31, horizon_months: 2, excluded_reason: null, outcome_class: bankruptcy, censored: false, trigger_event_type: bankruptcy_declared, proceeding_id: P1, regime_flag: true, source_era: mixed}
+        - {krs: "000000000A", as_of_date: 2012-02-29, horizon_months: 1, excluded_reason: null, outcome_class: bankruptcy, censored: false, trigger_event_type: bankruptcy_declared, proceeding_id: P1, regime_flag: true, source_era: krz}
+        - {krs: "000000000A", as_of_date: 2012-02-29, horizon_months: 2, excluded_reason: null, outcome_class: bankruptcy, censored: false, trigger_event_type: bankruptcy_declared, proceeding_id: P1, regime_flag: true, source_era: krz}
+        - {krs: "000000000A", as_of_date: 2012-03-31, horizon_months: 1, excluded_reason: in_proceeding, outcome_class: alive, censored: false, trigger_event_type: null, proceeding_id: null, regime_flag: false, source_era: krz}
+        - {krs: "000000000A", as_of_date: 2012-03-31, horizon_months: 2, excluded_reason: in_proceeding, outcome_class: null, censored: true, trigger_event_type: null, proceeding_id: null, regime_flag: false, source_era: krz}
+        - {krs: "000000000A", as_of_date: 2012-04-30, horizon_months: 1, excluded_reason: in_proceeding, outcome_class: null, censored: true, trigger_event_type: null, proceeding_id: null, regime_flag: false, source_era: krz}
+        - {krs: "000000000A", as_of_date: 2012-04-30, horizon_months: 2, excluded_reason: in_proceeding, outcome_class: null, censored: true, trigger_event_type: null, proceeding_id: null, regime_flag: false, source_era: krz}
+        # C: no event. Alive only while the window ends by the cutoff (02-29), censored after.
+        - {krs: "000000000C", as_of_date: 2012-01-31, horizon_months: 1, excluded_reason: null, outcome_class: alive, censored: false, trigger_event_type: null, proceeding_id: null, regime_flag: false, source_era: pre_krz}
+        - {krs: "000000000C", as_of_date: 2012-01-31, horizon_months: 2, excluded_reason: null, outcome_class: null, censored: true, trigger_event_type: null, proceeding_id: null, regime_flag: true, source_era: mixed}
+        - {krs: "000000000C", as_of_date: 2012-02-29, horizon_months: 1, excluded_reason: null, outcome_class: null, censored: true, trigger_event_type: null, proceeding_id: null, regime_flag: true, source_era: krz}
+        - {krs: "000000000C", as_of_date: 2012-02-29, horizon_months: 2, excluded_reason: null, outcome_class: null, censored: true, trigger_event_type: null, proceeding_id: null, regime_flag: true, source_era: krz}
+
+test_same_day_precedence_and_an_event_on_as_of:
+  model: staging.outcome_label_grid
+  vars: *vars
+  inputs:
+    ext.entity_master:
+      rows:
+        - {krs: "000000000B"}
+        - {krs: "000000000F"}
+    ext.legal_source_fetches:
+      rows:
+        - {krs: "000000000B", source: KRS, fetched_at: "2012-02-29 12:00:00+00"}
+        - {krs: "000000000F", source: KRS, fetched_at: "2012-02-29 12:00:00+00"}
+    staging.legal_events_canonical:
+      rows:
+        # B: a restructuring and a liquidation on the same day; precedence gives restructuring.
+        - {dedup_group_id: b1, krs: "000000000B", event_type: liquidation_opened, outcome_class: liquidation, stage: opening, ends: [], event_date: 2012-02-15, known_from: 2012-02-20, effective_date: 2012-02-15, label_class: liquidation}
+        - {dedup_group_id: b2, krs: "000000000B", event_type: remedial_proceedings_opened, outcome_class: restructuring, stage: opening, ends: [], event_date: 2012-02-15, known_from: 2012-02-25, effective_date: 2012-02-15, proceeding_id: P2, label_class: restructuring}
+        # F: a liquidation opened on the as_of_date itself is already in the past: excluded.
+        - {dedup_group_id: f1, krs: "000000000F", event_type: liquidation_opened, outcome_class: liquidation, stage: opening, ends: [], event_date: 2012-01-31, known_from: 2012-02-10, effective_date: 2012-01-31, label_class: liquidation}
+  outputs:
+    query:
+      partial: true
+      rows:
+        - {krs: "000000000B", as_of_date: 2012-01-31, horizon_months: 1, excluded_reason: null, outcome_class: restructuring, censored: false, trigger_event_type: remedial_proceedings_opened}
+        - {krs: "000000000B", as_of_date: 2012-01-31, horizon_months: 2, excluded_reason: null, outcome_class: restructuring, censored: false, trigger_event_type: remedial_proceedings_opened}
+        - {krs: "000000000B", as_of_date: 2012-02-29, horizon_months: 1, excluded_reason: in_proceeding, outcome_class: null, censored: true, trigger_event_type: null}
+        - {krs: "000000000B", as_of_date: 2012-02-29, horizon_months: 2, excluded_reason: in_proceeding, outcome_class: null, censored: true, trigger_event_type: null}
+        - {krs: "000000000F", as_of_date: 2012-01-31, horizon_months: 1, excluded_reason: in_proceeding, outcome_class: alive, censored: false, trigger_event_type: null}
+        - {krs: "000000000F", as_of_date: 2012-01-31, horizon_months: 2, excluded_reason: in_proceeding, outcome_class: null, censored: true, trigger_event_type: null}
+        - {krs: "000000000F", as_of_date: 2012-02-29, horizon_months: 1, excluded_reason: in_proceeding, outcome_class: null, censored: true, trigger_event_type: null}
+        - {krs: "000000000F", as_of_date: 2012-02-29, horizon_months: 2, excluded_reason: in_proceeding, outcome_class: null, censored: true, trigger_event_type: null}
+
+test_silent_exit_versus_deregistration_after_bankruptcy_and_an_undated_event:
+  model: staging.outcome_label_grid
+  vars: *vars
+  inputs:
+    ext.entity_master:
+      rows:
+        - {krs: "000000000D"}
+        - {krs: "000000000E"}
+        - {krs: "000000000G"}
+    ext.legal_source_fetches:
+      rows:
+        - {krs: "000000000D", source: KRS, fetched_at: "2012-02-29 12:00:00+00"}
+        - {krs: "000000000E", source: KRS, fetched_at: "2012-02-29 12:00:00+00"}
+        - {krs: "000000000G", source: KRS, fetched_at: "2012-02-29 12:00:00+00"}
+    staging.legal_events_canonical:
+      rows:
+        # D: deregistered with nothing before it: a silent exit.
+        - {dedup_group_id: d1, krs: "000000000D", event_type: deregistered, outcome_class: silent_exit, stage: exit, ends: [bankruptcy, restructuring, liquidation], event_date: 2012-02-10, known_from: 2012-02-10, effective_date: 2012-02-10, label_class: silent_exit}
+        # E: a bankruptcy that ended before the grid, then the deregistration: labelled bankruptcy.
+        - {dedup_group_id: e1, krs: "000000000E", event_type: bankruptcy_declared, outcome_class: bankruptcy, stage: opening, ends: [], event_date: 2011-06-01, known_from: 2011-06-10, effective_date: 2011-06-01, proceeding_id: P5, label_class: bankruptcy}
+        - {dedup_group_id: e2, krs: "000000000E", event_type: bankruptcy_proceeding_ended, stage: closing, ends: [bankruptcy], event_date: 2011-12-01, known_from: 2011-12-10, effective_date: 2011-12-01, proceeding_id: P5}
+        - {dedup_group_id: e3, krs: "000000000E", event_type: deregistered, outcome_class: silent_exit, stage: exit, ends: [bankruptcy, restructuring, liquidation], event_date: 2012-02-10, known_from: 2012-02-10, effective_date: 2012-02-10, proceeding_id: P5, label_class: bankruptcy}
+        # G: a declaration with no decision date, known 2012-02-20: on or before then.
+        - {dedup_group_id: g1, krs: "000000000G", event_type: bankruptcy_declared, outcome_class: bankruptcy, stage: opening, ends: [], event_date: null, known_from: 2012-02-20, effective_date: 2012-02-20, label_class: bankruptcy}
+  outputs:
+    query:
+      partial: true
+      rows:
+        - {krs: "000000000D", as_of_date: 2012-01-31, horizon_months: 1, excluded_reason: null, outcome_class: silent_exit, trigger_event_type: deregistered, proceeding_id: null, proceeding_id_note: procedure_has_no_case, event_date: 2012-02-10, event_known_from: 2012-02-10}
+        - {krs: "000000000D", as_of_date: 2012-01-31, horizon_months: 2, excluded_reason: null, outcome_class: silent_exit, trigger_event_type: deregistered, proceeding_id: null, proceeding_id_note: procedure_has_no_case, event_date: 2012-02-10, event_known_from: 2012-02-10}
+        - {krs: "000000000D", as_of_date: 2012-02-29, horizon_months: 1, excluded_reason: deregistered, outcome_class: null, trigger_event_type: null, proceeding_id: null, proceeding_id_note: null, event_date: null, event_known_from: null}
+        - {krs: "000000000D", as_of_date: 2012-02-29, horizon_months: 2, excluded_reason: deregistered, outcome_class: null, trigger_event_type: null, proceeding_id: null, proceeding_id_note: null, event_date: null, event_known_from: null}
+        - {krs: "000000000E", as_of_date: 2012-01-31, horizon_months: 1, excluded_reason: null, outcome_class: bankruptcy, trigger_event_type: deregistered, proceeding_id: P5, proceeding_id_note: null, event_date: 2012-02-10, event_known_from: 2012-02-10}
+        - {krs: "000000000E", as_of_date: 2012-01-31, horizon_months: 2, excluded_reason: null, outcome_class: bankruptcy, trigger_event_type: deregistered, proceeding_id: P5, proceeding_id_note: null, event_date: 2012-02-10, event_known_from: 2012-02-10}
+        - {krs: "000000000E", as_of_date: 2012-02-29, horizon_months: 1, excluded_reason: deregistered, outcome_class: null, trigger_event_type: null, proceeding_id: null, proceeding_id_note: null, event_date: null, event_known_from: null}
+        - {krs: "000000000E", as_of_date: 2012-02-29, horizon_months: 2, excluded_reason: deregistered, outcome_class: null, trigger_event_type: null, proceeding_id: null, proceeding_id_note: null, event_date: null, event_known_from: null}
+        - {krs: "000000000G", as_of_date: 2012-01-31, horizon_months: 1, excluded_reason: null, outcome_class: bankruptcy, trigger_event_type: bankruptcy_declared, proceeding_id: null, proceeding_id_note: source_omits_signature, event_date: null, event_known_from: 2012-02-20}
+        - {krs: "000000000G", as_of_date: 2012-01-31, horizon_months: 2, excluded_reason: null, outcome_class: bankruptcy, trigger_event_type: bankruptcy_declared, proceeding_id: null, proceeding_id_note: source_omits_signature, event_date: null, event_known_from: 2012-02-20}
+        - {krs: "000000000G", as_of_date: 2012-02-29, horizon_months: 1, excluded_reason: in_proceeding, outcome_class: null, trigger_event_type: null, proceeding_id: null, proceeding_id_note: null, event_date: null, event_known_from: null}
+        - {krs: "000000000G", as_of_date: 2012-02-29, horizon_months: 2, excluded_reason: in_proceeding, outcome_class: null, trigger_event_type: null, proceeding_id: null, proceeding_id_note: null, event_date: null, event_known_from: null}
+
+test_canonical_events:
+  model: staging.legal_events_canonical
+  inputs:
+    ext.legal_events:
+      rows:
+        # One opening seen twice: the specific type wins, the earliest publication, one date.
+        - {krs: "000000000X", event_type: restructuring_proceedings_opened, outcome_class: restructuring, stage: opening, ends: [], precludes_silent_exit: true, event_date: 2021-07-02, known_from: 2021-10-22, source: KRS, proceeding_id: P, dedup_group_id: x1}
+        - {krs: "000000000X", event_type: remedial_proceedings_opened, outcome_class: restructuring, stage: opening, ends: [], precludes_silent_exit: true, event_date: 2021-07-02, known_from: 2021-07-15, source: MSiG, proceeding_id: P, dedup_group_id: x1}
+        # Y: deregistered with nothing before: silent exit.
+        - {krs: "000000000Y", event_type: deregistered, outcome_class: silent_exit, stage: exit, ends: [bankruptcy, restructuring, liquidation], precludes_silent_exit: false, event_date: 2022-10-31, known_from: 2022-10-31, source: KRS, dedup_group_id: y1}
+        # Z: bankruptcy, ended, deregistered: the deregistration takes the bankruptcy's class and case.
+        - {krs: "000000000Z", event_type: bankruptcy_declared, outcome_class: bankruptcy, stage: opening, ends: [], precludes_silent_exit: true, event_date: 2017-03-08, known_from: 2017-03-17, source: MSiG, proceeding_id: Q, dedup_group_id: z1}
+        - {krs: "000000000Z", event_type: bankruptcy_proceeding_ended, stage: closing, ends: [bankruptcy], precludes_silent_exit: false, event_date: 2021-07-27, known_from: 2021-08-05, source: MSiG, proceeding_id: Q, dedup_group_id: z2}
+        - {krs: "000000000Z", event_type: deregistered, outcome_class: silent_exit, stage: exit, ends: [bankruptcy, restructuring, liquidation], precludes_silent_exit: false, event_date: 2021-11-19, known_from: 2021-11-19, source: KRS, dedup_group_id: z3}
+        # W: merged away: the deregistration is no outcome.
+        - {krs: "000000000W", event_type: merger_division_transformation, stage: signal, ends: [], precludes_silent_exit: true, event_date: 2008-12-29, known_from: 2009-01-02, source: KRS, dedup_group_id: w1}
+        - {krs: "000000000W", event_type: deregistered, outcome_class: silent_exit, stage: exit, ends: [bankruptcy, restructuring, liquidation], precludes_silent_exit: false, event_date: 2012-01-15, known_from: 2012-01-15, source: KRS, dedup_group_id: w2}
+        # V: undated: effective on the day it became known.
+        - {krs: "000000000V", event_type: bankruptcy_declared, outcome_class: bankruptcy, stage: opening, ends: [], precludes_silent_exit: true, event_date: null, known_from: 2025-08-13, source: KRS, dedup_group_id: v1}
+  outputs:
+    query:
+      partial: true
+      rows:
+        - {dedup_group_id: v1, event_type: bankruptcy_declared, known_from: 2025-08-13, effective_date: 2025-08-13, proceeding_id: null, label_class: bankruptcy}
+        - {dedup_group_id: w1, event_type: merger_division_transformation, known_from: 2009-01-02, effective_date: 2008-12-29, proceeding_id: null, label_class: null}
+        - {dedup_group_id: w2, event_type: deregistered, known_from: 2012-01-15, effective_date: 2012-01-15, proceeding_id: null, label_class: merged_away}
+        - {dedup_group_id: x1, event_type: remedial_proceedings_opened, known_from: 2021-07-15, effective_date: 2021-07-02, proceeding_id: P, label_class: restructuring}
+        - {dedup_group_id: y1, event_type: deregistered, known_from: 2022-10-31, effective_date: 2022-10-31, proceeding_id: null, label_class: silent_exit}
+        - {dedup_group_id: z1, event_type: bankruptcy_declared, known_from: 2017-03-17, effective_date: 2017-03-08, proceeding_id: Q, label_class: bankruptcy}
+        - {dedup_group_id: z2, event_type: bankruptcy_proceeding_ended, known_from: 2021-08-05, effective_date: 2021-07-27, proceeding_id: Q, label_class: null}
+        - {dedup_group_id: z3, event_type: deregistered, known_from: 2021-11-19, effective_date: 2021-11-19, proceeding_id: Q, label_class: bankruptcy}

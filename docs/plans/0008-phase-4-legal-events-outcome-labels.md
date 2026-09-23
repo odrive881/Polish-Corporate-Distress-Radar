@@ -10,9 +10,56 @@
 deferred to "no earlier than Phase 4, when MSiG forces a PDF text layer". Whether MSiG forces it is now a question
 this plan answers in step A, not an assumption (decision 2).
 
-## Status: step F done (2026-09-23); step G (labels) next
+## Status: step G done (2026-09-23); step H (Dagster wiring) next
 
-**Step F close-out, 2026-09-23.** `parsing/legal_events.py` (one pure function per source, then `finalise`),
+**Step G close-out, 2026-09-23.** The SQLMesh models `staging.legal_events_canonical` (view),
+`staging.outcome_label_grid`, `marts.outcome_labels`, `marts.outcome_label_exclusions` and
+`marts.legal_event_coverage`; five audits in `transform/audits/outcome_labels.sql`; four SQLMesh unit tests;
+`freeze_label_set` and `label_sets` in `labels.py`; the `labels` Dagster group (`label_models` with 13 asset
+checks, then `outcome_labels`). The label parameters reach the SQL as SQLMesh variables, read from
+`config/labels/outcome_labels_v1.yaml` and the taxonomy in `transform/config.py`, and are never restated there. What
+it decides, beyond the text below (flag any you disagree with):
+- **A deregistration's label depends on what came before it** (decision 5, worked through):
+  - with nothing before it, it is a `silent_exit`;
+  - after a bankruptcy, restructuring or liquidation, it takes that class and proceeding (the §9.2 case
+    "deregistration after bankruptcy is `bankruptcy`");
+  - after a merger it is `merged_away`, and the row is **censored**: leaving by merger is not an outcome.
+- **"In a proceeding" means** a petition-stage or opening event of a class, with no closing event for that class
+  since. A petition-stage order with no recorded outcome therefore keeps the entity excluded until a closing
+  event. That is right for the seed, but at scale a dismissed petition the sources never record would exclude an
+  entity for good.
+- **Windows end on a month-end:** `window_end = LAST_DAY(as_of_date + horizon)`. 29 Feb + 1 month would otherwise
+  be 29 Mar, dropping two days.
+- **`source_era` has a third value, `mixed`,** for a window that spans KRZ's launch (decision 4 had
+  `pre_krz` | `krz`). Such a window is neither, and 458 seed rows are in it.
+- **Censored rows have `outcome_class` null,** never `alive` (§4.6). An audit holds "class if and only if not
+  censored".
+- **`proceeding_id_note` is the "documented reason"** for a labelled event without a proceeding:
+  - `procedure_has_no_case` for liquidation, a silent exit or the simplified restructuring;
+  - `source_omits_signature` for 0000507997's undated declaration.
+- **The registry now yields `registered`** (entry 1), and an entity's grid starts there. `legal_events` gained
+  `ends` and `precludes_silent_exit` from the taxonomy, so the SQL needs no other input.
+- **Event coverage is its own mart,** `marts.legal_event_coverage` (source × year, with `both` for events both
+  sources describe), not an extension of `dq_mart_coverage`, whose grain is a filing's fiscal year.
+- **A frozen set is written once** to `outcome_labels/label_set_hash=<hash>/` and never overwritten. The hash is of
+  the sorted rows (as CSV), not the Parquet bytes, so a library upgrade cannot change a set's identity.
+- **Live, 2026-09-23.** Runs `cec77ccb` and `7062dab8`:
+  - all 13 checks pass;
+  - label set `a5da757f8341…` has 4,670 rows (2,335 per horizon);
+  - at 12 months, 64 rows are labelled bankruptcy, 28 liquidation and 24 restructuring, and 108 are censored;
+  - 954 grid rows are excluded as in-proceeding and 234 as deregistered;
+  - the rebuild reproduced the same hash, wrote nothing, and added no `label_sets` row.
+
+  Every hinted entity turns positive exactly one horizon before its first event.
+- **Open risk for the owner: registry lag near the cutoff.** An `alive` row is one whose window ends before the
+  cutoff with no event seen. An event decided in that window but entered after the cutoff is missed, and the lag
+  reached 21 months in the seed (0000225506). Before 2021 MSiG usually publishes first; after it, without KRZ, the
+  registry is the only source. One option: for the KRS-only era, bring the cutoff for `alive` back by a lag
+  allowance. That is a label-config change (`outcome_labels_v2`), not built here.
+
+### Step F close-out
+
+**2026-09-23.** `parsing/legal_events.py` (one pure function per source, then `finalise`),
 `parsing/msig_notice_kinds.py` with `config/mappings/msig_notice_kinds.yaml`, the `LEGAL_EVENTS` contract, the
 `legal_events` asset (group `legal`), and the `ext.legal_events` view. What it changes here:
 - **MSiG notices are typed by rules, not parsed as text.** The text is never stored (step E), so the rules read
@@ -485,8 +532,8 @@ unredacted is committed, and `test_no_fixture_contains_personal_data` must cover
       independently, with a source document and a date. Every mismatch with a hint is investigated and recorded;
       the hints are hints, not ground truth. The 8 others have no qualifying event, or any event found is
       explained.
-- [ ] `outcome_labels` built, audited and frozen, with a reproducible `label_set_hash` and censoring and regime
-      flags per §4.6.
+- [x] `outcome_labels` built, audited and frozen, with a reproducible `label_set_hash` and censoring and regime
+      flags per §4.6. *(Step G, 2026-09-23: set `a5da757f8341…`.)*
 - [ ] Dagster runs the `legal` and `labels` groups end to end; audits and acceptance surface as asset checks.
 - [ ] Docs from step I updated.
 - [ ] `make check` and `make test-integration` green; re-running is byte-identical.

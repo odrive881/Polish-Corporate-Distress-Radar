@@ -76,9 +76,7 @@ RESTATEMENT_EVENTS = pa.DataFrameSchema(
 
 
 def _severity_iff_failed(data: pa.PolarsData) -> pl.LazyFrame:
-    return data.lazyframe.select(
-        pl.col("severity").is_not_null() == (pl.col("status") == "fail")
-    )
+    return data.lazyframe.select(pl.col("severity").is_not_null() == (pl.col("status") == "fail"))
 
 
 def _figures_iff_evaluated(data: pa.PolarsData) -> pl.LazyFrame:
@@ -127,6 +125,12 @@ def _legal_column(name: str, dtype: pl.DataType | type[pl.DataType]) -> pa.Colum
     return pa.Column(dtype, checks=checks, nullable=name in _LEGAL_NULLABLE)
 
 
+def _ends_are_classes(data: pa.PolarsData) -> pl.LazyFrame:
+    return data.lazyframe.select(
+        pl.col("ends").list.eval(pl.element().is_in(list(EVENT_OUTCOME_CLASSES))).list.all()
+    )
+
+
 def _event_year_matches(data: pa.PolarsData) -> pl.LazyFrame:
     return data.lazyframe.select(
         pl.col("event_year") == pl.coalesce("event_date", "known_from").dt.year().cast(pl.Int32)
@@ -142,8 +146,11 @@ def _group_within_one_entity(data: pa.PolarsData) -> pl.LazyFrame:
 LEGAL_EVENTS = pa.DataFrameSchema(
     {name: _legal_column(name, dtype) for name, dtype in LEGAL_EVENTS_SCHEMA.items()},
     checks=[
-        pa.Check(_event_year_matches, error="event_year is the year of event_date, else known_from"),
+        pa.Check(
+            _event_year_matches, error="event_year is the year of event_date, else known_from"
+        ),
         pa.Check(_group_within_one_entity, error="a dedup group spans entities"),
+        pa.Check(_ends_are_classes, error="`ends` names a class outside §4.6"),
     ],
     strict=True,
     ordered=True,

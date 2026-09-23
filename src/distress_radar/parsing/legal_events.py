@@ -63,6 +63,10 @@ LEGAL_EVENTS_SCHEMA: dict[str, pl.DataType | type[pl.DataType]] = {
     "event_type": pl.String,
     "outcome_class": pl.String,
     "stage": pl.String,
+    # From the taxonomy, so labels need nothing but this table: the classes the event closes,
+    # and whether it rules out a later silent exit (plan 0008 decision 5).
+    "ends": pl.List(pl.String),
+    "precludes_silent_exit": pl.Boolean,
     "event_date": pl.Date,
     "known_from": pl.Date,
     "removed_on": pl.Date,
@@ -95,6 +99,8 @@ class LegalEvent:
     event_type: str
     outcome_class: str | None
     stage: str
+    ends: tuple[str, ...]
+    precludes_silent_exit: bool
     event_date: date | None
     known_from: date
     removed_on: date | None
@@ -285,6 +291,8 @@ def from_krs_extract(
                     krs=krs,
                     event_type=resolved.event_type.event_type,
                     outcome_class=resolved.event_type.outcome_class,
+                    ends=resolved.event_type.ends,
+                    precludes_silent_exit=resolved.event_type.precludes_silent_exit,
                     stage=resolved.event_type.stage,
                     event_date=decided,
                     known_from=known_from,
@@ -353,6 +361,8 @@ def from_msig_notice(
             krs=krs,
             event_type=resolved.event_type.event_type,
             outcome_class=resolved.event_type.outcome_class,
+            ends=resolved.event_type.ends,
+            precludes_silent_exit=resolved.event_type.precludes_silent_exit,
             stage=resolved.event_type.stage,
             event_date=decided,
             known_from=published,
@@ -467,7 +477,8 @@ def to_frame(events: list[LegalEvent]) -> pl.DataFrame:
     """`legal_events` rows in a fixed order, so equal input writes equal bytes."""
     rows = [
         {
-            **{k: getattr(e, k) for k in LEGAL_EVENTS_SCHEMA if k != "event_year"},
+            **{k: getattr(e, k) for k in LEGAL_EVENTS_SCHEMA if k not in ("event_year", "ends")},
+            "ends": list(e.ends),
             "event_year": (e.event_date or e.known_from).year,
         }
         for e in events
