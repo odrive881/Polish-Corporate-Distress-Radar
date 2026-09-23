@@ -19,6 +19,7 @@ from distress_radar.parsing.accounting_identities import (
     IDENTITY_CHECK_RESULTS_SCHEMA,
     RESTATEMENT_SCHEMA,
 )
+from distress_radar.parsing.legal_events import LEGAL_EVENTS_SCHEMA
 from distress_radar.parsing.mapping_engine import CANONICAL_COLUMNS
 
 TRANSFORM = Path(__file__).parent.parent.parent / "transform"
@@ -26,6 +27,7 @@ PARQUET_SCHEMAS: dict[str, dict[str, pl.DataType | type[pl.DataType]]] = {
     "financial_statements_canonical": CANONICAL_COLUMNS,
     "restatement_events": RESTATEMENT_SCHEMA,
     "identity_check_results": IDENTITY_CHECK_RESULTS_SCHEMA,
+    "legal_events": LEGAL_EVENTS_SCHEMA,
 }
 
 

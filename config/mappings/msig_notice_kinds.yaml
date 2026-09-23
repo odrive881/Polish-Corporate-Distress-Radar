@@ -1,0 +1,98 @@
+# MSiG notice kinds (plan 0008 step F).
+#
+# A notice is stored only as its reduced record (ADR 0009 addendum, item 3): chapter code,
+# vocabulary terms, and dates with the terms just before them. These rules turn a record into
+# a notice kind, which `config/statutory/procedure_taxonomy.yaml` then maps to an event type.
+# Loaded by `distress_radar.parsing.msig_notice_kinds`.
+#
+# Rules are tried in order and the first match wins. A rule matches when the chapter code is
+# one of `chapters`, every term in `all` occurs, at least one in `any` occurs (if given), and
+# none in `none` does. Terms are `config/mappings/msig_vocabulary.yaml` entries, and a term
+# not in that list is a load error. A notice no rule matches is quarantined
+# (`msig_notice_unclassified`), never guessed.
+#
+# `event: false` marks a kind recognised as procedural (claims lists, creditors' meetings,
+# routine company-law notices): not an event, deliberately skipped, like an ordinary registry
+# entry. `date` picks `event_date`:
+# - `publication`: the notice's publication date. The simplified restructuring opens on
+#   the day it is announced (tarcza 4.0, art. 15).
+# - `prefer`: the first body date with a term from the first group just before it, else the
+#   second group, and so on. After that, the first body date, else none.
+#
+# Written against the seed's 49 notices (2026-09-23): every rule has at least one of them.
+
+version: 1
+
+rules:
+  # --- bankruptcy (chapter III) ----------------------------------------------------------------
+  - kind: bankruptcy_declared
+    chapters: [III/1]
+    date: {prefer: [[postanowieni]]}
+  - kind: bankruptcy_ended
+    chapters: [III/6]
+    date: {prefer: [[postanowieni]]}
+  - kind: bankruptcy_petition_security
+    chapters: [III/9]
+    all: [zabezpiecz]
+    date: {prefer: [[postanowieni]]}
+  - kind: bankruptcy_claims_and_distribution
+    chapters: [III/3, III/4]
+    event: false
+
+  # --- restructuring (chapter IX) --------------------------------------------------------------
+  # The announcement names its arrangement day; a later notice that merely cites the
+  # simplified procedure does not.
+  - kind: simplified_restructuring_announced
+    chapters: [IX]
+    all: [uproszczon]
+    any: [dniem układowym, dzień układowy]
+    date: publication
+  - kind: restructuring_petition_security
+    chapters: [IX]
+    all: [zabezpiecz, tymczasow]
+    date: {prefer: [[postanowieni]]}
+  - kind: restructuring_arrangement_confirmed
+    chapters: [IX]
+    all: [zatwierdzi, układ]
+    none: [zakończ]
+    date: {prefer: [[postanowieni]]}
+  # Ended: on the day the arrangement's approval became final, or by discontinuance. A
+  # creditors' meeting notice quotes "umorz" too, so one that mentions the arrangement or a
+  # meeting is not a discontinuance.
+  - kind: restructuring_ended
+    chapters: [IX]
+    all: [zakończ, uprawomocni]
+    date: {prefer: [[uprawomocni], [postanowieni]]}
+  - kind: restructuring_ended
+    chapters: [IX]
+    all: [umorz]
+    none: [układ, zgromadzeni]
+    date: {prefer: [[postanowieni]]}
+  - kind: remedial_proceedings_opened
+    chapters: [IX]
+    all: [sanac, postanowieni]
+    any: [otworzy, otwarci]
+    none: [spis wierzytelności, zgromadzeni]
+    date: {prefer: [[postanowieni]]}
+  # Claims lists, creditors' meetings, and an administrator's notices in an open proceeding.
+  - kind: restructuring_procedural
+    chapters: [IX]
+    any: [spis wierzytelności, zgromadzeni, zarządc]
+    event: false
+
+  # --- company law (chapter I) -----------------------------------------------------------------
+  - kind: liquidation_opened
+    chapters: [I/2]
+    all: [likwidac]
+    any: [otwarci, uchwał, rozwiąz]
+    date: {prefer: [[uchwał]]}
+  - kind: merger_division_transformation
+    chapters: [I/2]
+    any: [połącz, przekształc, plan podziału]
+    none: [likwidac]
+  # Capital changes, meetings and other routine notices. A notice mentioning liquidation
+  # that no rule above recognised is quarantined, not skipped.
+  - kind: company_law_procedural
+    chapters: [I/2]
+    none: [likwidac]
+    event: false

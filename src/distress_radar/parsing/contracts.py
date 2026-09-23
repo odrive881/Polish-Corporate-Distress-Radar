@@ -19,6 +19,8 @@ from distress_radar.parsing.accounting_identities import (
     RESTATEMENT_SCHEMA,
     SEVERITIES,
 )
+from distress_radar.parsing.legal_events import LEGAL_EVENTS_SCHEMA
+from distress_radar.parsing.legal_taxonomy import EVENT_OUTCOME_CLASSES
 from distress_radar.parsing.mapping_engine import CANONICAL_COLUMNS
 
 _SHA256 = r"^[0-9a-f]{64}$"
@@ -102,4 +104,49 @@ IDENTITY_CHECK_RESULTS = pa.DataFrameSchema(
     ordered=True,
     unique=["source_document_hash", "source_member", "column", "check", "line_item"],
     name="identity_check_results",
+)
+
+
+# --- legal_events (plan 0008 step F) -------------------------------------------------------------
+
+_LEGAL_NULLABLE = {"outcome_class", "event_date", "removed_on", "case_signature", "proceeding_id"}
+
+
+def _legal_column(name: str, dtype: pl.DataType | type[pl.DataType]) -> pa.Column:
+    checks: list[pa.Check] = []
+    if name == "krs":
+        checks.append(pa.Check.str_matches(_KRS))
+    elif name in ("source_document_hash", "dedup_group_id"):
+        checks.append(pa.Check.str_matches(_SHA256))
+    elif name == "source":
+        checks.append(pa.Check.isin(["KRS", "KRZ", "MSiG"]))
+    elif name == "outcome_class":
+        checks.append(pa.Check.isin(list(EVENT_OUTCOME_CLASSES)))
+    elif name == "stage":
+        checks.append(pa.Check.isin(["petition", "opening", "closing", "exit", "signal"]))
+    return pa.Column(dtype, checks=checks, nullable=name in _LEGAL_NULLABLE)
+
+
+def _event_year_matches(data: pa.PolarsData) -> pl.LazyFrame:
+    return data.lazyframe.select(
+        pl.col("event_year") == pl.coalesce("event_date", "known_from").dt.year().cast(pl.Int32)
+    )
+
+
+def _group_within_one_entity(data: pa.PolarsData) -> pl.LazyFrame:
+    return data.lazyframe.select(pl.col("krs").n_unique().over("dedup_group_id") == 1)
+
+
+# Every lineage column is required (invariant 3); `event_date` may be null (no decision date,
+# plan 0008), `known_from` never is (AGENT_SPEC §4.7).
+LEGAL_EVENTS = pa.DataFrameSchema(
+    {name: _legal_column(name, dtype) for name, dtype in LEGAL_EVENTS_SCHEMA.items()},
+    checks=[
+        pa.Check(_event_year_matches, error="event_year is the year of event_date, else known_from"),
+        pa.Check(_group_within_one_entity, error="a dedup group spans entities"),
+    ],
+    strict=True,
+    ordered=True,
+    unique=["source_document_hash", "source_element_path"],
+    name="legal_events",
 )

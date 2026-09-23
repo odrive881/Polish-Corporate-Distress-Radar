@@ -137,3 +137,31 @@ def test_fails_closed_on_a_pesel_shaped_run(where: tuple[str, str, str]) -> None
     doc["odpis"]["dane"][section][key] = value
     with pytest.raises(RedactionError, match="11-digit"):
         redact_registry_extract(doc)
+
+
+def test_an_allowlisted_field_naming_a_person_is_reduced() -> None:
+    doc = synthetic_extract()
+    doc["odpis"]["dane"]["dzial4"] = {
+        "zabezpieczenieMajatkuOddalenieWnioskuOUpadlosc": [
+            {
+                "zabezpieczenieMajatkuDluznikaWPostepowaniuUpadlosciowym": [
+                    {
+                        "organWydajacy": "POSTANOWIENIE SĄDU REJONOWEGO Z DNIA 25.03.2022 R. O USTANOWIENIU "
+                        "TYMCZASOWEGO NADZORCY SĄDOWEGO ALOJZEGO WYMYŚLONEGO",
+                        "nrWpisuWprow": "3",
+                    },
+                    {
+                        "organWydajacy": "POSTANOWIENIE SĄDU REJONOWEGO Z DNIA 25.03.2022 R. O USTANOWIENIU "
+                        "TYMCZASOWEGO NADZORCY SĄDOWEGO PRZYKŁADOWA KANCELARIA SPÓŁKA Z OGRANICZONĄ "
+                        "ODPOWIEDZIALNOŚCIĄ",
+                        "nrWpisuWprow": "3",
+                    },
+                ]
+            }
+        ]
+    }
+    orders = json.loads(redact_registry_extract(doc).data)["odpis"]["dane"]["dzial4"][
+        "zabezpieczenieMajatkuOddalenieWnioskuOUpadlosc"
+    ][0]["zabezpieczenieMajatkuDluznikaWPostepowaniuUpadlosciowym"]
+    assert orders[0]["organWydajacy"] == f"{PLACEHOLDER} 25.03.2022"  # a person may be named
+    assert orders[1]["organWydajacy"].endswith("ODPOWIEDZIALNOŚCIĄ")  # a company is

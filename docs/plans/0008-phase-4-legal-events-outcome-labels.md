@@ -10,9 +10,58 @@
 deferred to "no earlier than Phase 4, when MSiG forces a PDF text layer". Whether MSiG forces it is now a question
 this plan answers in step A, not an assumption (decision 2).
 
-## Status: step E done (2026-09-23); step F next (step D, KRZ, skipped per ADR 0011)
+## Status: step F done (2026-09-23); step G (labels) next
 
-**Step E close-out, 2026-09-23.** `acquisition/msig_client.py`, `config/mappings/msig_vocabulary.yaml`, the
+**Step F close-out, 2026-09-23.** `parsing/legal_events.py` (one pure function per source, then `finalise`),
+`parsing/msig_notice_kinds.py` with `config/mappings/msig_notice_kinds.yaml`, the `LEGAL_EVENTS` contract, the
+`legal_events` asset (group `legal`), and the `ext.legal_events` view. What it changes here:
+- **MSiG notices are typed by rules, not parsed as text.** The text is never stored (step E), so the rules read
+  each reduced record's chapter code and terms. Of the seed's 49 notices, 17 are events, 32 are procedural (claims
+  lists, creditors' meetings, routine company-law notices, deliberately skipped), and none is unclassified. The
+  taxonomy maps the kinds, with two new event types: `restructuring_proceeding_ended` (closing) and
+  `restructuring_arrangement_confirmed` (signal).
+- **One proceeding, one `proceeding_id`.** A proceeding runs under several case files (`GU` and `GUp`, `GR` and
+  `GRs`). The files an MSiG notice lists together are linked, and every row carries its linked set's first-published
+  signature, keeping its own as `case_signature`. Signatures are cut to their four parts, which also absorbs a
+  registry typo (`RZ1Z/GU/5/2022/20`).
+- **Deduplication refines decision 3:**
+  - openings group by outcome class, because the registry's generic "restructuring opened" and MSiG's "sanacja
+    opened" are one opening;
+  - an unsigned row joins the one signed group of its kind with the same event date;
+  - an undated row joins the one group of its kind decided in the year before the row became known. That puts
+    0000440028's undated registry liquidation with MSiG's resolution of 2023-07-21.
+- **Columns beyond AGENT_SPEC §5 (amend in step I):**
+  - added: `outcome_class`, `stage`, `statute`, `case_signature`, `removed_on` (the date an entry removed the
+    record) and `event_year` (the partition);
+  - `published_date` is named `known_from`, and there is one per row.
+- **The taxonomy's guessed shapes were fixed against live extracts.** Curators are dated at
+  `dzial5.kurator[].dataPowolania`; the merger section at `opisPolaczeniaPodzialuPrzeksztalcenia` (0000225506's
+  2008 demerger).
+- **The registry redactor was hardened (`krs-json-2`).** 0000225506's allowlisted `organWydajacy` quotes an order
+  naming a temporary court supervisor, a company in that case. An allowlisted value naming a role with no
+  legal-form marker after it is now reduced. All 17 stored extracts re-redact byte-identically, so nothing stored
+  changed (ADR 0009 addendum).
+- **Rejects are quarantined as stage `C4`,** with the log as the current answer, like A1–A4.
+- **Live runs, 2026-09-23.** Runs `ded34011` and `15098f96`: 71 rows in 52 dedup groups, nothing quarantined, and
+  byte-identical Parquet across runs. `make transform-plan` applies with the new view.
+- **Seed acceptance, by data:** each of the 9 hinted entities has a qualifying event with a date and a source
+  document, and 7 of them are confirmed by both sources. The 8 others have none (0000225354 has only arrears and
+  curator signals). The asset check that makes this permanent is step H's.
+  | KRS | Hint | First qualifying event |
+  |---|---|---|
+  | 0000070294 | bankrupt | bankruptcy, petition-stage order 2017-02-09 (MSiG) |
+  | 0000181328 | bankrupt 2025-05-20 | liquidation 2010-02-01 (reversed); bankruptcy order 2025-02-04, declared 2025-05-20 |
+  | 0000188883 | liquidating bankruptcy | bankruptcy declared 2014-01-21 |
+  | 0000225506 | bankrupt | bankruptcy, petition-stage order 2022-03-25 |
+  | 0000277937 | restructuring | simplified restructuring announced 2020-10-29 (MSiG only) |
+  | 0000386777 | restructuring | sanacja petition order 2018-08-24 (MSiG only) |
+  | 0000397658 | liquidation | liquidation opened 2021-10-01 |
+  | 0000440028 | liquidation | liquidation resolution 2023-07-21 (MSiG's date) |
+  | 0000507997 | bankrupt 2025-08-05 | bankruptcy, undated, entered 2025-08-13 (on or before) |
+
+### Step E close-out
+
+**2026-09-23.** `acquisition/msig_client.py`, `config/mappings/msig_vocabulary.yaml`, the
 `msig_notices` manifest table and the `msig_notices` asset (group `legal`, resource `msig_api`, 15 requests a
 minute). ADR 0011's second addendum has the per-entity findings. ADR 0009's addendum, item 3, records how notices
 are stored. What it changes here:
@@ -431,7 +480,7 @@ unredacted is committed, and `test_no_fixture_contains_personal_data` must cover
 - [x] ADR 0011 accepted: access and terms confirmed for every source used, and the gap table recorded. *(Accepted 2026-09-23.)*
 - [x] The procedure taxonomy and label config are written, validated and tested. *(Step B, 2026-09-23; MSiG mappings follow in step E.)*
 - [ ] KRS extracts (and KRZ, and MSiG if built) acquired for the 17-entity seed, redacted and content-addressed. *(KRS 2026-09-23, run `bd6b9c31`; MSiG 2026-09-23, 49 notices; KRZ not built, ADR 0011.)*
-- [ ] `legal_events` persisted and contracted, with full lineage and deduplication.
+- [x] `legal_events` persisted and contracted, with full lineage and deduplication. *(Step F, 2026-09-23.)*
 - [ ] **Seed acceptance:** each of the 9 entities with a distress status hint has a matching event, found
       independently, with a source document and a date. Every mismatch with a hint is investigated and recorded;
       the hints are hints, not ground truth. The 8 others have no qualifying event, or any event found is

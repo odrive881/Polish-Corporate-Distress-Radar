@@ -711,6 +711,32 @@ def known_msig_notices(conn: Connection, krs: str, extraction_version: str) -> d
     return {int(notice_id): str(sha) for notice_id, sha in rows}
 
 
+def legal_documents(conn: Connection, msig_extraction_key: str) -> list[tuple[str, str, str, str]]:
+    """`(source, krs, sha256, first_ingestion_run_id)` of every document `legal_events` reads.
+
+    The latest KRS extract per entity (its history is complete), and every MSiG notice
+    reduced under `msig_extraction_key`.
+    """
+    rows = conn.execute(
+        """
+        SELECT 'KRS', l.krs, l.sha256, d.first_ingestion_run_id
+        FROM (
+            SELECT DISTINCT ON (krs) krs, sha256 FROM legal_source_fetches
+            WHERE source = 'KRS' ORDER BY krs, fetched_at DESC
+        ) AS l
+        JOIN raw_documents AS d USING (sha256)
+        UNION ALL
+        SELECT 'MSiG', n.krs, n.sha256, d.first_ingestion_run_id
+        FROM msig_notices AS n
+        JOIN raw_documents AS d USING (sha256)
+        WHERE n.extraction_version = %s
+        ORDER BY 1, 2, 3
+        """,
+        (msig_extraction_key,),
+    ).fetchall()
+    return [(str(s), str(k).strip(), str(h), str(r)) for s, k, h, r in rows]
+
+
 def resolved_entities(conn: Connection) -> list[str]:
     cur = conn.execute("SELECT krs FROM entity_master ORDER BY krs")
     return [str(krs).strip() for (krs,) in cur.fetchall()]
