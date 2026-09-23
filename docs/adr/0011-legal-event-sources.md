@@ -91,7 +91,7 @@ is for the owner to pursue, not the probe.
 
 **All 9 hinted entities have their event in the KRS extract.** 8 of 9 have a usable date:
 - 0000507997's declaration has an entry date but no decision date.
-- The restructuring dates' meaning needs confirming.
+- The restructuring dates' meaning needed confirming. *(Confirmed 2026-09-23: it is the decision date; first addendum.)*
 
 Two of the "in liquidation" hints are stale: both liquidations finished, and the companies are deregistered.
 
@@ -107,7 +107,7 @@ truth, but it can be very late. An earlier publication (MSiG before 2021, KRZ af
    Phase 4 trigger ("MSiG forces a PDF text layer") **does not fire**, and plan 0006 stays deferred. MSiG supplies
    pre-2021 publication dates, which are often earlier than the registry entry, and the notice text as a second
    reading of the decision date.
-3. **Redaction must be an allowlist, not a key list** (input to plan 0008 decision 3, still the owner's to sign).
+3. **Redaction must be an allowlist, not a key list** (input to plan 0008 decision 3; signed off by the owner on 2026-09-23, built as `krs-json-1`, then hardened to `krs-json-2`: ADR 0009 addendum).
    - **Key-based part:** person-keyed leaves (`imie`, `imieDrugie`, `nazwiskoICzlon`, `nazwiskoIICzlon`, `pesel`)
      become a placeholder.
    - **Allowlist part:** free text is kept only for fields that are generic by construction:
@@ -137,18 +137,21 @@ truth, but it can be very late. An earlier publication (MSiG before 2021, KRZ af
    event dated by that entry. It is the only signal the API gives, and the liquidation-closure entry usually
    carries it.
 
-## Open questions for plan 0008
+## Open questions for plan 0008 (all resolved; see the addenda below)
 
 - **The date field on restructuring openings is named `dataNadaniaKlauzuliWykonalnosci`** ("date the enforceability
   clause was granted"). For 0000277937 it is 2021-07-02 against an entry of 2021-10-22, which is plausible as the
   opening decision. The name may be a misnomer in the API's schema, or the field may really mean the clause date.
   Confirm against the MSiG notice (pre-2021, 0000386777) before the taxonomy treats it as `event_date`.
+  *Resolved: the decision date (first addendum).*
 - **A declaration with no decision date** (0000507997). Rule needed: `event_date` null and `known_from` the entry
   date; labels treat the event as happening **on or before** `known_from`. Or require a second source (KRZ) for it.
+  *Resolved: the first rule, accepted by the owner (first addendum).*
 - **0000225354** has arrears, enforcement and court curators, but no hint and no proceeding. It is not a label;
   record it as a finding for Phase 5 features. It is exactly the kind of company the model should learn to flag.
+  *Recorded: its arrears and curators are `legal_events` signal rows, for Phase 5.*
 - **MSiG coverage before 2012,** and for the other pre-2021 entities, was not checked (one search was run). Step E
-  of plan 0008 does it per entity.
+  of plan 0008 does it per entity. *Resolved: 49 notices for 8 entities, back to 2003 (second addendum).*
 
 ## Terms and rates
 

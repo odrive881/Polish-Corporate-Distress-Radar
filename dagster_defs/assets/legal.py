@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, cast
 
 import dagster as dg
 
-from dagster_defs.assets.acquisition import SEGMENTS_DIR, entity_master
+from dagster_defs.assets.acquisition import SEGMENTS_DIR, SegmentConfig, entity_master
 from distress_radar.acquisition import manifest
 from distress_radar.acquisition.base import PermanentSourceError, SourceError
 from distress_radar.acquisition.krs_extract import fetch_extract
@@ -51,7 +51,6 @@ if TYPE_CHECKING:
     from distress_radar.acquisition.raw_store import ObjectStore
 
 
-SEED = SEGMENTS_DIR / "construction_sme_v1_seed.yaml"
 _REASON = "reason:"
 
 
@@ -259,12 +258,13 @@ LEGAL_EVENTS_DATASET = "legal_events"
         ),
     ],
 )
-def legal_events(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
+def legal_events(context: dg.AssetExecutionContext, config: SegmentConfig) -> dg.MaterializeResult:
     """C (legal side) — `legal_events` from the stored KRS extracts and MSiG notice records.
 
     Inputs: the latest `krs_extracts` object per entity and every `msig_notices` record under
     the current extraction key (MinIO, via `legal_source_fetches` / `msig_notices`);
-    `config/statutory/procedure_taxonomy.yaml`, `config/mappings/msig_notice_kinds.yaml`.
+    `config/statutory/procedure_taxonomy.yaml`, `config/mappings/msig_notice_kinds.yaml`; and
+    `config/segments/<segment>_seed.yaml` for the acceptance check.
     Outputs: Parquet under `WAREHOUSE_DIR/legal_events/`, one file per `event_year`, rebuilt
     whole and replaced atomically (ADR 0008), checked by the `LEGAL_EVENTS` contract;
     C4 `quarantine_events` rows for records the taxonomy or the notice kinds do not map
@@ -327,7 +327,8 @@ def legal_events(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
     frame = LEGAL_EVENTS.validate(to_frame(finalise(normalised)))
     write_dataset(frame, settings.warehouse_dir, LEGAL_EVENTS_DATASET, "event_year")
     reasons = Counter(f"{_REASON}{r.reason_code}" for r in normalised.rejects)
-    verdicts = seed_acceptance(frame, load_seed_hints(SEED))
+    seed = SEGMENTS_DIR / f"{config.segment}_seed.yaml"
+    verdicts = seed_acceptance(frame, load_seed_hints(seed))
     acceptance = dg.AssetCheckResult(
         check_name="seed_acceptance",
         passed=all(v.passed for v in verdicts),

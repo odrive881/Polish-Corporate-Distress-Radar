@@ -2,7 +2,7 @@
 
 **Stage:** Phase 3 (AGENT_SPEC.md §10), second of three plans: C3 (§6C3), the PDF route into the canonical model. Plan 0005 covers the remaining XML structure versions; plan 0007 covers SQLMesh `quarantine` and `dq_mart`.
 
-**Order:** after plan 0005 (whose vocabulary it needs), and — since the 2026-09-21 deferral below — no earlier than Phase 4, when MSiG forces a PDF text layer to exist anyway. Plan 0007 no longer waits for it.
+**Order:** after plan 0005 (whose vocabulary it needs), and only when a trigger below fires. It was expected to start in Phase 4, when MSiG would force a PDF text layer; MSiG turned out to serve text (ADR 0011), so it did not. Plan 0007 no longer waits for it.
 
 ## Status: deferred (2026-09-21); Phase 4 trigger did not fire (2026-09-23)
 

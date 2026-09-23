@@ -52,6 +52,7 @@ from typing import Any, cast
 
 import polars as pl
 
+from distress_radar.acquisition.msig_client import case_signatures
 from distress_radar.parsing.legal_taxonomy import (
     ProcedureTaxonomy,
     SourceMapping,
@@ -86,10 +87,6 @@ _DMY = re.compile(r"\b(\d{2})\.(\d{2})\.(\d{4})\b")
 _SIGNATURE_FIELDS = ("sygnatura", "sygnaturaSprawy")
 # dzial4 carries petition-stage orders in this section only (ADR 0011).
 _SECURITY_SECTION = "dane.dzial4.zabezpieczenieMajatkuOddalenieWnioskuOUpadlosc"
-# One case signature in MSiG's `signatureOfCase` field ("VIII GU 45/17,  VIII GUp 41/17.").
-_SIGNATURE_FIELD = re.compile(
-    r"[IVXL]+\s+G[A-Za-z]{1,3}\s+\d+/\d{2,4}|[A-Z]{2}\d[A-Z]/G[A-Za-z]{1,3}/\d+/\d{4}"
-)
 _ADOPTION_WINDOW_DAYS = 366
 
 
@@ -342,8 +339,7 @@ def from_msig_notice(
     signatures = cast("list[str]", extracted.get("signatures") or [])
     # Aliases come from the structured field only; the text can cite other cases.
     listed = [
-        normalise_signature(m)
-        for m in _SIGNATURE_FIELD.findall(str(notice.get("signatureOfCase") or ""))
+        normalise_signature(m) for m in case_signatures(str(notice.get("signatureOfCase") or ""))
     ]
     linked = tuple(sorted({s for s in listed if s}))
     if len(linked) > 1:
@@ -377,41 +373,6 @@ def from_msig_notice(
                 ingestion_run_id=ingestion_run_id,
             )
         )
-    return out
-    decided = event_date(rule, extracted, published)
-    resolved = taxonomy.resolve("MSiG", "notice", {"notice_kind": rule.kind}, decided or published)
-    if resolved is None:
-        return reject(
-            "legal_event_type_unmapped", f"{rule.kind} has no mapping in force on {decided}"
-        )
-    signatures = cast("list[str]", extracted.get("signatures") or [])
-    # Aliases come from the structured field only; the text can cite other cases.
-    listed = [
-        normalise_signature(m)
-        for m in _SIGNATURE_FIELD.findall(str(notice.get("signatureOfCase") or ""))
-    ]
-    linked = tuple(sorted({s for s in listed if s}))
-    if len(linked) > 1:
-        out.aliases.append((krs, linked))
-    out.events.append(
-        LegalEvent(
-            krs=krs,
-            event_type=resolved.event_type.event_type,
-            outcome_class=resolved.event_type.outcome_class,
-            ends=resolved.event_type.ends,
-            precludes_silent_exit=resolved.event_type.precludes_silent_exit,
-            stage=resolved.event_type.stage,
-            event_date=decided,
-            known_from=published,
-            removed_on=None,
-            source="MSiG",
-            case_signature=normalise_signature(signatures[0]) if signatures else None,
-            statute=resolved.statute.id,
-            source_document_hash=source_document_hash,
-            source_element_path=path,
-            ingestion_run_id=ingestion_run_id,
-        )
-    )
     return out
 
 

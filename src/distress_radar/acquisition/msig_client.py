@@ -149,14 +149,20 @@ def _normalise(text: str) -> str:
     return re.sub(r"\s+", " ", text.replace("\xa0", " ")).strip()
 
 
-def _signatures(field_value: str | None, text: str) -> list[str]:
+def case_signatures(text: str) -> list[str]:
+    """Court case signatures in `text`, in order, each once. The one definition of the pattern:
+    `parsing.legal_events` reads a notice's signature field with it too."""
     found: list[str] = []
-    for source in (field_value or "", text):
-        for match in _SIGNATURE.finditer(_normalise(source)):
-            signature = match.group(1) or match.group(2)
-            if signature not in found:
-                found.append(signature)
+    for match in _SIGNATURE.finditer(_normalise(text)):
+        signature = match.group(1) or match.group(2)
+        if signature not in found:
+            found.append(signature)
     return found
+
+
+def _signatures(field_value: str | None, text: str) -> list[str]:
+    found = case_signatures(field_value or "")
+    return found + [s for s in case_signatures(text) if s not in found]
 
 
 def _dates(text: str, where: str, vocabulary: Vocabulary) -> list[dict[str, Any]]:
