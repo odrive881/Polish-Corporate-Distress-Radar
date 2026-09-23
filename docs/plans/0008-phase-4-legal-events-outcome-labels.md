@@ -65,8 +65,8 @@ Checked afterwards: 89 `legal_events` rows in 70 groups, all 15 checks pass, and
 ADR 0009's addendum and ADR 0011 were written as the steps ran.
 
 **Carried to Phase 5 and the owner:**
-- the registry-lag risk for `alive` labels near the cutoff (step G);
-- petition-stage exclusions that never expire (step G);
+- ~~the registry-lag risk for `alive` labels near the cutoff (step G)~~ resolved by plan 0009 (lag allowance);
+- ~~petition-stage exclusions that never expire (step G)~~ resolved by plan 0009 (24-month expiry);
 - KRZ access, and board, capital, office and PKD changes as registry-dynamics events (feature work);
 - the substitute of plan 0006 (a missing year from the next filing's prior-year column).
 
@@ -129,7 +129,7 @@ it decides, beyond the text below (flag any you disagree with):
   - the rebuild reproduced the same hash, wrote nothing, and added no `label_sets` row.
 
   Every hinted entity turns positive exactly one horizon before its first event.
-- **Open risk for the owner: registry lag near the cutoff.** An `alive` row is one whose window ends before the
+- **Open risk for the owner: registry lag near the cutoff.** *(Resolved 2026-09-23 by plan 0009: a 12-month lag allowance in label version 2.)* An `alive` row is one whose window ends before the
   cutoff with no event seen. An event decided in that window but entered after the cutoff is missed, and the lag
   reached 21 months in the seed (0000225506). Before 2021 MSiG usually publishes first; after it, without KRZ, the
   registry is the only source. One option: for the KRS-only era, bring the cutoff for `alive` back by a lag

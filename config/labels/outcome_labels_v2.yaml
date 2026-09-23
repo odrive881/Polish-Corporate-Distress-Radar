@@ -1,0 +1,47 @@
+# Outcome label parameters, version 2 (plan 0009): version 1 plus a lag allowance for `alive` and an
+# expiry for petition-stage events, both decided by the owner on 2026-09-23.
+#
+# Engineering choices, not statute, so they live here and not in config/statutory/. The file name
+# is the `label_version`: change a value, and it is a new file with a new version, never an edit.
+# Loaded by `distress_radar.labels.load_label_config`.
+
+label_version: outcome_labels_v2
+
+# AGENT_SPEC §4.6 and §5.
+horizons_months: [12, 24]
+
+# Month-ends from the first electronic MSiG issue to the data cutoff. Phase 5 intersects the grid
+# with whatever features exist.
+as_of_grid:
+  frequency: month_end
+  start: 2012-01-31
+
+# The earliest qualifying event in (as_of_date, as_of_date + horizon] sets the class. On the same
+# date, earlier in this list wins.
+precedence: [bankruptcy, restructuring, liquidation, silent_exit]
+
+# The cutoff is the earliest last-complete-fetch date across the sources used. A row whose horizon
+# passes it with no event seen is censored, never `alive`.
+cutoff: earliest_last_complete_fetch
+
+# An entity already in a proceeding at `as_of_date` is not a prediction target for that date: the
+# row is excluded and counted, not labelled with an event that has already happened.
+exclude_in_proceeding: true
+
+# An event with no decision date (e.g. 0000507997's declaration) happened on or before its
+# `known_from`; its `event_date` stays null (plan 0008 owner decision, 2026-09-23).
+undated_event: on_or_before_known_from
+
+# The registry enters a decision up to 21 months after it is made (0000225506), and after KRZ's
+# launch (2021-12-01, the taxonomy's `krz_launch`) no other source this project reads publishes
+# insolvency events sooner. So a window ending on or after that launch is `alive` only if it
+# ended at least this many months before the cutoff. A later window with no event seen is
+# censored: an event decided in it may not be entered yet. Earlier windows are covered by MSiG,
+# which publishes within weeks.
+alive_lag_months: 12
+
+# A petition-stage event (an asset-security order on a pending petition) keeps an entity "in a
+# proceeding" for at most this many months. A petition that no source ever records as opened,
+# dismissed or withdrawn would otherwise exclude the entity for good. Openings (a declared
+# bankruptcy, an opened sanacja, a liquidation) still last until a closing event.
+petition_expiry_months: 24

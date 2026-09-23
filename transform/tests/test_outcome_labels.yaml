@@ -1,4 +1,4 @@
-# Outcome labels (plan 0008 step G; AGENT_SPEC §9.2 "Label construction"). Fixtures, never the
+# Outcome labels (plan 0008 step G, plan 0009; AGENT_SPEC §9.2 "Label construction"). Fixtures, never the
 # live seed. `vars` shrink the grid: month-ends from 2012-01-31, horizons of 1 and 2 months,
 # one source (KRS), a regime window of March 2012, and KRZ "launching" on 2012-03-01. Window
 # ends: 01-31 → 02-29 (h1) / 03-31 (h2); 02-29 → 03-31 / 04-30; 03-31 → 04-30 / 05-31;
@@ -15,6 +15,9 @@ test_classes_censoring_exclusion_and_flags:
     regime_end: "2012-03-31"
     krz_launch: "2012-03-01"
     label_version: test_v
+    # Version 1 behaviour: no lag allowance, petitions never expire (plan 0009 tests set them).
+    label_alive_lag_months: 0
+    label_petition_expiry_months: null
   inputs:
     ext.entity_master:
       rows:
@@ -152,3 +155,82 @@ test_canonical_events:
         - {dedup_group_id: z1, event_type: bankruptcy_declared, known_from: 2017-03-17, effective_date: 2017-03-08, proceeding_id: Q, label_class: bankruptcy}
         - {dedup_group_id: z2, event_type: bankruptcy_proceeding_ended, known_from: 2021-08-05, effective_date: 2021-07-27, proceeding_id: Q, label_class: null}
         - {dedup_group_id: z3, event_type: deregistered, known_from: 2021-11-19, effective_date: 2021-11-19, proceeding_id: Q, label_class: bankruptcy}
+
+# --- version 2 (plan 0009) ---------------------------------------------------------------------
+# Same small grid, with KRZ "launching" on 2012-03-01 and a cutoff of 2012-06-30.
+#
+# The lag allowance: 1 month. A window ending before the launch (01-31 h1 → 02-29) may be alive
+# up to the cutoff; one ending on or after it only up to 2012-05-30 (06-30 minus a month).
+test_lag_allowance_censors_recent_windows_after_the_launch:
+  model: staging.outcome_label_grid
+  vars:
+    <<: *vars
+    label_alive_lag_months: 1
+  inputs:
+    ext.entity_master:
+      rows:
+        - {krs: "000000000L"}
+    ext.legal_source_fetches:
+      rows:
+        - {krs: "000000000L", source: KRS, fetched_at: "2012-06-30 12:00:00+00"}
+    staging.legal_events_canonical:
+      rows: []
+  outputs:
+    query:
+      partial: true
+      rows:
+        - {krs: "000000000L", as_of_date: 2012-01-31, horizon_months: 1, outcome_class: alive, censored: false}
+        - {krs: "000000000L", as_of_date: 2012-01-31, horizon_months: 2, outcome_class: alive, censored: false}
+        - {krs: "000000000L", as_of_date: 2012-02-29, horizon_months: 1, outcome_class: alive, censored: false}
+        - {krs: "000000000L", as_of_date: 2012-02-29, horizon_months: 2, outcome_class: alive, censored: false}
+        # Ends 04-30: the last window the lag allows. Those ending 05-31 are one day past it.
+        - {krs: "000000000L", as_of_date: 2012-03-31, horizon_months: 1, outcome_class: alive, censored: false}
+        - {krs: "000000000L", as_of_date: 2012-03-31, horizon_months: 2, outcome_class: null, censored: true}
+        - {krs: "000000000L", as_of_date: 2012-04-30, horizon_months: 1, outcome_class: null, censored: true}
+        - {krs: "000000000L", as_of_date: 2012-04-30, horizon_months: 2, outcome_class: null, censored: true}
+        - {krs: "000000000L", as_of_date: 2012-05-31, horizon_months: 1, outcome_class: null, censored: true}
+        - {krs: "000000000L", as_of_date: 2012-05-31, horizon_months: 2, outcome_class: null, censored: true}
+        - {krs: "000000000L", as_of_date: 2012-06-30, horizon_months: 1, outcome_class: null, censored: true}
+        - {krs: "000000000L", as_of_date: 2012-06-30, horizon_months: 2, outcome_class: null, censored: true}
+
+# Petition expiry: 2 months. A petition-stage order of 2012-01-15 that nothing follows excludes
+# the entity at 01-31 and 02-29, and no longer from 03-31 (01-15 + 2 months = 03-15). A
+# declaration of 2012-01-15 (an opening) excludes it for as long as it is not closed.
+test_petitions_expire_openings_do_not:
+  model: staging.outcome_label_grid
+  vars:
+    <<: *vars
+    label_petition_expiry_months: 2
+  inputs:
+    ext.entity_master:
+      rows:
+        - {krs: "000000000P"}
+        - {krs: "000000000O"}
+    ext.legal_source_fetches:
+      rows:
+        - {krs: "000000000P", source: KRS, fetched_at: "2012-04-30 12:00:00+00"}
+        - {krs: "000000000O", source: KRS, fetched_at: "2012-04-30 12:00:00+00"}
+    staging.legal_events_canonical:
+      rows:
+        - {dedup_group_id: p1, krs: "000000000P", event_type: bankruptcy_petition_asset_security, outcome_class: bankruptcy, stage: petition, ends: [], event_date: 2012-01-15, known_from: 2012-01-20, effective_date: 2012-01-15, label_class: bankruptcy}
+        - {dedup_group_id: o1, krs: "000000000O", event_type: bankruptcy_declared, outcome_class: bankruptcy, stage: opening, ends: [], event_date: 2012-01-15, known_from: 2012-01-20, effective_date: 2012-01-15, label_class: bankruptcy}
+  outputs:
+    query:
+      partial: true
+      rows:
+        - {krs: "000000000O", as_of_date: 2012-01-31, horizon_months: 1, excluded_reason: in_proceeding}
+        - {krs: "000000000O", as_of_date: 2012-01-31, horizon_months: 2, excluded_reason: in_proceeding}
+        - {krs: "000000000O", as_of_date: 2012-02-29, horizon_months: 1, excluded_reason: in_proceeding}
+        - {krs: "000000000O", as_of_date: 2012-02-29, horizon_months: 2, excluded_reason: in_proceeding}
+        - {krs: "000000000O", as_of_date: 2012-03-31, horizon_months: 1, excluded_reason: in_proceeding}
+        - {krs: "000000000O", as_of_date: 2012-03-31, horizon_months: 2, excluded_reason: in_proceeding}
+        - {krs: "000000000O", as_of_date: 2012-04-30, horizon_months: 1, excluded_reason: in_proceeding}
+        - {krs: "000000000O", as_of_date: 2012-04-30, horizon_months: 2, excluded_reason: in_proceeding}
+        - {krs: "000000000P", as_of_date: 2012-01-31, horizon_months: 1, excluded_reason: in_proceeding}
+        - {krs: "000000000P", as_of_date: 2012-01-31, horizon_months: 2, excluded_reason: in_proceeding}
+        - {krs: "000000000P", as_of_date: 2012-02-29, horizon_months: 1, excluded_reason: in_proceeding}
+        - {krs: "000000000P", as_of_date: 2012-02-29, horizon_months: 2, excluded_reason: in_proceeding}
+        - {krs: "000000000P", as_of_date: 2012-03-31, horizon_months: 1, excluded_reason: null}
+        - {krs: "000000000P", as_of_date: 2012-03-31, horizon_months: 2, excluded_reason: null}
+        - {krs: "000000000P", as_of_date: 2012-04-30, horizon_months: 1, excluded_reason: null}
+        - {krs: "000000000P", as_of_date: 2012-04-30, horizon_months: 2, excluded_reason: null}
