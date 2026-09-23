@@ -70,6 +70,8 @@
     event_type: TEXT
     outcome_class: TEXT
     stage: TEXT
+    ends: TEXT[]
+    precludes_silent_exit: BOOLEAN
     event_date: DATE
     known_from: DATE
     removed_on: DATE
@@ -94,6 +96,16 @@
     created_at: TIMESTAMPTZ
     krs: TEXT
     document_ref: TEXT
+- name: ext.entity_master
+  description: "The resolved universe (A2, Postgres): the entities labels are built for."
+  columns:
+    krs: TEXT
+- name: ext.legal_source_fetches
+  description: "A4 fetches per entity and source (Postgres); the latest sets each source's cutoff."
+  columns:
+    krs: TEXT
+    source: TEXT
+    fetched_at: TIMESTAMPTZ
 - name: ext.parsed_documents
   description: "C1 manifest: one row per statement file and mapping-config hash (Postgres)."
   columns:

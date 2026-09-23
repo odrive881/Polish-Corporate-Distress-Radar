@@ -148,7 +148,11 @@ def test_silent_exit_rules(taxonomy: ProcedureTaxonomy) -> None:
     assert deregistered.outcome_class == "silent_exit"
     assert not deregistered.precludes_silent_exit
     precluding = {e.event_type for e in taxonomy.event_types if e.precludes_silent_exit}
-    assert {"bankruptcy_declared", "liquidation_opened", "merger_division_transformation"} <= precluding
+    assert {
+        "bankruptcy_declared",
+        "liquidation_opened",
+        "merger_division_transformation",
+    } <= precluding
 
 
 # --- the real extracts ---------------------------------------------------------------------------
@@ -195,15 +199,21 @@ def test_seed_extracts_resolve_to_the_expected_events(taxonomy: ProcedureTaxonom
         ("liquidation_opened", date(2010, 2, 1)),
         ("liquidation_closed", date(2010, 5, 18)),
         ("dissolution_recorded", date(2010, 3, 15)),
+        ("registered", date(2003, 11, 27)),  # entry 1: labels start here (step G)
     }
     assert _events(taxonomy, "0000277937") == {
         ("restructuring_petition_asset_security", date(2021, 4, 1)),
         ("restructuring_proceedings_opened", date(2021, 7, 2)),
+        ("registered", date(2007, 4, 3)),
     }
     # No decision date in the record: dated here by its entry (the undated-event rule, step F).
     events = _events(taxonomy, "0000507997")
     assert ("bankruptcy_declared", date(2025, 8, 13)) in events
-    assert {e for e, _ in events} == {"bankruptcy_declared", "arrears_enforcement_started"}
+    assert {e for e, _ in events} == {
+        "bankruptcy_declared",
+        "arrears_enforcement_started",
+        "registered",
+    }
     # The production redactor keeps entry descriptions, the only deregistration signal.
     events = _events(taxonomy, "0000440028")
     assert {e for e, _ in events} == {
@@ -211,6 +221,7 @@ def test_seed_extracts_resolve_to_the_expected_events(taxonomy: ProcedureTaxonom
         "liquidation_closed",
         "dissolution_recorded",
         "deregistered",
+        "registered",
     }
     assert ("deregistered", date(2025, 9, 10)) in events
 
@@ -289,7 +300,9 @@ def test_rejects_inconsistent_event_types() -> None:
     _invalid(not_precluding, "must preclude silent_exit")
 
     def unreachable(raw: dict[str, Any]) -> None:
-        raw["event_types"] = [e for e in raw["event_types"] if e.get("outcome_class") != "liquidation"]
+        raw["event_types"] = [
+            e for e in raw["event_types"] if e.get("outcome_class") != "liquidation"
+        ]
         raw["mappings"] = [m for m in raw["mappings"] if m["event_type"] != "liquidation_opened"]
 
     _invalid(unreachable, "no event type starts")

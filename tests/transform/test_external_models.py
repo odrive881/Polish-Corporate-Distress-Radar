@@ -47,7 +47,9 @@ def _declared() -> dict[str, dict[str, str]]:
 def _sql_type(dtype: pl.DataType | type[pl.DataType]) -> str:
     if isinstance(dtype, pl.Decimal):
         return f"DECIMAL({dtype.precision}, {dtype.scale})"
-    return {pl.String: "TEXT", pl.Int32: "INT", pl.Date: "DATE"}[dtype]  # type: ignore[index]
+    if isinstance(dtype, pl.List):
+        return f"{_sql_type(dtype.inner)}[]"
+    return {pl.String: "TEXT", pl.Int32: "INT", pl.Date: "DATE", pl.Boolean: "BOOLEAN"}[dtype]  # type: ignore[index]
 
 
 def test_every_external_model_has_a_view_and_every_view_a_model() -> None:

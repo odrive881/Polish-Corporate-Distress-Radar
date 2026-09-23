@@ -29,6 +29,8 @@ from sqlmesh.core.config import (
 )
 from sqlmesh.core.config.connection import DuckDBAttachOptions
 
+from distress_radar.labels import load_label_config
+from distress_radar.parsing.legal_taxonomy import load_procedure_taxonomy
 from distress_radar.settings import Settings
 
 # Parquet datasets under WAREHOUSE_DIR, written by `dagster_defs/assets/parsing.py` and
@@ -45,6 +47,9 @@ PARQUET_DATASETS = (
 POSTGRES_TABLES: dict[str, tuple[str, ...] | None] = {
     "quarantine_events": None,
     "parsed_documents": None,
+    # Label scope and cutoffs (plan 0008 step G).
+    "entity_master": ("krs",),
+    "legal_source_fetches": ("krs", "source", "fetched_at"),
     "filing_index": (
         "krs",
         "document_ref",
@@ -59,6 +64,21 @@ POSTGRES_TABLES: dict[str, tuple[str, ...] | None] = {
 
 settings = Settings()
 warehouse = settings.warehouse_dir.resolve()
+# Outcome labels read their parameters from config (plan 0008 decisions 5-6): the label config
+# and the statutory taxonomy, passed to the SQL as variables, never restated in it.
+labels = load_label_config()
+taxonomy = load_procedure_taxonomy()
+LABEL_VARIABLES: dict[str, str] = {
+    "label_version": labels.label_version,
+    "label_grid_start": labels.as_of_grid.start.isoformat(),
+    "label_horizons": ",".join(str(h) for h in labels.horizons_months),
+    "label_precedence": ",".join(labels.precedence),
+    # The sources whose last complete fetch bounds what is known (the cutoff policy).
+    "label_sources": "KRS,MSiG",
+    "regime_start": taxonomy.regime_window.start.isoformat(),
+    "regime_end": taxonomy.regime_window.end.isoformat(),
+    "krz_launch": taxonomy.krz_launch.isoformat(),
+}
 
 
 def _parquet_view(name: str) -> str:
@@ -110,7 +130,7 @@ config = Config(
     model_defaults=ModelDefaultsConfig(dialect="duckdb"),
     # `dq_mart` small-cell suppression threshold; None (NULL) suppresses nothing.
     # See `Settings.dq_mart_min_cell_entities` before changing how it is set.
-    variables={"dq_mart_min_cell_entities": settings.dq_mart_min_cell_entities},
+    variables={"dq_mart_min_cell_entities": settings.dq_mart_min_cell_entities, **LABEL_VARIABLES},
     before_all=[
         "CREATE SCHEMA IF NOT EXISTS ext",
         *(_parquet_view(name) for name in PARQUET_DATASETS),
