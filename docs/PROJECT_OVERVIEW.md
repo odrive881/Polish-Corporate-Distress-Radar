@@ -174,8 +174,8 @@ Stage-by-stage implementation plans live in `docs/plans/`, one numbered `.md` fi
 **What happens:**
 
 - Full KRS extracts are parsed into dated events: management board changes, share capital changes, registered office moves, PKD changes, the opening of liquidation, and deregistration.
-- KRZ is checked for bankruptcy and restructuring proceedings, covering the period from its launch at the end of 2021.
-- The historical MSiG archive is parsed for notices published before KRZ existed, so the event timeline covers both eras.
+- KRZ is checked for bankruptcy and restructuring proceedings, covering the period from its launch at the end of 2021 (not built yet: it sits behind a WAF, ADR 0011).
+- MSiG notices are searched by KRS and reduced to person-free records, adding petition-stage orders, the COVID-era simplified restructuring and earlier publication dates; the KRS extract itself covers both eras (ADR 0011).
 - Events from different sources describing the same proceeding are deduplicated into one canonical event.
 - Natural persons are excluded from ingestion entirely. Only legal entities are stored.
 

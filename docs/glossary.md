@@ -9,7 +9,7 @@ Polish accounting and legal terms used in the data and the code. Keep the Polish
 | **REGON** | Rejestr Gospodarki Narodowej | Statistical identification number |
 | **RDF** | Repozytorium Dokumentów Finansowych | Financial statement filing portal. Lookup-only, one entity at a time, not a bulk API |
 | **KRZ** | Krajowy Rejestr Zadłużonych | Insolvency register, live since late 2021 |
-| **MSiG** | Monitor Sądowy i Gospodarczy | Pre-KRZ insolvency notice archive (PDF) |
+| **MSiG** | Monitor Sądowy i Gospodarczy | Court and economic gazette; its notice base (from 2001) is searchable by KRS as JSON with text (ADR 0011) |
 | **UoR** | Ustawa o rachunkowości | Accounting Act; defines size classes and statement formats |
 | **KSH** | Kodeks spółek handlowych | Commercial Companies Code; source of the Art. 233/397 loss tripwires |
 | **PKD** | Polska Klasyfikacja Działalności | Activity classification code (sector). 2007 and 2025 versions — cross-walk, don't assume stability |

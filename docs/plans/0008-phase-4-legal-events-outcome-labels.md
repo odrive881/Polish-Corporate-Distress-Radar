@@ -10,9 +10,42 @@
 deferred to "no earlier than Phase 4, when MSiG forces a PDF text layer". Whether MSiG forces it is now a question
 this plan answers in step A, not an assumption (decision 2).
 
-## Status: step H done (2026-09-23); step I (docs) next
+## Status: complete (2026-09-23)
 
-**Step H close-out, 2026-09-23.**
+**Step I close-out, 2026-09-23.** Docs brought in line with what was built:
+- **AGENT_SPEC:**
+  - §4.6: the sources and the break, the `silent_exit` rule, censoring, the window and exclusions;
+  - §5: `legal_events` and `outcome_labels` as built;
+  - §6A: the A4 row, and fingerprinting where no cache applies;
+  - §6C3: MSiG no longer routes to the PDF tier;
+  - §10: phase 3's note;
+  - §11.3: terms, recorded in ADR 0011.
+- **CLAUDE.md:**
+  - invariants 2 and 6, which name the registry redaction and MSiG's person-free records;
+  - MSiG's glossary line;
+  - a "Known moving targets" entry for the Phase 4 sources and their traps;
+  - the PDF-tier entry's premise, struck.
+- **`docs/data_inventory.md`:**
+  - §3 statuses (KRS and MSiG built, KRZ blocked);
+  - §6, the legal fixtures;
+  - §7, access and the two new pacing settings (also in `.env.example`);
+  - §8 gap 5.
+- **Plan 0006:** its Phase 4 trigger did not fire.
+- **Elsewhere:**
+  - the glossary, `TECHNICAL_ARCHITECTURE.md` (A4) and `PROJECT_OVERVIEW.md` (stage 7);
+  - `DIRECTORY_STRUCTURE.md` (`tests/fixtures/legal/`, and the modules and models of steps B–H);
+  - the README (status, and how to run `legal_to_labels`).
+
+ADR 0009's addendum and ADR 0011 were written as the steps ran.
+
+**Carried to Phase 5 and the owner:**
+- the registry-lag risk for `alive` labels near the cutoff (step G);
+- petition-stage exclusions that never expire (step G);
+- KRZ access, and board, capital, office and PKD changes as registry-dynamics events (feature work);
+- the substitute of plan 0006 (a missing year from the next filing's prior-year column).
+
+### Step H close-out
+
 - **One job:** `legal_to_labels`, the `legal` and `labels` groups: A4 fetches, then `legal_events`, then the label
   models and their audits, then the frozen set.
 - **Checks the assets report about their own run:** `krs_extracts_quarantine`, `msig_notices_quarantine` and
@@ -554,8 +587,8 @@ unredacted is committed, and `test_no_fixture_contains_personal_data` must cover
 - [x] `outcome_labels` built, audited and frozen, with a reproducible `label_set_hash` and censoring and regime
       flags per §4.6. *(Step G, 2026-09-23: set `a5da757f8341…`.)*
 - [x] Dagster runs the `legal` and `labels` groups end to end; audits and acceptance surface as asset checks. *(Job `legal_to_labels`, 2026-09-23.)*
-- [ ] Docs from step I updated.
-- [ ] `make check` and `make test-integration` green; re-running is byte-identical.
+- [x] Docs from step I updated. *(2026-09-23.)*
+- [x] `make check` and `make test-integration` green; re-running is byte-identical. *(2026-09-23: 576 + 10 SQLMesh tests, 40 integration; `legal_events` and the frozen label set, 21 Parquet files, unchanged across a re-run.)*
 
 ## Risks
 

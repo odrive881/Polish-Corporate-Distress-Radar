@@ -4,7 +4,13 @@
 
 **Order:** after plan 0005 (whose vocabulary it needs), and — since the 2026-09-21 deferral below — no earlier than Phase 4, when MSiG forces a PDF text layer to exist anyway. Plan 0007 no longer waits for it.
 
-## Status: deferred (2026-09-21)
+## Status: deferred (2026-09-21); Phase 4 trigger did not fire (2026-09-23)
+
+**Update, 2026-09-23 (plan 0008, ADR 0011):** trigger 3 and the "MSiG forces a PDF text layer" premise below did
+not hold. MSiG's notice base is a JSON search API that returns notice text, so Phase 4 read notices without any
+PDF tier. The notices are stored only as person-free records (ADR 0009 addendum). The plan stays deferred on
+triggers 1 and 2; its remaining uses are notes attachments (Phase 7) and management reports.
+
 
 Not cancelled, and not blocked: the steps below stay as written and are what to execute when a trigger
 fires. What did not survive review is the *justification for building it now*, which rested on one document.
