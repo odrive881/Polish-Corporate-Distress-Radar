@@ -1,0 +1,53 @@
+{
+ "extracted": {
+  "chapter_code": "III/1",
+  "dates": [
+   {
+    "date": "2004-01-20",
+    "in": "position",
+    "terms_before": [
+     "wpis do rejestru"
+    ]
+   },
+   {
+    "date": "2014-01-21",
+    "in": "body",
+    "terms_before": [
+     "postanowieni",
+     "zawiadamia",
+     "upadłoś",
+     "naprawcz"
+    ]
+   }
+  ],
+  "extraction_version": "msig-notice-1",
+  "signatures": [
+   "IX GU 103/13",
+   "IX GUp 2/14"
+  ],
+  "terms": [
+   "postanowieni",
+   "obwieszcz",
+   "zawiadamia",
+   "ogłosi",
+   "wpis do rejestru",
+   "upadłoś",
+   "syndyk",
+   "naprawcz",
+   "wierzyciel",
+   "likwidac"
+  ],
+  "vocabulary_sha256": "0fa06810ada8fa8096ff6dacd2ce4c7eedc88888584b3c263c9942de9362af3f"
+ },
+ "notice": {
+  "chapterName": "III. PRAWO UPADŁOŚCIOWE I NAPRAWCZE/1. Postanowienie o ogłoszeniu upadłości",
+  "dateOfPublication": "2014-02-11T00:00:00",
+  "entityName": "„HENPOL” SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ W UPADŁOŚCI LIKWIDACYJNEJ w Lublinie.",
+  "id": 6703250,
+  "krs": "0000188883",
+  "monitorNumber": "28/2014",
+  "numberOfNotice": "1611",
+  "page": 10,
+  "signatureOfCase": "IX GU 103/13,  IX GUp 2/14."
+ }
+}

@@ -188,3 +188,33 @@ truth, but it can be very late. An earlier publication (MSiG before 2021, KRZ af
   Prawo restrukturyzacyjne notices after KRZ's launch (for example 0000386777 in 2025).
 - **The MSiG search requires `from` and `to`** (HTTP 444, "Daty publikacji od i Daty publikacji do - Wymagane",
   without them).
+
+## Addendum, 2026-09-23: MSiG across the seed (plan 0008 step E)
+
+- **API shape.** `Monitor/SearchCount` returns the number of result pages (1 when there are none), and
+  `Monitor/Search` returns up to 20 notices a page. Both need `from` and `to`. A notice's detail has `id`, `krs`,
+  `entityName`, `numberOfNotice`, `page`, `monitorNumber`, `dateOfPublication`, `chapterName`, `signatureOfCase`,
+  `textInPosition` (a header naming the company, the court and its registration date), `textInBody`, and the
+  neighbouring notices' ids.
+- **Chapters are coded.** Bankruptcy notices carry a subchapter: `III/1` for a declaration, `III/3` and `III/4` for
+  claims lists and distribution plans, `III/6` for an ending, and `III/9` ("other") for petition-stage orders.
+  Restructuring notices (`IX`) and company-law notices (`I/2`) have no subchapter, so they are typed from their
+  text. Chapter names vary across years (the "I NAPRAWCZE" suffix before 2016, spacing), and the Roman numeral plus
+  the subchapter number is the stable key.
+- **Coverage: 49 notices for 8 of the 17 entities, back to 2003,** earlier than the 2012 this ADR assumed. The two
+  2025 bankruptcies (0000181328, 0000507997) have none, which is right: their notices are in KRZ.
+- **What MSiG adds to the registry, per entity:**
+  - **0000070294:** a petition-stage order (temporary court supervisor) of 2017-02-09, a month before the
+    declaration. The declaration itself was published 2017-03-17, three weeks before its registry entry
+    (2017-04-07).
+  - **0000277937:** the COVID-era simplified restructuring (arrangement day 2020-10-26, published 2020-10-29), nine
+    months before anything in the registry.
+  - **0000386777:** a 2018 sanacja petition with asset security (VI GR 27/18, 2018-08-24) and another in 2019
+    (VI GR 40/18). The notice of 2020-04-17 both opens the sanacja and dismisses the bankruptcy petition.
+  - **0000440028:** the date of the liquidation resolution, 2023-07-21, which the registry entry lacks.
+  - **0000188883 and 0000397658:** the same events as the registry. The registry was earlier for 0000188883.
+  - **0000225506:** a 2008 company-law notice only. Its 2022 bankruptcy is in KRZ, the gap ADR 0011 decision 4
+    accepts.
+- **Storage.** A notice's text is never stored (ADR 0009 addendum, item 3). The reduced record keeps what step F
+  needs to type it. Re-typing under a new vocabulary means fetching again, which the extraction key
+  (`msig_client.extraction_key`) triggers automatically.

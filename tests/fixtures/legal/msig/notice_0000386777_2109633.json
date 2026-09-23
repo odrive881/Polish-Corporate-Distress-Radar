@@ -1,0 +1,58 @@
+{
+ "extracted": {
+  "chapter_code": "IX",
+  "dates": [
+   {
+    "date": "2011-05-19",
+    "in": "position",
+    "terms_before": [
+     "wpis do rejestru"
+    ]
+   },
+   {
+    "date": "2020-04-17",
+    "in": "body",
+    "terms_before": [
+     "postanowieni"
+    ]
+   },
+   {
+    "date": "2015-05-20",
+    "in": "body",
+    "terms_before": []
+   }
+  ],
+  "extraction_version": "msig-notice-1",
+  "signatures": [
+   "VI GU 751/19",
+   "VI GRs 3/20"
+  ],
+  "terms": [
+   "postanowieni",
+   "obwieszcz",
+   "ogłoszeni",
+   "wpis do rejestru",
+   "upadłoś",
+   "wniosek o ogłoszenie upadłości",
+   "oddal",
+   "restrukturyzac",
+   "sanac",
+   "zarządc",
+   "otwarci",
+   "otworzy",
+   "wierzyciel"
+  ],
+  "vocabulary_sha256": "0fa06810ada8fa8096ff6dacd2ce4c7eedc88888584b3c263c9942de9362af3f"
+ },
+ "notice": {
+  "chapterName": "IX. OGŁOSZENIA WYMAGANE PRZEZ PRAWO RESTRUKTURYZACYJNE",
+  "dateOfPublication": "2020-05-06T00:00:00",
+  "entityName": "4 INVEST SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ W RESTRUKTURYZACJI w Warszawie.",
+  "id": 2109633,
+  "krs": "0000386777",
+  "monitorNumber": "87/2020",
+  "numberOfNotice": "20488",
+  "page": 55,
+  "signatureOfCase": "VI GU 751/19, VI GRs 3/20."
+ }
+}

@@ -1,0 +1,47 @@
+{
+ "extracted": {
+  "chapter_code": "I/2",
+  "dates": [
+   {
+    "date": "2011-10-20",
+    "in": "position",
+    "terms_before": [
+     "wpis do rejestru"
+    ]
+   },
+   {
+    "date": "2021-10-01",
+    "in": "body",
+    "terms_before": [
+     "zawiadamia"
+    ]
+   }
+  ],
+  "extraction_version": "msig-notice-1",
+  "signatures": [],
+  "terms": [
+   "zawiadamia",
+   "ogłoszeni",
+   "wpis do rejestru",
+   "otwarci",
+   "zgromadzeni",
+   "wierzyciel",
+   "uchwał",
+   "wspólnik",
+   "likwidac",
+   "rozwiąz"
+  ],
+  "vocabulary_sha256": "0fa06810ada8fa8096ff6dacd2ce4c7eedc88888584b3c263c9942de9362af3f"
+ },
+ "notice": {
+  "chapterName": "I. OGŁOSZENIA WYMAGANE PRZEZ KODEKS SPÓŁEK HANDLOWYCH/2. Spółki z ograniczoną odpowiedzialnością",
+  "dateOfPublication": "2021-11-25T00:00:00",
+  "entityName": "„AZ BUDOWNICTWO INWESTYCJE” SPÓŁKA  Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ we Wrocławiu.",
+  "id": 935723,
+  "krs": "0000397658",
+  "monitorNumber": "228/2021",
+  "numberOfNotice": "73217",
+  "page": 11,
+  "signatureOfCase": null
+ }
+}

@@ -1,0 +1,43 @@
+{
+ "extracted": {
+  "chapter_code": "I/2",
+  "dates": [
+   {
+    "date": "2012-11-15",
+    "in": "position",
+    "terms_before": [
+     "wpis do rejestru"
+    ]
+   },
+   {
+    "date": "2023-07-21",
+    "in": "body",
+    "terms_before": [
+     "uchwał"
+    ]
+   }
+  ],
+  "extraction_version": "msig-notice-1",
+  "signatures": [],
+  "terms": [
+   "ogłoszeni",
+   "wpis do rejestru",
+   "wierzyciel",
+   "uchwał",
+   "wspólnik",
+   "likwidac"
+  ],
+  "vocabulary_sha256": "0fa06810ada8fa8096ff6dacd2ce4c7eedc88888584b3c263c9942de9362af3f"
+ },
+ "notice": {
+  "chapterName": "I. OGŁOSZENIA WYMAGANE PRZEZ KODEKS SPÓŁEK HANDLOWYCH/2. Spółki z ograniczoną odpowiedzialnością",
+  "dateOfPublication": "2023-12-21T00:00:00",
+  "entityName": "BUDOWNICTWO DROGOWE „KASPRZAK”  SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ W LIKWIDACJI w Jerce.",
+  "id": 13039478,
+  "krs": "0000440028",
+  "monitorNumber": "247/2023",
+  "numberOfNotice": "60886",
+  "page": 10,
+  "signatureOfCase": null
+ }
+}

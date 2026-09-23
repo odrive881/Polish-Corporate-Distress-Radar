@@ -1,0 +1,73 @@
+# MSiG notice vocabulary (plan 0008 step E; ADR 0009 addendum, item 3).
+#
+# A notice body names people (trustees, supervisors, judges), so it is never stored. When a
+# notice is fetched it is reduced to a person-free record: its structured fields, its case
+# signatures, and, from this list only, which procedural terms occur in it and which occur
+# just before each date. Step F types notices from those terms. A term is matched as a
+# lowercase substring, so stems cover inflection ("postanowieni" matches "postanowieniem").
+#
+# Every entry must be generic procedural language: no names, no place names. Changing this
+# list changes what is extracted, so it is part of the notice record's extraction version
+# (its hash is stored in every record). Adding a term means refetching to re-extract.
+
+version: 1
+
+# Characters before a date that count as that date's context. The phrase that says what a
+# date is ("postanowieniem z dnia", "w dniu", "wpis do rejestru:") sits within this span.
+context_chars: 80
+
+terms:
+  # decisions and announcements
+  - postanowieni
+  - obwieszcz
+  - zawiadamia
+  - ogłasza
+  - ogłoszeni
+  - ogłosi
+  - wpis do rejestru
+  - uprawomocni
+  - prawomocn
+  # bankruptcy
+  - upadłoś
+  - wniosek o ogłoszenie upadłości
+  - wniosku o ogłoszenie upadłości
+  - zabezpiecz
+  - tymczasow
+  - nadzorc
+  - syndyk
+  - oddal
+  - odrzuc
+  - umorz
+  - umarza
+  - zakończ
+  - lista wierzytelności
+  - listy wierzytelności
+  - spis wierzytelności
+  - plan podziału
+  - planu podziału
+  # restructuring
+  - restrukturyzac
+  - sanac
+  - naprawcz
+  - zarządc
+  - układ
+  - dzień układowy
+  - dniem układowym
+  - zatwierdzeni
+  - zatwierdzi
+  - przyspieszon
+  - uproszczon
+  - otwarci
+  - otworzy
+  - zgromadzeni
+  - wierzyciel
+  # company law
+  - uchwał
+  - wspólnik
+  - likwidac
+  - rozwiąz
+  - połącz
+  - podział
+  - przekształc
+  - obniż
+  - kapitał

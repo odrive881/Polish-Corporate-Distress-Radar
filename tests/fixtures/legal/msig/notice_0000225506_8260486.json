@@ -1,0 +1,69 @@
+{
+ "extracted": {
+  "chapter_code": "I/2",
+  "dates": [
+   {
+    "date": "2005-01-03",
+    "in": "position",
+    "terms_before": [
+     "wpis do rejestru"
+    ]
+   },
+   {
+    "date": "2008-11-10",
+    "in": "body",
+    "terms_before": [
+     "ogłasza"
+    ]
+   },
+   {
+    "date": "2008-11-19",
+    "in": "body",
+    "terms_before": [
+     "ogłoszeni",
+     "planu podziału",
+     "podział"
+    ]
+   },
+   {
+    "date": "2008-10-31",
+    "in": "body",
+    "terms_before": []
+   },
+   {
+    "date": "2008-10-31",
+    "in": "body",
+    "terms_before": [
+     "podział"
+    ]
+   }
+  ],
+  "extraction_version": "msig-notice-1",
+  "signatures": [],
+  "terms": [
+   "ogłasza",
+   "ogłoszeni",
+   "wpis do rejestru",
+   "plan podziału",
+   "planu podziału",
+   "układ",
+   "uchwał",
+   "wspólnik",
+   "podział",
+   "obniż",
+   "kapitał"
+  ],
+  "vocabulary_sha256": "0fa06810ada8fa8096ff6dacd2ce4c7eedc88888584b3c263c9942de9362af3f"
+ },
+ "notice": {
+  "chapterName": "I. OGŁOSZENIA WYMAGANE PRZEZ KODEKS SPÓŁEK HANDLOWYCH/2. Spółki z ograniczoną odpowiedzialnością",
+  "dateOfPublication": "2008-11-27T00:00:00",
+  "entityName": "„INSTALBUD - RZESZÓW” SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ w Rzeszowie.",
+  "id": 8260486,
+  "krs": "0000225506",
+  "monitorNumber": "232/2008",
+  "numberOfNotice": "15064",
+  "page": 10,
+  "signatureOfCase": null
+ }
+}

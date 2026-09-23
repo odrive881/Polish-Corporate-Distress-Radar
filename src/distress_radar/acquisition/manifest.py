@@ -35,6 +35,7 @@ from distress_radar.acquisition.models import (
     ReconciliationRecord,
     UniverseCandidate,
 )
+from distress_radar.acquisition.msig_client import MsigResult
 from distress_radar.acquisition.raw_store import raw_key
 from distress_radar.acquisition.regon_client import A2Result
 
@@ -219,6 +220,21 @@ SCHEMA_DDL: tuple[LiteralString, ...] = (
         ingestion_run_id  text NOT NULL,
         stored_new        boolean NOT NULL,
         PRIMARY KEY (krs, source, ingestion_run_id)
+    )
+    """,
+    # A4 MSiG (plan 0008 step E). One row per notice and extraction key (the extraction version
+    # plus the vocabulary's hash); `sha256` is the reduced, person-free record (ADR 0009
+    # addendum), never the notice text.
+    """
+    CREATE TABLE IF NOT EXISTS msig_notices (
+        krs                     char(10) NOT NULL,
+        notice_id               bigint NOT NULL,
+        extraction_version      text NOT NULL,
+        sha256                  text NOT NULL REFERENCES raw_documents (sha256),
+        published_on            date NOT NULL,
+        chapter_code            text,
+        first_ingestion_run_id  text NOT NULL,
+        PRIMARY KEY (krs, notice_id, extraction_version)
     )
     """,
 )
@@ -640,10 +656,30 @@ def latest_legal_fetch(conn: Connection, krs: str, source: LegalSource) -> Previ
     return None if row is None else PreviousFetch(sha256=row[0], content_sha256=row[1])
 
 
-def record_a4_result(conn: Connection, result: A4Result) -> None:
+def record_a4_result(conn: Connection, result: A4Result | MsigResult) -> None:
     """Write one entity's A4 rows; raw documents first so foreign keys resolve."""
     for fetch in result.raw_fetches:
         insert_raw_fetch(conn, fetch)
+    if isinstance(result, MsigResult):
+        for notice in result.notices:
+            conn.execute(
+                """
+                INSERT INTO msig_notices
+                    (krs, notice_id, extraction_version, sha256, published_on, chapter_code,
+                     first_ingestion_run_id)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT DO NOTHING
+                """,
+                (
+                    notice.krs,
+                    notice.notice_id,
+                    notice.extraction_version,
+                    notice.sha256,
+                    notice.published_on,
+                    notice.chapter_code,
+                    notice.ingestion_run_id,
+                ),
+            )
     if result.fetch is not None:
         row = result.fetch
         conn.execute(
@@ -666,6 +702,15 @@ def record_a4_result(conn: Connection, result: A4Result) -> None:
     insert_quarantine(conn, result.quarantine)
 
 
+def known_msig_notices(conn: Connection, krs: str, extraction_version: str) -> dict[int, str]:
+    """Notice id → stored record, for notices already reduced under `extraction_version`."""
+    rows = conn.execute(
+        "SELECT notice_id, sha256 FROM msig_notices WHERE krs = %s AND extraction_version = %s",
+        (krs, extraction_version),
+    ).fetchall()
+    return {int(notice_id): str(sha) for notice_id, sha in rows}
+
+
 def resolved_entities(conn: Connection) -> list[str]:
     cur = conn.execute("SELECT krs FROM entity_master ORDER BY krs")
     return [str(krs).strip() for (krs,) in cur.fetchall()]
@@ -682,6 +727,7 @@ def table_counts(conn: Connection) -> dict[str, int]:
         "quarantine_events",
         "filing_index",
         "legal_source_fetches",
+        "msig_notices",
     ):
         query = sql.SQL("SELECT count(*) FROM {}").format(sql.Identifier(table))
         row = conn.execute(query).fetchone()

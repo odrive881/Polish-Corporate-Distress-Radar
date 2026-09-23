@@ -1,0 +1,50 @@
+{
+ "extracted": {
+  "chapter_code": "III/6",
+  "dates": [
+   {
+    "date": "2001-12-12",
+    "in": "position",
+    "terms_before": [
+     "wpis do rejestru"
+    ]
+   },
+   {
+    "date": "2021-07-27",
+    "in": "body",
+    "terms_before": [
+     "postanowieni",
+     "upadłoś",
+     "planu podziału",
+     "podział"
+    ]
+   }
+  ],
+  "extraction_version": "msig-notice-1",
+  "signatures": [
+   "VIII GUp 41/17"
+  ],
+  "terms": [
+   "postanowieni",
+   "obwieszcz",
+   "wpis do rejestru",
+   "upadłoś",
+   "zakończ",
+   "planu podziału",
+   "restrukturyzac",
+   "podział"
+  ],
+  "vocabulary_sha256": "0fa06810ada8fa8096ff6dacd2ce4c7eedc88888584b3c263c9942de9362af3f"
+ },
+ "notice": {
+  "chapterName": "III. OGŁOSZENIA WYMAGANE PRZEZ PRAWO UPADŁOŚCIOWE/6. Postanowienie o zakończeniu postępowania upadłościowego",
+  "dateOfPublication": "2021-08-05T00:00:00",
+  "entityName": "PRZEDSIĘBIORSTWO BUDOWLANO-INWESTYCYJNE SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ  W UPADŁOŚCI we Wrocławiu.",
+  "id": 335644,
+  "krs": "0000070294",
+  "monitorNumber": "150/2021",
+  "numberOfNotice": "50155",
+  "page": 53,
+  "signatureOfCase": "VIII GUp 41/17."
+ }
+}

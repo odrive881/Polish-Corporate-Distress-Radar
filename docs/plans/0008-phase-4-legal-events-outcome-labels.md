@@ -10,9 +10,32 @@
 deferred to "no earlier than Phase 4, when MSiG forces a PDF text layer". Whether MSiG forces it is now a question
 this plan answers in step A, not an assumption (decision 2).
 
-## Status: step C done (2026-09-23); step D (KRZ) is skipped per ADR 0011, so step E (MSiG) is next
+## Status: step E done (2026-09-23); step F next (step D, KRZ, skipped per ADR 0011)
 
-**Step C close-out, 2026-09-23.** `acquisition/krs_extract.py`, the registry redactor in
+**Step E close-out, 2026-09-23.** `acquisition/msig_client.py`, `config/mappings/msig_vocabulary.yaml`, the
+`msig_notices` manifest table and the `msig_notices` asset (group `legal`, resource `msig_api`, 15 requests a
+minute). ADR 0011's second addendum has the per-entity findings. ADR 0009's addendum, item 3, records how notices
+are stored. What it changes here:
+- **A notice's text is never stored, so step F cannot "parse notices as text".** Each notice is reduced at fetch
+  time to a person-free record: structured fields, a chapter code (`III/1`, `IX`, `I/2`), case signatures, the
+  vocabulary terms it contains, and every date with the terms just before it. Step F types notices from that
+  record. The typing rules are therefore step F's, as are the taxonomy's MSiG mappings (keyed on the chapter code
+  and the terms).
+- **Notices are fetched once.** A run reads every search page and fetches only notices not stored under the
+  current extraction key (extraction version plus the vocabulary's hash). Editing the vocabulary re-fetches
+  everything, which is what re-extraction needs.
+- **MSiG reaches back to 2003 and adds real events.** The seed has a petition-stage order a month before a
+  declaration, a COVID simplified restructuring, 2018 sanacja petitions, and a liquidation resolution date the
+  registry lacks (ADR 0011, second addendum).
+- **Live runs, 2026-09-23.** Run `026569e5`: 49 notices for 8 entities, nothing quarantined, nothing name-like
+  in any record. Run `5b97a848`: search pages only, no notice fetched again, every fingerprint unchanged. The
+  vocabulary then gained "uchwał" and "wspólnik", so a liquidation resolution's date carries its context. Run
+  `26029b09` re-extracted all 49 under the new key, and 13 of them, plus one search page, are the fixtures in
+  `tests/fixtures/legal/msig/`.
+
+### Step C close-out
+
+**2026-09-23.** `acquisition/krs_extract.py`, the registry redactor in
 `acquisition/redaction.py` (`REGISTRY_REDACTION_VERSION = "krs-json-1"`), the `legal_source_fetches` manifest table,
 and the `krs_extracts` asset (group `legal`, resource `krs_api`, 15 requests a minute). ADR 0009's addendum records
 decision 3; CLAUDE.md and AGENT_SPEC §2 now name the registry redaction. What it found:
@@ -34,7 +57,7 @@ decision 3; CLAUDE.md and AGENT_SPEC §2 now name the registry redaction. What i
   second run (`9323bbe0`) fetched all 17 again and stored nothing new: 17 fetch rows, each pointing at the first
   run's object.
 
-## Step B close-out
+### Step B close-out
 
 **Owner decisions, 2026-09-23: all five accepted as recommended**, with ADR 0011 (now `accepted`) and the rule
 for a declaration with no decision date (`event_date` null, `known_from` the entry date, labels treat the event as
@@ -407,7 +430,7 @@ unredacted is committed, and `test_no_fixture_contains_personal_data` must cover
 
 - [x] ADR 0011 accepted: access and terms confirmed for every source used, and the gap table recorded. *(Accepted 2026-09-23.)*
 - [x] The procedure taxonomy and label config are written, validated and tested. *(Step B, 2026-09-23; MSiG mappings follow in step E.)*
-- [ ] KRS extracts (and KRZ, and MSiG if built) acquired for the 17-entity seed, redacted and content-addressed. *(KRS done 2026-09-23, run `bd6b9c31`; MSiG follows in step E.)*
+- [ ] KRS extracts (and KRZ, and MSiG if built) acquired for the 17-entity seed, redacted and content-addressed. *(KRS 2026-09-23, run `bd6b9c31`; MSiG 2026-09-23, 49 notices; KRZ not built, ADR 0011.)*
 - [ ] `legal_events` persisted and contracted, with full lineage and deduplication.
 - [ ] **Seed acceptance:** each of the 9 entities with a distress status hint has a matching event, found
       independently, with a source document and a date. Every mismatch with a hint is investigated and recorded;
