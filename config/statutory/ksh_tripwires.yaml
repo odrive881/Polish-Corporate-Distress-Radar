@@ -1,0 +1,51 @@
+# KSH loss tripwires (AGENT_SPEC §4.5, plan 0010 step B). Statutory data, not code (invariant 7).
+# Loaded and cross-checked by `distress_radar.features.statutory.load_ksh_tripwires`.
+#
+# A rule is resolved on the balance-sheet date of the statement it is applied to: that is the
+# balance sheet "drawn up by the board" the article speaks of. A date before every rule's
+# `effective_from` resolves to nothing, and the feature is null.
+#
+# Each rule compares losses with a threshold, both named by the ratio inputs of
+# `config/features/line_items_*.yaml`:
+# - `losses`: the inputs whose sum, when negative, is the loss (its absolute value). A positive
+#   sum is no loss, and the rule is not triggered.
+# - `threshold`: input → coefficient, as a fraction ("1/2", "1/3"), so the comparison is exact.
+# The rule is triggered when the loss is *strictly greater* than the threshold ("przewyższającą").
+# An input the statement does not carry makes the rule null, never zero (invariant 4): micro forms
+# carry no equity breakdown, so the rule is null for every micro filing.
+
+version: 1
+
+statutes:
+  - id: ksh_2000
+    act: Ustawa z 15 września 2000 r. — Kodeks spółek handlowych
+    effective_from: 2001-01-01
+
+rules:
+  # Art. 233 § 1: "Jeżeli bilans sporządzony przez zarząd wykaże stratę przewyższającą sumę kapitałów
+  # zapasowego i rezerwowych oraz połowę kapitału zakładowego, zarząd jest obowiązany niezwłocznie
+  # zwołać zgromadzenie wspólników w celu powzięcia uchwały dotyczącej dalszego istnienia spółki."
+  #
+  # The loss is the accumulated loss on the balance sheet: the prior years' result plus the year's
+  # (plan 0010 decision 6). "Kapitały rezerwowe" is read as the balance sheet's "pozostałe kapitały
+  # rezerwowe" (A.IV). The revaluation reserve (A.III) is left out: it holds unrealised revaluation
+  # gains, and commentaries differ on counting it. Adding it is one line here, and a new version.
+  - rule: art_233
+    legal_forms: [sp_z_oo]
+    statute: ksh_2000
+    losses: [retained_result, net_result_balance_sheet]
+    threshold:
+      supplementary_capital: "1"
+      reserve_capital: "1"
+      share_capital: "1/2"
+
+  # Art. 397: the same test for a spółka akcyjna, with a third of the share capital. Not used in v1
+  # (sp. z o.o. only); kept so the S.A. scope needs no new code (AGENT_SPEC §4.5).
+  - rule: art_397
+    legal_forms: [sa]
+    statute: ksh_2000
+    losses: [retained_result, net_result_balance_sheet]
+    threshold:
+      supplementary_capital: "1"
+      reserve_capital: "1"
+      share_capital: "1/3"

@@ -1,0 +1,57 @@
+# Deadlines for filing an annual financial statement with the court register (plan 0010 step B).
+# Statutory data, not code (invariant 7). Loaded by
+# `distress_radar.features.statutory.load_filing_deadlines`; the filing-behaviour features read it
+# to decide when a year counts as missing and when a filing is late.
+#
+# The deadline is computed from each statement's own balance-sheet date (`period_end`), never from a
+# calendar year: fiscal years that are not calendar years move it. It is:
+#
+#   period_end + approval months (+ any extension) + filing days
+#
+# Month arithmetic keeps month ends: a year ending 31 December is approved by 30 June.
+# Filed on the deadline is on time; one day later is late.
+
+version: 1
+
+statutes:
+  - id: uor_1994
+    act: Ustawa z 29 września 1994 r. o rachunkowości
+    effective_from: 1995-01-01
+  - id: covid_mf_2020
+    act: >-
+      Rozporządzenie Ministra Finansów z 31 marca 2020 r. w sprawie określenia innych terminów
+      wypełniania obowiązków w zakresie ewidencji oraz w zakresie sporządzenia, zatwierdzenia,
+      udostępnienia i przekazania do właściwego rejestru, jednostki lub organu sprawozdań lub
+      informacji (Dz.U. 2020 poz. 570), with its 2021 and 2022 amendments
+    effective_from: 2020-03-31
+
+# Art. 53 ust. 1: approved within 6 months of the balance-sheet date. Art. 69 ust. 1: filed with the
+# register within 15 days of approval.
+base:
+  statute: uor_1994
+  approval_months: 6
+  filing_days: 15
+
+# § 3a ust. 1 of the regulation extends the art. 52 ust. 1 (preparation) and art. 53 ust. 1
+# (approval) terms by 3 months for private-sector entities. Art. 69 ust. 1 is not extended: the
+# 15 days run from the later approval. Each window is the range of balance-sheet dates its
+# paragraph names ("kończącego się po dniu 29 września …, jednak nie później niż w dniu 30
+# kwietnia …"), both ends inclusive here. The regulation also requires that the term had not
+# expired before 31 March of the filing year, which every date in these windows meets.
+# Verified 2026-09-24 against the consolidated text (prawo.pl, Dz.U. 2020 poz. 570).
+extensions:
+  - id: covid_fy2019  # § 10
+    statute: covid_mf_2020
+    period_end_from: 2019-09-30
+    period_end_to: 2020-04-30
+    approval_extra_months: 3
+  - id: covid_fy2020  # § 10a
+    statute: covid_mf_2020
+    period_end_from: 2020-09-30
+    period_end_to: 2021-04-30
+    approval_extra_months: 3
+  - id: covid_fy2021  # § 10aa, added by the regulation of 7 March 2022
+    statute: covid_mf_2020
+    period_end_from: 2021-09-30
+    period_end_to: 2022-04-30
+    approval_extra_months: 3

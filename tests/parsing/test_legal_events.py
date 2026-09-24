@@ -145,6 +145,88 @@ def test_unknown_sections_and_values_are_rejected(taxonomy: ProcedureTaxonomy) -
     ]
 
 
+# --- KRS: registry changes (plan 0010 step B) ----------------------------------------------------
+
+
+def _changes(out: Normalised, event_type: str) -> list[tuple[date, str]]:
+    return sorted((e.known_from, e.source_element_path) for e in _by_type(out.events, event_type))
+
+
+def test_a_seat_moves_only_when_the_locality_changes(taxonomy: ProcedureTaxonomy) -> None:
+    # GOWARCZÓW → KIELCE (entry 12) → BILCZA (entry 17); the state at entry 1 is not a move.
+    assert _changes(_krs(taxonomy, "0000181328"), "office_moved") == [
+        (date(2012, 4, 18), "dane.dzial1.siedzibaIAdres.siedziba[1]"),
+        (date(2016, 9, 9), "dane.dzial1.siedzibaIAdres.siedziba[2]"),
+    ]
+    # WROCŁAW re-entered as WROCŁAW (entry 36) is not a move.
+    assert _changes(_krs(taxonomy, "0000277937"), "office_moved") == []
+
+
+def test_capital_changes_when_its_value_does(taxonomy: ProcedureTaxonomy) -> None:
+    # 6 000 → 276 000 zł at entry 5; the deregistration (entry 37) removes it without a change.
+    assert _changes(_krs(taxonomy, "0000440028"), "capital_changed") == [
+        (date(2015, 5, 18), "dane.dzial1.kapital.wysokoscKapitaluZakladowego[1]"),
+    ]
+    assert _changes(_krs(taxonomy, "0000181328"), "capital_changed") == []
+
+
+def test_board_changes_are_members_joining_and_leaving(taxonomy: ProcedureTaxonomy) -> None:
+    out = _krs(taxonomy, "0000507997")
+    assert _changes(out, "board_changed") == [
+        (date(2016, 7, 25), "dane.dzial2.reprezentacja[0].sklad[0]#left"),
+        (date(2016, 7, 25), "dane.dzial2.reprezentacja[0].sklad[1]#joined"),
+        (date(2018, 1, 4), "dane.dzial2.reprezentacja[0].sklad[1]#left"),
+        (date(2018, 1, 4), "dane.dzial2.reprezentacja[0].sklad[2]#joined"),
+    ]
+    board = _by_type(out.events, "board_changed")
+    assert all(e.event_date == e.known_from and e.outcome_class is None for e in board)
+    assert {e.stage for e in board} == {"signal"}
+    # One replacement is one group: the leaving and the joining member share an entry.
+    groups = {e.dedup_group_id for e in finalise(out) if e.event_type == "board_changed"}
+    assert len(groups) == 2
+
+
+def test_a_change_of_function_is_not_a_board_change(taxonomy: ProcedureTaxonomy) -> None:
+    # 0000277937's first member changes function at entries 8, 12, 16 and 24, and leaves at 25.
+    member = [
+        c
+        for c in _changes(_krs(taxonomy, "0000277937"), "board_changed")
+        if c[1].startswith("dane.dzial2.reprezentacja[0].sklad[0]#")
+    ]
+    assert member == [(date(2018, 9, 26), "dane.dzial2.reprezentacja[0].sklad[0]#left")]
+
+
+def test_an_exit_removes_without_changing(taxonomy: ProcedureTaxonomy) -> None:
+    extract = copy.deepcopy(_extract("0000507997"))
+    odpis = extract["odpis"]
+    last = max(int(w["numerWpisu"]) for w in odpis["naglowekP"]["wpis"])
+    odpis["naglowekP"]["wpis"].append(
+        {"numerWpisu": last + 1, "dataWpisu": "01.10.2025", "opis": "WYKREŚLENIE Z KRS"}
+    )
+    for member in odpis["dane"]["dzial2"]["reprezentacja"][0]["sklad"]:
+        for parts in member.values():
+            for part in parts:
+                part.setdefault("nrWpisuWykr", str(last + 1))
+    for seat in odpis["dane"]["dzial1"]["siedzibaIAdres"]["siedziba"]:
+        seat.setdefault("nrWpisuWykr", str(last + 1))
+    out = _krs(taxonomy, "0000507997", extract)
+    assert len(_by_type(out.events, "deregistered")) == 1
+    assert len(_changes(out, "board_changed")) == 4  # as before: no one "left" at the exit
+    assert _changes(out, "office_moved") == []
+
+
+def test_a_change_on_an_undated_entry_is_rejected(taxonomy: ProcedureTaxonomy) -> None:
+    extract = copy.deepcopy(_extract("0000440028"))
+    extract["odpis"]["naglowekP"]["wpis"] = [
+        e for e in extract["odpis"]["naglowekP"]["wpis"] if e["numerWpisu"] != 5
+    ]
+    out = _krs(taxonomy, "0000440028", extract)
+    assert _changes(out, "capital_changed") == []
+    assert [(r.source_element_path, r.reason_code) for r in out.rejects] == [
+        ("dane.dzial1.kapital.wysokoscKapitaluZakladowego[1]", "krs_entry_date_missing")
+    ]
+
+
 # --- MSiG ----------------------------------------------------------------------------------------
 
 

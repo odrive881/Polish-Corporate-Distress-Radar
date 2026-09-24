@@ -8,7 +8,7 @@
 **Order:** after plans 0008 and 0009, which are complete. Phase 6 (baseline models, out-of-time backtest) trains
 on `feature_store` joined to a frozen label set, so nothing downstream starts before this lands.
 
-## Status: owner decisions made (2026-09-24); step A complete (ADR 0012), step B next
+## Status: owner decisions made (2026-09-24); steps A and B complete, step C next
 
 ## Why
 
@@ -189,6 +189,31 @@ match. `DIRECTORY_STRUCTURE.md` gains `config/features/`.
   `signal`) with their KRS locators, and `from_krs_extract` dates them by entry. Fixture tests on the four
   committed extracts cover it.
 
+**As built (2026-09-24).** Loaders in `features/config.py` and `features/statutory.py`; tests in
+`tests/features/`. Choices made while building, all in config and easy to revisit before step D:
+- **Registry changes.** A taxonomy mapping may carry a `change`: `replaced` (an entry introduces a
+  record while removing one that differs on the `compare` fields) or `membership` (a board member
+  joins or leaves). The state at the first entry is never a change, and an exit's removals are
+  not one either. The seat is compared on locality, so a new street address in the same town is
+  not a move; a change of function inside the board is not a board change. One replacement (one
+  member leaves, one joins, in one entry) is one `dedup_group_id`, which is what the counts use.
+- **`legal_event_coverage` leaves the three out**, like `registered`: only KRS records them, and
+  counting them would show a source break that is not one.
+- **Revenue is each layout's headline line** (`IS.COMP.A`, `IS.CALC.A`, `IS.MIKRO.A`). The
+  comparative and micro lines include inventory change and own work capitalised, and the
+  calculation line does not; summing sub-lines to align them is the derivation §4.1 forbids.
+- **Art. 233 leaves out the revaluation reserve** (A.III), counting supplementary capital and the
+  other reserve capitals (A.IV). Commentaries differ; including it is one line and a new version.
+- **Filing deadlines** are verified against Dz.U. 2020 poz. 570 as amended: +3 months to approval
+  for balance-sheet dates 2019-09-30…2020-04-30, 2020-09-30…2021-04-30 and 2021-09-30…2022-04-30;
+  the 15 days to file were never extended.
+- **Missing years and late filings look back 3 fiscal years** (`lookback_years`).
+- **Restatement size is the largest single-line change over total assets**, not the total: lines
+  nest, so a sum counts one change several times.
+- **Not built: days since the last registry entry.** No dataset holds the extract's entry list;
+  `legal_events` has only the entries that mapped to an event. It needs the entry dates exposed
+  first, and is left for a later feature set.
+
 ### C. The point-in-time financial panel
 
 `src/distress_radar/features/panel.py`, pure functions over the canonical Parquet and `filing_index`:
@@ -275,7 +300,7 @@ The same assertion runs on the live store as a Dagster asset check.
 
 - [x] Owner decisions 1–6 made (2026-09-24).
 - [x] ADR 0012 written.
-- [ ] Feature set v1, the line-item map, the tripwire config and the filing-deadline config written, validated and
+- [x] Feature set v1, the line-item map, the tripwire config and the filing-deadline config written, validated and
       tested.
 - [ ] The point-in-time panel built, with the filed-wins rule and the quarantine exclusion, tested.
 - [ ] All families in feature set v1 computed for the seed, with `__known_from` on every feature.

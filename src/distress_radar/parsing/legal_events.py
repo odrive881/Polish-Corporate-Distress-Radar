@@ -18,6 +18,10 @@ and features use it:
 A record whose entry has no date is rejected (`krs_entry_date_missing`), never dated by guess.
 An event with no decision date keeps `event_date` null (the owner's rule, 2026-09-23).
 
+**Registry changes (plan 0010 step B).** Board, seat and capital changes are read from a
+section's history, not from one record: a taxonomy mapping with a `change` says how. They are
+dated by the entry that made them, which is both their `event_date` and their `known_from`.
+
 **One proceeding, one `proceeding_id`.** A proceeding has several case files (the petition's
 `GU`, the proceeding's `GUp`; a sanacja's `GR` and `GRs`). An MSiG notice lists the files it
 belongs to in its signature field, and `finalise` links the signatures listed together.
@@ -231,7 +235,7 @@ def from_krs_extract(
 
     by_locator: dict[str, list[SourceMapping]] = {}
     for mapping in taxonomy.mappings:
-        if mapping.source == "KRS":
+        if mapping.source == "KRS" and mapping.change is None:
             by_locator.setdefault(mapping.locator, []).append(mapping)
 
     known_sections = {_sections(loc) for loc in by_locator}
@@ -302,7 +306,146 @@ def from_krs_extract(
                     ingestion_run_id=ingestion_run_id,
                 )
             )
+    _history_changes(
+        odpis,
+        out,
+        krs=krs,
+        taxonomy=taxonomy,
+        entry_dates=entry_dates,
+        source_document_hash=source_document_hash,
+        ingestion_run_id=ingestion_run_id,
+    )
     return out
+
+
+def _entry_number(value: object) -> int | None:
+    text = str(value).strip() if value is not None else ""
+    return int(text) if text.isdigit() else None
+
+
+def _member_tenure(member: Mapping[str, Any]) -> tuple[int | None, int | None]:
+    """(joined, left) entry numbers of a member, over every dated part of its record.
+
+    `left` is None while any part is still in force.
+    """
+    parts = [
+        cast("dict[str, Any]", part)
+        for value in member.values()
+        if isinstance(value, list)
+        for part in cast("list[object]", value)
+        if isinstance(part, dict) and "nrWpisuWprow" in part
+    ]
+    joined = [n for p in parts if (n := _entry_number(p.get("nrWpisuWprow"))) is not None]
+    left = [_entry_number(p.get("nrWpisuWykr")) for p in parts]
+    open_part = any(n is None for n in left)
+    return (
+        min(joined) if joined else None,
+        None if open_part or not left else max(n for n in left if n is not None),
+    )
+
+
+def _history_changes(
+    odpis: Mapping[str, Any],
+    out: Normalised,
+    *,
+    krs: str,
+    taxonomy: ProcedureTaxonomy,
+    entry_dates: Mapping[str, date | None],
+    source_document_hash: str,
+    ingestion_run_id: str,
+) -> None:
+    """Events from `change` mappings: a section's history compared entry by entry."""
+    numbers = [n for n in (_entry_number(k) for k in entry_dates) if n is not None]
+    if not numbers:
+        return
+    first = min(numbers)
+    # Entries the taxonomy reads as an exit: their removals are the exit, not a change.
+    exits: set[int] = set()
+    for _, header in _records(odpis, ["naglowekP", "wpis"], ""):
+        fields = {k: v for k, v in header.items() if isinstance(v, str)}
+        number = _entry_number(header.get("numerWpisu"))
+        on = entry_dates.get(str(header.get("numerWpisu")))
+        if number is None or on is None:
+            continue
+        hit = taxonomy.resolve("KRS", "naglowekP.wpis", fields, on)
+        if hit is not None and hit.event_type.stage == "exit":
+            exits.add(number)
+
+    for mapping in taxonomy.mappings:
+        change = mapping.change
+        if mapping.source != "KRS" or change is None:
+            continue
+        records = [(p.lstrip("."), r) for p, r in _records(odpis, mapping.locator.split("."), "")]
+        found: list[tuple[str, int]] = []  # (element path, entry number)
+        if change.kind == "replaced":
+            for path, record in records:
+                introduced = _entry_number(record.get("nrWpisuWprow"))
+                if introduced is None or introduced == first:
+                    continue
+                removed = [
+                    other
+                    for _, other in records
+                    if _entry_number(other.get("nrWpisuWykr")) == introduced
+                ]
+                same = any(
+                    all(other.get(f) == record.get(f) for f in change.compare) for other in removed
+                )
+                if removed and not same:
+                    found.append((path, introduced))
+        else:
+            for path, record in records:
+                joined, left = _member_tenure(record)
+                if joined is not None and joined != first and joined not in exits:
+                    found.append((f"{path}#joined", joined))
+                if left is not None and left not in exits:
+                    found.append((f"{path}#left", left))
+
+        for path, number in found:
+            known_from = entry_dates.get(str(number))
+            if known_from is None:
+                out.rejects.append(
+                    LegalEventReject(
+                        krs,
+                        "KRS",
+                        source_document_hash,
+                        path,
+                        "krs_entry_date_missing",
+                        f"entry {number} has no date",
+                    )
+                )
+                continue
+            resolved = taxonomy.resolve("KRS", mapping.locator, {}, known_from)
+            if resolved is None:
+                out.rejects.append(
+                    LegalEventReject(
+                        krs,
+                        "KRS",
+                        source_document_hash,
+                        path,
+                        "legal_event_type_unmapped",
+                        f"no mapping in force on {known_from}",
+                    )
+                )
+                continue
+            out.events.append(
+                LegalEvent(
+                    krs=krs,
+                    event_type=resolved.event_type.event_type,
+                    outcome_class=None,
+                    ends=resolved.event_type.ends,
+                    precludes_silent_exit=resolved.event_type.precludes_silent_exit,
+                    stage=resolved.event_type.stage,
+                    event_date=known_from,
+                    known_from=known_from,
+                    removed_on=None,
+                    source="KRS",
+                    case_signature=None,
+                    statute=resolved.statute.id,
+                    source_document_hash=source_document_hash,
+                    source_element_path=path,
+                    ingestion_run_id=ingestion_run_id,
+                )
+            )
 
 
 # --- MSiG ----------------------------------------------------------------------------------------

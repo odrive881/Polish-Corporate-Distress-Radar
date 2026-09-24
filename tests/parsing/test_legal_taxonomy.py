@@ -173,7 +173,8 @@ def _events(taxonomy: ProcedureTaxonomy, krs: str) -> set[tuple[str, date]]:
     entry_dates = {str(e["numerWpisu"]): e["dataWpisu"] for e in odpis["naglowekP"]["wpis"]}
     found: set[tuple[str, date]] = set()
     for mapping in taxonomy.mappings:
-        if mapping.source != "KRS":
+        # History changes are compared entry by entry, in tests/parsing/test_legal_events.py.
+        if mapping.source != "KRS" or mapping.change is not None:
             continue
         for record in _records(odpis, mapping.locator.split(".")):
             fields = {k: v for k, v in record.items() if isinstance(v, str)}
@@ -306,3 +307,17 @@ def test_rejects_inconsistent_event_types() -> None:
         raw["mappings"] = [m for m in raw["mappings"] if m["event_type"] != "liquidation_opened"]
 
     _invalid(unreachable, "no event type starts")
+
+
+def test_rejects_a_malformed_change_mapping() -> None:
+    def board(raw: dict[str, Any]) -> dict[str, Any]:
+        return next(m for m in raw["mappings"] if m["event_type"] == "board_changed")
+
+    _invalid(lambda raw: board(raw).update(when={"field": "x", "present": True}), "no `when`")  # pyright: ignore[reportUnknownLambdaType, reportUnknownMemberType]
+    _invalid(lambda raw: board(raw).update(date_field="data"), "no `when` or `date_field`")  # pyright: ignore[reportUnknownLambdaType, reportUnknownMemberType]
+    _invalid(lambda raw: board(raw).update(change={"kind": "replaced"}), "`compare` is required")  # pyright: ignore[reportUnknownLambdaType, reportUnknownMemberType]
+    _invalid(
+        lambda raw: board(raw).update(change={"kind": "membership", "compare": ["a"]}),  # pyright: ignore[reportUnknownLambdaType, reportUnknownMemberType]
+        "not allowed otherwise",
+    )
+    _invalid(lambda raw: board(raw).update(event_type="liquidation_opened"), "signal event")  # pyright: ignore[reportUnknownLambdaType, reportUnknownMemberType]
