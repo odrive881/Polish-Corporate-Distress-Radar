@@ -8,7 +8,7 @@
 **Order:** after plans 0008 and 0009, which are complete. Phase 6 (baseline models, out-of-time backtest) trains
 on `feature_store` joined to a frozen label set, so nothing downstream starts before this lands.
 
-## Status: steps A–D complete (2026-09-24), step E next
+## Status: steps A–E complete (2026-09-24), step F next
 
 ## Why
 
@@ -332,6 +332,27 @@ must transform them (e.g. winsorise or rank) rather than read them raw.
 - writes the Parquet.
 
 A second build on unchanged input is byte-identical.
+
+**As built (2026-09-24).** `build_grid`, `assemble` and `build_feature_store` in
+`features/asof_assembly.py`; the contract in `features/contracts.py`.
+- **The grid is computed in Python, by the label grid's rule,** not read from SQLMesh: the feature build
+  must not depend on a SQLMesh run, and the leakage test needs it with no services. The label sources are
+  one constant, `distress_radar.labels.LABEL_SOURCES`, which `transform/config.py` now reads too. On the
+  seed the two grids are identical: 2,929 rows, none on one side only.
+- **Columns:** `krs`, `as_of_date`, `as_of_year` (the partition), `feature_set_version`,
+  `feature_set_hash`, then each feature and its `__known_from`, in the feature set's order: 93 in v1.
+  Booleans are `Boolean`, counts `Int32`, the rest `Float64`. The hash is a column, so it travels with
+  the data. Every grid row is a row, even with every feature null.
+- **The contract** checks, beyond types: one row per `(krs, as_of_date)`; a feature is non-null exactly
+  when its `__known_from` is; no `__known_from` after its `as_of_date`; the version and hash are the
+  configured ones.
+- **`FEATURE_SET_VERSION`** picks the feature set (default `feature_set_v1`), as `LABEL_VERSION` does.
+- On the seed: built in about 1 s, and a second build is byte-identical across its 15 partitions. The
+  live store was built into a scratch copy of the warehouse only: the real one is written by the
+  Dagster asset (step G), after `legal_events` is rebuilt with step B's events.
+- **Not built: the `ext.feature_store` view** (plan decision 7). It serves a SQLMesh coverage mart, and
+  step G reports coverage as a Dagster asset check instead; the view comes with the first SQL model that
+  reads the store.
 
 ### F. The leakage tests (blocking)
 

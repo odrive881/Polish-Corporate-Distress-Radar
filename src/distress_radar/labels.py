@@ -32,6 +32,11 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from distress_radar.parsing.canonical_schema import CONFIG_DIR
 from distress_radar.parsing.legal_taxonomy import EVENT_OUTCOME_CLASSES, EventOutcomeClass
 
+# The sources whose last complete fetch bounds what is known: an entity's cutoff is the earliest
+# of their latest fetches (`cutoff: earliest_last_complete_fetch`). Read by the SQL label grid and
+# by the feature grid (plan 0010 step E), which must agree.
+LABEL_SOURCES: tuple[str, ...] = ("KRS", "MSiG")
+
 
 class _Frozen(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
