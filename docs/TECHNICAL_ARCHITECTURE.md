@@ -382,6 +382,8 @@ Context worth knowing: Fivetran acquired Tobiko Data, SQLMesh's originator, in S
 
 The reasoning is that this project's bitemporality is *domain* bitemporality — fiscal period versus document public-availability date. Modelling it explicitly in the schema is more honest and more defensible than delegating it to a table format's commit history, and it makes the leakage tests in stage H trivially expressible.
 
+*As built (ADR 0012):* the explicit validity columns live on the canonical tables themselves: `period_start` / `period_end` are the fiscal period and `known_from` the filing date. No separate snapshot copy partitioned by `as_of_month` is built. Feature assembly ASOF-joins on `known_from` over the canonical Parquet, and `feature_store`, partitioned by `as_of_date` year, is the monthly as-of view. The data snapshot hash that MLflow runs log is designed in Phase 6.
+
 ---
 
 ### G. Semantic extraction
@@ -417,7 +419,9 @@ Lemmatisation is not optional for Polish: the language is heavily inflected, so 
 
 #### H1 — As-of assembly
 
-**→ Pick: DuckDB `ASOF JOIN` inside SQLMesh incremental models.** For each `(entity, as_of_date)` pair, join the most recent fact whose `known_from` is on or before `as_of_date`. This is one SQL construct doing the work that is otherwise a subtle, bug-prone window-function exercise.
+**→ Pick: DuckDB `ASOF JOIN`, run in-process from Python in `src/distress_radar/features/` (ADR 0012).** For each `(entity, as_of_date)` pair, join the most recent fact whose `known_from` is on or before `as_of_date`. This is one SQL construct doing the work that is otherwise a subtle, bug-prone window-function exercise.
+
+This document first placed the join inside SQLMesh incremental models. ADR 0012 moved it to Python: the blocking leakage test has to run the real assembly code in `make check` with no services, and the feature definitions are driven by config. `feature_store` is recomputed in full on each run, which is cheap at this scale. SQLMesh keeps the DQ and label models, and reads `feature_store` only for coverage marts.
 
 `Feast` is available if you want a named feature store on the CV, but it is built for online low-latency serving that this batch project does not need, and it would add real operational overhead. The demonstrable skill here is the correct as-of join, not the framework wrapper.
 

@@ -8,7 +8,7 @@
 **Order:** after plans 0008 and 0009, which are complete. Phase 6 (baseline models, out-of-time backtest) trains
 on `feature_store` joined to a frozen label set, so nothing downstream starts before this lands.
 
-## Status: owner decisions made (2026-09-24); step A next
+## Status: owner decisions made (2026-09-24); step A complete (ADR 0012), step B next
 
 ## Why
 
@@ -274,7 +274,7 @@ The same assertion runs on the live store as a Dagster asset check.
 ## Definition of done
 
 - [x] Owner decisions 1–6 made (2026-09-24).
-- [ ] ADR 0012 written.
+- [x] ADR 0012 written.
 - [ ] Feature set v1, the line-item map, the tripwire config and the filing-deadline config written, validated and
       tested.
 - [ ] The point-in-time panel built, with the filed-wins rule and the quarantine exclusion, tested.

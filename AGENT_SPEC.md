@@ -354,7 +354,7 @@ marimo notebooks in `notebooks/`, `.py` format, reading via DuckDB. Not part of 
 - SQLMesh project in `transform/`: DuckDB engine, SQLMesh state in Postgres (ADR 0010).
 - **Boundary:** SQLMesh starts where the data becomes tabular. `financial_statements_canonical`, `restatement_events` and `identity_check_results` are Python (Dagster/Polars) outputs. SQLMesh reads them, and the Postgres manifest tables, only through the `ext.*` views declared in `transform/external_models.yaml`, and never writes them.
 - Incremental models keyed by time range so a late-arriving filing for an old period triggers a correct partial rebuild. The key is `known_from`, the axis on which data arrives (§4.7), not `fiscal_year`. Current-state and aggregate models (`quarantine`, `dq_mart`) are full rebuilds instead: a rule change rewrites them all the way back.
-- Output for the point-in-time layer H consumes: Parquet partitioned by `fiscal_year` and `as_of_month`, with `valid_from`, `valid_to`, `known_from` columns and content-hashed snapshot manifests. **Deferred to Phase 5**, when the feature store can say what shape it needs (ADR 0010 decision 6).
+- Output for the point-in-time layer H consumes: no separate snapshot layer is built (ADR 0012, closing ADR 0010 decision 6). The canonical tables already carry both axes of §4.7 (`period_start` / `period_end` and `known_from`), and H ASOF-joins on `known_from` over them directly. The data snapshot hash MLflow runs log is designed in Phase 6.
 
 ### G — Semantic extraction
 
@@ -366,7 +366,7 @@ marimo notebooks in `notebooks/`, `.py` format, reading via DuckDB. Not part of 
 
 ### H — Point-in-time features
 
-**H1** Assembly via DuckDB `ASOF JOIN`: for each `(krs, as_of_date)`, join the most recent fact with `known_from <= as_of_date`.
+**H1** Assembly via DuckDB `ASOF JOIN`, run in-process from Python in `src/distress_radar/features/`, not in SQLMesh (ADR 0012): for each `(krs, as_of_date)`, join the most recent fact with `known_from <= as_of_date`.
 
 Feature families:
 
