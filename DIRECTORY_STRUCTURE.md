@@ -157,6 +157,8 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
     │   ├── test_statutory.py           # KSH tripwires, filing deadlines across their dates
     │   ├── test_panel.py               # filed-wins, corrections, fills, quarantine switch
     │   ├── test_feature_definitions.py # each family on hand-computed values
+    │   ├── test_asof_assembly.py       # the grid, the pivot, the contract, equal bytes
+    │   ├── test_asof_assembly_integration.py  # the build against a real manifest schema
     │   └── test_leakage.py             # §9.1 of AGENT_SPEC.md — blocking
     ├── models/
     ├── transform/                      # SQLMesh boundary and Dagster DQ wiring (pytest side)
@@ -214,7 +216,8 @@ src/distress_radar/
 │   ├── config.py                 # typed config/features/ (feature set, line-item map), cross-checked
 │   ├── statutory.py              # typed KSH tripwires and filing deadlines, dated lookups
 │   ├── panel.py                  # point-in-time financial panel: filed-wins rule, quarantine switch
-│   ├── asof_assembly.py          # H1 — grid, ASOF joins, the feature_store dataset
+│   ├── asof_assembly.py          # H1 — the grid, assembly, the feature_store dataset
+│   ├── contracts.py              # Pandera contract for feature_store, built from the feature set
 │   └── feature_definitions.py    # one function per feature family, §6H
 │
 ├── models/

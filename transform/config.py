@@ -32,7 +32,7 @@ from sqlmesh.core.config import (
 )
 from sqlmesh.core.config.connection import DuckDBAttachOptions
 
-from distress_radar.labels import load_label_config
+from distress_radar.labels import LABEL_SOURCES, load_label_config
 from distress_radar.parsing.legal_taxonomy import load_procedure_taxonomy
 from distress_radar.settings import Settings
 
@@ -77,7 +77,7 @@ LABEL_VARIABLES: dict[str, str | int | None] = {
     "label_horizons": ",".join(str(h) for h in labels.horizons_months),
     "label_precedence": ",".join(labels.precedence),
     # The sources whose last complete fetch bounds what is known (the cutoff policy).
-    "label_sources": "KRS,MSiG",
+    "label_sources": ",".join(LABEL_SOURCES),
     "regime_start": taxonomy.regime_window.start.isoformat(),
     "regime_end": taxonomy.regime_window.end.isoformat(),
     "krz_launch": taxonomy.krz_launch.isoformat(),
