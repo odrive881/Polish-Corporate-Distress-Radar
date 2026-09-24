@@ -7,7 +7,8 @@ rather than as mislabelled events:
 - an event type is defined once, so it has one class;
 - a class outside §4.6 does not validate;
 - two mappings for the same source event never overlap in time;
-- a mapping's dates lie inside its statute's.
+- a mapping's dates lie inside its statute's;
+- a `change` mapping (plan 0010 step B) is dated by its entry, so it takes no `when` or date field.
 """
 
 from __future__ import annotations
@@ -113,10 +114,28 @@ class When(_Frozen):
         return True
 
 
+class Change(_Frozen):
+    """An event read from a section's history, not from one record (plan 0010 step B).
+
+    `replaced`: a record an entry introduced while removing another that differs on `compare`.
+    `membership`: a member (a record and all its parts) joining or leaving.
+    """
+
+    kind: Literal["replaced", "membership"]
+    compare: tuple[str, ...] = ()
+
+    @model_validator(mode="after")
+    def _compare_iff_replaced(self) -> Change:
+        if (self.kind == "replaced") != bool(self.compare):
+            raise ValueError("`compare` is required for `replaced` and not allowed otherwise")
+        return self
+
+
 class SourceMapping(_Frozen):
     source: Source
     locator: str
     when: When | None = None
+    change: Change | None = None
     event_type: str
     statute: str
     # Narrow the statute's range; both default to the statute's own dates.
@@ -129,6 +148,11 @@ class SourceMapping(_Frozen):
     def _date_parse_needs_field(self) -> SourceMapping:
         if self.date_parse == "leading" and self.date_field is None:
             raise ValueError(f"{self.locator}: `date_parse: leading` needs a `date_field`")
+        if self.change is not None:
+            if self.source != "KRS":
+                raise ValueError(f"{self.locator}: `change` reads a KRS extract's history")
+            if self.when is not None or self.date_field is not None:
+                raise ValueError(f"{self.locator}: a `change` takes no `when` or `date_field`")
         return self
 
     @property
@@ -175,6 +199,9 @@ class ProcedureTaxonomy(_Frozen):
                 raise ValueError(f"{m.locator}: unknown event type {m.event_type}")
             if m.statute not in statutes:
                 raise ValueError(f"{m.locator}: unknown statute {m.statute}")
+            if m.change is not None and self.event_type(m.event_type).stage != "signal":
+                # A change has no decision date, so it can never date a label.
+                raise ValueError(f"{m.locator}: a `change` mapping must type a signal event")
             start, end = self.mapping_range(m)
             statute = statutes[m.statute]
             if end < start or not (statute.covers(start) and statute.covers(end)):

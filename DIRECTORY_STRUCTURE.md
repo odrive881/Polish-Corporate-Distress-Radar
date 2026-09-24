@@ -153,6 +153,8 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
     ├── parsing/
     ├── extraction/
     ├── features/
+    │   ├── test_feature_config.py      # feature set and line-item map load checks
+    │   ├── test_statutory.py           # KSH tripwires, filing deadlines across their dates
     │   └── test_leakage.py             # §9.1 of AGENT_SPEC.md — blocking
     ├── models/
     ├── transform/                      # SQLMesh boundary and Dagster DQ wiring (pytest side)
@@ -207,6 +209,8 @@ src/distress_radar/
 │   └── eval_harness.py           # G3 — scores against evals/text_signals/
 │
 ├── features/                     # H, in Python with in-process DuckDB (ADR 0012)
+│   ├── config.py                 # typed config/features/ (feature set, line-item map), cross-checked
+│   ├── statutory.py              # typed KSH tripwires and filing deadlines, dated lookups
 │   ├── panel.py                  # point-in-time financial panel: filed-wins rule, quarantine switch
 │   ├── asof_assembly.py          # H1 — grid, ASOF joins, the feature_store dataset
 │   └── feature_definitions.py    # one function per feature family, §6H

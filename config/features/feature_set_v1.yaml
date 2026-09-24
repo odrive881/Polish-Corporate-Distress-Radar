@@ -1,0 +1,134 @@
+# Feature set v1 (plan 0010 decisions 4 and 5). Engineering choices, not statute.
+# Loaded and cross-checked by `distress_radar.features.config.load_feature_set`.
+#
+# The file name is the `feature_set_version`, and a hash over this file and every config it reads
+# (the line-item map, the KSH tripwires, the filing deadlines, the procedure taxonomy) is recorded
+# with every build. Change a value, and it is a new file with a new version, never an edit.
+#
+# Every feature `f` is written with `f__known_from`: the latest `known_from` of the facts behind it
+# (plan 0010 decision 2). A feature with no inputs is null, never imputed (invariant 4).
+#
+# Kinds, and the families that may use them:
+# - `ratio` (financial, construction): Σ numerator / Σ denominator over ratio inputs of the latest
+#   fiscal year known at `as_of_date`, times `scale`. `denominator: positive` also nulls a
+#   negative denominator, where the sign would invert the meaning (ROE on negative equity).
+# - `growth` (financial): x_t / x_{t−years} − 1, null unless the base is positive.
+# - `volatility` (financial): sample standard deviation of a ratio feature over the latest `years`
+#   fiscal years, null unless every one of them has it.
+# - `tripwire` (tripwire): a rule of `config/statutory/ksh_tripwires.yaml`.
+# - `below_zero` (tripwire): an input is negative.
+# - `filing` (filing): a filing-behaviour metric, computed from `filing_index`, the canonical grades
+#   and `restatement_events`, over the fiscal years whose deadline had passed by `as_of_date`
+#   (`config/statutory/filing_deadlines.yaml`). `lookback_years` limits it to the latest ones.
+# - `event_count` (registry, legal_history): distinct events (`dedup_group_id`) in `legal_events`
+#   whose `known_from` falls in the `window_months` before `as_of_date`, or ever when null. Never
+#   by `event_date`: that is the leakage bug the blocking test exists for (AGENT_SPEC §9.1).
+
+feature_set_version: feature_set_v1
+line_items: line_items_v1
+legal_form: sp_z_oo
+
+# Plan 0010 owner decision 3, as a switch. Quarantined statements (a material identity failure)
+# are left out of the financial panel; their filings still count for filing behaviour. An
+# experimental run that includes them is its own file (e.g. feature_set_v1q.yaml), so it gets its
+# own version and hash. When true, a quarantined statement is usable: it wins its year over a later
+# filing's prior-year column, and the panel records its grade.
+include_quarantined_statements: false
+
+features:
+  # --- financial ratios -----------------------------------------------------------------------
+  - {name: current_ratio, family: financial, kind: ratio,
+     numerator: {current_assets: 1}, denominator: {short_term_liabilities: 1}}
+  - {name: quick_ratio, family: financial, kind: ratio,
+     numerator: {current_assets: 1, inventories: -1}, denominator: {short_term_liabilities: 1}}
+  - {name: debt_to_assets, family: financial, kind: ratio,
+     numerator: {liabilities_and_provisions: 1}, denominator: {total_assets: 1}}
+  - {name: equity_to_assets, family: financial, kind: ratio,
+     numerator: {equity: 1}, denominator: {total_assets: 1}}
+  - {name: roa, family: financial, kind: ratio,
+     numerator: {net_result: 1}, denominator: {total_assets: 1}}
+  - {name: roe, family: financial, kind: ratio,
+     numerator: {net_result: 1}, denominator: {equity: 1}, denominator_rule: positive}
+  - {name: net_margin, family: financial, kind: ratio,
+     numerator: {net_result: 1}, denominator: {revenue: 1}, denominator_rule: positive}
+  - {name: operating_margin, family: financial, kind: ratio,
+     numerator: {operating_result: 1}, denominator: {revenue: 1}, denominator_rule: positive}
+  - {name: asset_turnover, family: financial, kind: ratio,
+     numerator: {revenue: 1}, denominator: {total_assets: 1}}
+  - {name: working_capital_to_assets, family: financial, kind: ratio,
+     numerator: {current_assets: 1, short_term_liabilities: -1}, denominator: {total_assets: 1}}
+  # Not "interest coverage": the statements do not separate interest from other financial costs.
+  - {name: operating_result_to_financial_costs, family: financial, kind: ratio,
+     numerator: {operating_result: 1}, denominator: {financial_costs: 1},
+     denominator_rule: positive}
+  - {name: revenue_growth_1y, family: financial, kind: growth, input: revenue, years: 1}
+  - {name: revenue_growth_2y, family: financial, kind: growth, input: revenue, years: 2}
+  - {name: revenue_growth_3y, family: financial, kind: growth, input: revenue, years: 3}
+  - {name: equity_growth_1y, family: financial, kind: growth, input: equity, years: 1}
+  - {name: equity_growth_2y, family: financial, kind: growth, input: equity, years: 2}
+  - {name: equity_growth_3y, family: financial, kind: growth, input: equity, years: 3}
+  - {name: net_margin_volatility_3y, family: financial, kind: volatility, of: net_margin, years: 3}
+
+  # --- construction ---------------------------------------------------------------------------
+  # Revenue-based: the forms do not all carry cost of sales. No backlog proxy: nothing carries one.
+  - {name: receivable_days, family: construction, kind: ratio, scale: 365,
+     numerator: {short_term_receivables: 1}, denominator: {revenue: 1},
+     denominator_rule: positive}
+  - {name: short_term_liability_days, family: construction, kind: ratio, scale: 365,
+     numerator: {short_term_liabilities: 1}, denominator: {revenue: 1},
+     denominator_rule: positive}
+  - {name: prepayments_to_assets, family: construction, kind: ratio,
+     numerator: {short_term_prepayments: 1}, denominator: {total_assets: 1}}
+
+  # --- legal tripwires (AGENT_SPEC §4.5) -------------------------------------------------------
+  - {name: art233_triggered, family: tripwire, kind: tripwire, rule: art_233}
+  - {name: negative_equity, family: tripwire, kind: below_zero, input: equity}
+
+  # --- filing behaviour -----------------------------------------------------------------------
+  # Days from the latest known statement's balance-sheet date to its filing.
+  - {name: days_to_file_latest, family: filing, kind: filing, metric: days_to_file_latest}
+  # Fiscal years whose deadline had passed with no statement known, within the lookback.
+  - {name: missing_years_3y, family: filing, kind: filing, metric: missing_years, lookback_years: 3}
+  # Statements filed after their deadline, within the lookback.
+  - {name: late_filings_3y, family: filing, kind: filing, metric: late_filings, lookback_years: 3}
+  - {name: corrections, family: filing, kind: filing, metric: corrections}
+  # The latest statement was filed as a PDF, not structured XML (`needs_pdf_tier`).
+  - {name: latest_filed_as_pdf, family: filing, kind: filing, metric: latest_filed_as_pdf}
+  - {name: statements_quarantined, family: filing, kind: filing, metric: statements_quarantined}
+  # Filings that restated an earlier year's figures.
+  - {name: restating_filings, family: filing, kind: filing, metric: restating_filings}
+  # The largest single-line restatement in the latest restating filing, over that year's total
+  # assets. The largest line, not the sum: lines nest, so a sum counts one change several times.
+  - {name: restatement_max_to_assets, family: filing, kind: filing,
+     metric: restatement_max_to_assets}
+
+  # --- registry dynamics ----------------------------------------------------------------------
+  - {name: board_changes_12m, family: registry, kind: event_count,
+     event_types: [board_changed], window_months: 12}
+  - {name: board_changes_36m, family: registry, kind: event_count,
+     event_types: [board_changed], window_months: 36}
+  - {name: office_moves_12m, family: registry, kind: event_count,
+     event_types: [office_moved], window_months: 12}
+  - {name: office_moves_36m, family: registry, kind: event_count,
+     event_types: [office_moved], window_months: 36}
+  - {name: capital_changes_12m, family: registry, kind: event_count,
+     event_types: [capital_changed], window_months: 12}
+  - {name: capital_changes_36m, family: registry, kind: event_count,
+     event_types: [capital_changed], window_months: 36}
+  - {name: arrears_enforcements_12m, family: registry, kind: event_count,
+     event_types: [arrears_enforcement_started], window_months: 12}
+  - {name: curators_ever, family: registry, kind: event_count,
+     event_types: [curator_appointed], window_months: null}
+
+  # --- legal history --------------------------------------------------------------------------
+  # An entity still in a proceeding is excluded by the labels, so these describe closed episodes.
+  - {name: bankruptcy_petitions_ever, family: legal_history, kind: event_count,
+     stage: petition, outcome_class: bankruptcy, window_months: null}
+  - {name: restructuring_petitions_ever, family: legal_history, kind: event_count,
+     stage: petition, outcome_class: restructuring, window_months: null}
+  - {name: bankruptcies_closed_ever, family: legal_history, kind: event_count,
+     stage: closing, ends: bankruptcy, window_months: null}
+  - {name: restructurings_closed_ever, family: legal_history, kind: event_count,
+     stage: closing, ends: restructuring, window_months: null}
+  - {name: liquidations_closed_ever, family: legal_history, kind: event_count,
+     stage: closing, ends: liquidation, window_months: null}

@@ -1,0 +1,52 @@
+# Ratio inputs → canonical chart codes (plan 0010 decision 5). Engineering choices, not statute.
+# Loaded and cross-checked by `distress_radar.features.config.load_line_items`.
+#
+# An input names every chart code that can carry it, across forms and income-statement variants.
+# A statement carries at most one of them: the loader proves it against the statement bodies
+# (`config/mappings/structures/bodies/`), per statement and per variant section. So the value is
+# the one code the filed statement carries, whatever its envelope: a small envelope may carry
+# full-form statements (ADR 0005 second addendum). Nothing is derived from another variant or
+# summed from lines (AGENT_SPEC §4.1). A statement that carries none of an input's codes leaves the
+# input null, and every feature built on it null too (invariant 4).
+#
+# Coverage by body, as the loader test pins it:
+# - every body carries the balance-sheet totals, current assets, inventories, short-term
+#   receivables, equity, share capital, liabilities and provisions, revenue and net result;
+# - micro carries no equity breakdown and no liability split, so Art. 233 and the liquidity ratios
+#   are null for micro filers;
+# - the small form has no operating-result line (its chain skips it), so operating features are
+#   null for small income statements.
+#
+# The file name is the line-item map's version; a feature set names the one it uses.
+
+version: line_items_v1
+
+inputs:
+  # --- balance sheet ---------------------------------------------------------------------------
+  total_assets: [BS.ASSETS]
+  current_assets: [BS.ASSETS.B]
+  inventories: [BS.ASSETS.B.I]
+  short_term_receivables: [BS.ASSETS.B.II]
+  # Contract accounting (UoR art. 34a) books revenue recognised ahead of invoicing here.
+  short_term_prepayments: [BS.ASSETS.B.IV]
+  equity: [BS.EQUITY_LIABILITIES.A]
+  share_capital: [BS.EQUITY_LIABILITIES.A.I]
+  supplementary_capital: [BS.EQUITY_LIABILITIES.A.II]
+  reserve_capital: [BS.EQUITY_LIABILITIES.A.IV]
+  retained_result: [BS.EQUITY_LIABILITIES.A.V]
+  net_result_balance_sheet: [BS.EQUITY_LIABILITIES.A.VI]
+  liabilities_and_provisions: [BS.EQUITY_LIABILITIES.B]
+  long_term_liabilities: [BS.EQUITY_LIABILITIES.B.II]
+  short_term_liabilities: [BS.EQUITY_LIABILITIES.B.III]
+
+  # --- income statement ------------------------------------------------------------------------
+  # Each layout's headline revenue line. The comparative (and micro) line includes the change in
+  # product inventories and own work capitalised ("i zrównane z nimi"); the calculation line is
+  # sales only. They are not the same quantity, and summing sub-lines to make them so is the
+  # derivation §4.1 forbids. The panel (step C) keeps the code that carried each value.
+  revenue: [IS.COMP.A, IS.CALC.A, IS.MIKRO.A]
+  operating_result: [IS.COMP.F, IS.CALC.I]
+  financial_costs: [IS.COMP.H, IS.CALC.K]
+  # Full comparative, full calculation, small comparative, small calculation, micro (art. 3 ust. 1a
+  # pkt 1 entities, which sp. z o.o. are; `IS.MIKRO.G` is for foundations and associations).
+  net_result: [IS.COMP.L, IS.CALC.O, IS.COMP.MALA.J, IS.CALC.MALA.L, IS.MIKRO.F]

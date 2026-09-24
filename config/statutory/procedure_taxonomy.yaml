@@ -155,6 +155,17 @@ event_types:
   - event_type: curator_appointed
     stage: signal
     precludes_silent_exit: false
+  # Plan 0010 owner decision 6: changes read from the extract's history, dated by the entry that made
+  # them. Never labels.
+  - event_type: board_changed
+    stage: signal
+    precludes_silent_exit: false
+  - event_type: office_moved
+    stage: signal
+    precludes_silent_exit: false
+  - event_type: capital_changed
+    stage: signal
+    precludes_silent_exit: false
 
 # Source event types. `locator` is the JSON path under the KRS extract's `odpis` (list indices
 # dropped); `when` narrows it by a categorical field of the record. `date_field` is the record field
@@ -166,6 +177,15 @@ event_types:
 # records, ADR 0009 addendum); the mappings below read that kind as `notice_kind`, and a notice
 # is dated by the rule's date policy, `known_from` being its publication date. KRZ has no
 # mappings: it is not built in Phase 4 (ADR 0011 decision 4).
+#
+# A `change` mapping reads a section's history instead of single records (plan 0010 step B):
+# - `replaced`: a record that an entry introduced, when the same entry removed another record at
+#   the same locator and the two differ on a `compare` field. The first entry replaces nothing, so
+#   the state at registration is never a change; a deregistration removes without replacing.
+# - `membership`: each record is a member, present from the earliest entry of any of its parts
+#   until every part is removed. A member joining or leaving is a change, except at the entity's
+#   first entry and at an entry the taxonomy maps to an `exit` event.
+# Both are dated by the entry: the extract carries no decision date for them.
 mappings:
   # --- KRS: bankruptcy --------------------------------------------------------------------------
   - source: KRS
@@ -270,6 +290,26 @@ mappings:
     event_type: curator_appointed
     statute: krs_1997
     date_field: dataPowolania
+  # --- KRS: registry dynamics (plan 0010 owner decision 6) --------------------------------------
+  # Every representation organ, not only one named ZARZĄD: all five in the fixtures are. A change
+  # of function inside the board (PREZES → WICEPREZES) is not a change of membership.
+  - source: KRS
+    locator: dane.dzial2.reprezentacja.sklad
+    change: {kind: membership}
+    event_type: board_changed
+    statute: krs_1997
+  # The seat is the locality (Kodeks cywilny art. 41). A new street address in the same
+  # place is not a move, nor is a record re-entered unchanged (0000277937's WROCŁAW, entry 36).
+  - source: KRS
+    locator: dane.dzial1.siedzibaIAdres.siedziba
+    change: {kind: replaced, compare: [kraj, miejscowosc]}
+    event_type: office_moved
+    statute: krs_1997
+  - source: KRS
+    locator: dane.dzial1.kapital.wysokoscKapitaluZakladowego
+    change: {kind: replaced, compare: [wartosc, waluta]}
+    event_type: capital_changed
+    statute: krs_1997
 
   # --- MSiG (plan 0008 step F) ----------------------------------------------------------------
   - source: MSiG
