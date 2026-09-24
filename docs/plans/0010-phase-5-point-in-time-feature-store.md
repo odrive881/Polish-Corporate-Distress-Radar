@@ -8,7 +8,7 @@
 **Order:** after plans 0008 and 0009, which are complete. Phase 6 (baseline models, out-of-time backtest) trains
 on `feature_store` joined to a frozen label set, so nothing downstream starts before this lands.
 
-## Status: owner decisions made (2026-09-24); steps A and B complete, step C next
+## Status: owner decisions made (2026-09-24); steps A–C complete, step D next
 
 ## Why
 
@@ -230,6 +230,28 @@ Tests use synthetic statements for:
 - a quarantined statement leaving its year empty;
 - with the switch on, the same quarantined statement filling its year, flagged by `quality_grade`.
 
+**As built (2026-09-24).** `build_panel` returns versions, not one row per year: a period's
+figures change only when a filing changes which statement speaks for it, so step D's ASOF join
+takes the latest version known at `as_of_date` and needs no rule of its own. Every version has a
+row for every input, null where the statement does not carry it, so an older figure never shows
+through a newer version. Found while building:
+- **The key is the statement period (`period_end`), not the fiscal year.** Nine seed statements
+  cover something other than one calendar year: a liquidation splits a year into two periods, and
+  one first period runs 15 months (2018-10-01 to 2019-12-31). A prior-year column describes the period that ended the day before its statement began.
+- **A prior-year column with no total assets fills nothing** (`comparative_without_assets`): it
+  describes the time before the entity's first period.
+- **Two sources of one rank for one period on one day are excluded** (`same_day_filings`), never
+  picked between. An original and its correction filed on one day are one version, the correction.
+- Corrections are told by `filing_index.is_correction`, not by `correction_of`: 0000153402's 2024
+  correction has no `correction_of`.
+- Periods of different lengths reach step D as they are. Growth and turnover over a short period
+  are not annualised; the period's length (`period_start`, null for a filled period) is in the
+  panel for step D to decide.
+
+On the seed: 131 versions (93 filed, 8 corrections, 30 filled from prior-year columns); the
+28 quarantined files are excluded both as statements and as prior-year columns. With the switch
+on: 152 versions (120 filed, 9 corrections, 23 filled).
+
 ### D. Feature families
 
 `src/distress_radar/features/feature_definitions.py`, one function per family. Each returns
@@ -302,7 +324,7 @@ The same assertion runs on the live store as a Dagster asset check.
 - [x] ADR 0012 written.
 - [x] Feature set v1, the line-item map, the tripwire config and the filing-deadline config written, validated and
       tested.
-- [ ] The point-in-time panel built, with the filed-wins rule and the quarantine exclusion, tested.
+- [x] The point-in-time panel built, with the filed-wins rule and the quarantine exclusion, tested.
 - [ ] All families in feature set v1 computed for the seed, with `__known_from` on every feature.
 - [ ] `tests/features/test_leakage.py` exists, runs in `make check`, blocks, and is shown to fail on a leaky
       variant.
