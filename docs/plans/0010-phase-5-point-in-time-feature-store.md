@@ -8,7 +8,7 @@
 **Order:** after plans 0008 and 0009, which are complete. Phase 6 (baseline models, out-of-time backtest) trains
 on `feature_store` joined to a frozen label set, so nothing downstream starts before this lands.
 
-## Status: draft (2026-09-23); owner decisions pending before step B
+## Status: owner decisions made (2026-09-24); step A next
 
 ## Why
 
@@ -48,10 +48,13 @@ That is the project's core correctness claim (TECHNICAL_ARCHITECTURE "Bitemporal
 - **Outcome labels:** set `066d18bbd4cd…` (v2), month-end grid × 12/24 months. Phase 6 joins features to it; this
   plan does not.
 
-## Owner decisions needed before step B (recommendations first)
+## Owner decisions (made 2026-09-24)
+
+The owner accepted all six as recommended, with one change to decision 3: the quarantine exclusion is a
+config switch, not a fixed rule. Below, "owner decision N" refers to this list and "plan decision N" to the next.
 
 1. **Features are computed in `src/distress_radar/features/`, with DuckDB run in-process, not in SQLMesh.**
-   *Recommended.* The documents disagree:
+   **Accepted.** The documents disagree:
    - `TECHNICAL_ARCHITECTURE.md` §H picks "DuckDB ASOF JOIN inside SQLMesh incremental models";
    - `DIRECTORY_STRUCTURE.md` §3 puts "computes a feature from canonical data" in `src/distress_radar/features/`,
      "not in `transform/`", and lists `asof_assembly.py` and `feature_definitions.py` there.
@@ -63,26 +66,36 @@ That is the project's core correctness claim (TECHNICAL_ARCHITECTURE "Bitemporal
 
    SQLMesh keeps the DQ and label models. Recorded as **ADR 0012**, and the architecture doc corrected.
 2. **For a fiscal year, the statement filed for that year wins; a later filing's prior-year column only fills a
-   year with no usable statement.** *Recommended*; this is plan 0006's substitute.
+   year with no usable statement.** **Accepted**; this is plan 0006's substitute.
    - The alternative, "latest known value wins", would let a restated comparative silently replace the filed
      figures. The restatement stays visible as a feature (restatement count and size) instead.
    - A correction (`is_correction`) of the year's statement replaces the original from its own `known_from`.
    - A filled year keeps the later filing's `known_from`, and its source kind is recorded.
-3. **Quarantined statements are excluded from financial features.** *Recommended.* Their figures failed a material
-   identity check, so a ratio built on them is noise presented as signal. The filing still counts for filing
-   behaviour, which only needs its date, and a `statements_quarantined` count is itself a feature. The
-   alternative, using them with a quality flag, keeps 22% more statement files at the cost of known-bad inputs.
-4. **Defer `entity_size_class_history`.** *Recommended.*
+3. **Quarantined statements are excluded from financial features, by default.** **Accepted, as a switch.** Their
+   figures failed a material identity check, so a ratio built on them is noise presented as signal. The filing
+   still counts for filing behaviour, which only needs its date, and a `statements_quarantined` count is itself a
+   feature. The alternative, using them with a quality flag, keeps 22% more statement files at the cost of
+   known-bad inputs.
+   - **The owner's change:** the exclusion is a key in the feature-set config,
+     `include_quarantined_statements` (`false` in `feature_set_v1.yaml`), so that a later experimental run can
+     include them.
+   - The switch belongs to the feature set, not to a runtime setting. An experimental run therefore uses its own
+     feature-set file, such as `feature_set_v1q.yaml`, so its `feature_set_version` and hash differ, and MLflow
+     can never confuse it with v1.
+   - When the switch is on, a quarantined statement counts as usable for owner decision 2: the year's filed
+     statement wins even if quarantined, and a comparative no longer fills that year. The panel's
+     `quality_grade` column records which inputs were quarantined.
+4. **Defer `entity_size_class_history`.** **Accepted.**
    - §4.4 needs average employment, and no structured source carries it (`docs/data_inventory.md` gap 8).
    - Balance-sheet total and revenue enter as raw features anyway, so nothing is lost.
    - The alternative: classify on the two financial criteria, with `undetermined` where employment would decide.
      That builds a statutory classification from two of its three inputs.
-5. **Defer macro and sector context (A5) to its own plan.** *Recommended.*
+5. **Defer macro and sector context (A5) to its own plan.** **Accepted.**
    - A5 (NBP, GUS BDL) has no adapter yet.
    - Sector aggregates over 17 entities would be noise, and would leak the seed's own outcomes into its features.
    - The alternative is the NBP reference rate alone: one small adapter, one feature, the same for every entity.
 6. **Registry dynamics are built here:** the taxonomy gains board, office and capital changes as signal event
-   types. *Recommended.*
+   types. **Accepted.**
    - They come from the same stored extracts, redacted of names but with entry numbers intact, dated by their
      entries.
    - Plan 0008 left them for this phase, and they are the only registry features besides arrears and curators.
@@ -151,27 +164,28 @@ That is the project's core correctness claim (TECHNICAL_ARCHITECTURE "Bitemporal
 ## Out of scope
 
 - Text signals (Phase 7, stage G), and with them loss coverage history, auditor change and going-concern flags.
-- Macro and sector features (decision 5), and size class (decision 4), unless the owner decides otherwise.
+- Macro and sector features (owner decision 5), and size class (owner decision 4).
 - Joining features to labels, training, and backtesting (Phase 6).
 - Growing the universe beyond the seed, and KRZ (deferred, plan 0009).
 
 ## Steps
 
-### A. ADR 0012 and doc reconciliation (after the owner's decisions)
+### A. ADR 0012 and doc reconciliation
 
-ADR 0012 covers where features are computed (decision 1), and `TECHNICAL_ARCHITECTURE.md` §H is corrected to
+ADR 0012 covers where features are computed (owner decision 1), and `TECHNICAL_ARCHITECTURE.md` §H is corrected to
 match. `DIRECTORY_STRUCTURE.md` gains `config/features/`.
 
 ### B. Config
 
-- `config/features/feature_set_v1.yaml` and `config/features/line_items_v1.yaml` (decisions 4, 5), with Pydantic
-  loaders that reject:
+- `config/features/feature_set_v1.yaml` and `config/features/line_items_v1.yaml` (plan decisions 4, 5), with
+  Pydantic loaders that reject:
   - an unknown chart code;
   - a feature whose inputs its family cannot supply;
-  - a duplicate name.
-- `config/statutory/ksh_tripwires.yaml` (decision 6) and `config/statutory/filing_deadlines.yaml` (decision 4,
-  filing behaviour), each with effective dates and a loader test across them.
-- If decision 6 is accepted: the taxonomy gains `board_changed`, `office_moved` and `capital_changed` (stage
+  - a duplicate name;
+  - a feature set without an explicit `include_quarantined_statements` (owner decision 3).
+- `config/statutory/ksh_tripwires.yaml` (plan decision 6) and `config/statutory/filing_deadlines.yaml` (plan
+  decision 4, filing behaviour), each with effective dates and a loader test across them.
+- Owner decision 6: the taxonomy gains `board_changed`, `office_moved` and `capital_changed` (stage
   `signal`) with their KRS locators, and `from_krs_extract` dates them by entry. Fixture tests on the four
   committed extracts cover it.
 
@@ -180,14 +194,16 @@ match. `DIRECTORY_STRUCTURE.md` gains `config/features/`.
 `src/distress_radar/features/panel.py`, pure functions over the canonical Parquet and `filing_index`:
 - one row per `(krs, fiscal_year, input)`, with `value`, `known_from`, `source_kind` (`filed` | `correction` |
   `comparative`), `source_document_hash` and `quality_grade`;
-- the rule of decision 2 applied: a comparative only where no usable statement exists for the year;
-- quarantined statements excluded per decision 3, and counted.
+- the rule of owner decision 2 applied: a comparative only where no usable statement exists for the year;
+- quarantined statements excluded per owner decision 3, and counted, unless the feature set's
+  `include_quarantined_statements` is on.
 
 Tests use synthetic statements for:
 - a correction replacing its original from its own date;
 - a comparative filling a missing year with the later `known_from`;
 - a restated comparative *not* replacing a filed year;
-- a quarantined statement leaving its year empty.
+- a quarantined statement leaving its year empty;
+- with the switch on, the same quarantined statement filling its year, flagged by `quality_grade`.
 
 ### D. Feature families
 
@@ -257,7 +273,8 @@ The same assertion runs on the live store as a Dagster asset check.
 
 ## Definition of done
 
-- [ ] Owner decisions 1–6 made; ADR 0012 written.
+- [x] Owner decisions 1–6 made (2026-09-24).
+- [ ] ADR 0012 written.
 - [ ] Feature set v1, the line-item map, the tripwire config and the filing-deadline config written, validated and
       tested.
 - [ ] The point-in-time panel built, with the filed-wins rule and the quarantine exclusion, tested.
