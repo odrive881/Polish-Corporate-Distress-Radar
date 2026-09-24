@@ -156,6 +156,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
     │   ├── test_feature_config.py      # feature set and line-item map load checks
     │   ├── test_statutory.py           # KSH tripwires, filing deadlines across their dates
     │   ├── test_panel.py               # filed-wins, corrections, fills, quarantine switch
+    │   ├── test_feature_definitions.py # each family on hand-computed values
     │   └── test_leakage.py             # §9.1 of AGENT_SPEC.md — blocking
     ├── models/
     ├── transform/                      # SQLMesh boundary and Dagster DQ wiring (pytest side)
