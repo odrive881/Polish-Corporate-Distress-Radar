@@ -85,5 +85,5 @@ choices only showed up while building, and are recorded here so they are not red
   re-run `make test-integration` and a DQ materialization before landing.
 - SQLMesh brings in pandas and numpy; project code still uses Polars, enforced by `tests/test_no_pandas.py` (plan
   0007 decision 8).
-- Revisit decision 6 when Phase 5 designs the feature store; revisit decision 2's fallback if the Postgres state
-  ever causes a problem in practice.
+- Decision 6 is closed by ADR 0012: no separate snapshot layer is built, and features are assembled in Python.
+  Revisit decision 2's fallback if the Postgres state ever causes a problem in practice.

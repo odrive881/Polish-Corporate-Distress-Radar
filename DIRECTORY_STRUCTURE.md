@@ -82,12 +82,16 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │       ├── small-2018-v1-2.yaml
 │   │       └── small-2025-v1-3.yaml   # a spec may bind more than one body (plan 0005 step D)
 │   ├── xsd/                           # official MF/CRWDE XSDs, vendored (catalog.yaml)
+│   ├── features/                      # feature-set definitions (plan 0010, ADR 0012)
+│   │   ├── feature_set_v1.yaml        # features, families, inputs; the file name is the feature_set_version
+│   │   └── line_items_v1.yaml         # ratio inputs → chart code, per form and income-statement variant
 │   ├── labels/
 │   │   ├── outcome_labels_v1.yaml     # label parameters; the file name is the label_version
 │   │   └── outcome_labels_v2.yaml     # v1 + lag allowance, petition expiry (plan 0009)
 │   └── statutory/
 │       ├── size_thresholds.yaml       # accounting-law size class thresholds, dated
 │       ├── ksh_tripwires.yaml         # Art. 233 / Art. 397 ratios, dated
+│       ├── filing_deadlines.yaml      # UoR approval + filing deadlines, COVID-era extensions, dated
 │       └── procedure_taxonomy.yaml    # source event → event type → §4.6 class, dated by statute
 │
 ├── src/
@@ -202,8 +206,9 @@ src/distress_radar/
 │   ├── extractor.py              # G2 — constrained LLM call
 │   └── eval_harness.py           # G3 — scores against evals/text_signals/
 │
-├── features/
-│   ├── asof_assembly.py          # H1
+├── features/                     # H, in Python with in-process DuckDB (ADR 0012)
+│   ├── panel.py                  # point-in-time financial panel: filed-wins rule, quarantine switch
+│   ├── asof_assembly.py          # H1 — grid, ASOF joins, the feature_store dataset
 │   └── feature_definitions.py    # one function per feature family, §6H
 │
 ├── models/
@@ -239,7 +244,7 @@ Use this table before creating any new file. If a file doesn't clearly fit one r
 | Calls an external HTTP/SOAP source | `src/distress_radar/acquisition/` | `dagster_defs/` |
 | Parses or validates a document format | `src/distress_radar/parsing/` | `transform/` |
 | Calls an LLM or NLP model | `src/distress_radar/extraction/` | `dagster_defs/` |
-| Computes a feature from canonical data | `src/distress_radar/features/` | `transform/` |
+| Computes a feature from canonical data | `src/distress_radar/features/` (ADR 0012) | `transform/` |
 | Trains, calibrates, or registers a model | `src/distress_radar/models/` | `dagster_defs/` |
 | Serves an HTTP endpoint | `src/distress_radar/api/` | `app/` |
 | Declares a Dagster `@asset`, `@asset_check`, schedule, or sensor | `dagster_defs/` | `src/` |
