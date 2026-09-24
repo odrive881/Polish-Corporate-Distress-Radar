@@ -50,3 +50,8 @@ inputs:
   # Full comparative, full calculation, small comparative, small calculation, micro (art. 3 ust. 1a
   # pkt 1 entities, which sp. z o.o. are; `IS.MIKRO.G` is for foundations and associations).
   net_result: [IS.COMP.L, IS.CALC.O, IS.COMP.MALA.J, IS.CALC.MALA.L, IS.MIKRO.F]
+
+# Inputs measured over the period rather than at its end: exactly the income-statement inputs,
+# which the loader checks against the chart. A ratio that divides a flow by a stock, and a growth of
+# a flow, depend on the period's length (plan 0010 owner decision 7).
+flows: [revenue, operating_result, financial_costs, net_result]

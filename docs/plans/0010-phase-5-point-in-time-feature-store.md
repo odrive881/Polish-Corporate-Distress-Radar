@@ -8,7 +8,7 @@
 **Order:** after plans 0008 and 0009, which are complete. Phase 6 (baseline models, out-of-time backtest) trains
 on `feature_store` joined to a frozen label set, so nothing downstream starts before this lands.
 
-## Status: steps A–C complete (2026-09-24); owner decision 7 open, and it blocks step D
+## Status: steps A–D complete (2026-09-24), step E next
 
 ## Why
 
@@ -101,23 +101,28 @@ config switch, not a fixed rule. Below, "owner decision N" refers to this list a
      entries.
    - Plan 0008 left them for this phase, and they are the only registry features besides arrears and curators.
 
-## Owner decision open before step D
+## Owner decision 7 (made 2026-09-24)
 
-7. **Periods that are not a year long.** Step C keys the panel by statement period, and nine seed statements
-   cover something other than twelve months: a liquidation splits a year into two periods (e.g. 5½ and 6½
-   months), and one first period runs 15 months. Flow figures (revenue, operating and net result, financial
-   costs) over such a period are not comparable with a year's. That affects every feature that divides a flow by
-   a stock, or compares two periods: asset turnover, ROA, ROE, the margins' volatility, receivable and liability
-   days, and revenue growth.
-   - **Annualise:** scale flows by 365 / the period's days before any ratio or growth. A filled period's length
-     is unknown (its start is not filed), so its flows would stay unscaled or null.
-   - **Leave raw, and add the period's length as a feature:** a model can learn the effect, but growth across a
-     split year reads as a collapse followed by a recovery.
-   - **Null the flow features for a period that is not about a year long** (e.g. outside 11–13 months): no
-     distortion, at the cost of those periods' flow features.
-
-   The owner deferred this on 2026-09-24. Stock-only features (liquidity, leverage, the tripwires) are unaffected.
-   Whatever is chosen goes in the feature-set config, so it is part of the `feature_set_version`.
+7. **Periods that are not a year long: null the length-dependent features, never annualise.** Step C keys the
+   panel by statement period, and nine seed statements cover something other than twelve months: a bankruptcy
+   or liquidation splits a year into two periods, and one first period runs 15 months. **Accepted as
+   recommended** (option 3 of three; the others were annualising flows, and leaving them raw with the period's
+   length as a feature).
+   - **Length-dependent** means a ratio of a flow to a stock (ROA, ROE, asset turnover, receivable and
+     liability days) or the growth of a flow (revenue growth). Which inputs are flows is `flows` in the
+     line-item map, checked against the chart: exactly the income-statement inputs. A ratio of two flows (the
+     margins, operating result over financial costs, and so margin volatility) and everything built on stocks
+     (liquidity, leverage, the tripwires, equity growth) is unaffected.
+   - Such a feature is null when a period it reads is outside `period_length_days` (335–396 days, inclusive),
+     or has no known length: a period known only from a later filing's prior-year column.
+   - **Growth and volatility look back by time, not by count:** "a year back" is the period that ended 12
+     months before, within `lag_tolerance_days` (31), or null. With a split year, one period back is six
+     months back.
+   - Why not annualise: construction revenue is seasonal, so a scaled half-year is biased in a known
+     direction, close to the imputation invariant 4 forbids; and a filled period's length is unknown. Why not
+     raw: growth across a split year reads as a collapse and a recovery. On the seed, eight of the nine odd
+     periods are halves of a year split by a bankruptcy or liquidation, known only after it, when the labels
+     already exclude the entity; the ninth is 0000277937's 15-month first period.
 
 ## Decisions this plan makes (flag any you disagree with before step C)
 
@@ -267,8 +272,7 @@ through a newer version. Found while building:
 - Corrections are told by `filing_index.is_correction`, not by `correction_of`: 0000153402's 2024
   correction has no `correction_of`.
 - Periods of different lengths leave the panel as they are: nothing is annualised. The period's
-  length (`period_start`, null for a filled period) is in the panel, and what to do with it is
-  owner decision 7, open.
+  length (`period_start`, null for a filled period) is in the panel; owner decision 7 settles its use.
 
 On the seed: 131 versions (93 filed, 8 corrections, 30 filled from prior-year columns); the
 28 quarantined files are excluded both as statements and as prior-year columns. With the switch
@@ -286,6 +290,37 @@ on: 152 versions (120 filed, 9 corrections, 23 filled).
 
 Each family has tests on hand-computed values: one entity per form, including a micro filer whose liquidity and
 Art. 233 features are null.
+
+**As built (2026-09-24).** Families return long rows (`krs`, `as_of_date`, `feature`, `value`, `known_from`),
+one per non-null value; step E pivots them. Tests in `tests/features/test_feature_definitions.py`.
+- **Financial families are computed per snapshot:** once per entity at each date its known figures change,
+  from the panel versions known by then. A DuckDB `ASOF JOIN` maps each grid row to its latest snapshot, on
+  the snapshot as a whole, so a feature that became null never shows an older value. This replaces plan
+  decision 3's "one ASOF JOIN per lag": lags are looked up inside a snapshot, by time (owner decision 7).
+- **Filing and event families are evaluated per grid row:** their values change when a deadline passes or a
+  window slides, not only when data arrives.
+- **A zero count is a value.** Its `known_from` is the latest fact seen from the source (a statement filing,
+  or any legal event, such as the registration); it is null only before anything from the source is known.
+- **Events are counted by (event type, event date)**, the decision date or else `known_from`, not by
+  `dedup_group_id`: the groups are computed over every row, so a notice published later could merge two
+  groups an observer saw as two, which is leakage. The same order seen in MSiG and then in the register is
+  one event, dated by its first publication.
+- **Statement filings** are every `filing_index` type marked `canonical: statement` (RDF 18, and 1 before
+  2018), with a submission date, their parts joined into one filing (pre-2018 statements came as separate
+  PDFs). A filing is quarantined if its parse or its grade is; PDF if it needs the PDF tier or every part is a
+  `.pdf`. A deleted filing is known only until its `deleted_on` (the panel does not yet read deletions; no
+  seed filing is deleted).
+- **Missing years and late filings** use year ends on the latest period's calendar, only from the first
+  filing known (RDF holds no pre-2018 paper filings for most entities, so an earlier gap says nothing), and a
+  year counts as filed when a statement ends in the 12 months to it.
+- **DuckDB exchanges frames with Polars through Arrow**, so `pyarrow` is now a dependency.
+
+On the seed (17 entities, month-ends 2012-01 to 2026-08, 2,992 rows): all 44 features computed in about
+3 s, none with `known_from` after its `as_of_date`. The board, office and capital counts are all zero until
+`legal_events` is rebuilt with step B's events. `latest_filed_as_pdf` is zero on every row: each of the two
+PDF filings was followed within days by an XML one. Ratios over near-zero denominators reach extreme values
+(liability days in the millions for an entity with almost no revenue); they are data, not errors, and Phase 6
+must transform them (e.g. winsorise or rank) rather than read them raw.
 
 ### E. ASOF assembly and the dataset
 
@@ -343,12 +378,13 @@ The same assertion runs on the live store as a Dagster asset check.
 ## Definition of done
 
 - [x] Owner decisions 1–6 made (2026-09-24).
-- [ ] Owner decision 7 (periods that are not a year long) made.
+- [x] Owner decision 7 (periods that are not a year long) made (2026-09-24).
 - [x] ADR 0012 written.
 - [x] Feature set v1, the line-item map, the tripwire config and the filing-deadline config written, validated and
       tested.
 - [x] The point-in-time panel built, with the filed-wins rule and the quarantine exclusion, tested.
-- [ ] All families in feature set v1 computed for the seed, with `__known_from` on every feature.
+- [x] All families in feature set v1 computed for the seed, with `__known_from` on every feature (step D; persisted
+      in step E).
 - [ ] `tests/features/test_leakage.py` exists, runs in `make check`, blocks, and is shown to fail on a leaky
       variant.
 - [ ] `feature_store` persisted and contracted; the Dagster leakage check passes on the live store.

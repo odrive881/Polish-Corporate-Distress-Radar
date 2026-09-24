@@ -76,12 +76,16 @@ class _Frozen(BaseModel):
 class LineItems(_Frozen):
     version: str
     inputs: dict[str, tuple[str, ...]]
+    flows: tuple[str, ...]  # measured over the period (plan 0010 owner decision 7)
 
     @model_validator(mode="after")
     def _non_empty(self) -> LineItems:
         empty = [name for name, codes in self.inputs.items() if not codes]
         if empty:
             raise ValueError(f"inputs with no codes: {empty}")
+        unknown = sorted(set(self.flows) - set(self.inputs))
+        if unknown:
+            raise ValueError(f"flows that are not inputs: {unknown}")
         dupes = [
             c for c, n in Counter(c for cs in self.inputs.values() for c in cs).items() if n > 1
         ]
@@ -99,6 +103,11 @@ class LineItems(_Frozen):
             types = {chart[c].statement_type for c in codes}
             if len(types) > 1:
                 raise ValueError(f"{self.version}: {name} mixes statement types {sorted(types)}")
+            if (types == {"income_statement"}) != (name in self.flows):
+                raise ValueError(
+                    f"{self.version}: {name} must be a flow exactly when it is an income-statement "
+                    "input"
+                )
             for body in mapping.bodies.values():
                 for statement, items in body.statements.items():
                     by_section: dict[str, list[str]] = {}
@@ -249,11 +258,27 @@ Feature = Annotated[
 ]
 
 
+class PeriodBand(_Frozen):
+    min: int = Field(ge=1)
+    max: int = Field(ge=1)
+
+    @model_validator(mode="after")
+    def _ordered(self) -> PeriodBand:
+        if self.max < self.min:
+            raise ValueError("period_length_days: max below min")
+        return self
+
+    def covers(self, days: int | None) -> bool:
+        return days is not None and self.min <= days <= self.max
+
+
 class FeatureSet(_Frozen):
     feature_set_version: str
     line_items: str
     legal_form: LegalForm
     include_quarantined_statements: bool  # required: the owner's switch is always explicit
+    period_length_days: PeriodBand  # plan 0010 owner decision 7
+    lag_tolerance_days: int = Field(ge=0, le=183)
     features: tuple[Feature, ...] = Field(min_length=1)
 
     @model_validator(mode="after")
@@ -283,10 +308,16 @@ class FeatureSet(_Frozen):
         if line_items.version != self.line_items:
             raise ValueError(f"loaded {line_items.version}, but the set names {self.line_items}")
         known_types = {e.event_type for e in taxonomy.event_types}
+        flows = set(line_items.flows)
         for f in self.features:
             missing = f.inputs() - set(line_items.inputs)
             if missing:
                 raise ValueError(f"{f.name}: inputs not in {line_items.version}: {sorted(missing)}")
+            if isinstance(f, RatioFeature):
+                for side, terms in (("numerator", f.numerator), ("denominator", f.denominator)):
+                    if len({name in flows for name in terms}) > 1:
+                        # A sum of a flow and a stock has no length to judge it by.
+                        raise ValueError(f"{f.name}: the {side} mixes flows and stocks")
             if isinstance(f, TripwireFeature):
                 rule = tripwires.rule(f.rule)
                 if rule is None:
@@ -359,3 +390,41 @@ def load_feature_set(version: str, config_dir: Path = CONFIG_DIR) -> FeatureConf
         taxonomy=taxonomy,
         feature_set_hash=feature_set_hash(feature_set, config_dir),
     )
+
+
+# --- what a feature is ---------------------------------------------------------------------------
+
+_BOOLEAN_METRICS: frozenset[str] = frozenset({"latest_filed_as_pdf"})
+_COUNT_METRICS: frozenset[str] = frozenset(
+    {
+        "days_to_file_latest",
+        "missing_years",
+        "late_filings",
+        "corrections",
+        "statements_quarantined",
+        "restating_filings",
+    }
+)
+
+
+def feature_dtype(feature: Feature) -> Literal["boolean", "count", "float"]:
+    """How a feature's value is stored in `feature_store`."""
+    if isinstance(feature, TripwireFeature | BelowZeroFeature):
+        return "boolean"
+    if isinstance(feature, FilingFeature):
+        if feature.metric in _BOOLEAN_METRICS:
+            return "boolean"
+        return "count" if feature.metric in _COUNT_METRICS else "float"
+    return "count" if isinstance(feature, EventCountFeature) else "float"
+
+
+def length_sensitive(feature: Feature, line_items: LineItems) -> bool:
+    """Whether a feature depends on a period's length (plan 0010 owner decision 7)."""
+    flows = set(line_items.flows)
+    if isinstance(feature, RatioFeature):
+        return (next(iter(feature.numerator)) in flows) != (
+            next(iter(feature.denominator)) in flows
+        )
+    if isinstance(feature, GrowthFeature):
+        return feature.input in flows
+    return False

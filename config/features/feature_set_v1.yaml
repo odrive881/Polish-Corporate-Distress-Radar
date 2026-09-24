@@ -16,8 +16,7 @@
 # - `growth` (financial): x_t / x_{t−years} − 1, null unless the base is positive.
 # - `volatility` (financial): sample standard deviation of a ratio feature over the latest `years`
 #   periods, null unless every one of them has it.
-#   Periods are not all a year long (plan 0010 step C). How flows over a short or long period are
-#   treated is plan 0010 owner decision 7, open; it must be settled here before step D.
+#   Periods are not all a year long (plan 0010 step C); see `period_length_days` below.
 # - `tripwire` (tripwire): a rule of `config/statutory/ksh_tripwires.yaml`.
 # - `below_zero` (tripwire): an input is negative.
 # - `filing` (filing): a filing-behaviour metric, computed from `filing_index`, the canonical grades
@@ -37,6 +36,20 @@ legal_form: sp_z_oo
 # own version and hash. When true, a quarantined statement is usable: it wins its period over a
 # later filing's prior-year column, and the panel records its grade.
 include_quarantined_statements: false
+
+# Plan 0010 owner decision 7 (2026-09-24): a feature that depends on a period's length is null when
+# a period it reads is not about a year long, never annualised. Length-dependent: a ratio of a flow
+# to a stock (ROA, ROE, asset turnover, the days ratios) and the growth of a flow (revenue growth);
+# which inputs are flows is the line-item map's `flows`. A ratio of two flows (the margins) and
+# anything built on stocks (liquidity, leverage, the tripwires, equity growth) is unaffected. A
+# period known only from a later filing's prior-year column has no known start, so no known length,
+# and its length-dependent features are null too. Bounds inclusive, in days.
+period_length_days: {min: 335, max: 396}
+
+# Growth and volatility compare periods by time, not by count: "1 year back" is the period that
+# ended 12 months before the latest, within this many days, or null. A split year is two periods,
+# so counting periods would compare with six months back.
+lag_tolerance_days: 31
 
 features:
   # --- financial ratios -----------------------------------------------------------------------
