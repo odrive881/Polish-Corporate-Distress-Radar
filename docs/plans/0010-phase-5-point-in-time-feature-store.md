@@ -18,6 +18,7 @@ That is the project's core correctness claim (TECHNICAL_ARCHITECTURE "Bitemporal
 - `src/distress_radar/features/` is empty;
 - `tests/features/` is empty, so the blocking `test_leakage.py` does not exist;
 - `config/statutory/ksh_tripwires.yaml` and `size_thresholds.yaml` are "not written" (`docs/data_inventory.md` §5).
+  (`ksh_tripwires.yaml` was written in step B; `size_thresholds.yaml` stays deferred, owner decision 4.)
 
 ## What there is to build on (seed, 2026-09-23)
 
@@ -110,8 +111,9 @@ config switch, not a fixed rule. Below, "owner decision N" refers to this list a
    - A non-null feature without a `__known_from` is a contract failure.
    - Nothing is imputed (invariant 4).
 3. **ASOF, twice.**
-   - **Statements:** for each `(krs, as_of_date)`, the latest fiscal year with a statement known by then, then the
-     one before it and so on for trends. One DuckDB `ASOF JOIN` on `known_from` per lag.
+   - **Statements:** for each `(krs, as_of_date)`, the latest statement period known by then, then the one before
+     it and so on for trends. One DuckDB `ASOF JOIN` on `known_from` per lag, over the panel's versions. (As built
+     in step C, the key is the statement period, not the fiscal year: a year can be split in two.)
    - **Events:** counted over trailing windows ending at `as_of_date`, by `known_from`, never by `event_date`.
      `event_date` can precede its publication by 21 months, and using it is the classic leakage bug (§9.1).
 4. **Feature set v1** (`config/features/feature_set_v1.yaml`): each feature's name, family, inputs and
@@ -141,11 +143,13 @@ config switch, not a fixed rule. Below, "owner decision N" refers to this list a
      - corrections;
      - the latest statement filed as PDF (`needs_pdf_tier`);
      - statements quarantined;
-     - restatements and their total size.
+     - restatements and their total size (as built in step B: the count of restating filings, and the largest
+       single-line change over total assets, since lines nest and a sum would count one change several times).
 
      Auditor change needs the audit report's text (Phase 7).
    - **Registry dynamics:** board changes, office moves and capital changes in 12 and 36 months; arrears
-     enforcements in 12 months; curators ever appointed; days since the last registry entry.
+     enforcements in 12 months; curators ever appointed. (Days since the last registry entry was dropped in
+     step B: no dataset holds the extract's entry list.)
    - **Legal history:** petition-stage events and proceedings closed before `as_of_date`, by class. An entity still
      in a proceeding is excluded by the labels, so these only describe closed episodes.
 5. **Ratio inputs are mapped per variant in config** (`config/features/line_items_v1.yaml`): each input, for
