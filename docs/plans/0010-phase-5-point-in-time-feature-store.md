@@ -8,7 +8,7 @@
 **Order:** after plans 0008 and 0009, which are complete. Phase 6 (baseline models, out-of-time backtest) trains
 on `feature_store` joined to a frozen label set, so nothing downstream starts before this lands.
 
-## Status: owner decisions made (2026-09-24); steps A–C complete, step D next
+## Status: steps A–C complete (2026-09-24); owner decision 7 open, and it blocks step D
 
 ## Why
 
@@ -100,6 +100,24 @@ config switch, not a fixed rule. Below, "owner decision N" refers to this list a
    - They come from the same stored extracts, redacted of names but with entry numbers intact, dated by their
      entries.
    - Plan 0008 left them for this phase, and they are the only registry features besides arrears and curators.
+
+## Owner decision open before step D
+
+7. **Periods that are not a year long.** Step C keys the panel by statement period, and nine seed statements
+   cover something other than twelve months: a liquidation splits a year into two periods (e.g. 5½ and 6½
+   months), and one first period runs 15 months. Flow figures (revenue, operating and net result, financial
+   costs) over such a period are not comparable with a year's. That affects every feature that divides a flow by
+   a stock, or compares two periods: asset turnover, ROA, ROE, the margins' volatility, receivable and liability
+   days, and revenue growth.
+   - **Annualise:** scale flows by 365 / the period's days before any ratio or growth. A filled period's length
+     is unknown (its start is not filed), so its flows would stay unscaled or null.
+   - **Leave raw, and add the period's length as a feature:** a model can learn the effect, but growth across a
+     split year reads as a collapse followed by a recovery.
+   - **Null the flow features for a period that is not about a year long** (e.g. outside 11–13 months): no
+     distortion, at the cost of those periods' flow features.
+
+   The owner deferred this on 2026-09-24. Stock-only features (liquidity, leverage, the tripwires) are unaffected.
+   Whatever is chosen goes in the feature-set config, so it is part of the `feature_set_version`.
 
 ## Decisions this plan makes (flag any you disagree with before step C)
 
@@ -248,9 +266,9 @@ through a newer version. Found while building:
   picked between. An original and its correction filed on one day are one version, the correction.
 - Corrections are told by `filing_index.is_correction`, not by `correction_of`: 0000153402's 2024
   correction has no `correction_of`.
-- Periods of different lengths reach step D as they are. Growth and turnover over a short period
-  are not annualised; the period's length (`period_start`, null for a filled period) is in the
-  panel for step D to decide.
+- Periods of different lengths leave the panel as they are: nothing is annualised. The period's
+  length (`period_start`, null for a filled period) is in the panel, and what to do with it is
+  owner decision 7, open.
 
 On the seed: 131 versions (93 filed, 8 corrections, 30 filled from prior-year columns); the
 28 quarantined files are excluded both as statements and as prior-year columns. With the switch
@@ -325,6 +343,7 @@ The same assertion runs on the live store as a Dagster asset check.
 ## Definition of done
 
 - [x] Owner decisions 1–6 made (2026-09-24).
+- [ ] Owner decision 7 (periods that are not a year long) made.
 - [x] ADR 0012 written.
 - [x] Feature set v1, the line-item map, the tripwire config and the filing-deadline config written, validated and
       tested.

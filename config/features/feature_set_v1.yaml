@@ -16,8 +16,8 @@
 # - `growth` (financial): x_t / x_{t−years} − 1, null unless the base is positive.
 # - `volatility` (financial): sample standard deviation of a ratio feature over the latest `years`
 #   periods, null unless every one of them has it.
-#   Periods are not all a year long (plan 0010 step C); how growth, turnover and volatility treat a
-#   short or long period is settled in step D, before any build uses this file.
+#   Periods are not all a year long (plan 0010 step C). How flows over a short or long period are
+#   treated is plan 0010 owner decision 7, open; it must be settled here before step D.
 # - `tripwire` (tripwire): a rule of `config/statutory/ksh_tripwires.yaml`.
 # - `below_zero` (tripwire): an input is negative.
 # - `filing` (filing): a filing-behaviour metric, computed from `filing_index`, the canonical grades
