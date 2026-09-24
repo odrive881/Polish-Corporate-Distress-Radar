@@ -171,7 +171,9 @@ event_types:
 # dropped); `when` narrows it by a categorical field of the record. `date_field` is the record field
 # that holds `event_date` (`date_parse: leading` reads the date a free-text field starts with); no
 # `date_field` means the event is dated by its registry entry. `known_from` is always the entry date
-# of the record's `nrWpisuWprow` (plan 0008 step F), whatever `date_field` says.
+# of the record's `nrWpisuWprow` (plan 0008 step F), whatever `date_field` says; for a `change`
+# mapping (below), the date of the entry that made the change, which for a member leaving is the
+# entry that removed them (`nrWpisuWykr`).
 #
 # MSiG notices are typed first by `config/mappings/msig_notice_kinds.yaml` (from their reduced
 # records, ADR 0009 addendum); the mappings below read that kind as `notice_kind`, and a notice

@@ -10,11 +10,14 @@
 #
 # Kinds, and the families that may use them:
 # - `ratio` (financial, construction): Σ numerator / Σ denominator over ratio inputs of the latest
-#   fiscal year known at `as_of_date`, times `scale`. `denominator: positive` also nulls a
-#   negative denominator, where the sign would invert the meaning (ROE on negative equity).
+#   statement period known at `as_of_date` (the panel's version, plan 0010 step C), times
+#   `scale`. `denominator: positive` also nulls a negative denominator, where the sign would
+#   invert the meaning (ROE on negative equity).
 # - `growth` (financial): x_t / x_{t−years} − 1, null unless the base is positive.
 # - `volatility` (financial): sample standard deviation of a ratio feature over the latest `years`
-#   fiscal years, null unless every one of them has it.
+#   periods, null unless every one of them has it.
+#   Periods are not all a year long (plan 0010 step C); how growth, turnover and volatility treat a
+#   short or long period is settled in step D, before any build uses this file.
 # - `tripwire` (tripwire): a rule of `config/statutory/ksh_tripwires.yaml`.
 # - `below_zero` (tripwire): an input is negative.
 # - `filing` (filing): a filing-behaviour metric, computed from `filing_index`, the canonical grades
@@ -31,8 +34,8 @@ legal_form: sp_z_oo
 # Plan 0010 owner decision 3, as a switch. Quarantined statements (a material identity failure)
 # are left out of the financial panel; their filings still count for filing behaviour. An
 # experimental run that includes them is its own file (e.g. feature_set_v1q.yaml), so it gets its
-# own version and hash. When true, a quarantined statement is usable: it wins its year over a later
-# filing's prior-year column, and the panel records its grade.
+# own version and hash. When true, a quarantined statement is usable: it wins its period over a
+# later filing's prior-year column, and the panel records its grade.
 include_quarantined_statements: false
 
 features:

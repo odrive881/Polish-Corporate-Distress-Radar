@@ -13,6 +13,10 @@ Which statement speaks for a period (plan 0010 owner decision 2):
   dated by the later filing, and replaced by a filed statement once one is known;
 - between two prior-year columns, the later one wins.
 
+A fill reads the `prior_year` column as the later filing published it. The `prior_year_restated`
+column is never read here: a restatement is what `restatement_events` records, and the filing
+behaviour features count it.
+
 A statement file is **usable** unless it is graded `quarantined` (owner decision 3). The feature
 set's `include_quarantined_statements` switch makes quarantined files usable too; their grade stays
 on every row they supply. Files left out are returned in `excluded`, with a reason, never dropped
