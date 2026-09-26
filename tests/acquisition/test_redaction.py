@@ -291,3 +291,23 @@ def test_an_rdf_detail_keeps_everything_but_the_file_name() -> None:
     assert personal_data_markers(result.data) == [] and not redact_rdf_detail(result.data).changed
     with pytest.raises(RedactionError, match="identyfikator"):
         redact_rdf_detail(b'{"nazwaPliku":"a.xml"}')
+
+
+def test_pdf_metadata_is_removed_from_a_pdf_with_object_streams() -> None:
+    """PDF 1.5+ layouts wrote the metadata back after it had been read (plan 0011 step E)."""
+    doc = pymupdf.open()
+    doc.new_page().insert_text((72, 72), "Informacja dodatkowa")
+    doc.set_metadata({"author": "Jan Testowy", "producer": "Writer"})
+    doc.set_xml_metadata('<x:xmpmeta xmlns:x="adobe:ns:meta/">Jan Testowy</x:xmpmeta>')
+    pdf = doc.tobytes(use_objstms=1, garbage=4)
+    result = redact_file(pdf, "notes.pdf")
+    assert result is not None and personal_data_markers(result.data) == []
+    with pymupdf.open(stream=result.data, filetype="pdf") as cleaned:
+        assert not any(v for k, v in cleaned.metadata.items() if k not in ("format", "encryption"))
+
+
+def test_a_marker_spelt_by_chance_in_base64_is_not_a_finding() -> None:
+    payload = ("A" * 400 + "PESEL" + "A" * 400).encode()
+    xml = b"<root><Other>" + payload + b"</Other></root>"
+    assert personal_data_markers(xml) == []
+    assert personal_data_markers(b"<root><Other>PESEL 00000000000</Other></root>")
