@@ -245,9 +245,7 @@ def financial_statements_canonical(context: dg.AssetExecutionContext) -> dg.Mate
         fallbacks = unresolved_bodies(facts, config)
         if not fallbacks.is_empty():
             context.log.warning(f"{fallbacks.height} statements checked against a fallback body")
-        graded = FINANCIAL_STATEMENTS_CANONICAL.validate(
-            grade(facts, results).sort(SORT_KEY)
-        )
+        graded = FINANCIAL_STATEMENTS_CANONICAL.validate(grade(facts, results).sort(SORT_KEY))
         checked = IDENTITY_CHECK_RESULTS.validate(identity_check_results(results, graded))
         for row in filed_bodies(facts, config).iter_rows(named=True):
             manifest.record_filed_bodies(

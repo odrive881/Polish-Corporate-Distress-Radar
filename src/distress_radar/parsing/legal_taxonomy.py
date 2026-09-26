@@ -192,7 +192,9 @@ class ProcedureTaxonomy(_Frozen):
 
         statutes = {s.id: s for s in self.statutes}
         types = {e.event_type for e in self.event_types}
-        by_key: defaultdict[tuple[str, str, When | None], list[tuple[date, date]]] = defaultdict(list)
+        by_key: defaultdict[tuple[str, str, When | None], list[tuple[date, date]]] = defaultdict(
+            list
+        )
         locators: defaultdict[tuple[str, str], set[bool]] = defaultdict(set)
         for m in self.mappings:
             if m.event_type not in types:
@@ -252,7 +254,9 @@ class ProcedureTaxonomy(_Frozen):
             return None
         if len(hits) > 1:
             # Two `contains` tests can both match one value; config review cannot rule it out.
-            raise ValueError(f"{source} {locator} on {on}: {len(hits)} mappings match {dict(fields)}")
+            raise ValueError(
+                f"{source} {locator} on {on}: {len(hits)} mappings match {dict(fields)}"
+            )
         m = hits[0]
         statute = next(s for s in self.statutes if s.id == m.statute)
         return ResolvedEvent(mapping=m, event_type=self.event_type(m.event_type), statute=statute)

@@ -4,7 +4,7 @@
 - **Invariants:** 6 (legal entities only), 2 (raw immutability and its one exception), 3 (lineage), 5 (idempotence).
 - **ADRs:** 0009 and its addendum (natural persons are removed before hashing).
 
-## Status: steps A–E done (2026-09-26); step F next
+## Status: complete (2026-09-26)
 
 ## Why
 
@@ -179,6 +179,19 @@ The rules are in ADR 0009's second addendum (step B). The decisions as they were
 - **F. A standing check.** `personal_data_markers` extended to member names, `nazwaPliku`, `Plik/Nazwa`,
   sidecar file names and PDF metadata, run by the fixture tests and as a Dagster asset check on new downloads.
   CLAUDE.md and AGENT_SPEC invariants 2 and 6 name the widened redaction once it is built.
+
+  **As built (2026-09-26).** `redaction_migration.stored_markers` scans every stored object (about 20 s
+  over the seed) and reports by hash and marker kind, never by content. `raw_filing_documents` and
+  `rdf_manual_import` carry it as a blocking `personal_data` asset check (a run that fails stops before its
+  checks; the next one scans everything again). `tests/acquisition/test_personal_data_check.py` runs the same
+  scan over every committed fixture (72 files) and holds both checks blocking. CLAUDE.md, AGENT_SPEC §2,
+  DIRECTORY_STRUCTURE and `docs/data_inventory.md` gap 10 name the widened redaction.
+
+## Left to the owner
+
+The old names remain in the public repository's history: ADR 0009's quote of one file name, and the
+attachment names of the eleven statement fixtures regenerated in step C. Removing them means rewriting the
+history and recreating the repository, as for the PESEL numbers (ADR 0009).
 
 ## Risks
 

@@ -8,11 +8,13 @@ No `from __future__ import annotations` here: Dagster inspects the `config`
 parameter annotation at runtime.
 """
 
+from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
 import dagster as dg
+import psycopg
 
 from distress_radar.acquisition import manifest
 from distress_radar.acquisition.base import PermanentSourceError, SourceError
@@ -26,6 +28,8 @@ from distress_radar.acquisition.document_retrieval import (
     retrieve_document,
 )
 from distress_radar.acquisition.har_import import import_har
+from distress_radar.acquisition.raw_store import S3ObjectStore
+from distress_radar.acquisition.redaction_migration import stored_markers
 from distress_radar.acquisition.regon_client import resolve_entity
 from distress_radar.acquisition.universe_discovery import load_seed, load_segment
 from distress_radar.settings import Settings
@@ -238,10 +242,44 @@ class RdfDocumentsConfig(dg.Config):
     download_scope_only: bool = False  # only documents whose type is in the download scope
 
 
+PERSONAL_DATA_CHECK = "personal_data"
+
+
+def _personal_data_spec(asset: str) -> dg.AssetCheckSpec:
+    return dg.AssetCheckSpec(
+        PERSONAL_DATA_CHECK,
+        asset=asset,
+        blocking=True,
+        description=(
+            "No stored object holds natural persons' data: signatures, file names, attachment "
+            "names, PDF metadata (invariant 6, ADR 0009). Scans the whole store."
+        ),
+    )
+
+
+def _personal_data_check(conn: psycopg.Connection, store: S3ObjectStore) -> dg.AssetCheckResult:
+    """The store-wide scan, reported by hash and marker kind, never by content."""
+    found = stored_markers(conn, store)
+    kinds = Counter(
+        m.split(": ", 1)[-1].split(" (")[0] for markers in found.values() for m in markers
+    )
+    return dg.AssetCheckResult(
+        check_name=PERSONAL_DATA_CHECK,
+        passed=not found,
+        severity=dg.AssetCheckSeverity.ERROR,
+        metadata={
+            "objects_with_personal_data": len(found),
+            "hashes": sorted(found)[:50],
+            "marker_kinds": dict(kinds),
+        },
+    )
+
+
 @dg.asset(
     group_name="acquisition",
     deps=[filing_index],
     required_resource_keys={"postgres", "raw_object_store", "rdf_browser"},
+    check_specs=[_personal_data_spec("raw_filing_documents")],
 )
 def raw_filing_documents(
     context: dg.AssetExecutionContext, config: RdfDocumentsConfig
@@ -266,6 +304,8 @@ def raw_filing_documents(
     document stays pending and fails the asset; the circuit breaker stops the
     run at once. `max_documents` / `download_scope_only` split the multi-hour
     pass into shorter runs.
+    Check: `personal_data`, blocking — no stored object holds natural persons' data (a store-wide
+    scan, plan 0011 step F).
     Partition scheme: none (unpartitioned).
     """
     postgres = cast("PostgresResource", context.resources.postgres)
@@ -323,10 +363,13 @@ def raw_filing_documents(
                     except RdfCircuitOpen as exc:
                         raise _circuit_open_failure(exc, detailed + downloaded, failures) from exc
                     except SourceError as exc:
-                        context.log.error(f"KRS {document.krs} document {document.document_ref}: {exc}")
+                        context.log.error(
+                            f"KRS {document.krs} document {document.document_ref}: {exc}"
+                        )
                         failures.append(f"{document.krs}:{document.document_ref}")
                         continue
         counts = manifest.table_counts(conn)
+        personal_data = _personal_data_check(conn, store)
 
     if failures:
         raise dg.Failure(
@@ -338,7 +381,8 @@ def raw_filing_documents(
             "detailed_this_run": detailed,
             "downloaded_this_run": downloaded,
             **{f"{table}_rows": n for table, n in counts.items()},
-        }
+        },
+        check_results=[personal_data],
     )
 
 
@@ -350,6 +394,7 @@ class RdfManualImportConfig(dg.Config):
     group_name="acquisition",
     deps=[entity_master],
     required_resource_keys={"postgres", "raw_object_store"},
+    check_specs=[_personal_data_spec("rdf_manual_import")],
 )
 def rdf_manual_import(
     context: dg.AssetExecutionContext, config: RdfManualImportConfig
@@ -367,6 +412,8 @@ def rdf_manual_import(
     files themselves are never stored. In-scope documents a capture did not
     complete are listed in the metadata (`missing_documents`); a file that could
     not be read or imported fails the asset after the other files are done.
+    Check: `personal_data`, blocking — no stored object holds natural persons' data (a store-wide
+    scan, plan 0011 step F).
     Partition scheme: none (unpartitioned).
     """
     postgres = cast("PostgresResource", context.resources.postgres)
@@ -414,6 +461,7 @@ def rdf_manual_import(
             for krs, refs in report.missing.items():
                 missing[krs] = refs  # later files see earlier imports, so the last word wins
         counts = manifest.table_counts(conn)
+        personal_data = _personal_data_check(conn, store)
 
     for problem in problems:
         context.log.error(problem)
@@ -431,7 +479,8 @@ def rdf_manual_import(
             "downloads_this_run": downloads,
             "missing_documents": missing,
             **{f"{table}_rows": n for table, n in counts.items()},
-        }
+        },
+        check_results=[personal_data],
     )
 
 
