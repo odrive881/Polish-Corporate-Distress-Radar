@@ -1,5 +1,7 @@
 # 0001 — Finish Phase 0: verification ADRs, Docker Compose, Dagster hello-world
 
+## Status: complete (2026-09-14; recorded 2026-09-26)
+
 **Stage:** Phase 0 (AGENT_SPEC.md §10 / TECHNICAL_ARCHITECTURE.md §5) — infrastructure and orchestration bootstrap, no domain code.
 
 ## Why

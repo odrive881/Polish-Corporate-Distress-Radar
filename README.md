@@ -25,7 +25,10 @@ Requires [uv](https://docs.astral.sh/uv/). `.venv` is created and kept in sync w
 make install   # uv sync --locked --extra dev
 make check     # ruff + pyright + pytest (no network, no services)
 make test-integration   # tests needing live Postgres/MinIO — after make dev-up
+make hooks     # once per clone: a pre-commit scan refusing staged personal data (ADR 0009)
 ```
+
+`make docs-check` (also part of `make check`) catches mechanical doc drift: a living doc naming a path that does not exist, a file missing from `DIRECTORY_STRUCTURE.md`'s tree, a plan or ADR without a status, a plan marked complete with open items.
 
 RDF document retrieval (A3) drives a real Chromium through Playwright, a local prerequisite beyond `make install` (pulls system libraries, so it asks for sudo under WSL):
 

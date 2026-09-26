@@ -108,6 +108,8 @@ Full glossary: `docs/glossary.md`.
 - Models are evaluated **out-of-time only** — never a random train/test split. Report calibration (Brier score) alongside AUC; never AUC alone.
 - Prompt or extraction-model changes must hold or improve precision/recall against `evals/text_signals/*.jsonl` in CI, or the build fails.
 - New top-level directories require an ADR in `docs/adr/` before creation.
+- Close out every plan with a doc sweep: `make docs-check` (in `make check`) covers missing paths, the tree and statuses; the rest — sections describing a design that has since changed, counts quoted differently in two places, "next" statements already done — is read by hand, against the plan's own results.
+- Run `make hooks` once per clone: the pre-commit hook refuses staged personal data (browser recordings, signatures, filers' file names, PDF metadata).
 
 ---
 

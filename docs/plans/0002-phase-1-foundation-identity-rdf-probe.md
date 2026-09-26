@@ -1,5 +1,7 @@
 # 0002 — Phase 1 foundation: raw store + manifest, A1 seed, A2 GUS BIR1, RDF access probe
 
+## Status: complete (close-out 2026-09-14)
+
 **Stage:** Phase 1 (AGENT_SPEC.md §10), first half — stages A1 (as a hand-picked seed), A2, B1, B2, plus an A3 access spike. No A3 adapter yet.
 
 ## Why
