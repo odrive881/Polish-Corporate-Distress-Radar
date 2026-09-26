@@ -11,7 +11,11 @@ Which statement speaks for a period (plan 0010 owner decision 2):
 - **a later filing's prior-year column only fills a period with no usable statement.** It never
   replaces a filed one, even when it restates it: restatements are features of their own. It is
   dated by the later filing, and replaced by a filed statement once one is known;
-- between two prior-year columns, the later one wins.
+- between two prior-year columns, the later one wins;
+- **a deleted statement stops speaking from its `deleted_on`** (plan 0010 owner decision 5 for
+  steps F–H), with both its own figures and its prior-year column. Whatever source it had
+  replaced speaks again from that day. If none is left, the period gets a `withdrawn` version: an
+  observer no longer has figures for it, and the families treat the period as unknown.
 
 A fill reads the `prior_year` column as the later filing published it. The `prior_year_restated`
 column is never read here: a restatement is what `restatement_events` records, and the filing
@@ -47,7 +51,7 @@ import polars as pl
 from distress_radar.features.config import LineItems
 from distress_radar.parsing.mapping_engine import VALUE_DTYPE
 
-SourceKind = Literal["filed", "correction", "comparative"]
+SourceKind = Literal["filed", "correction", "comparative", "withdrawn"]
 
 # The input that tells whether a prior-year column describes a period the entity lived through.
 TOTAL_ASSETS = "total_assets"
@@ -56,6 +60,7 @@ FILINGS_SCHEMA: dict[str, pl.DataType | type[pl.DataType]] = {
     "krs": pl.String,
     "document_ref": pl.String,
     "is_correction": pl.Boolean,
+    "deleted_on": pl.Date,
 }
 
 PANEL_SCHEMA: dict[str, pl.DataType | type[pl.DataType]] = {
@@ -103,6 +108,7 @@ class _Statement:
     known_from: date
     quality_grade: str
     is_correction: bool
+    deleted_on: date | None
 
 
 @dataclass(frozen=True)
@@ -126,6 +132,11 @@ class _Candidate:
         if self.kind == "comparative":
             return 3 if s.is_correction else 2
         return 1 if s.is_correction else 0
+
+    def speaks_on(self, day: date) -> bool:
+        """Known by the end of `day`, and not yet deleted."""
+        s = self.statement
+        return s.known_from <= day and (s.deleted_on is None or day < s.deleted_on)
 
 
 @dataclass(frozen=True)
@@ -172,6 +183,7 @@ def _statements(canonical: pl.DataFrame, filings: pl.DataFrame) -> list[_Stateme
             quality_grade=row["quality_grade"],
             # Null only on a row never expanded, and a parsed statement's row always is.
             is_correction=bool(row["is_correction"]),
+            deleted_on=row["deleted_on"],
         )
         for row in files.sort(["krs", "document_ref", "source_member"]).iter_rows(named=True)
     ]
@@ -198,6 +210,40 @@ def _values(
                 f"{key}: {name} carried by both {found[name][0]} and {row['line_item']}"
             )
         found[name] = (row["line_item"], row["value"])
+    return out
+
+
+def _rows(
+    krs: str,
+    period_end: date,
+    known_from: date,
+    c: _Candidate,
+    kind: SourceKind,
+    carried: dict[str, tuple[str, Decimal]],
+    line_items: LineItems,
+) -> list[dict[str, object]]:
+    """One version's rows: every input, null where the source does not carry it."""
+    s = c.statement
+    out: list[dict[str, object]] = []
+    for name in sorted(line_items.inputs):
+        code, value = carried.get(name, (None, None))
+        out.append(
+            {
+                "krs": krs,
+                "period_end": period_end,
+                "period_start": s.period_start if kind in ("filed", "correction") else None,
+                "fiscal_year": period_end.year,
+                "input": name,
+                "value": value,
+                "line_item": code,
+                "known_from": known_from,
+                "source_kind": kind,
+                "document_ref": s.document_ref,
+                "source_member": s.source_member,
+                "source_document_hash": s.source_document_hash,
+                "quality_grade": s.quality_grade,
+            }
+        )
     return out
 
 
@@ -255,38 +301,37 @@ def build_panel(
             if id(c) in clashing:
                 exclude(c, "same_day_filings")
 
-        current: _Candidate | None = None
-        versions: dict[date, _Candidate] = {}  # the source in force at the end of each day
-        for c in sorted(
-            (c for c in candidates if id(c) not in clashing),
-            key=lambda c: (c.statement.known_from, c.rank),
-        ):
-            if c.kind == "comparative" and current is not None and current.kind != "comparative":
-                continue  # the filed statement wins its period
-            current = versions[c.statement.known_from] = c
-
-        for c in versions.values():
-            s = c.statement
-            carried = values.get((s.document_ref, s.source_member, c.column), {})
-            for name in sorted(line_items.inputs):
-                code, value = carried.get(name, (None, None))
-                rows.append(
-                    {
-                        "krs": krs,
-                        "period_end": period_end,
-                        "period_start": None if c.kind == "comparative" else s.period_start,
-                        "fiscal_year": period_end.year,
-                        "input": name,
-                        "value": value,
-                        "line_item": code,
-                        "known_from": s.known_from,
-                        "source_kind": c.kind,
-                        "document_ref": s.document_ref,
-                        "source_member": s.source_member,
-                        "source_document_hash": s.source_document_hash,
-                        "quality_grade": s.quality_grade,
-                    }
-                )
+        live: list[_Candidate] = []
+        for c in candidates:
+            if id(c) in clashing:
+                continue
+            deleted = c.statement.deleted_on
+            if deleted is not None and deleted <= c.statement.known_from:
+                exclude(c, "deleted_when_filed")  # never spoke on any day
+            else:
+                live.append(c)
+        # The source in force at the end of each day a source arrives or is deleted.
+        days = sorted(
+            {c.statement.known_from for c in live}
+            | {c.statement.deleted_on for c in live if c.statement.deleted_on is not None}
+        )
+        previous: _Candidate | None = None
+        for day in days:
+            speaking = [c for c in live if c.speaks_on(day)]
+            # The filed statement wins its period; within a kind, the latest source wins.
+            pool = [c for c in speaking if c.kind != "comparative"] or speaking
+            winner = max(pool, key=lambda c: (c.statement.known_from, c.rank), default=None)
+            if winner is previous:
+                continue
+            if winner is None:
+                # Withdrawn: dated by the deletion, attributed to the source it silenced.
+                assert previous is not None  # a deletion day follows a speaking source
+                rows.extend(_rows(krs, period_end, day, previous, "withdrawn", {}, line_items))
+            else:
+                w = winner.statement
+                carried = values.get((w.document_ref, w.source_member, winner.column), {})
+                rows.extend(_rows(krs, period_end, day, winner, winner.kind, carried, line_items))
+            previous = winner
 
     frame = pl.DataFrame(rows, schema=PANEL_SCHEMA, orient="row").sort(PANEL_SORT_KEY)
     # Two versions of one period on one day would leave the ASOF join nothing to choose by.

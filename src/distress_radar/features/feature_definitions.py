@@ -200,6 +200,7 @@ class _Version:
     period_start: date | None
     known_from: date
     values: dict[str, Decimal | None]
+    withdrawn: bool  # its statement was deleted and nothing replaced it (features.panel)
 
     def days(self) -> int | None:
         if self.period_start is None:
@@ -209,14 +210,15 @@ class _Version:
 
 def _versions(panel: pl.DataFrame) -> dict[str, list[_Version]]:
     """Each entity's panel versions, in `known_from` order."""
-    grouped: dict[tuple[str, date, date], tuple[date | None, dict[str, Decimal | None]]] = {}
+    grouped: dict[tuple[str, date, date], tuple[date | None, bool, dict[str, Decimal | None]]] = {}
     for row in panel.sort(["krs", "known_from", "period_end", "input"]).iter_rows(named=True):
         key = (row["krs"], row["known_from"], row["period_end"])
-        _, values = grouped.setdefault(key, (row["period_start"], {}))
+        withdrawn = row["source_kind"] == "withdrawn"
+        _, _, values = grouped.setdefault(key, (row["period_start"], withdrawn, {}))
         values[row["input"]] = row["value"]
     out: dict[str, list[_Version]] = {}
-    for (krs, known_from, period_end), (start, values) in grouped.items():
-        out.setdefault(krs, []).append(_Version(period_end, start, known_from, values))
+    for (krs, known_from, period_end), (start, withdrawn, values) in grouped.items():
+        out.setdefault(krs, []).append(_Version(period_end, start, known_from, values, withdrawn))
     return out
 
 
@@ -228,6 +230,8 @@ class _Snapshot:
         for v in versions:  # in known_from order, so a later version replaces an earlier one
             if v.known_from <= day:
                 self.periods[v.period_end] = v
+        # A withdrawn period is one the observer no longer has figures for.
+        self.periods = {end: v for end, v in self.periods.items() if not v.withdrawn}
         self.config = config
         self.band = config.feature_set.period_length_days
         self.tolerance = config.feature_set.lag_tolerance_days

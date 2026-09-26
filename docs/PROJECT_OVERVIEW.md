@@ -65,7 +65,7 @@ Spec stage D (exploration, `notebooks/`) supports the work but produces no produ
 
 ### Build plans
 
-Stage-by-stage implementation plans live in `docs/plans/`, one numbered `.md` file per requested build step, never overwritten — the highest-numbered file describes the current step.
+Stage-by-stage implementation plans live in `docs/plans/`, one numbered `.md` file per requested build step, never overwritten — the highest-numbered file not marked draft or deferred describes the current step.
 
 ---
 

@@ -8,7 +8,7 @@
 **Order:** after plans 0008 and 0009, which are complete. Phase 6 (baseline models, out-of-time backtest) trains
 on `feature_store` joined to a frozen label set, so nothing downstream starts before this lands.
 
-## Status: steps A–E complete (2026-09-24), step F next
+## Status: steps A–F complete (2026-09-26), step G next
 
 ## Why
 
@@ -123,6 +123,24 @@ config switch, not a fixed rule. Below, "owner decision N" refers to this list a
      raw: growth across a split year reads as a collapse and a recovery. On the seed, eight of the nine odd
      periods are halves of a year split by a bankruptcy or liquidation, known only after it, when the labels
      already exclude the entity; the ninth is 0000277937's 15-month first period.
+
+## Owner decisions for steps F–H (made 2026-09-26)
+
+Accepted as recommended after the doc sweep of 2026-09-26:
+1. **Finish Phase 5 before plan 0011.** Plan 0011 moves raw hashes and `source_member` paths, not
+   figures, dates or legal events; the store is rebuilt after it in about a second.
+2. **The live leakage check blocks:** a failure stops anything downstream of `feature_store` from
+   materializing. Unlike the SQLMesh audits (ADR 0010), a leak is a build failure (invariant 1).
+3. **The coverage check only reports**, per family and form. Many nulls are structural (micro
+   forms, periods outside the length band), so a threshold would fail on correct data.
+4. **The `features` job is offline:** it reads the stored datasets and never fetches. Before the
+   first live build, `legal_events` is rematerialized offline so step B's events exist, and the
+   label set must still hash to `066d18bbd4cd…`; if it moves, stop and investigate.
+5. **The panel honours `deleted_on`** (step F), as the filing family already does: a deleted
+   statement stops speaking for its period from its deletion, and the source before it, if any,
+   speaks again. A trap in the leakage test covers it.
+6. **"The highest-numbered plan is current"** is reworded to skip plans marked draft or deferred
+   (CLAUDE.md, PROJECT_OVERVIEW).
 
 ## Decisions this plan makes (flag any you disagree with before step C)
 
@@ -372,6 +390,36 @@ test:
 
 The same assertion runs on the live store as a Dagster asset check.
 
+**As built (2026-09-26).** The checks are in `features/leakage.py`, so step G's asset check runs the
+same code; the test is `tests/features/test_leakage.py`.
+- **`known_from_violations`:** §9.1 as written, on the wide frame. It trusts the companion columns.
+- **`truncation_differences`:** the per-family check, trusting nothing the families report. For
+  each `as_of_date`, `known_on` cuts the *sources* to what was public by then (canonical facts,
+  restatements and legal events by `known_from`, `filing_index` by submission date; a deletion or
+  removal after the date is nulled; an undated filing is never known), the families' inputs are
+  rebuilt from them by the same `feature_inputs` the build uses, and every value and `known_from`
+  must equal the full run's. Cutting the sources, not the panel, checks the panel too.
+- **To make that possible, loading is split:** `load_sources` (Postgres, Parquet) and a pure
+  `feature_inputs`. `widen` is the unvalidated pivot, so a leaky frame can reach §9.1's check past
+  the contract.
+- **Owner decision 5 (steps F–H): the panel honours `deleted_on`.** A deleted statement, with its
+  prior-year column, stops speaking from its deletion; the source it replaced speaks again, or the
+  period gets a `withdrawn` version, which the families treat as unknown. A statement deleted on
+  or before its own filing date never speaks (`deleted_when_filed`). No seed filing is deleted, so
+  the seed's panel is unchanged.
+- **Traps** (two entities, full and micro forms): a statement filed the day after a month-end, and
+  one filed on a month-end; a board change decided before two month-ends and entered after them;
+  a petition published nine months after its date; a correction filed later; a statement
+  deleted two months after filing, its year later filled by the next filing's prior-year column;
+  a restatement; an event removed from the register later; an undated statement row.
+- **The test bites:** three leaky families fail the truncation check: events counted by decision
+  date, statements known at their period end, and financials with no ASOF bound. The first two
+  pass §9.1 (their dates are wrong, not late), which is why both checks exist; the third fails it.
+- **Cost:** one `feature_inputs` per date, about 11 s for the test's 54 month-ends; the leaky
+  variants run on four trap dates only.
+- **On the live seed** (read-only, before step G): 0 violations and 0 differences over all
+  2,929 rows, in 35 s.
+
 ### G. Dagster wiring
 
 - Asset `feature_store` (group `features`), downstream of `financial_statements_canonical`,
@@ -407,8 +455,8 @@ The same assertion runs on the live store as a Dagster asset check.
 - [x] The point-in-time panel built, with the filed-wins rule and the quarantine exclusion, tested.
 - [x] All families in feature set v1 computed for the seed, with `__known_from` on every feature (step D; persisted
       in step E).
-- [ ] `tests/features/test_leakage.py` exists, runs in `make check`, blocks, and is shown to fail on a leaky
-      variant.
+- [x] `tests/features/test_leakage.py` exists, runs in `make check`, blocks, and is shown to fail on a leaky
+      variant (step F, 2026-09-26).
 - [ ] `feature_store` persisted and contracted; the Dagster leakage check passes on the live store.
 - [ ] `make check` and `make test-integration` green; re-running is byte-identical.
 - [ ] Docs from step H updated.

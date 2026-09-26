@@ -222,6 +222,7 @@ src/distress_radar/
 │   ├── panel.py                  # point-in-time financial panel: filed-wins rule, quarantine switch
 │   ├── asof_assembly.py          # H1 — the grid, assembly, the feature_store dataset
 │   ├── contracts.py              # Pandera contract for feature_store, built from the feature set
+│   ├── leakage.py                # H2 — §9.1 check and the per-family truncation check
 │   └── feature_definitions.py    # one function per feature family, §6H
 │
 ├── models/

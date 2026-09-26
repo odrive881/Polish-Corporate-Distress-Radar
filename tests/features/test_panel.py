@@ -42,6 +42,7 @@ class Filing:
     is_correction: bool = False
     period_start: date | None = None
     period_end: date | None = None
+    deleted_on: date | None = None
 
 
 def _frames(*filings: Filing) -> tuple[pl.DataFrame, pl.DataFrame]:
@@ -78,7 +79,15 @@ def _frames(*filings: Filing) -> tuple[pl.DataFrame, pl.DataFrame]:
                 )
     canonical = pl.DataFrame(rows, schema=CANONICAL_COLUMNS, orient="row")
     filings_frame = pl.DataFrame(
-        [{"krs": KRS, "document_ref": f.ref, "is_correction": f.is_correction} for f in filings],
+        [
+            {
+                "krs": KRS,
+                "document_ref": f.ref,
+                "is_correction": f.is_correction,
+                "deleted_on": f.deleted_on,
+            }
+            for f in filings
+        ],
         schema=FILINGS_SCHEMA,
         orient="row",
     )
@@ -297,3 +306,78 @@ def test_the_panel_ignores_input_order(line_items: LineItems) -> None:
         include_quarantined=False,
     )
     assert first.frame.equals(again.frame) and first.excluded.equals(again.excluded)
+
+
+# --- deletions (plan 0010 owner decision 5 for steps F-H) ------------------------------------------
+
+
+def test_a_deleted_statement_leaves_its_period_withdrawn(line_items: LineItems) -> None:
+    panel = _panel(
+        line_items,
+        Filing("y21", 2021, date(2022, 7, 1), _assets("100"), deleted_on=date(2022, 9, 1)),
+    )
+    assert _history(panel, Y2021) == [
+        (date(2022, 7, 1), "filed", Decimal("100.00")),
+        (date(2022, 9, 1), "withdrawn", None),
+    ]
+
+
+def test_a_deleted_correction_gives_the_period_back_to_the_original(
+    line_items: LineItems,
+) -> None:
+    panel = _panel(
+        line_items,
+        Filing("orig", 2021, date(2022, 7, 1), _assets("100")),
+        Filing(
+            "corr",
+            2021,
+            date(2022, 8, 1),
+            _assets("90"),
+            is_correction=True,
+            deleted_on=date(2022, 10, 1),
+        ),
+    )
+    assert _history(panel, Y2021) == [
+        (date(2022, 7, 1), "filed", Decimal("100.00")),
+        (date(2022, 8, 1), "correction", Decimal("90.00")),
+        (date(2022, 10, 1), "filed", Decimal("100.00")),
+    ]
+
+
+def test_a_deleted_statement_takes_its_prior_year_fill_with_it(line_items: LineItems) -> None:
+    panel = _panel(
+        line_items,
+        Filing(
+            "y22",
+            2022,
+            date(2023, 7, 1),
+            _assets("120"),
+            prior=_assets("95"),
+            deleted_on=date(2023, 8, 1),
+        ),
+    )
+    assert _history(panel, Y2021) == [
+        (date(2023, 7, 1), "comparative", Decimal("95.00")),
+        (date(2023, 8, 1), "withdrawn", None),
+    ]
+
+
+def test_a_deletion_does_not_withdraw_a_statement_filed_after_it(line_items: LineItems) -> None:
+    panel = _panel(
+        line_items,
+        Filing("a", 2021, date(2022, 7, 1), _assets("100"), deleted_on=date(2022, 9, 1)),
+        Filing("b", 2021, date(2022, 9, 1), _assets("101")),  # refiled on the deletion day
+    )
+    assert _history(panel, Y2021) == [
+        (date(2022, 7, 1), "filed", Decimal("100.00")),
+        (date(2022, 9, 1), "filed", Decimal("101.00")),
+    ]
+
+
+def test_a_statement_deleted_when_filed_never_speaks(line_items: LineItems) -> None:
+    panel = _panel(
+        line_items,
+        Filing("y21", 2021, date(2022, 7, 1), _assets("100"), deleted_on=date(2022, 7, 1)),
+    )
+    assert _history(panel, Y2021) == []
+    assert ("filed", "deleted_when_filed") in panel.excluded.select("role", "reason").rows()
