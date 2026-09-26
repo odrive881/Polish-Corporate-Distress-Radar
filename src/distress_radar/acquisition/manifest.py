@@ -66,13 +66,16 @@ SCHEMA_DDL: tuple[LiteralString, ...] = (
     """
     CREATE TABLE IF NOT EXISTS raw_redactions (
         received_sha256    text NOT NULL,
-        redacted_sha256    text NOT NULL REFERENCES raw_documents (sha256),
+        redacted_sha256    text NOT NULL,
         redaction_version  text NOT NULL,
         redacted_at        timestamptz NOT NULL,
         ingestion_run_id   text NOT NULL,
         PRIMARY KEY (received_sha256, redaction_version)
     )
     """,
+    # A log of replacements: the redacted object may itself be replaced later (ADR 0009 second
+    # addendum, plan 0011 step E), so the row outlives it. The key to raw_documents is dropped.
+    "ALTER TABLE raw_redactions DROP CONSTRAINT IF EXISTS raw_redactions_redacted_sha256_fkey",
     """
     DO $$
     DECLARE
