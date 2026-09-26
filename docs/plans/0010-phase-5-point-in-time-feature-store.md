@@ -8,7 +8,7 @@
 **Order:** after plans 0008 and 0009, which are complete. Phase 6 (baseline models, out-of-time backtest) trains
 on `feature_store` joined to a frozen label set, so nothing downstream starts before this lands.
 
-## Status: steps A–F complete (2026-09-26), step G next
+## Status: steps A–G complete (2026-09-26), step H next
 
 ## Why
 
@@ -428,6 +428,34 @@ same code; the test is `tests/features/test_leakage.py`.
   non-null values).
 - The job `legal_to_labels` stays as it is; a `features` job runs parsing outputs and legal events into the store.
 
+**As built (2026-09-26).** `dagster_defs/assets/features.py`; coverage in `features/coverage.py`.
+- **`leakage`** runs both step F checks on the live build and is `blocking` with severity ERROR
+  (owner decision 2 for steps F–H). The store is written first (its contract already refuses a
+  `__known_from` after its row); a failed check stops anything downstream from materializing.
+- **`feature_coverage`** always passes and reports the non-null share by family and by the row's
+  form: the form of the statement speaking for the latest period known at `as_of_date`, or `none`
+  before any is known (owner decision 3).
+- **The `features` job** selects `financial_statements_canonical`, `restatement_events`,
+  `legal_events` and `feature_store`; a test holds that none of them needs a network resource
+  (owner decision 4). The grid's start comes from the label config, so the two grids stay one.
+- **First live run.** On `/mnt/c`, a Windows program with a file open inside a dataset directory
+  blocks its atomic replace (`PermissionError` on the rename); nothing is lost, the old dataset
+  stays in place. Close it and re-run.
+
+On the seed (2026-09-26):
+- The parsing outputs rebuilt byte-identical. `legal_events` grew from 89 to 191 rows (141 dedup
+  groups): exactly step B's 102 registry changes (89 board, 7 office, 6 capital).
+- The label models, rebuilt offline, reproduce set `066d18bbd4cd…` (4,694 rows, already frozen);
+  all 13 label audits pass. The new `signal` events do not reach the labels.
+- `feature_store`: 2,929 rows, 44 features, 15 partitions; both checks pass; a second build is
+  byte-identical. Board changes in 12 months reach 4, on 422 rows across 15 entities; office moves
+  (4 entities) and capital changes (2) are rarer.
+- Coverage: 1,646 rows are `none`, before the first statement is known (the grid starts in 2012,
+  RDF's electronic filings from 2018; the earliest is known on 2019-03-31). Full-form rows: financial
+  0.78, construction 0.87, tripwire 0.82; small 0.71 / 0.94 / 0.81; micro 0.45 / 0.29 / 0.50, the
+  structural gap owner decision 3 expected. Filing features are complete once a statement is
+  known; registry and legal history are complete on every row (counts from the registration on).
+
 ### H. Docs
 
 - **AGENT_SPEC:** §5 `feature_store` as built; §6H with the families as built and what is deferred.
@@ -457,8 +485,9 @@ same code; the test is `tests/features/test_leakage.py`.
       in step E).
 - [x] `tests/features/test_leakage.py` exists, runs in `make check`, blocks, and is shown to fail on a leaky
       variant (step F, 2026-09-26).
-- [ ] `feature_store` persisted and contracted; the Dagster leakage check passes on the live store.
-- [ ] `make check` and `make test-integration` green; re-running is byte-identical.
+- [x] `feature_store` persisted and contracted; the Dagster leakage check passes on the live store
+      (step G, 2026-09-26).
+- [x] `make check` and `make test-integration` green; re-running is byte-identical.
 - [ ] Docs from step H updated.
 
 ## Risks
