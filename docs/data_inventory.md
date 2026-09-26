@@ -4,7 +4,7 @@ Everything the pipeline has to get hold of, gathered from the spec documents in 
 
 Sources: `AGENT_SPEC.md`, `DIRECTORY_STRUCTURE.md`, `README.md`, `CLAUDE.md`, `docs/PROJECT_OVERVIEW.md`, `docs/TECHNICAL_ARCHITECTURE.md`, with `.env.example` and `docs/adr/` checked for status. If this file and the spec disagree, the spec wins. Fix this file.
 
-Stage codes use the letter scheme from `AGENT_SPEC.md` §6. The numbered stage (1–12) from `docs/PROJECT_OVERVIEW.md` is in brackets. Status was first compiled on 2026-09-14; rows are updated as plans land (latest: plan 0010 step H, 2026-09-26).
+Stage codes use the letter scheme from `AGENT_SPEC.md` §6. The numbered stage (1–12) from `docs/PROJECT_OVERVIEW.md` is in brackets. Status was first compiled on 2026-09-14; rows are updated as plans land (latest: plan 0011, 2026-09-26).
 
 ---
 
@@ -194,5 +194,5 @@ The spec forbids bulk enumeration of any source. Acquisition is per entity, seed
    - **Until decided,** size classification (§4.4) needs another route: employment from the attached notes (C3/G), or GUS employment bands as a proxy.
    - **Consequence (plan 0010 owner decision 4, 2026-09-24):** `entity_size_class_history` and `size_thresholds.yaml` are deferred, and Phase 5's features carry no size class. Classifying on two of the three statutory inputs was rejected.
 9. **RDF's `czyMSR` flag (`filing_index.is_ifrs`) is unreliable.** 29 seed statements flagged IFRS are UoR structures. Never route on it.
-10. ~~**Raw downloads contain natural persons' data.**~~ Decided 2026-09-17: signer data is redacted at acquisition, before hashing, and stored files were replaced (ADR 0009). Residual: free text in notes, and signatories' first names in some uploaded file names (plan 0011, draft).
+10. ~~**Raw downloads contain natural persons' data.**~~ Decided 2026-09-17: signer data is redacted at acquisition, before hashing, and stored files were replaced (ADR 0009). ~~Residual: signatories' first names in some uploaded file names.~~ Closed 2026-09-26 (plan 0011, ADR 0009 second addendum): file names, attachment names and PDF document metadata are replaced before hashing, the stored seed was migrated, and a blocking `personal_data` asset check scans the raw store after every A3 run. Residual: free text in notes. The old names remain in the public repository's history (an ADR quote and eleven fixtures' attachment names); removing them is the owner's decision.
 11. **Notes and user-defined breakdowns are not captured yet.** Attached notes (`Plik`, base64 PDFs/docs) wait for C3/G. Breakdowns of a single line (`PozycjaUszczegolawiajaca` inside a leaf, `Podpozycja`) are skipped because the line's total is already a fact.

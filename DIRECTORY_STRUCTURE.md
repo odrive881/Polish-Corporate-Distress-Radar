@@ -183,7 +183,7 @@ src/distress_radar/
 │   ├── regon_client.py          # A2 — zeep SOAP wrapper, session/token handling
 │   ├── document_retrieval.py    # A3
 │   ├── har_import.py            # A3, manual tier (HAR captures)
-│   ├── redaction.py             # invariant 6: strip signer data before storing (ADR 0009)
+│   ├── redaction.py             # invariant 6: signer data, file names, PDF metadata out before storing (ADR 0009)
 │   ├── redaction_migration.py   # one-off replacement of unredacted stored files
 │   ├── krs_extract.py           # A4 — full KRS extracts (open KRS API), redacted, content-addressed
 │   ├── msig_client.py           # A4 — MSiG notices, reduced to person-free records at fetch time

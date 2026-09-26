@@ -23,7 +23,11 @@ from distress_radar.acquisition.raw_store import (
     sidecar_key,
 )
 from distress_radar.acquisition.redaction import REDACTION_VERSION, personal_data_markers
-from distress_radar.acquisition.redaction_migration import find_unredacted, replace_document
+from distress_radar.acquisition.redaction_migration import (
+    find_unredacted,
+    replace_document,
+    stored_markers,
+)
 from distress_radar.parsing import manifest as parsing_manifest
 from distress_radar.settings import Settings
 
@@ -273,3 +277,16 @@ def test_a_second_redaction_extends_the_log_of_the_first(conn: psycopg.Connectio
     ).fetchall()
     assert log == [("e" * 64, bundle, "1"), (bundle, new, "2")]
     assert json.loads(store.get(sidecar_key(new)))["received_sha256"] == bundle
+
+
+def test_the_standing_scan_reports_by_hash_and_kind_never_by_name(conn: psycopg.Connection) -> None:
+    store = InMemoryObjectStore()
+    bundle, details = _seed_bundle(conn, store)
+
+    found = stored_markers(conn, store)
+
+    assert set(found) == {bundle, *details.values()}
+    assert not any("Jan" in m or "SF " in m for markers in found.values() for m in markers)
+    for sha in find_unredacted(conn, store):
+        replace_document(conn, store, sha, run_id="redaction-2", now=NOW)
+    assert stored_markers(conn, store) == {}

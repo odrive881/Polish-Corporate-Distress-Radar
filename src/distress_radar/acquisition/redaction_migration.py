@@ -93,6 +93,19 @@ def find_unredacted(conn: Connection, store: RedactableObjectStore) -> list[str]
     return sorted(found, key=lambda sha: (sha not in downloads, sha))
 
 
+def stored_markers(conn: Connection, store: RedactableObjectStore) -> dict[str, list[str]]:
+    """Every stored object that still holds personal data, with its markers (none quote a name).
+
+    The standing check behind invariant 6 (plan 0011 step F): the A3 assets run it after each
+    materialization. About 20 s over the seed.
+    """
+    downloads = _download_refs(conn)
+    return {
+        sha: personal_data_markers(store.get(raw_key(sha)), downloads.get(sha))
+        for sha in find_unredacted(conn, store)
+    }
+
+
 def _is_rdf_detail(data: bytes) -> bool:
     return data.lstrip().startswith(b"{") and b'"nazwaPliku"' in data
 
