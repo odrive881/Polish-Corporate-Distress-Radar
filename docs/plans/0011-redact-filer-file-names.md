@@ -4,7 +4,7 @@
 - **Invariants:** 6 (legal entities only), 2 (raw immutability and its one exception), 3 (lineage), 5 (idempotence).
 - **ADRs:** 0009 and its addendum (natural persons are removed before hashing).
 
-## Status: steps A–C done (2026-09-26); step D next
+## Status: steps A–D done (2026-09-26); step E next
 
 ## Why
 
@@ -143,6 +143,13 @@ The rules are in ADR 0009's second addendum (step B). The decisions as they were
     seed); it becomes `zalacznik-<n>` (ADR addendum rule 3).
 - **D. Parsing.** Member matching on tokens, by equality as today; `source_member` paths carry tokens; the
   quarantine detail quotes tokens only.
+
+  **As built (2026-09-26).** Matching needed no change: members and `filing_index.file_name` hold the same
+  tokens, and `source_member` is built from the member path, so it carries the token. A test parses a
+  version-2 bundle end to end under its tokens. `member_not_in_filing_index` quoted the member's and every
+  filing's file name in `quarantine_events.detail`, an append-only log; it now names the filings by
+  `document_ref` only, which holds for downloads stored before the migration too. AGENT_SPEC §5's
+  `source_member` example shows a token.
 - **E. Migration.** Re-derive the stored seed: raw objects, Postgres rows, and a full re-parse and rebuild of
   every derived dataset, checked value for value against the old figures. Old objects are deleted only after the
   new ones verify, as in the signature migration.
