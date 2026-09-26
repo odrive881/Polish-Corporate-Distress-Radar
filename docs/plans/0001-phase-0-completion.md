@@ -42,11 +42,13 @@ Phase 0's deliverable per both spec documents is "repo skeleton, Docker Compose,
 
 ## Definition of done
 
-- [ ] `docs/adr/0004-rdf-2026-platform-verification.md` and `docs/adr/0005-mf-xml-2026-structures-verification.md` exist with real findings (or documented inability to verify, with the assumption it falls back to).
-- [ ] `docker-compose.yml` brings up MinIO + Postgres; `make dev-up` / `make dev-down` work.
-- [ ] `dagster` is a real dependency; `dagster dev -f dagster_defs/definitions.py` runs and materializes the hello-world asset.
-- [ ] `make check` is green.
-- [ ] `README.md` status line updated.
+Met (2026-09-14, recorded 2026-09-26): plan 0002 opens with Phase 0 complete, and its close-out verifies `make check` on fresh compose volumes.
+
+- [x] `docs/adr/0004-rdf-2026-platform-verification.md` and `docs/adr/0005-mf-xml-2026-structures-verification.md` exist with real findings (or documented inability to verify, with the assumption it falls back to).
+- [x] `docker-compose.yml` brings up MinIO + Postgres; `make dev-up` / `make dev-down` work.
+- [x] `dagster` is a real dependency; `dagster dev -f dagster_defs/definitions.py` runs and materializes the hello-world asset.
+- [x] `make check` is green.
+- [x] `README.md` status line updated.
 
 ## Next plan
 

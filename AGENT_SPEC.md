@@ -32,7 +32,7 @@ Violating any of these is a build failure, not a code-review comment.
 
 | Concern | Tool | Notes |
 |---|---|---|
-| Orchestration | **Dagster** | Software-defined assets; asset checks for DQ; partitions by `fiscal_year` and `as_of_month` |
+| Orchestration | **Dagster** | Software-defined assets; asset checks for DQ. No Dagster partitions yet: every asset rebuilds in full at seed scale, and `feature_store` is laid out by `as_of_date` year in Parquet (ADR 0012) |
 | Packaging | **uv** | `pyproject.toml` + `uv.lock`, committed |
 | Lint / format | **ruff** | Also handles import sorting |
 | Types | **pyright** | Strict mode on `src/` |
@@ -535,14 +535,14 @@ Phase 1 precedes phase 2 deliberately: discovering a source is inaccessible must
 Three assumptions rest on a moving target. Confirm each in phase 0 and record findings in `docs/adr/`:
 
 1. ~~The financial statement repository was rebuilt in February 2026. Confirm current document formats, access patterns, and terms of use rather than assuming continuity with the previous platform.~~ **Verified in `docs/adr/0004-rdf-2026-platform-verification.md`:** public per-entity lookup by KRS number, no auth, XML/PDF, no bulk API — the per-entity design below stands. Bot protection on the search UI means A3 may need the `httpx`-first / `Playwright`-fallback tiering A1 already uses; confirm empirically once Phase 1 drives real traffic.
-2. ~~A new generation of Ministry of Finance XML structures applies to statements prepared from 1 January 2026. Confirm published XSDs and which entity types they cover.~~ **Verified in `docs/adr/0005-mf-xml-2026-structures-verification.md`, with a correction:** the trigger is financial statements for **fiscal years beginning 1 January 2025 or later**, not "prepared from 1 January 2026" as stated above — one year earlier than this document previously assumed. Published as CRWDE structure "wariant 2 / wersja 1-0E." `tests/fixtures/neobis_001.xml` already uses this generation; which UoR annex(es) it corresponds to for `sp. z o.o.` size classes is still open and deferred to stage C2.
+2. ~~A new generation of Ministry of Finance XML structures applies to statements prepared from 1 January 2026. Confirm published XSDs and which entity types they cover.~~ **Verified in `docs/adr/0005-mf-xml-2026-structures-verification.md`, with a correction:** the trigger is financial statements for **fiscal years beginning 1 January 2025 or later**, not "prepared from 1 January 2026" as stated above — one year earlier than this document previously assumed. Published as CRWDE structure "wariant 2 / wersja 1-0E." `tests/fixtures/neobis_001.xml` uses this generation; it is the full form, mapped as `full-2025-w2-v1-0` (plan 0004), and the micro form of the same generation as `micro-2025-w2-v1-0` (plan 0005).
 3. Confirm the current terms of use and rate expectations for every source in §6A before implementing its adapter. Access must stay within those terms; if bulk access is not permitted, the per-entity design in §6A stands. **KRS API, MSiG and KRZ: recorded in `docs/adr/0011-legal-event-sources.md` (accepted 2026-09-23):** the KRS API is open data under the 2021 open-data act, with no published rate limit (15 requests a minute here); MSiG has no terms page and is used as its own UI uses it, per entity; KRZ is behind a WAF and not accessed.
 
 ---
 
 ## 12. Compliance constraints
 
-- Natural persons are never ingested (§2.7). Filter at acquisition, not downstream.
+- Natural persons are never ingested (§2, invariant 6). Filter at acquisition, not downstream.
 - Board member names are not required for modelling. Where registry dynamics features derive from them, store only derived counts, pseudonymised.
 - Request pacing and caching on every external source; acquisition load must stay modest.
 - Public artifacts are aggregated or pseudonymised (§6K).

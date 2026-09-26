@@ -81,7 +81,7 @@ flowchart TD
 
     subgraph VAL["E. Validation"]
         E1["E1 Table contracts<br/>Pandera"]
-        E2["E2 Accounting identities<br/>custom SQL as Dagster asset checks"]
+        E2["E2 Accounting identities<br/>Python rules as Dagster asset checks"]
         E3["E3 Quarantine + DQ marts<br/>SQLMesh"]
     end
 
@@ -240,6 +240,8 @@ The most constrained contact point: a lookup portal, one entity at a time, with 
 
 Write every response body to the object store *before* parsing, keyed by content hash. Parsing is then always a local, repeatable operation against immutable inputs.
 
+*As built (ADR 0007, plan 0003):* RDF sits behind an Imperva WAF that blocks plain httpx, so the adapter drives one human-paced Playwright browser at 3 documents a minute, the rate KRS support confirmed. That tier then met an hCaptcha, which the project never solves, so documents are captured by hand as HAR files and imported by `rdf_manual_import` (`acquisition/har_import.py`). Automated access at scale needs a new ADR.
+
 #### A4 — Legal event feeds
 
 **→ Pick: httpx** for the open KRS API and the MSiG search API, both JSON (ADR 0011); MSiG turned out not to need stage C3. KRZ sits behind a WAF and is not accessed automatically.
@@ -330,7 +332,7 @@ Skipping Great Expectations is deliberate: it is heavy for this scale, and its A
 
 #### E2 — Accounting identities
 
-**→ Pick: custom SQL, exposed as Dagster asset checks.** Assets equal equity plus liabilities; subtotals equal the sum of components; income-statement net result matches the balance-sheet line; cash flow reconciles to the change in cash balance.
+**→ Pick: custom code, exposed as Dagster asset checks.** As built (plan 0004), pure Polars functions in `src/distress_radar/parsing/accounting_identities.py`. Assets equal equity plus liabilities; subtotals equal the sum of components; income-statement net result matches the balance-sheet line; cash flow reconciles to the change in cash balance.
 
 These are domain rules. They deserve named, documented, individually-testable implementations in your own code — not a generic framework's DSL. This is also the most persuasive code in the repo for a finance-literate reviewer, so make it readable.
 
@@ -421,7 +423,7 @@ Lemmatisation is not optional for Polish: the language is heavily inflected, so 
 
 **→ Pick: DuckDB `ASOF JOIN`, run in-process from Python in `src/distress_radar/features/` (ADR 0012).** For each `(entity, as_of_date)` pair, join the most recent fact whose `known_from` is on or before `as_of_date`. This is one SQL construct doing the work that is otherwise a subtle, bug-prone window-function exercise.
 
-This document first placed the join inside SQLMesh incremental models. ADR 0012 moved it to Python: the blocking leakage test has to run the real assembly code in `make check` with no services, and the feature definitions are driven by config. `feature_store` is recomputed in full on each run, which is cheap at this scale. SQLMesh keeps the DQ and label models, and reads `feature_store` only for coverage marts.
+This document first placed the join inside SQLMesh incremental models. ADR 0012 moved it to Python: the blocking leakage test has to run the real assembly code in `make check` with no services, and the feature definitions are driven by config. `feature_store` is recomputed in full on each run, which is cheap at this scale. SQLMesh keeps the DQ and label models. Feature coverage is reported as a Dagster asset check; an `ext.feature_store` view comes only with the first SQL model that reads the store.
 
 `Feast` is available if you want a named feature store on the CV, but it is built for online low-latency serving that this batch project does not need, and it would add real operational overhead. The demonstrable skill here is the correct as-of join, not the framework wrapper.
 
@@ -563,7 +565,7 @@ Sequenced so that each phase produces something demonstrable and de-risks the ph
 | **0** | Repo skeleton, Docker Compose, CI, ADR template, Dagster hello-world asset | Nothing blocks later work on tooling |
 | **1** | Acquisition for 20 hand-picked companies, raw documents in MinIO, manifest in Postgres | Confirms portal access, pacing, and terms compliance *before* you build on top |
 | **2** | Parse two structure versions end-to-end into the canonical model, with accounting identity checks passing | Proves the hardest technical assumption early |
-| **3** | Remaining structure versions, PDF tier, DQ mart published | Turns a demo into a dataset |
+| **3** | Remaining structure versions, `quarantine` and `dq_mart` in SQLMesh (the PDF tier is deferred, plan 0006; `dq_mart` is published in phase 9) | Turns a demo into a dataset |
 | **4** | Legal events, outcome labels, censoring, regime flags | Makes supervised learning possible |
 | **5** | Feature store with as-of joins and blocking leakage tests | Establishes the core correctness claim |
 | **6** | Baseline and classical models, out-of-time backtest report | First real result |
@@ -644,6 +646,6 @@ Put this table in the README. Deliberate, justified omissions read as seniority;
 
 Three things in this document rest on a fast-moving landscape and should be checked at the start of phase 0:
 
-1. **RDF's rebuilt platform** went live in February 2026. Confirm the current document formats, access patterns, and terms of use directly rather than assuming continuity with the previous portal.
+1. **RDF's rebuilt platform** went live in February 2026. Per-entity lookup and XML/PDF downloads confirmed (ADR 0004); automated access is blocked by a WAF and then an hCaptcha, so documents are captured by hand for now (ADR 0007).
 2. **The new generation of Ministry of Finance XML structures** applies to financial statements for fiscal years beginning on or after 1 January 2025 (corrected in ADR 0005). Confirmed, XSDs vendored in `config/xsd/` (plan 0004).
 3. **DuckDB's Iceberg write support** has historically trailed its read support. If you choose Iceberg over plain Parquet, verify the current state first.

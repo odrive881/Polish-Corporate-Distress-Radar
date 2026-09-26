@@ -185,7 +185,8 @@ config switch, not a fixed rule. Below, "owner decision N" refers to this list a
    - partitioned by `as_of_date` year;
    - a Pandera contract (`FEATURE_STORE`), which also requires `__known_from ≤ as_of_date`;
    - the same atomic, deterministic write as the other datasets (ADR 0008);
-   - an `ext.feature_store` view for SQLMesh, for coverage marts only.
+   - an `ext.feature_store` view for SQLMesh, for coverage marts only (not built: step E moved coverage to a
+     Dagster asset check).
 8. **Seed scale.** Nothing here enumerates anything. Features are recomputed in full on each run.
 
 ## Out of scope
@@ -315,7 +316,7 @@ one per non-null value; step E pivots them. Tests in `tests/features/test_featur
   year counts as filed when a statement ends in the 12 months to it.
 - **DuckDB exchanges frames with Polars through Arrow**, so `pyarrow` is now a dependency.
 
-On the seed (17 entities, month-ends 2012-01 to 2026-08, 2,992 rows): all 44 features computed in about
+On the seed (17 entities, month-ends 2012-01 to 2026-08, 2,929 rows): all 44 features computed in about
 3 s, none with `known_from` after its `as_of_date`. The board, office and capital counts are all zero until
 `legal_events` is rebuilt with step B's events. `latest_filed_as_pdf` is zero on every row: each of the two
 PDF filings was followed within days by an XML one. Ratios over near-zero denominators reach extreme values

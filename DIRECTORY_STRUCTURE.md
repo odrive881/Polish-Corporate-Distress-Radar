@@ -99,6 +99,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │       ├── __init__.py
 │       ├── settings.py                # typed runtime settings (.env)
 │       ├── warehouse.py               # Parquet datasets under WAREHOUSE_DIR (ADR 0008)
+│       ├── labels.py                  # label config, label sources, the label-set freeze (plan 0008)
 │       ├── transform_project.py       # runs/audits the SQLMesh project from Python (ADR 0010)
 │       ├── acquisition/
 │       ├── parsing/
@@ -176,6 +177,8 @@ src/distress_radar/
 ├── acquisition/
 │   ├── base.py                 # shared rate limiter, hishel cache config, tenacity policy
 │   ├── models.py                # Pydantic models for raw source responses
+│   ├── raw_store.py             # B1 — content-addressed object store, sidecars
+│   ├── manifest.py              # B2 — Postgres manifest (filing_index, quarantine_events, ...)
 │   ├── universe_discovery.py    # A1
 │   ├── regon_client.py          # A2 — zeep SOAP wrapper, session/token handling
 │   ├── document_retrieval.py    # A3
@@ -195,6 +198,7 @@ src/distress_radar/
 │   ├── legal_taxonomy.py        # typed config/statutory/procedure_taxonomy.yaml, dated lookups
 │   ├── msig_notice_kinds.py     # types reduced MSiG notices (config/mappings/msig_notice_kinds.yaml)
 │   ├── legal_events.py          # KRS extracts + MSiG notices → legal_events, linking, dedup groups
+│   ├── legal_acceptance.py      # seed acceptance: each status hint found in legal_events
 │   ├── mapping_engine.py        # C2 — reads config/mappings/structures/*.yaml
 │   ├── statements.py            # C1 + C2 for one stored download, no I/O
 │   ├── accounting_identities.py # E2 — identity rules and grading, pure functions
