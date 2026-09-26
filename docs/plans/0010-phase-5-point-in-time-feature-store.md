@@ -8,7 +8,7 @@
 **Order:** after plans 0008 and 0009, which are complete. Phase 6 (baseline models, out-of-time backtest) trains
 on `feature_store` joined to a frozen label set, so nothing downstream starts before this lands.
 
-## Status: steps A–G complete (2026-09-26), step H next
+## Status: complete (2026-09-26)
 
 ## Why
 
@@ -488,7 +488,7 @@ On the seed (2026-09-26):
 - [x] `feature_store` persisted and contracted; the Dagster leakage check passes on the live store
       (step G, 2026-09-26).
 - [x] `make check` and `make test-integration` green; re-running is byte-identical.
-- [ ] Docs from step H updated.
+- [x] Docs from step H updated (2026-09-26).
 
 ## Risks
 
