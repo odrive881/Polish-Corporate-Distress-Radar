@@ -4,7 +4,7 @@
 - **Invariants:** 6 (legal entities only), 2 (raw immutability and its one exception), 3 (lineage), 5 (idempotence).
 - **ADRs:** 0009 and its addendum (natural persons are removed before hashing).
 
-## Status: step A done (2026-09-26); owner decisions pending before step B
+## Status: steps A–B done (2026-09-26); step C next
 
 ## Why
 
@@ -70,7 +70,17 @@ downloads cover two `filing_index` rows each. In all 8, each row's `nazwaPliku` 
 name, the two names differ, and both rows have their detail stored. So a download's members can be
 renamed to a token built from the `document_ref` they belong to, at redaction time, with no secret.
 
-## Owner decisions needed before step B (recommendations first)
+## Owner decisions (made 2026-09-26)
+
+Decisions 0–4 below were **accepted as recommended**, with decision 3 as revised after step A (the
+`document_ref` token). The owner then **widened the scope** to two findings of a deeper look inside the
+stored statements, redacted in the same version and the same migration:
+- **attachment names** (`Plik/Nazwa`): 295 in 108 downloads, the same free text as `nazwaPliku`, become
+  `plik-<n>` plus the extension;
+- **embedded PDF metadata**: of 284 PDFs, 108 carry an `/Author` (usually the person who wrote the notes),
+  165 a title and 163 XMP; the information dictionary and the XMP stream are removed.
+
+The rules are in ADR 0009's second addendum (step B). The decisions as they were put:
 
 0. **Reopen ADR 0009's accepted residual.** *Recommended:* yes. Matching needs a stable key, not the text
    (decision 3), and a file name has no other use here. The quoted example in ADR 0009 lost the names on
@@ -103,15 +113,22 @@ renamed to a token built from the `document_ref` they belong to, at redaction ti
 
 - **A. Census and confirmation.** Every place in the list above, confirmed against the code and the stored seed:
   which tables, sidecars, objects and Parquet columns hold a file name, with counts. Nothing is changed.
-- **B. ADR 0009 second addendum:** the rule for file names, and the extended raw-bytes exception.
-- **C. Acquisition.** Redact at fetch time: the detail JSON before hashing, `filing_index.file_name`, the sidecar,
-  and ZIP member names in the redacted copy. Tests on fixtures with invented names, never real ones.
-- **D. Parsing.** Member matching by hash; `source_member` paths with hashed member names.
+- **B. ADR 0009 second addendum:** the rule for file names, and the extended raw-bytes exception. **Done
+  (2026-09-26):** tokens, where they replace names, attachment names, PDF metadata, versions
+  (`REDACTION_VERSION = "2"`, `rdf-detail-1`), fail-closed rules.
+- **C. Acquisition.** Redact at fetch time: the detail JSON before hashing, `filing_index.file_name`, the sidecar
+  (with any `content-disposition`), ZIP member names, attachment names and PDF metadata in the redacted copy.
+  The download redactor needs the download's filing rows (`document_ref`, `nazwaPliku`) to name members, which
+  both A3 paths (Playwright and HAR import) have when they store. Tests on fixtures with invented names, never
+  real ones.
+- **D. Parsing.** Member matching on tokens, by equality as today; `source_member` paths carry tokens; the
+  quarantine detail quotes tokens only.
 - **E. Migration.** Re-derive the stored seed: raw objects, Postgres rows, and a full re-parse and rebuild of
   every derived dataset, checked value for value against the old figures. Old objects are deleted only after the
   new ones verify, as in the signature migration.
-- **F. A standing check.** `personal_data_markers` (or a sibling) extended to file names, run by
-  `tests/acquisition/test_legal_fixtures.py` and as a Dagster asset check on new downloads.
+- **F. A standing check.** `personal_data_markers` extended to member names, `nazwaPliku`, `Plik/Nazwa`,
+  sidecar file names and PDF metadata, run by the fixture tests and as a Dagster asset check on new downloads.
+  CLAUDE.md and AGENT_SPEC invariants 2 and 6 name the widened redaction once it is built.
 
 ## Risks
 
