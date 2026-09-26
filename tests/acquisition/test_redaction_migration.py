@@ -184,7 +184,9 @@ def _seed_bundle(
     conn: psycopg.Connection, store: InMemoryObjectStore
 ) -> tuple[str, dict[str, str]]:
     bundle = _record(conn, store, _bundle(), "https://rdf/tresc#b")
-    bir1 = _record(conn, store, b"<?xml version='1.0'?><root><Nazwa>X</Nazwa></root>", "https://bir1")
+    bir1 = _record(
+        conn, store, b"<?xml version='1.0'?><root><Nazwa>X</Nazwa></root>", "https://bir1"
+    )
     details = {
         ref: _record(conn, store, _detail(ref), f"https://rdf/szczegoly#{ref}") for ref in NAMES
     }
@@ -248,3 +250,26 @@ def test_a_detail_before_its_download_leaves_the_download_unnameable(
     with pytest.raises(RuntimeError, match="migrate downloads before details"):
         replace_document(conn, store, bundle, run_id="redaction-2", now=NOW)
     assert store.exists(raw_key(bundle))  # nothing deleted
+
+
+def test_a_second_redaction_extends_the_log_of_the_first(conn: psycopg.Connection) -> None:
+    """Version 1 replaced the object as received; version 2 replaces that one in turn."""
+    store = InMemoryObjectStore()
+    bundle, _ = _seed_bundle(conn, store)
+    manifest.insert_redaction(
+        conn,
+        received_sha256="e" * 64,  # the file as first received, long deleted
+        redacted_sha256=bundle,
+        redaction_version="1",
+        redacted_at=NOW,
+        ingestion_run_id="redaction-1",
+    )
+    conn.commit()
+
+    new = replace_document(conn, store, bundle, run_id="redaction-2", now=NOW).new_sha256
+
+    log = conn.execute(
+        "SELECT received_sha256, redacted_sha256, redaction_version FROM raw_redactions ORDER BY 3"
+    ).fetchall()
+    assert log == [("e" * 64, bundle, "1"), (bundle, new, "2")]
+    assert json.loads(store.get(sidecar_key(new)))["received_sha256"] == bundle
