@@ -156,6 +156,10 @@ and 163 XMP metadata: an author is usually the person who wrote the notes.
    `nazwaPliku`, `Plik/Nazwa` or sidecar filename that is not a token, and for PDF metadata; the fixtures test
    and an asset check on new downloads run it (plan 0011 step F).
 
+**Run (2026-09-26, plan 0011 step E).** All 260 stored objects were replaced (126 downloads, 134 details), no
+figure moved, and `raw_redactions` lost its foreign key to `raw_documents`: a log row outlives the object it
+names once that object is itself replaced.
+
 **Consequences.** Every stored download's hash changes, and with it every derived row's
 `source_document_hash`, `source_member` and `ingestion_run_id`; the figures must not move, which
 `notebooks/exploration/canonical_value_hash.py` checks. A file's own name is no longer evidence of anything:
