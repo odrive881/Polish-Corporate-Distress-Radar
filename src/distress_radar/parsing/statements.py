@@ -99,7 +99,9 @@ def classify_download(
                 None,
                 stage="C1",
                 reason_code="member_not_in_filing_index",
-                detail=f"{member.member_name!r} matches none of {sorted(str(r[1]) for r in source.rows)}",
+                # File names are never quoted, even from a download stored before plan 0011's
+                # redaction: the refs say which filings the member failed to match.
+                detail=f"matches none of the download's filings {sorted(r[0] for r in source.rows)}",
             )
         )
     for member in members:

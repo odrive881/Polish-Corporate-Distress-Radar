@@ -9,6 +9,7 @@ from pathlib import Path
 import polars as pl
 import pytest
 
+from distress_radar.acquisition.redaction import file_token, redact_download
 from distress_radar.parsing.accounting_identities import (
     grade,
     identity_check_results,
@@ -103,6 +104,30 @@ def test_non_statement_outcomes(mapping_config: MappingConfig, validator: XsdVal
     two_rows = _source(("a", "a.xml", None, PERIOD_2022), ("b", "b.xml", None, PERIOD_2022))
     [stray] = classify_download(two_rows, _zip({"c.xml": Y2022}), mapping_config, validator)
     assert (stray.status, stray.reason_code) == ("quarantined", "member_not_in_filing_index")
+    # The quarantine log names filings by ref, never by file name (ADR 0009 second addendum).
+    assert stray.detail is not None and "['a', 'b']" in stray.detail
+    assert not any(name in stray.detail for name in ("a.xml", "b.xml", "c.xml"))
+
+
+def test_a_redacted_bundle_parses_under_its_tokens(
+    mapping_config: MappingConfig, validator: XsdValidator
+) -> None:
+    """A download stored by redaction version 2: members and filing_index both hold tokens."""
+    orig, corr = "AAAAAAAAAAAAAAAAAAAA/w==", "BBBBBBBBBBBBBBBBBBBB+w=="
+    received = _zip({"SF Jan.xml": Y2022, "SF Jan korekta.xml": Y2022})
+    stored = redact_download(received, {orig: "SF Jan.xml", corr: "SF Jan korekta.xml"}).data
+    source = _source(
+        (orig, file_token(orig, "SF Jan.xml"), date(2023, 6, 30), PERIOD_2022),
+        (corr, file_token(corr, "SF Jan korekta.xml"), date(2023, 9, 1), PERIOD_2022),
+    )
+    outcomes = classify_download(source, stored, mapping_config, validator)
+    assert [(o.source_member, o.status) for o in outcomes] == [
+        ("zip:AAAAAAAAAAAAAAAAAAAA_w.xml", "valid"),
+        ("zip:BBBBBBBBBBBBBBBBBBBB-w.xml", "valid"),
+    ]
+    frames = [map_file(o, source, mapping_config, "run-1") for o in outcomes]
+    assert [f["document_ref"].unique().to_list() for f in frames] == [[orig], [corr]]
+    assert not any("Jan" in m for f in frames for m in f["source_member"].unique().to_list())
 
 
 @pytest.mark.parametrize(

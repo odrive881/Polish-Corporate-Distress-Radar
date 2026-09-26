@@ -63,7 +63,9 @@ class ContainerError(Exception):
 
 @dataclass(frozen=True)
 class ContainerMember:
-    source_member: str  # e.g. "zip:SF/SF2023.xml" or "zip:x.xades>ds:Object[2]>base64"
+    # e.g. "zip:kQL-7bDLHvl-dIGIeLuLlQ.xml" or "zip:kQL-7bDLHvl-dIGIeLuLlQ.xades>ds:Object[2]>base64":
+    # member names are tokens since ADR 0009's second addendum (older downloads until migrated).
+    source_member: str
     member_name: str  # base name of the ZIP member, matched to filing_index.file_name
     kind: MemberKind
     data: bytes  # XML without BOM, or PDF bytes; empty for detached signatures

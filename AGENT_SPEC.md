@@ -173,7 +173,7 @@ These names are canonical. `PROJECT_OVERVIEW.md` refers to the same datasets and
 | `column` | enum | `current_year`, `prior_year`, `prior_year_restated` (restated comparatives, `KwotaB1`) |
 | `structure_version` | str | Detected XML structure version |
 | `source_document_hash` | str | SHA-256, joins to `raw_documents` |
-| `source_member` | str | Path from the stored download to the statement file, e.g. `zip:SF.xml` or `zip:SF.xades>ds:Object[2]>base64`. A download can hold a statement and its correction (plan 0004) |
+| `source_member` | str | Path from the stored download to the statement file, e.g. `zip:kQL-7bDLHvl-dIGIeLuLlQ.xml` or `zip:kQL-7bDLHvl-dIGIeLuLlQ.xades>ds:Object[2]>base64`. Member names are tokens of the filing's `document_ref`, never the filer's file name (ADR 0009 second addendum). A download can hold a statement and its correction (plan 0004) |
 | `document_ref` | str | RDF document id (`filing_index.document_ref`); tells a statement from its correction |
 | `source_element_path` | str | XPath (namespace prefixes from the structure spec). For a filer's own extra lines, summed into one `….USER` fact, an XPath union of every contributing element |
 | `known_from` | date | Filing submission date |
