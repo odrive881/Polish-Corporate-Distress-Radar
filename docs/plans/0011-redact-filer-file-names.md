@@ -4,7 +4,7 @@
 - **Invariants:** 6 (legal entities only), 2 (raw immutability and its one exception), 3 (lineage), 5 (idempotence).
 - **ADRs:** 0009 and its addendum (natural persons are removed before hashing).
 
-## Status: steps A–D done (2026-09-26); step E next
+## Status: steps A–E done (2026-09-26); step F next
 
 ## Why
 
@@ -153,6 +153,29 @@ The rules are in ADR 0009's second addendum (step B). The decisions as they were
 - **E. Migration.** Re-derive the stored seed: raw objects, Postgres rows, and a full re-parse and rebuild of
   every derived dataset, checked value for value against the old figures. Old objects are deleted only after the
   new ones verify, as in the signature migration.
+
+  **As built and run (2026-09-26).** `redaction_migration.py` migrates downloads first (members named from
+  `filing_index.file_name` while it still holds the names), then details (`nazwaPliku` and `file_name` to the
+  token), refusing a bundle whose filings already hold tokens. `canonical_value_hash.py` gained a hash without
+  `source_document_hash`, `source_member` and `ingestion_run_id`, sorted by the remaining columns.
+  - **A read-only rehearsal first** redacted all 260 objects in memory. It found two bugs, fixed before any
+    write: PDF metadata written back on PDFs with object streams (read before removal; now blanked first), and
+    a "pesel" marker spelt by chance in 8.5 MB of base64 (XML is now searched with long base64 runs set aside).
+  - **The owner chose a temporary backup** (the bucket and a `pg_dump` of the manifest, outside the repository),
+    deleted once every check below had passed.
+  - **The first run stopped on its first object**, rolled back, with nothing deleted: `raw_redactions`' foreign
+    key to `raw_documents` forbade deleting an object version 1 had produced. The table is a log, so the key
+    was dropped (idempotent DDL) and a test covers the chain.
+  - **The second run replaced all 260** (126 downloads under version `2`, 134 details under `rdf-detail-1`);
+    a re-scan finds none. All 134 `file_name`s are tokens; no sidecar has `content-disposition`, and the 118
+    that name a file give its token; the store holds the same 597 objects.
+  - **Rebuild** (`financial_statements_canonical*`): all 27 asset checks pass, leakage included. Compared
+    without lineage, the canonical facts (43,611; hash `a92c9aa7…` before and after), identity checks
+    (12,597), restatements (130), legal events (191), `dq_mart` (148), its coverage grain and the outcome labels
+    (4,694) are identical, and `feature_store` is byte-identical (15 files). The full canonical hash moved
+    (`fa74f3a1…` → `c05f1a80…`), as it must. Every `source_member` in the warehouse and `parsed_documents` is a
+    token path; `parsed_documents` holds 131 rows (129 valid, 1 `needs_pdf_tier`, 1 quarantined), the 320 stale
+    rows of earlier mapping configs gone with their objects.
 - **F. A standing check.** `personal_data_markers` extended to member names, `nazwaPliku`, `Plik/Nazwa`,
   sidecar file names and PDF metadata, run by the fixture tests and as a Dagster asset check on new downloads.
   CLAUDE.md and AGENT_SPEC invariants 2 and 6 name the widened redaction once it is built.
