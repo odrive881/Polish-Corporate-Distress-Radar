@@ -130,13 +130,16 @@ and 163 XMP metadata: an author is usually the person who wrote the notes.
      has one content member and one filing, the member takes the token whatever its name (as matching already
      pairs them); any other member becomes `unmatched-<n>` plus its extension, and parsing quarantines it as
      `member_not_in_filing_index`, as it would have. Directory components inside the ZIP are dropped;
-   - the sidecar's `original_filename`, and the filename in a kept `content-disposition` header;
+   - the sidecar's `original_filename`; `content-disposition` is no longer a kept header (RDF sends
+     none, and it would name the file);
    - `source_member` paths, which are built from the renamed members (plan 0011 decision 4), and with them
      every derived dataset and the quarantine details that quote a member.
    Member matching (`parsing/containers.py`) keeps comparing names for equality, now tokens (decision 3).
 3. **Attachment names inside a statement (`Plik/Nazwa`) become `plik-<n>`** plus the extension under the same
-   list, `n` counting the statement's `Plik` elements in document order from 1. The attachment's content is
-   kept, redacted as before.
+   list, `n` counting the statement's `Plik` elements in document order from 1; an ePUAP envelope's
+   `Zalacznik@nazwaPliku` becomes `zalacznik-<n>` the same way (one seed download has one). The XSD's
+   `TNazwaPliku` pattern (`[a-zA-Z0-9_.-]{5,55}`) admits both. The attachment's content is kept, redacted as
+   before.
 4. **Embedded and top-level PDFs lose their document metadata:** the whole document information dictionary
    (author, title, subject, keywords, creator, producer and dates) and the XMP metadata stream. Nothing in the
    project reads them. Page content is unchanged, and the free-text residual above still applies to it.
@@ -146,7 +149,10 @@ and 163 XMP metadata: an author is usually the person who wrote the notes.
    one: the new object written, the manifest repointed in one transaction, the old object deleted only after
    the new one verifies (plan 0011 step E).
 6. **Fail closed, and a standing check.** A download whose members cannot all be named, or a detail without
-   the `document_ref` its token needs, is not stored. `personal_data_markers()` gains checks for a member,
+   the `document_ref` its token needs, is not stored. The names as received live only in memory, taken from
+   the details fetched in the same run: a bundle of several filings whose row was expanded in an earlier run
+   is expanded again first (A3), or read again from the capture (HAR import), and is refused if neither is
+   possible. `personal_data_markers()` gains checks for a member,
    `nazwaPliku`, `Plik/Nazwa` or sidecar filename that is not a token, and for PDF metadata; the fixtures test
    and an asset check on new downloads run it (plan 0011 step F).
 

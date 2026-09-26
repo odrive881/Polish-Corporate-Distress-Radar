@@ -39,10 +39,14 @@ SIGNED = CLEAN.replace(
 )
 
 
-def _zip(data: bytes) -> bytes:
+REF = "AAAAAAAAAAAAAAAAAAAA/w=="  # shaped like an RDF document_ref
+TOKEN = "AAAAAAAAAAAAAAAAAAAA_w.xml"  # its file name as stored (ADR 0009 second addendum)
+
+
+def _zip(data: bytes, name: str = "sf.xml") -> bytes:
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w") as archive:
-        archive.writestr(zipfile.ZipInfo("sf.xml", date_time=(2023, 6, 30, 0, 0, 0)), data)
+        archive.writestr(zipfile.ZipInfo(name, date_time=(2023, 6, 30, 0, 0, 0)), data)
     return buffer.getvalue()
 
 
@@ -87,7 +91,7 @@ def _record(conn: psycopg.Connection, store: InMemoryObjectStore, raw: bytes, ur
 def test_signed_document_is_replaced_and_references_follow(conn: psycopg.Connection) -> None:
     store = InMemoryObjectStore()
     signed_sha = _record(conn, store, _zip(SIGNED), "https://rdf/tresc#1")
-    clean_sha = _record(conn, store, _zip(CLEAN), "https://rdf/tresc#2")
+    clean_sha = _record(conn, store, _zip(CLEAN, TOKEN), "https://rdf/tresc#2")
     conn.execute(
         "INSERT INTO entity_master (krs, nip, regon, name, legal_form_code, status, pkd_codes, "
         "pkd_predominant, source_document_hash, pkd_source_document_hash, known_from, ingestion_run_id) "
@@ -97,8 +101,8 @@ def test_signed_document_is_replaced_and_references_follow(conn: psycopg.Connect
     conn.execute(
         "INSERT INTO filing_index (krs, document_ref, rdf_type_code, status, period_start, period_end, "
         "sha256, discovered_at, ingestion_run_id) "
-        "VALUES ('0000000001', 'ref', '18', 'x', '2022-01-01', '2022-12-31', %s, %s, 'run-a')",
-        (signed_sha, NOW),
+        "VALUES ('0000000001', %s, '18', 'x', '2022-01-01', '2022-12-31', %s, %s, 'run-a')",
+        (REF, signed_sha, NOW),
     )
     conn.execute(
         "INSERT INTO quarantine_events (stage, entity_key, reason_code, detail, "
@@ -130,6 +134,7 @@ def test_signed_document_is_replaced_and_references_follow(conn: psycopg.Connect
     new = replaced.new_sha256
 
     assert personal_data_markers(store.get(raw_key(new))) == []
+    assert zipfile.ZipFile(io.BytesIO(store.get(raw_key(new)))).namelist() == [TOKEN]
     assert not store.exists(raw_key(signed_sha)) and not store.exists(sidecar_key(signed_sha))
     assert not any(b"00000000000" in data for data in store.objects.values())
     sidecar = json.loads(store.get(sidecar_key(new)))

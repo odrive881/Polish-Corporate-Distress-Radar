@@ -44,6 +44,7 @@ from distress_radar.acquisition.raw_store import (
     sha256_hex,
     sidecar_key,
 )
+from distress_radar.acquisition.redaction import file_token, redact_download
 from distress_radar.settings import Settings
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "rdf"
@@ -58,6 +59,7 @@ OTHER_KRS = "0000277937"
 STATEMENT_2025 = "kQL-7bDLHvl-dIGIeLuLlQ=="
 STATEMENT_2024 = "MkKHeXhci9HveHNtSKfMtA=="
 AUDITOR_2025 = "B2opwZt-Ik8Yg4luKMAqQA=="
+STATEMENT_2025_TOKEN = "kQL-7bDLHvl-dIGIeLuLlQ.xml"  # its nazwaPliku as stored (ADR 0009)
 HOST = "https://rdf-przegladarka.ms.gov.pl"
 API = HOST + API_PREFIX
 T0 = datetime(2026, 9, 16, 9, 0, tzinfo=UTC)
@@ -341,7 +343,22 @@ CORRECTION_DETAIL = json.dumps(
         "okresSprawozdawczyKoniec": "2024-12-31",
     }
 )
-BUNDLE_ZIP = _zip("original + correction")
+
+
+def _bundle_zip() -> bytes:
+    """The statement and its correction, each named as its detail's `nazwaPliku` says."""
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        for ref in (STATEMENT_2024, CORRECTION_2024):
+            archive.writestr(f"{ref[:3]}.xml", f"<?xml version='1.0'?><Sprawozdanie ref='{ref}'/>")
+    return buffer.getvalue()
+
+
+BUNDLE_ZIP = _bundle_zip()
+BUNDLE = [STATEMENT_2024, CORRECTION_2024]
+BUNDLE_NAMES = {ref: f"{ref[:3]}.xml" for ref in (STATEMENT_2024, CORRECTION_2024)}
+# What the store holds: the same files, each renamed to its filing's token (ADR 0009).
+STORED_BUNDLE = redact_download(BUNDLE_ZIP, BUNDLE_NAMES).data
 
 
 def _corrected_session() -> HarBuilder:
@@ -424,9 +441,12 @@ def test_recorded_har_has_detail_and_download_but_only_one_list_page():
     assert json.loads(view.detail.body)["dataDodania"] == "2026-06-29"
     download = browser.download(KRS, STATEMENT_2025)
     assert download.body[:4] == b"PK\x03\x04"
-    assert sha256_hex(download.body) == json.loads(
-        (FIXTURES / "document_download.meta.json").read_text(encoding="utf-8")
-    )["response"]["sha256"]
+    assert (
+        sha256_hex(download.body)
+        == json.loads((FIXTURES / "document_download.meta.json").read_text(encoding="utf-8"))[
+            "response"
+        ]["sha256"]
+    )
 
 
 # --- importing (live Postgres) ---------------------------------------------------------------
@@ -514,17 +534,20 @@ def test_import_indexes_details_downloads_and_reports_what_is_missing(conn: psyc
         """,
         (STATEMENT_2025,),
     ).fetchone()
+    stored = redact_download(STATEMENT_ZIP, {STATEMENT_2025: None}).data
     assert row == (
         date(2026, 6, 29),
         "Roczne sprawozdanie finansowe",
-        DETAIL["nazwaPliku"],
-        sha256_hex(STATEMENT_ZIP),
+        STATEMENT_2025_TOKEN,
+        sha256_hex(stored),
     )
-    assert store.get(raw_key(sha256_hex(STATEMENT_ZIP))) == STATEMENT_ZIP
-    sidecar = json.loads(store.get(sidecar_key(sha256_hex(STATEMENT_ZIP))))
+    assert zipfile.ZipFile(io.BytesIO(store.get(raw_key(sha256_hex(stored))))).namelist() == [
+        STATEMENT_2025_TOKEN
+    ]
+    sidecar = json.loads(store.get(sidecar_key(sha256_hex(stored))))
     assert (sidecar["fetch_tier"], sidecar["original_filename"]) == (
         "manual_har",
-        DETAIL["nazwaPliku"],
+        STATEMENT_2025_TOKEN,
     )
     assert sidecar["fetched_at"].startswith("2026-09-16T09:00:05")
 
@@ -609,10 +632,29 @@ def test_import_adds_corrections_and_files_the_bundle_once(conn: psycopg.Connect
         (STATEMENT_2024, CORRECTION_2024),
     ).fetchall()
     assert rows == [
-        (STATEMENT_2024, None, False, date(2026, 6, 29), date(2024, 12, 31), sha256_hex(BUNDLE_ZIP)),
-        (CORRECTION_2024, STATEMENT_2024, True, date(2025, 11, 3), date(2024, 12, 31), sha256_hex(BUNDLE_ZIP)),
+        (
+            STATEMENT_2024,
+            None,
+            False,
+            date(2026, 6, 29),
+            date(2024, 12, 31),
+            sha256_hex(STORED_BUNDLE),
+        ),
+        (
+            CORRECTION_2024,
+            STATEMENT_2024,
+            True,
+            date(2025, 11, 3),
+            date(2024, 12, 31),
+            sha256_hex(STORED_BUNDLE),
+        ),
     ]
-    sidecar = json.loads(store.get(sidecar_key(sha256_hex(BUNDLE_ZIP))))
+    members = zipfile.ZipFile(io.BytesIO(store.get(raw_key(sha256_hex(STORED_BUNDLE))))).namelist()
+    assert members == [
+        f"{file_token(STATEMENT_2024, None)}.xml",
+        f"{file_token(CORRECTION_2024, None)}.xml",
+    ]
+    sidecar = json.loads(store.get(sidecar_key(sha256_hex(STORED_BUNDLE))))
     assert sidecar["original_filename"] is None  # several files in one ZIP
     counts = manifest.table_counts(conn)
 
@@ -640,3 +682,43 @@ def test_bundle_not_matching_the_corrections_list_is_refused(conn: psycopg.Conne
 
     assert len(report.problems) == 1 and "not attributable" in report.problems[0]
     assert set(report.missing[KRS]) >= {STATEMENT_2024, CORRECTION_2024}
+
+
+def _expanded_bundle() -> HarBuilder:
+    return (
+        HarBuilder()
+        .search(KRS, FULL_AT_50)
+        .expand(
+            STATEMENT_2024,
+            _detail(STATEMENT_2024, 18, "Roczne sprawozdanie finansowe"),
+            {CORRECTION_2024: CORRECTION_DETAIL},
+        )
+    )
+
+
+@pytest.mark.integration
+def test_a_bundle_expanded_earlier_is_named_from_a_capture_that_expands_it_again(
+    conn: psycopg.Connection,
+):
+    """File names as received are never stored, so a later capture must carry them again."""
+    store = InMemoryObjectStore()
+    _import(conn, _expanded_bundle().build(), store, "run-1")  # expanded, not downloaded
+
+    report = _import(conn, _expanded_bundle().download(BUNDLE, BUNDLE_ZIP).build(), store, "run-2")
+
+    assert report.problems == [] and report.downloads == 1
+    assert store.exists(raw_key(sha256_hex(STORED_BUNDLE)))
+
+
+@pytest.mark.integration
+def test_a_bundle_whose_names_are_not_in_the_capture_is_not_stored(conn: psycopg.Connection):
+    store = InMemoryObjectStore()
+    _import(conn, _expanded_bundle().build(), store, "run-1")
+    stored_before = set(store.objects)
+
+    only_the_file = HarBuilder().search(KRS, FULL_AT_50).download(BUNDLE, BUNDLE_ZIP).build()
+    report = _import(conn, only_the_file, store, "run-2")
+
+    assert len(report.problems) == 1 and "not in hand" in report.problems[0]
+    assert set(store.objects) == stored_before
+    assert STATEMENT_2024 in report.missing[KRS]

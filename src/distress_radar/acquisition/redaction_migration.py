@@ -40,9 +40,12 @@ from distress_radar.acquisition.raw_store import (
     sidecar_key,
 )
 from distress_radar.acquisition.redaction import (
+    RDF_DETAIL_REDACTION_VERSION,
     REDACTION_VERSION,
+    Redaction,
     personal_data_markers,
     redact_download,
+    redact_rdf_detail,
 )
 from distress_radar.settings import Settings
 
@@ -65,6 +68,23 @@ def find_unredacted(conn: Connection, store: RedactableObjectStore) -> list[str]
     return [sha for sha in hashes if personal_data_markers(store.get(raw_key(sha)))]
 
 
+def _redact(conn: Connection, sha256: str, data: bytes) -> tuple[Redaction, str]:
+    """The current redaction of a stored object, and its version.
+
+    A download's members are named from the file names its `filing_index` rows hold. Plan 0011
+    step E re-derives those rows' `file_name` (and every derived path) with the objects.
+    """
+    if data.lstrip().startswith(b"{"):
+        return redact_rdf_detail(data), RDF_DETAIL_REDACTION_VERSION
+    names: dict[str, str | None] = dict(
+        conn.execute(
+            "SELECT document_ref, file_name FROM filing_index WHERE sha256 = %s ORDER BY 1",
+            (sha256,),
+        ).fetchall()
+    )
+    return redact_download(data, names or None), REDACTION_VERSION
+
+
 def replace_document(
     conn: Connection,
     store: RedactableObjectStore,
@@ -73,12 +93,12 @@ def replace_document(
     run_id: str,
     now: datetime,
 ) -> Replacement:
-    redaction = redact_download(store.get(raw_key(old_sha256)))
+    redaction, version = _redact(conn, old_sha256, store.get(raw_key(old_sha256)))
     left = personal_data_markers(redaction.data)
     if left:
         raise RuntimeError(f"{old_sha256}: redaction left personal data: {left}")
     meta = _stored_meta(store, old_sha256).model_copy(
-        update={"redaction_version": REDACTION_VERSION, "received_sha256": old_sha256}
+        update={"redaction_version": version, "received_sha256": old_sha256}
     )
     new_sha256 = put_raw(store, redaction.data, meta)
     with conn.transaction():
@@ -119,7 +139,7 @@ def replace_document(
             conn,
             received_sha256=old_sha256,
             redacted_sha256=new_sha256,
-            redaction_version=REDACTION_VERSION,
+            redaction_version=version,
             redacted_at=now,
             ingestion_run_id=run_id,
         )

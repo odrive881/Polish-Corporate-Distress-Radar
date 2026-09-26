@@ -174,7 +174,9 @@ class HarCapture:
             if path == ENTITY_PATH:
                 lookup = _json_or_none(exchange.request_body)
                 krs: object = (
-                    cast(dict[str, Any], lookup).get("numerKRS") if isinstance(lookup, dict) else None
+                    cast(dict[str, Any], lookup).get("numerKRS")
+                    if isinstance(lookup, dict)
+                    else None
                 )
                 if not isinstance(krs, str):
                     capture.skipped.append(f"entity lookup without a KRS at {exchange.started}")
@@ -417,9 +419,11 @@ def import_har(
 
     searched = [krs for krs in capture.krs_numbers if krs in resolved]
     saved_refs: set[str] = set()  # rows a file from this capture already covers
+    tried: set[str] = set()  # downloads attempted: a bundle's rows share one
     for row in manifest.filing_documents(conn, searched):
         ref = row.document_ref
-        type_id, file_name, bundle = row.rdf_type_id, row.file_name, row.bundle
+        type_id, bundle = row.rdf_type_id, row.bundle
+        names: dict[str, str | None] = {}
         if row.needs_detail and browser.has_detail(ref):
             fetched = attempt(
                 f"detail of {ref} ({row.krs})", partial(fetch_filing_detail, row.krs, ref, **flow)
@@ -428,14 +432,27 @@ def import_har(
                 manifest.record_a3_detail(conn, fetched)
                 conn.commit()
                 report.details += 1 + len(fetched.related)
-                type_id, file_name = fetched.detail.rdf_type_id, fetched.detail.file_name
-                bundle = fetched.detail.correction_refs
+                type_id, bundle = fetched.detail.rdf_type_id, fetched.detail.correction_refs
+                names = fetched.original_names
+        wants_download = (
+            not row.downloaded and ref not in saved_refs and row.download_ref not in tried
+        )
         if (
-            type_id is not None
-            and not row.downloaded
-            and ref not in saved_refs
-            and browser.has_download(row.download_ref)
+            wants_download
+            and len(bundle) > 1
+            and not names
+            and browser.has_detail(row.download_ref)
         ):
+            # A bundle's members are told apart by the file names as received, which are never
+            # stored: the row it is downloaded through is read again from the capture.
+            fetched = attempt(
+                f"detail of {row.download_ref} ({row.krs})",
+                partial(fetch_filing_detail, row.krs, row.download_ref, **flow),
+            )
+            if fetched is not None:
+                bundle, names = fetched.detail.correction_refs, fetched.original_names
+        if type_id is not None and wants_download and browser.has_download(row.download_ref):
+            tried.add(row.download_ref)
             saved = attempt(
                 f"download of {row.download_ref} ({row.krs})",
                 partial(
@@ -443,7 +460,7 @@ def import_har(
                     row.krs,
                     row.download_ref,
                     bundle=bundle,
-                    original_filename=file_name,
+                    names=names,
                     **flow,
                 ),
             )

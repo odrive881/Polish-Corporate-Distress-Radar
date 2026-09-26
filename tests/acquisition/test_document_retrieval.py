@@ -48,7 +48,11 @@ from distress_radar.acquisition.raw_store import (
     sha256_hex,
     sidecar_key,
 )
-from distress_radar.acquisition.redaction import REDACTION_VERSION, personal_data_markers
+from distress_radar.acquisition.redaction import (
+    REDACTION_VERSION,
+    personal_data_markers,
+    redact_rdf_detail,
+)
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "rdf"
 WAF_PAGE = (FIXTURES / "waf_block_page_synthetic.html").read_bytes()
@@ -65,11 +69,13 @@ KRS = "0000209396"  # the recorded entity
 EMPTY_KRS = "0000277937"
 UNKNOWN_KRS = "0000000009"
 STATEMENT_REF = "kQL-7bDLHvl-dIGIeLuLlQ=="  # 2025 annual statement, rodzaj 18
+STATEMENT_TOKEN = "kQL-7bDLHvl-dIGIeLuLlQ.xml"  # its file name as stored (ADR 0009)
 AUDITOR_REF = "B2opwZt-Ik8Yg4luKMAqQA=="  # 2025 auditor report, rodzaj 19
 # A statement with a correction, shaped like KRS 0000153402's 2022 filing: the
 # correction is not a list row, only a second id in the original's expanded row.
 ORIGINAL_REF = "_OdJUXJvvyacsRf0ul442g=="
 CORRECTION_REF = "m7XcfLIW7RJVBLSp8XsIMg=="
+CORRECTION_TOKEN = "m7XcfLIW7RJVBLSp8XsIMg.xml"
 API = "https://rdf.test" + API_PREFIX
 
 
@@ -160,7 +166,9 @@ class FakeFilingBrowser:
     def open_filing_list(self, krs: str) -> FilingListing:
         self.calls.append(("list", krs))
         if krs in self.blocked:
-            return FilingListing(entity=_waf(API + "podmioty/wyszukiwanie/dane-podstawowe"), pages=[])
+            return FilingListing(
+                entity=_waf(API + "podmioty/wyszukiwanie/dane-podstawowe"), pages=[]
+            )
         if krs == UNKNOWN_KRS:
             return FilingListing(entity=_json("podmioty", ENTITY_NOT_FOUND), pages=[])
         entity = ENTITY_FOUND.replace(KRS.encode(), krs.encode())
@@ -301,7 +309,18 @@ def test_complete_list_parses_every_row():
         period_end=date(2025, 12, 31),
         deleted_on=None,  # "" in the list
     )
-    assert [e.rdf_type_code for e in entries] == ["4", "3", "20", "18", "19", "3", "4", "19", "20", "18"]
+    assert [e.rdf_type_code for e in entries] == [
+        "4",
+        "3",
+        "20",
+        "18",
+        "19",
+        "3",
+        "4",
+        "19",
+        "20",
+        "18",
+    ]
 
 
 def test_recorded_first_page_alone_is_refused_as_incomplete():
@@ -336,7 +355,14 @@ def test_multi_page_list_parses_in_page_order():
         ([_list_page(_recorded_items() + _recorded_items()[:1], total=11)], "duplicate"),
         ([_list_page(_recorded_items()[:9], total=10)], "RDF reports 10"),
         ([_list_page([{**_recorded_items()[0], "status": "ARCHIWALNY"}], total=1)], "status"),
-        ([_list_page([{**_recorded_items()[0], "okresSprawozdawczyKoniec": "31.12.2025"}], total=1)], "ISO date"),
+        (
+            [
+                _list_page(
+                    [{**_recorded_items()[0], "okresSprawozdawczyKoniec": "31.12.2025"}], total=1
+                )
+            ],
+            "ISO date",
+        ),
         ([b"<html>not json</html>"], "not JSON"),
         ([json.dumps({"items": []}).encode()], "missing"),
     ],
@@ -362,7 +388,7 @@ def test_recorded_detail_carries_known_from():
     assert (detail.rdf_type_id, detail.rdf_type_name) == ("18", "Roczne sprawozdanie finansowe")
     assert detail.prepared_date == date(2026, 5, 28)
     assert (detail.is_correction, detail.is_ifrs) == (False, False)
-    assert detail.file_name == "sprawozdanie finansowe za rok 2025 korekta.xml"
+    assert detail.file_name == STATEMENT_TOKEN  # the token (ADR 0009 second addendum)
     assert detail.correction_refs == [STATEMENT_REF]
 
 
@@ -430,7 +456,10 @@ def test_filing_list_becomes_index_rows_without_detail_columns():
     )
     assert all(r.ingestion_run_id == "run-1" and r.discovered_at == NOW for r in result.entries)
     # lineage: the entity lookup and every list page are raw documents
-    assert [f.sha256 for f in result.raw_fetches] == [sha256_hex(ENTITY_FOUND), sha256_hex(FULL_LIST)]
+    assert [f.sha256 for f in result.raw_fetches] == [
+        sha256_hex(ENTITY_FOUND),
+        sha256_hex(FULL_LIST),
+    ]
     assert store.get(raw_key(sha256_hex(FULL_LIST))) == FULL_LIST
     fetch = result.raw_fetches[1]
     assert (fetch.meta.source, fetch.meta.fetch_tier) == ("rdf", FETCH_TIER)
@@ -469,7 +498,11 @@ def test_unknown_entity_is_quarantined_not_raised():
 
     assert result.entries == []
     [row] = result.quarantine
-    assert (row.stage, row.entity_key, row.reason_code) == ("A3", UNKNOWN_KRS, "rdf_entity_not_found")
+    assert (row.stage, row.entity_key, row.reason_code) == (
+        "A3",
+        UNKNOWN_KRS,
+        "rdf_entity_not_found",
+    )
     assert row.source_document_hash == sha256_hex(ENTITY_NOT_FOUND)
     assert store.exists(raw_key(row.source_document_hash))
 
@@ -552,7 +585,7 @@ def test_unparseable_detail_is_still_stored():
     assert store.exists(raw_key(sha256_hex(b'{"unexpected": true}')))
 
 
-def test_download_stores_bytes_unmodified_without_session_cookies():
+def test_download_stores_contents_unmodified_under_a_token_without_session_cookies():
     store = InMemoryObjectStore()
 
     download = download_filing(
@@ -562,20 +595,25 @@ def test_download_stores_bytes_unmodified_without_session_cookies():
         store=store,
         ingestion_run_id="run-1",
         breaker=CircuitBreaker(),
-        original_filename="sprawozdanie.xml",
+        names={STATEMENT_REF: "sprawozdanie.xml"},
         clock=lambda: NOW,
     )
 
     assert (download.krs, download.document_refs) == (KRS, [STATEMENT_REF])
     digest = download.raw_fetch.sha256
-    assert digest == sha256_hex(DOCUMENT_ZIP)
-    assert store.get(raw_key(digest)) == DOCUMENT_ZIP
+    stored = zipfile.ZipFile(io.BytesIO(store.get(raw_key(digest))))
+    # Only the member's name changes: the filer's file name is never stored (ADR 0009).
+    assert stored.namelist() == [STATEMENT_TOKEN]
+    assert stored.read(STATEMENT_TOKEN) == zipfile.ZipFile(io.BytesIO(DOCUMENT_ZIP)).read(
+        "sprawozdanie.xml"
+    )
     sidecar = json.loads(store.get(sidecar_key(digest)))
+    assert "sprawozdanie" not in json.dumps(sidecar)
     assert sidecar["source"] == "rdf"
     assert sidecar["source_url"].endswith(API_PREFIX + "dokumenty/tresc")
     assert sidecar["fetch_tier"] == "playwright"
     assert sidecar["content_type"] == "application/octet-stream"
-    assert sidecar["original_filename"] == "sprawozdanie.xml"  # RDF sends no content-disposition
+    assert sidecar["original_filename"] == STATEMENT_TOKEN
     assert "set-cookie" not in sidecar["http_headers"]
     assert "incap" not in json.dumps(sidecar)
 
@@ -610,7 +648,7 @@ def test_download_is_stored_only_in_redacted_form():
     stored = store.get(raw_key(download.raw_fetch.sha256))
     assert download.raw_fetch.sha256 != sha256_hex(SIGNED_ZIP)
     assert b"PESEL" not in stored and personal_data_markers(stored) == []
-    assert b"<Bilans>1.00</Bilans>" in zipfile.ZipFile(io.BytesIO(stored)).read("sprawozdanie.xml")
+    assert b"<Bilans>1.00</Bilans>" in zipfile.ZipFile(io.BytesIO(stored)).read(STATEMENT_TOKEN)
     assert not any(b"PESEL" in data for data in store.objects.values())
     sidecar = json.loads(store.get(sidecar_key(download.raw_fetch.sha256)))
     assert sidecar["redaction_version"] == REDACTION_VERSION
@@ -622,9 +660,11 @@ def test_download_that_cannot_be_redacted_stores_nothing():
     store = InMemoryObjectStore()
     browser = FakeFilingBrowser()
     browser.download_body = _zip(
-        {"only.xades": b"<Signatures><ds:Signature xmlns:ds='http://www.w3.org/2000/09/xmldsig#'>"
-         b"<ds:Object Encoding='http://www.w3.org/2000/09/xmldsig#base64'>@@@</ds:Object>"
-         b"</ds:Signature></Signatures>"}
+        {
+            "only.xades": b"<Signatures><ds:Signature xmlns:ds='http://www.w3.org/2000/09/xmldsig#'>"
+            b"<ds:Object Encoding='http://www.w3.org/2000/09/xmldsig#base64'>@@@</ds:Object>"
+            b"</ds:Signature></Signatures>"
+        }
     )
 
     with pytest.raises(PermanentSourceError, match="cannot redact"):
@@ -704,9 +744,7 @@ def test_statement_gets_detail_then_download():
     assert [type(e) for e in events] == [A3Detail, A3Download]
     download = events[1]
     assert isinstance(download, A3Download)
-    assert download.raw_fetch.meta.original_filename == (
-        "sprawozdanie finansowe za rok 2025 korekta.xml"
-    )
+    assert download.raw_fetch.meta.original_filename == STATEMENT_TOKEN
     assert [c[0] for c in browser.calls] == ["document", "download"]
 
 
@@ -844,9 +882,16 @@ def test_expanded_row_yields_the_corrections_details():
     [(correction, fetch)] = fetched.related
     assert (correction.document_ref, correction.is_correction) == (CORRECTION_REF, True)
     assert correction.submission_date == date(2024, 1, 4)  # its own known_from
-    assert (correction.period_start, correction.period_end) == (date(2022, 1, 1), date(2022, 12, 31))
-    assert fetch.sha256 == sha256_hex(_correction_detail())
-    assert store.exists(raw_key(fetch.sha256))
+    assert (correction.period_start, correction.period_end) == (
+        date(2022, 1, 1),
+        date(2022, 12, 31),
+    )
+    # Stored with its file name replaced by the token, and nothing else changed.
+    stored = json.loads(store.get(raw_key(fetch.sha256)))
+    assert stored == json.loads(_correction_detail()) | {"nazwaPliku": CORRECTION_TOKEN}
+    assert fetch.sha256 == sha256_hex(redact_rdf_detail(_correction_detail()).data)
+    assert correction.file_name == CORRECTION_TOKEN
+    assert fetched.original_names[CORRECTION_REF] == "eSPR_report.xml"  # in memory only
 
 
 def test_expanded_row_missing_a_correction_detail_is_refused():
@@ -874,12 +919,31 @@ def test_bundle_download_covers_the_document_and_its_corrections():
         ingestion_run_id="run-1",
         breaker=CircuitBreaker(),
         bundle=BUNDLE,
-        original_filename="original.xml",
+        names={ORIGINAL_REF: "original.xml", CORRECTION_REF: "eSPR_report.xml"},
         clock=lambda: NOW,
     )
 
     assert download.document_refs == BUNDLE
     assert download.raw_fetch.meta.original_filename is None  # the ZIP holds several files
+
+
+def test_a_bundle_without_its_file_names_is_refused_before_downloading():
+    browser = FakeFilingBrowser()
+
+    with pytest.raises(PermanentSourceError, match="not in hand"):
+        download_filing(
+            KRS,
+            ORIGINAL_REF,
+            browser=browser,
+            store=InMemoryObjectStore(),
+            ingestion_run_id="run-1",
+            breaker=CircuitBreaker(),
+            bundle=BUNDLE,
+            names={ORIGINAL_REF: "original.xml"},
+            clock=lambda: NOW,
+        )
+
+    assert browser.calls == []
 
 
 def test_download_covering_other_documents_than_expected_stores_nothing():
@@ -907,8 +971,10 @@ def test_correction_is_downloaded_through_the_document_it_corrects():
 
     events = _retrieve(pending, browser)
 
-    assert browser.calls == [("download", KRS, ORIGINAL_REF)]
-    [download] = events
+    # Its file names are not stored, so the row it is downloaded through is expanded again.
+    assert browser.calls == [("document", KRS, ORIGINAL_REF), ("download", KRS, ORIGINAL_REF)]
+    detail, download = events
+    assert isinstance(detail, A3Detail)
     assert isinstance(download, A3Download) and download.document_refs == BUNDLE
 
 

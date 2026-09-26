@@ -56,7 +56,6 @@ from __future__ import annotations
 import json
 import logging
 import random
-import re
 import time
 from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass, field
@@ -88,7 +87,16 @@ from distress_radar.acquisition.models import (
     RdfDocumentTypes,
 )
 from distress_radar.acquisition.raw_store import ObjectStore, RawDocumentMeta, put_raw, sha256_hex
-from distress_radar.acquisition.redaction import REDACTION_VERSION, RedactionError, redact_download
+from distress_radar.acquisition.redaction import (
+    RDF_DETAIL_REDACTION_VERSION,
+    REDACTION_VERSION,
+    Redaction,
+    RedactionError,
+    file_token,
+    original_file_name,
+    redact_download,
+    redact_rdf_detail,
+)
 
 if TYPE_CHECKING:
     from playwright.sync_api import (
@@ -125,9 +133,8 @@ DOCUMENT_TYPES_PATH = (
 
 # Response headers worth keeping in the sidecar. Everything else is dropped —
 # in particular `set-cookie`, which carries Incapsula session tokens.
-_KEPT_HEADERS = frozenset(
-    {"content-type", "content-length", "content-disposition", "etag", "last-modified", "date"}
-)
+# No `content-disposition`: it would name the file (ADR 0009 second addendum).
+_KEPT_HEADERS = frozenset({"content-type", "content-length", "etag", "last-modified", "date"})
 # Bodies that start like a document are never a WAF page, whatever bytes follow.
 _DOCUMENT_MAGIC = (b"PK\x03\x04", b"%PDF-", b"<?xml", b"\xef\xbb\xbf<?xml")
 
@@ -367,9 +374,7 @@ def read_list_page(body: bytes) -> ListPage:
     content = document["content"]
     if not isinstance(content, list):
         raise RdfShapeError("filing list: `content` is not a list")
-    items = [
-        _mapping(item, "filing list item", ("id",)) for item in cast(list[object], content)
-    ]
+    items = [_mapping(item, "filing list item", ("id",)) for item in cast(list[object], content)]
     return ListPage(
         page_number=_int(meta["numerStrony"], "numerStrony"),
         page_size=_int(meta["rozmiarStrony"], "rozmiarStrony"),
@@ -494,7 +499,9 @@ def parse_document_detail(
         period_start=_optional_date(
             detail.get("okresSprawozdawczyPoczatek"), "okresSprawozdawczyPoczatek"
         ),
-        period_end=_optional_date(detail.get("okresSprawozdawczyKoniec"), "okresSprawozdawczyKoniec"),
+        period_end=_optional_date(
+            detail.get("okresSprawozdawczyKoniec"), "okresSprawozdawczyKoniec"
+        ),
         deleted_on=_optional_date(
             detail.get("dataUsunieciaDokumentuPrzezSad"), "dataUsunieciaDokumentuPrzezSad"
         ),
@@ -554,7 +561,7 @@ class FilingBrowser(Protocol):
     def open_document(self, krs: str, document_ref: str) -> DocumentView: ...
 
     def download(self, krs: str, document_ref: str) -> RdfResponse:
-        """"Pobierz dokumenty" for a listed document: one file holding it and its corrections.
+        """ "Pobierz dokumenty" for a listed document: one file holding it and its corrections.
 
         `request_body` must carry the JSON list of ids the file covers.
         """
@@ -1033,6 +1040,11 @@ class A3Detail:
     related: list[tuple[FilingDetail, RawFetchRecord]] = field(
         default_factory=list[tuple[FilingDetail, RawFetchRecord]]
     )
+    # The filers' file names as received, by document_ref: in memory only, to name a download's
+    # members when it is redacted (ADR 0009 second addendum). Stored details hold tokens.
+    original_names: dict[str, str | None] = field(
+        default_factory=dict[str, str | None], repr=False, compare=False
+    )
 
 
 @dataclass(frozen=True)
@@ -1075,20 +1087,23 @@ def _store_raw(
     fetched_at: datetime,
     browser: FilingBrowser,
     original_filename: str | None = None,
-    redact: bool = False,
+    redactor: tuple[Callable[[bytes], Redaction], str] | None = None,
 ) -> RawFetchRecord:
+    """Store one response; `redactor` (function, version) runs first, before hashing.
+
+    `original_filename` must already be a token: a filer's file name is never stored.
+    """
     body = response.body
     redaction_version = received_sha256 = None
-    if redact:
+    if redactor is not None:
+        redact, version = redactor
         try:
-            redacted = redact_download(body)
+            redacted = redact(body)
         except RedactionError as exc:
-            raise PermanentSourceError(f"{response.url}: cannot redact download: {exc}") from exc
+            raise PermanentSourceError(f"{response.url}: cannot redact: {exc}") from exc
         if redacted.changed:
-            redaction_version, received_sha256 = REDACTION_VERSION, sha256_hex(body)
+            redaction_version, received_sha256 = version, sha256_hex(body)
             body = redacted.data
-    disposition = response.headers.get("content-disposition", "")
-    filename = re.search(r'filename\*?=(?:UTF-8\'\')?"?([^";]+)"?', disposition, re.IGNORECASE)
     meta = RawDocumentMeta(
         source=SOURCE,
         source_url=response.url,
@@ -1096,7 +1111,7 @@ def _store_raw(
         fetched_at=fetched_at,
         http_headers={k: v for k, v in response.headers.items() if k in _KEPT_HEADERS},
         ingestion_run_id=ingestion_run_id,
-        original_filename=filename.group(1) if filename is not None else original_filename,
+        original_filename=original_filename,
         fetch_tier=browser.fetch_tier,
         browser_version=browser.browser_version,
         redaction_version=redaction_version,
@@ -1207,35 +1222,70 @@ def fetch_filing_detail(
     breaker: CircuitBreaker,
     clock: Callable[[], datetime] = lambda: datetime.now(UTC),
 ) -> A3Detail:
-    """Expand one listed document: raw-store both responses, then parse the detail."""
+    """Expand one listed document: raw-store both responses, then parse the detail.
+
+    Details are stored with `nazwaPliku` replaced by its token and parsed from what is stored,
+    so `filing_index.file_name` holds the token; the names as received are handed back only in
+    `A3Detail.original_names`.
+    """
     view = _checked(
         lambda: browser.open_document(krs, document_ref), lambda r: r.responses, breaker
     )
     fetched_at = clock()
 
-    def store_raw(response: RdfResponse) -> RawFetchRecord:
+    def store_raw(response: RdfResponse, *, detail: bool = False) -> RawFetchRecord:
         return _store_raw(
-            store, response, ingestion_run_id=ingestion_run_id, fetched_at=fetched_at, browser=browser
+            store,
+            response,
+            ingestion_run_id=ingestion_run_id,
+            fetched_at=fetched_at,
+            browser=browser,
+            redactor=(_redact_detail, RDF_DETAIL_REDACTION_VERSION) if detail else None,
         )
 
     corrections_fetch = store_raw(view.corrections)
-    detail_fetch = store_raw(view.detail)
-    related_fetches = {ref: store_raw(response) for ref, response in view.related.items()}
-    detail = parse_document_detail(document_ref, view.corrections.body, view.detail.body)
+    detail_fetch = store_raw(view.detail, detail=True)
+    related_fetches = {ref: store_raw(r, detail=True) for ref, r in view.related.items()}
+    detail = parse_document_detail(
+        document_ref, view.corrections.body, _redact_detail(view.detail.body).data
+    )
     missing = set(detail.correction_refs) - {document_ref} - set(view.related)
     if missing:
         raise RdfShapeError(f"expanded {document_ref} without the details of {sorted(missing)}")
     related = [
-        (parse_document_detail(ref, view.corrections.body, view.related[ref].body), fetch)
+        (
+            parse_document_detail(
+                ref, view.corrections.body, _redact_detail(view.related[ref].body).data
+            ),
+            fetch,
+        )
         for ref, fetch in related_fetches.items()
     ]
+    originals = {document_ref: _original_name(view.detail.body)} | {
+        ref: _original_name(r.body) for ref, r in view.related.items()
+    }
     return A3Detail(
         krs=krs,
         detail=detail,
         corrections_fetch=corrections_fetch,
         detail_fetch=detail_fetch,
         related=related,
+        original_names=originals,
     )
+
+
+def _redact_detail(body: bytes) -> Redaction:
+    try:
+        return redact_rdf_detail(body)
+    except RedactionError as exc:
+        raise RdfShapeError(f"document detail: {exc}") from exc
+
+
+def _original_name(body: bytes) -> str | None:
+    try:
+        return original_file_name(body)
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise RdfShapeError(f"document detail: {exc}") from exc
 
 
 def download_filing(
@@ -1247,22 +1297,31 @@ def download_filing(
     ingestion_run_id: str,
     breaker: CircuitBreaker,
     bundle: Sequence[str] | None = None,
-    original_filename: str | None = None,
+    names: Mapping[str, str | None] | None = None,
     clock: Callable[[], datetime] = lambda: datetime.now(UTC),
 ) -> A3Download:
     """Download a listed document and store it. Contents are read only to redact.
 
-    Signatures and other natural-person data are removed before the file is
+    Signatures, file names and other natural-person data are removed before the file is
     hashed and stored (invariant 6, ADR 0009); nothing else is changed.
 
     RDF delivers a document together with its corrections, so the file must
     cover exactly `bundle` (the detail's `correction_refs`; default just the
     document), as the recorded request says — otherwise its bytes are not
-    attributable and nothing is stored. RDF sends no `content-disposition`, so
-    `original_filename` (the detail's `nazwaPliku`) names a single-document
-    file in the sidecar.
+    attributable and nothing is stored.
+
+    `names` gives each filing's file name as received (`A3Detail.original_names`), which
+    names the ZIP's members by token. A single filing needs none. A bundle of several needs
+    every one, or its members could not be told apart: it is refused before downloading.
     """
     expected = list(bundle) if bundle else [document_ref]
+    names = dict(names or {})
+    if len(expected) > 1 and any(names.get(ref) is None for ref in expected):
+        raise PermanentSourceError(
+            f"download for {document_ref}: the file names of {expected!r} are not in hand; "
+            "expand the row again (ADR 0009 second addendum)"
+        )
+    member_names = {ref: names.get(ref) for ref in expected}
     response = _checked(lambda: browser.download(krs, document_ref), lambda r: [r], breaker)
     requested = _requested_refs(response)
     if requested != expected:
@@ -1276,8 +1335,10 @@ def download_filing(
         ingestion_run_id=ingestion_run_id,
         fetched_at=clock(),
         browser=browser,
-        original_filename=original_filename if len(expected) == 1 else None,
-        redact=True,
+        original_filename=(
+            file_token(expected[0], member_names[expected[0]]) if len(expected) == 1 else None
+        ),
+        redactor=(lambda body: redact_download(body, member_names), REDACTION_VERSION),
     )
     return A3Download(krs=krs, document_refs=expected, raw_fetch=record)
 
@@ -1309,11 +1370,13 @@ def retrieve_document(
     disagrees with it is a shape change, not something to guess around. A
     correction is downloaded through the document it corrects.
     """
-    type_id, file_name, bundle = pending.rdf_type_id, pending.file_name, pending.bundle
-    if pending.needs_detail:
+    type_id, bundle = pending.rdf_type_id, pending.bundle
+    names: dict[str, str | None] = {}
+
+    def expand(ref: str) -> A3Detail:
         fetched = fetch_filing_detail(
             pending.krs,
-            pending.document_ref,
+            ref,
             browser=browser,
             store=store,
             ingestion_run_id=ingestion_run_id,
@@ -1326,10 +1389,20 @@ def retrieve_document(
                 f"document {pending.document_ref}: list type {pending.rdf_type_code}, "
                 f"detail type {fetched.detail.rdf_type_id}"
             )
-        type_id, file_name = fetched.detail.rdf_type_id, fetched.detail.file_name
-        bundle = fetched.detail.correction_refs
+        return fetched
+
+    if pending.needs_detail:
+        fetched = expand(pending.document_ref)
+        type_id, bundle = fetched.detail.rdf_type_id, fetched.detail.correction_refs
+        names = fetched.original_names
     if type_id not in document_types.download_codes or pending.downloaded:
         return
+    if len(bundle) > 1 and not names:
+        # A bundle's members are told apart by the names as received, which are never stored:
+        # the listed row it is downloaded through, expanded in an earlier run, is expanded
+        # again (ADR 0009 second addendum).
+        fetched = expand(pending.download_ref)
+        bundle, names = fetched.detail.correction_refs, fetched.original_names
     on_download(
         download_filing(
             pending.krs,
@@ -1339,7 +1412,7 @@ def retrieve_document(
             ingestion_run_id=ingestion_run_id,
             breaker=breaker,
             bundle=bundle,
-            original_filename=file_name,
+            names=names,
             clock=clock,
         )
     )
