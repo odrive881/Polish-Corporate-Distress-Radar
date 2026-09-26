@@ -4,7 +4,7 @@ Everything the pipeline has to get hold of, gathered from the spec documents in 
 
 Sources: `AGENT_SPEC.md`, `DIRECTORY_STRUCTURE.md`, `README.md`, `CLAUDE.md`, `docs/PROJECT_OVERVIEW.md`, `docs/TECHNICAL_ARCHITECTURE.md`, with `.env.example` and `docs/adr/` checked for status. If this file and the spec disagree, the spec wins. Fix this file.
 
-Stage codes use the letter scheme from `AGENT_SPEC.md` §6. The numbered stage (1–12) from `docs/PROJECT_OVERVIEW.md` is in brackets. Status is as of 2026-09-14.
+Stage codes use the letter scheme from `AGENT_SPEC.md` §6. The numbered stage (1–12) from `docs/PROJECT_OVERVIEW.md` is in brackets. Status was first compiled on 2026-09-14; rows are updated as plans land (latest: plan 0010 step B, 2026-09-24).
 
 ---
 
@@ -54,7 +54,7 @@ All documents in this section come from the Repozytorium Dokumentów Finansowych
 | Full form in thousands of złoty, schema 1-2 | `full-2018-v1-2-tys.yaml` | required | SPEC §4.2 | **mapped**; no seed filing uses it, tested with a synthetic document |
 | Full form, schema 1-3 (FY2024, namespace dated 2025-01-01) | `full-2025-v1-3.yaml` | required | ADR 0005 addendum | **mapped** (plan 0005 step A); shares the 1-2 body, element trees are identical; fixture `statements/full_2025_v1_3_por_2024.xml` |
 | New generation, fiscal years starting ≥ 2025-01-01 (CRWDE template 13817, "wariant 2 / wersja 1-0E") | `full-2025-w2-v1-0.yaml` | required | ADR 0005; SPEC §11.2 | **mapped**; fixtures `neobis_001.xml`, `statements/full_2025_w2_kalk_2025.xml` |
-| Small / simplified form (`JednostkaMala`), schemas 1-0, 1-2, 1-3 | `small-2018-v1-0.yaml`, `small-2018-v1-2.yaml`, `small-2025-v1-3.yaml` | required | DIR §1; SPEC §4.1; ADR 0005 second addendum | **mapped** (plan 0005); 30 seed statements. One body (`jednostka_mala`) serves all versions, but a small envelope may carry the **full-form** statements instead, chosen per statement, so each spec accepts both (plan 0005 step D) |
+| Small / simplified form (`JednostkaMala`), schemas 1-0, 1-2, 1-3 | `small-2018-v1-0.yaml`, `small-2018-v1-2.yaml`, `small-2025-v1-3.yaml` | required | DIR §1; SPEC §4.1; ADR 0005 second addendum | **mapped** (plan 0005); 29 seed statement files parsed. One body (`jednostka_mala`) serves all versions, but a small envelope may carry the **full-form** statements instead, chosen per statement, so each spec accepts both (plan 0005 step D) |
 | Micro form (`JednostkaMikro`), schemas 1-0, 1-2, 1-3, CRWDE template 13821 | `micro-2018-v1-0.yaml`, `micro-2018-v1-2.yaml`, `micro-2025-v1-3.yaml`, `micro-2025-w2-v1-0.yaml` | required (entities can switch form between years) | DIR §1; SPEC §4.1; ADR 0005 second addendum | **mapped** (plan 0005); 12 seed statements. Two bodies: 1-3 and wariant 2 drop the `G` block, and the micro income statement is a third layout, neither comparative nor calculation |
 | Thousands-of-złoty twins of every form | one YAML per version | required | SPEC §4.2 | XSDs vendored and catalogued; none seen in the seed. Only `full-2018-v1-2-tys` is mapped, to keep unit normalisation under test |
 
@@ -142,10 +142,10 @@ The spec forbids bulk enumeration of any source. Acquisition is per entity, seed
 | Item | Location | Req. | Spec ref | Status |
 |---|---|---|---|---|
 | Golden XML statements, at least one per structure version, each resolving every `required: true` mapping | `tests/fixtures/` | required | SPEC §6C2, §9.2 | 11 of the 12 mapped versions have one (`tests/fixtures/statements/`), small and micro included; `full-2018-v1-2-tys` has none by design (no seed filing uses it) and is tested with a synthetic document |
-| Known-bad statements that must be quarantined (unbalanced, missing unit) | `tests/fixtures/` | required | SPEC §9.2 | missing |
-| Statement declared in thousands of złoty | `tests/fixtures/` | required | SPEC §9.2 | missing |
-| One comparative and one calculation income-statement filing | `tests/fixtures/` | required | SPEC §9.2 | missing |
-| Statement pair with a restated prior-year column | `tests/fixtures/` | required | SPEC §4.3 | missing |
+| Known-bad statements that must be quarantined (unbalanced, missing unit) | `tests/fixtures/` | required | SPEC §9.2 | covered by altered golden fixtures in `tests/parsing/test_accounting_identities.py` (`test_known_bad_statement_is_quarantined`, `test_altered_micro_total_assets_quarantines`); no committed known-bad file |
+| Statement declared in thousands of złoty | `tests/fixtures/` | required | SPEC §9.2 | synthetic document in the tests (`full-2018-v1-2-tys`); no seed filing uses the unit |
+| One comparative and one calculation income-statement filing | `tests/fixtures/` | required | SPEC §9.2 | present: `*_por_*` and `*_kalk_*` in `tests/fixtures/statements/`, every form |
+| Statement pair with a restated prior-year column | `tests/fixtures/` | required | SPEC §4.3 | present: `full_2018_v1_2_por_2022` / `_2023` (`test_real_consecutive_years_restatements`) |
 | Golden PDFs: text layer, table-heavy, scanned | `tests/fixtures/` | required | SPEC §6C3 | missing |
 | Hand-labelled text-signal eval sets, one per `signal_type` (9 files) | `evals/text_signals/<signal_type>.jsonl` | required | SPEC §6G3; DIR §5 | missing |
 | KRS / MSiG fixtures for each outcome class, including a cross-source duplicate and a consumer bankruptcy to filter out | `tests/fixtures/legal/` | required | SPEC §9.2 | present (plan 0008): 4 redacted KRS extracts, 13 MSiG notice records and a search page; cross-source duplicates in `test_legal_events.py`. Search is by KRS, so no consumer record can arrive; a notice for another KRS is quarantined unstored (`test_msig_client.py`). KRZ none (not built) |
@@ -193,5 +193,5 @@ The spec forbids bulk enumeration of any source. Acquisition is per entity, seed
    - **Why it may be a false correlation:** micro entities are exempt from the report, and small entities can be under UoR art. 49. So a missing report is not always a lapse; e.g. `0000041651` files micro-form statements and has no reports since 2017. Any such feature must be conditioned on the entity's size class.
    - **Until decided,** size classification (§4.4) needs another route: employment from the attached notes (C3/G), or GUS employment bands as a proxy.
 9. **RDF's `czyMSR` flag (`filing_index.is_ifrs`) is unreliable.** 29 seed statements flagged IFRS are UoR structures. Never route on it.
-10. ~~**Raw downloads contain natural persons' data.**~~ Decided 2026-09-17: signer data is redacted at acquisition, before hashing, and stored files were replaced (ADR 0009). Residual: free text in notes, and signatories' first names in some uploaded file names.
+10. ~~**Raw downloads contain natural persons' data.**~~ Decided 2026-09-17: signer data is redacted at acquisition, before hashing, and stored files were replaced (ADR 0009). Residual: free text in notes, and signatories' first names in some uploaded file names (plan 0011, draft).
 11. **Notes and user-defined breakdowns are not captured yet.** Attached notes (`Plik`, base64 PDFs/docs) wait for C3/G. Breakdowns of a single line (`PozycjaUszczegolawiajaca` inside a leaf, `Podpozycja`) are skipped because the line's total is already a fact.

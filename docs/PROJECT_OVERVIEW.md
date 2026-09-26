@@ -52,10 +52,10 @@ The numbered stages below are the functional view. `AGENT_SPEC.md` and the code 
 | 2. Identity validation and enrichment | A2 | `src/distress_radar/acquisition/` |
 | 3. Filing acquisition | A3, B | `src/distress_radar/acquisition/` |
 | 4. Parsing and normalization | C | `src/distress_radar/parsing/` |
-| 5. Accounting validation and data quality | E | `dagster_defs/checks/`, `transform/` |
+| 5. Accounting validation and data quality | E | `src/distress_radar/parsing/accounting_identities.py` (wired in `dagster_defs/checks/`), `transform/` |
 | 6. Unstructured signal extraction | G | `src/distress_radar/extraction/` |
-| 7. Registry and legal event history | A4 | `src/distress_radar/acquisition/` |
-| 8. Outcome label construction | F | `transform/` |
+| 7. Registry and legal event history | A4, C | `src/distress_radar/acquisition/` (sources), `src/distress_radar/parsing/legal_events.py` |
+| 8. Outcome label construction | F | `transform/`, `src/distress_radar/labels.py` |
 | 9. Point-in-time feature store | H | `src/distress_radar/features/` |
 | 10. Model training and backtesting | I | `src/distress_radar/models/` |
 | 11. Scoring and monitoring | I, L | `src/distress_radar/models/`, `dagster_defs/` |

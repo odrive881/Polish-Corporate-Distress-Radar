@@ -8,7 +8,7 @@ Plan 0002 delivered A1 (17-entity seed), A2 (GUS BIR1 identity validation), B1 (
 
 ADR 0007 is now `accepted`: the user contacted KRS support, explained the project's option C (a human-paced Playwright tier), and got confirmation that 3 documents a minute with a non-invasive automation script is allowed. This plan builds exactly the adapter ADR 0007 specifies, with the confirmed rate folded in from the start rather than the ADR's earlier "1–2 entities/minute" placeholder. Once this lands, Phase 1's deliverable is complete for the 17-entity seed.
 
-## Status, 2026-09-16: blocked. The first live run got a CAPTCHA
+## Status: complete through the manual route (close-out 2026-09-17); the Playwright tier is blocked by a CAPTCHA (2026-09-16)
 
 The first live `filing_index` run (one entity, headed browser) was served an Imperva hCaptcha image challenge on the entry page, before any RDF API request. Under ADR 0007 that means option C has failed. The live DoD items below cannot be met without a new access decision (see ADR 0007, "Live result, 2026-09-16"). The code and tests are complete and green.
 

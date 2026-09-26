@@ -15,7 +15,8 @@ by" and two first names. That conflicts with invariant 6.
 **This reopens an accepted decision.** ADR 0009 (Consequences, "Residual personal data, accepted for now")
 already lists file names, in `filing_index.file_name`, the RDF detail JSON and ZIP member names, and leaves them
 because they are matching keys. Plan 0010 step D met the same file name again and the owner asked for this plan.
-ADR 0009 quotes that file name, names included, and has been public since 2026-09-17.
+ADR 0009 quoted that file name, names included, from 2026-09-17 until the quote was removed on 2026-09-26
+(the names remain in the public history; see Risks).
 
 A census on 2026-09-24, matching 40 common Polish first names against the 134 file names `filing_index` holds,
 found that one. The census proves nothing about the rest: surnames, initials (several seed file names carry
@@ -38,8 +39,8 @@ A name that reaches any of these has been stored:
 ## Owner decisions needed before step B (recommendations first)
 
 0. **Reopen ADR 0009's accepted residual.** *Recommended:* yes. Matching needs a stable key, not the text
-   (decision 3), and a file name has no other use here. Until then, the quoted example in ADR 0009 should lose
-   the names (a one-line edit, which does not reach the public history; see Risks).
+   (decision 3), and a file name has no other use here. The quoted example in ADR 0009 lost the names on
+   2026-09-26, ahead of this decision (a one-line edit, which does not reach the public history; see Risks).
 1. **What counts as personal in a file name.** *Recommended:* a file name is never kept as text. Store a
    person-free form: the extension, plus a salted hash of the full name for matching (decision 3). Detecting
    names in free text is unreliable (initials, surnames, diminutives), and the project needs
@@ -79,7 +80,7 @@ A name that reaches any of these has been stored:
   The signature migration has done this once, and its checks are the model.
 - **A salt kept outside the repository** becomes something a fresh clone needs before it can parse. Losing it
   means re-downloading. Decision 3's alternative avoids that.
-- **The public repository's history.** ADR 0009's quote of the file name has been in public commits since
-  2026-09-17, and step A checks fixtures and notebook outputs for others. Removing it from the history means a
+- **The public repository's history.** ADR 0009's quote of the file name was in public commits from
+  2026-09-17 to 2026-09-26, and step A checks fixtures and notebook outputs for others. Removing it from the history means a
   rewrite and recreating the public repository, as ADR 0009 did for the PESEL numbers: a separate, owner-only
   decision.

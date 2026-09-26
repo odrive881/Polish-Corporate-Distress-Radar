@@ -187,7 +187,7 @@ If you would rather have all three tiers now, say so before step B; the cost is 
 
 ### F. Docs
 
-- **ADR 0011**, recording the tier-scoping decision and its trigger conditions: exactly what has to appear in the corpus for tier 2 and tier 3 to be built.
+- **A new ADR** (the next free number: 0011 has since gone to the legal-event sources), recording the tier-scoping decision and its trigger conditions: exactly what has to appear in the corpus for tier 2 and tier 3 to be built.
 - `DIRECTORY_STRUCTURE.md` §2: `config/mappings/pdf/`, and the `parsing/pdf/` modules that now exist versus the ones still planned.
 - `AGENT_SPEC.md` §6C3: note that the tier is recorded on `parsed_documents`, and that C3 facts are graded as extraction evidence (decision 4).
 - `docs/data_inventory.md`: gap 4 (no LLM provider) is deferred, not resolved, with this plan's reasoning.
@@ -208,7 +208,7 @@ If you would rather have all three tiers now, say so before step B; the cost is 
 - [ ] That entity's structured coverage goes from 10 files (after plan 0005) to 11, with no gap in 2018–2025.
 - [ ] Golden fixture hand-verified against the rendering; personal-data scan green in CI.
 - [ ] Tiers 2 and 3 quarantine explicitly with a recorded reason; no document is silently skipped.
-- [ ] ADR 0011 accepted; docs from step F updated.
+- [ ] The tier-scoping ADR accepted; docs from step F updated.
 - [ ] `make check` and `make test-integration` green; re-materialization byte-identical.
 
 ## Risks
