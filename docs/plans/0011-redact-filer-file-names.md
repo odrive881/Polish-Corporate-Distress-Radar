@@ -4,7 +4,7 @@
 - **Invariants:** 6 (legal entities only), 2 (raw immutability and its one exception), 3 (lineage), 5 (idempotence).
 - **ADRs:** 0009 and its addendum (natural persons are removed before hashing).
 
-## Status: draft (2026-09-24); owner decisions pending before step B
+## Status: step A done (2026-09-26); owner decisions pending before step B
 
 ## Why
 
@@ -22,7 +22,7 @@ A census on 2026-09-24, matching 40 common Polish first names against the 134 fi
 found that one. The census proves nothing about the rest: surnames, initials (several seed file names carry
 two-letter groups that may be initials) and uncommon names do not match a list.
 
-## Where the file name is stored (to be confirmed in step A)
+## Where the file name is stored (confirmed in step A, below)
 
 A name that reaches any of these has been stored:
 1. **Postgres `filing_index.file_name`**, written from the detail's `nazwaPliku` (`manifest.py`).
@@ -35,6 +35,40 @@ A name that reaches any of these has been stored:
    `source_member`, `restatement_events`, `identity_check_results`, and `quarantine_events`.
 6. **Matching.** `parsing/containers.py` ties a ZIP member to its filing by comparing the member's base name with
    `filing_index.file_name`. A redacted file name must still match, or parsing breaks.
+7. **Quarantine details** (found in step A). `member_not_in_filing_index` writes the member's name and the
+   filing rows' file names into `quarantine_events.detail`, an append-only log.
+8. **Sidecar HTTP headers** (found in step A). `content-disposition` is one of the headers A3 keeps, and it
+   names the file.
+
+### Step A census (2026-09-26)
+
+Read-only, over Postgres, MinIO, the warehouse, the repository and its history. Counts only: no file
+name is quoted here or anywhere else.
+
+| Place | Holds a filer's file name | Count |
+|---|---|---|
+| 1. `filing_index.file_name` | yes | 134 rows (131 RDF type 18, 3 type 1), 129 distinct: 121 `.xml`, 5 `.xades`, 3 `.pdf` |
+| 2. Raw RDF detail JSON | yes, in `nazwaPliku` only | all 134 detail objects |
+| 3. Sidecar `original_filename` | yes | 118 of 126 downloads |
+| 4. ZIP member names | yes | all 126 downloads are ZIPs; 134 members, each named exactly as its row's `file_name` |
+| 5. `source_member` paths | yes, the member name | `parsed_documents` 126 distinct paths (451 rows); canonical 124; `identity_check_results` 124; `restatement_events` 30 |
+| 7. `quarantine_events.detail` | could: `member_not_in_filing_index` quotes member and file names (`parsing/statements.py`) | 0 of 68 rows today |
+| 8. Sidecar `http_headers` | could: `content-disposition` is a kept header | 0 sidecars carry it |
+| `raw_document_fetches.source_url`, `quarantine_events.entity_key` | no | 0 of 672 and 0 of 68 |
+| Other raw objects (KRS, MSiG, BIR1, RDF lists and lookups, probe pages; 337) | no | 4 RDF lookups matched only because a filer named its file after the company (`nazwaPodmiotu`) |
+| Dagster run storage, `.cache/rdf_inbox`, the hishel caches | no | no `DAGSTER_HOME` (runs are ephemeral); the inbox is empty; RDF was never reached over plain HTTP |
+| Tracked files and every commit | no personal data | 10 files match a stored name, all generic (`SF2023.xml`, "sprawozdanie finansowe za rok 2025 korekta.xml", …) or a company name; the one known personal file name appears nowhere since ADR 0009's quote was removed, apart from that quote in history |
+
+**How many names are personal cannot be settled by reading them.** After removing generic statement
+vocabulary, numbers and the filer's own company name, 68 of the 129 distinct file names keep words that
+are not explained; 22 of those carry two-letter groups that may be initials. Telling which are people
+would mean reading possible personal data into a review, which is the thing this plan avoids; it is the
+case for decision 1 (never keep the text), not for a name detector.
+
+**Matching (decision 3).** Name matching is needed only where a ZIP holds several statements: 8
+downloads cover two `filing_index` rows each. In all 8, each row's `nazwaPliku` is exactly one member's
+name, the two names differ, and both rows have their detail stored. So a download's members can be
+renamed to a token built from the `document_ref` they belong to, at redaction time, with no secret.
 
 ## Owner decisions needed before step B (recommendations first)
 
@@ -52,11 +86,16 @@ A name that reaches any of these has been stored:
    the redacted copy, as signatures already are. Stored objects are re-derived by a migration, as
    `redaction_migration.py` did for signatures (ADR 0009 addendum). The alternative is to leave raw bytes as
    they are and redact only the derived tables, which leaves the names stored.
-3. **Matching a member to its filing.** *Recommended:* compare hashes. The member's name and `nazwaPliku` are
-   both hashed with one salt kept out of the repository, and `containers.py` compares the hashes. The
-   alternative is to match on the document reference and position alone, where that is unambiguous; it needs
-   no salt but may not cover every download shape.
-4. **`source_member` paths.** *Recommended:* member names in paths become their hashes, so lineage still points
+3. **Matching a member to its filing.** *Recommended (revised after step A):* a token from the
+   `document_ref`. At redaction time, the member named by a filing's `nazwaPliku` is renamed
+   `<document_ref><extension>` in the stored ZIP, and `filing_index.file_name` and the detail's
+   `nazwaPliku` get the same token, so `containers.py` keeps matching by equality and needs no secret.
+   Step A shows every multi-statement download resolves this way. A hash of the name would not do
+   without a salt: a short file name with two first names is reversed by trying common names. The
+   earlier recommendation, a hash salted with a secret kept out of the repository, stays the fallback
+   for a download whose details are not at hand when it is stored; it makes a fresh clone depend on
+   the salt.
+4. **`source_member` paths.** *Recommended:* member names in paths become their tokens (decision 3), so lineage still points
    at one member (invariant 3). Re-running parsing then changes those columns, a new `spec_hash` and run id
    for every file, with the figures unchanged (`notebooks/exploration/canonical_value_hash.py` checks that).
 
