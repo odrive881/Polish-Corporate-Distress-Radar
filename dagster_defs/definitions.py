@@ -146,6 +146,7 @@ class MsigApiResource(dg.ConfigurableResource):
 
 from dagster_defs.assets.acquisition import acquisition_assets
 from dagster_defs.assets.dq import dq_assets
+from dagster_defs.assets.features import features_assets
 from dagster_defs.assets.labels import label_assets
 from dagster_defs.assets.legal import legal_assets
 from dagster_defs.assets.parsing import parsing_assets
@@ -159,9 +160,26 @@ legal_to_labels = dg.define_asset_job(
     description="A4 fetches → legal_events → label models and audits → frozen outcome_labels.",
 )
 
+# Plan 0010 step G: the stored datasets the store reads, rebuilt, then the store. Offline: no
+# asset in it fetches (owner decision 4 for steps F-H); `legal_to_labels` does the fetching.
+features = dg.define_asset_job(
+    "features",
+    selection=dg.AssetSelection.assets(
+        "financial_statements_canonical", "restatement_events", "legal_events", "feature_store"
+    ),
+    description="Parsing outputs and legal events rebuilt from stored bytes → feature_store.",
+)
+
 defs = dg.Definitions(
-    assets=[*acquisition_assets, *parsing_assets, *dq_assets, *legal_assets, *label_assets],
-    jobs=[legal_to_labels],
+    assets=[
+        *acquisition_assets,
+        *parsing_assets,
+        *dq_assets,
+        *legal_assets,
+        *label_assets,
+        *features_assets,
+    ],
+    jobs=[legal_to_labels, features],
     asset_checks=accounting_identity_checks,
     resources={
         "postgres": PostgresResource(),

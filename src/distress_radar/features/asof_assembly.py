@@ -170,14 +170,6 @@ def assemble(grid: pl.DataFrame, values: pl.DataFrame, config: FeatureConfig) ->
 
 
 @dataclass(frozen=True)
-class FeatureStoreBuild:
-    frame: pl.DataFrame
-    written: list[Path]
-    panel_excluded: pl.DataFrame  # statement files the panel left out, with reasons
-    feature_set_hash: str
-
-
-@dataclass(frozen=True)
 class FeatureSources:
     """Everything the families read, as stored; `feature_inputs` derives their inputs."""
 
@@ -186,6 +178,18 @@ class FeatureSources:
     legal_events: pl.DataFrame  # legal_events
     filing_index: pl.DataFrame  # FILING_INDEX_SCHEMA
     parse_status: pl.DataFrame  # PARSE_STATUS_SCHEMA
+
+
+@dataclass(frozen=True)
+class FeatureStoreBuild:
+    frame: pl.DataFrame
+    written: list[Path]
+    panel_excluded: pl.DataFrame  # statement files the panel left out, with reasons
+    feature_set_hash: str
+    # What the store was built from, for the leakage and coverage checks.
+    grid: pl.DataFrame
+    sources: FeatureSources
+    inputs: fd.FeatureInputs
 
 
 def load_sources(
@@ -264,4 +268,6 @@ def build_feature_store(
     grid = build_grid(entities, fetches, inputs.legal_events, start=_month_end(grid_start))
     frame = assemble(grid, fd.compute_features(grid, inputs, config), config)
     written = write_dataset(frame, warehouse_dir, DATASET, PARTITION)
-    return FeatureStoreBuild(frame, written, excluded, config.feature_set_hash)
+    return FeatureStoreBuild(
+        frame, written, excluded, config.feature_set_hash, grid, sources, inputs
+    )
