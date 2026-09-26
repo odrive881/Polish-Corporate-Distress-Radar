@@ -5,9 +5,11 @@
   latest fetches of each label source (`distress_radar.labels.LABEL_SOURCES`). An entity missing a
   source has no cutoff and no rows, as in `staging.outcome_label_grid`. Rows the labels exclude
   (in a proceeding, deregistered) still get features; Phase 6 filters.
-- `assemble`: the families' long rows, pivoted onto the grid, one column per feature and one
+- `assemble`: the families' long rows, pivoted onto the grid (`widen`), one column per feature and one
   `__known_from` companion each, validated against the contract.
-- `build_feature_store`: loads the inputs (warehouse Parquet, the Postgres manifest), assembles,
+- `feature_inputs`: the families' inputs from the sources, pure; the leakage checks
+  (`features.leakage`) rebuild them from sources cut at each `as_of_date`.
+- `build_feature_store`: loads the sources (warehouse Parquet, the Postgres manifest), assembles,
   and writes `WAREHOUSE_DIR/feature_store/` by `as_of_year`, replacing the whole dataset
   (ADR 0008). Equal inputs write equal bytes.
 
@@ -52,8 +54,8 @@ FETCHES_SCHEMA: dict[str, pl.DataType | type[pl.DataType]] = {
     "fetched_on": pl.Date,  # the fetch's UTC date
 }
 
-# The columns `load_inputs` selects, in its query's order.
-_FILING_INDEX_SCHEMA: dict[str, pl.DataType | type[pl.DataType]] = {
+# The columns `load_sources` selects, in its query's order.
+FILING_INDEX_SCHEMA: dict[str, pl.DataType | type[pl.DataType]] = {
     "krs": pl.String,
     "document_ref": pl.String,
     "rdf_type_code": pl.String,
@@ -64,7 +66,7 @@ _FILING_INDEX_SCHEMA: dict[str, pl.DataType | type[pl.DataType]] = {
     "is_correction": pl.Boolean,
     "file_name": pl.String,
 }
-_PARSE_STATUS_SCHEMA: dict[str, pl.DataType | type[pl.DataType]] = {
+PARSE_STATUS_SCHEMA: dict[str, pl.DataType | type[pl.DataType]] = {
     "krs": pl.String,
     "document_ref": pl.String,
     "status": pl.String,
@@ -123,8 +125,8 @@ def build_grid(
     return pl.DataFrame(rows, schema=fd.GRID_SCHEMA, orient="row").sort(SORT_KEY)
 
 
-def assemble(grid: pl.DataFrame, values: pl.DataFrame, config: FeatureConfig) -> pl.DataFrame:
-    """The wide `feature_store` frame: every grid row, every feature, validated."""
+def widen(grid: pl.DataFrame, values: pl.DataFrame, config: FeatureConfig) -> pl.DataFrame:
+    """The wide `feature_store` frame, every grid row and every feature, not yet validated."""
     features = config.feature_set.features
     wide = grid.select(SORT_KEY).unique()
     if not values.is_empty():
@@ -150,7 +152,7 @@ def assemble(grid: pl.DataFrame, values: pl.DataFrame, config: FeatureConfig) ->
             expr = expr.round(0)
         casts.append(expr.cast(dtype))
         casts.append(pl.col(f"{f.name}{KNOWN_FROM_SUFFIX}").cast(pl.Date))
-    frame = (
+    return (
         wide.with_columns(
             pl.col("as_of_date").dt.year().cast(pl.Int32).alias("as_of_year"),
             pl.lit(config.feature_set.feature_set_version).alias("feature_set_version"),
@@ -160,7 +162,11 @@ def assemble(grid: pl.DataFrame, values: pl.DataFrame, config: FeatureConfig) ->
         .select([*KEY_COLUMNS, *columns])
         .sort(SORT_KEY)
     )
-    return feature_store_contract(config).validate(frame)
+
+
+def assemble(grid: pl.DataFrame, values: pl.DataFrame, config: FeatureConfig) -> pl.DataFrame:
+    """The wide `feature_store` frame: every grid row, every feature, validated."""
+    return feature_store_contract(config).validate(widen(grid, values, config))
 
 
 @dataclass(frozen=True)
@@ -171,28 +177,43 @@ class FeatureStoreBuild:
     feature_set_hash: str
 
 
-def load_inputs(
-    conn: Connection, warehouse_dir: Path, config: FeatureConfig
-) -> tuple[fd.FeatureInputs, pl.DataFrame, list[str], pl.DataFrame]:
-    """The families' inputs, the panel's exclusions, the entities and their fetches."""
-    canonical = read_dataset(warehouse_dir, "financial_statements_canonical")
-    restatements = read_dataset(warehouse_dir, "restatement_events")
-    legal_events = read_dataset(warehouse_dir, "legal_events")
+@dataclass(frozen=True)
+class FeatureSources:
+    """Everything the families read, as stored; `feature_inputs` derives their inputs."""
+
+    canonical: pl.DataFrame  # financial_statements_canonical
+    restatements: pl.DataFrame  # restatement_events
+    legal_events: pl.DataFrame  # legal_events
+    filing_index: pl.DataFrame  # FILING_INDEX_SCHEMA
+    parse_status: pl.DataFrame  # PARSE_STATUS_SCHEMA
+
+
+def load_sources(
+    conn: Connection, warehouse_dir: Path
+) -> tuple[FeatureSources, list[str], pl.DataFrame]:
+    """The sources, the entities and their fetches, from the warehouse and the manifest."""
     filing_index = pl.DataFrame(
         conn.execute(
             "SELECT krs, document_ref, rdf_type_code, period_start, period_end, submission_date,"
             " deleted_on, is_correction, file_name FROM filing_index ORDER BY krs, document_ref"
         ).fetchall(),
-        schema=_FILING_INDEX_SCHEMA,
+        schema=FILING_INDEX_SCHEMA,
         orient="row",
     ).with_columns(pl.col("krs").str.strip_chars())
     parse_status = pl.DataFrame(
         conn.execute(
             "SELECT krs, document_ref, status FROM parsed_documents ORDER BY 1, 2, 3"
         ).fetchall(),
-        schema=_PARSE_STATUS_SCHEMA,
+        schema=PARSE_STATUS_SCHEMA,
         orient="row",
     ).with_columns(pl.col("krs").str.strip_chars())
+    sources = FeatureSources(
+        canonical=read_dataset(warehouse_dir, "financial_statements_canonical"),
+        restatements=read_dataset(warehouse_dir, "restatement_events"),
+        legal_events=read_dataset(warehouse_dir, "legal_events"),
+        filing_index=filing_index,
+        parse_status=parse_status,
+    )
     entities = sorted(
         str(krs).strip() for (krs,) in conn.execute("SELECT krs FROM entity_master").fetchall()
     )
@@ -206,28 +227,40 @@ def load_inputs(
         schema=FETCHES_SCHEMA,
         orient="row",
     )
+    return sources, entities, fetches
 
+
+def feature_inputs(
+    sources: FeatureSources, config: FeatureConfig
+) -> tuple[fd.FeatureInputs, pl.DataFrame]:
+    """The families' inputs, and the statement files the panel left out (with reasons)."""
     panel = build_panel(
-        canonical,
-        filing_index.select(FILINGS_SCHEMA.keys()),
+        sources.canonical,
+        sources.filing_index.select(FILINGS_SCHEMA.keys()),
         config.line_items,
         include_quarantined=config.feature_set.include_quarantined_statements,
     )
     statement_codes = [
         code for code, t in load_document_types().types.items() if t.canonical == "statement"
     ]
-    filings = fd.statement_filings(filing_index, parse_status, canonical, statement_codes)
-    inputs = fd.FeatureInputs(
-        panel=panel.frame, filings=filings, restatements=restatements, legal_events=legal_events
+    filings = fd.statement_filings(
+        sources.filing_index, sources.parse_status, sources.canonical, statement_codes
     )
-    return inputs, panel.excluded, entities, fetches
+    inputs = fd.FeatureInputs(
+        panel=panel.frame,
+        filings=filings,
+        restatements=sources.restatements,
+        legal_events=sources.legal_events,
+    )
+    return inputs, panel.excluded
 
 
 def build_feature_store(
     conn: Connection, warehouse_dir: Path, config: FeatureConfig, *, grid_start: date
 ) -> FeatureStoreBuild:
     """Build and write `feature_store` from the warehouse and the manifest."""
-    inputs, excluded, entities, fetches = load_inputs(conn, warehouse_dir, config)
+    sources, entities, fetches = load_sources(conn, warehouse_dir)
+    inputs, excluded = feature_inputs(sources, config)
     grid = build_grid(entities, fetches, inputs.legal_events, start=_month_end(grid_start))
     frame = assemble(grid, fd.compute_features(grid, inputs, config), config)
     written = write_dataset(frame, warehouse_dir, DATASET, PARTITION)

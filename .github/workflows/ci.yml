@@ -15,5 +15,5 @@ jobs:
       - name: Install
         run: make install
       - name: Check (lint, type-check, tests — includes the blocking leakage
-          test once tests/features/test_leakage.py exists)
+          test, tests/features/test_leakage.py)
         run: make check
