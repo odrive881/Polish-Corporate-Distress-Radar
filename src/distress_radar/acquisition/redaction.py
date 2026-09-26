@@ -102,6 +102,9 @@ _MARKERS = {
 }
 
 
+_BASE64_RUN = re.compile(rb">[A-Za-z0-9+/=\s]{300,}<")
+
+
 class RedactionError(Exception):
     """A download that cannot be redacted safely; it must not be stored."""
 
@@ -292,8 +295,11 @@ def _redact_pdf(data: bytes, where: str) -> Redaction:
                 cleared += 1
         metadata = _pdf_metadata(doc)
         if metadata:
-            doc.xref_set_key(-1, "Info", "null")
+            # Blank first: once `doc.metadata` has been read, saving writes it back out unless
+            # it was replaced, whatever the trailer says (seen on PDFs with object streams).
+            doc.set_metadata({})
             doc.del_xml_metadata()
+            doc.xref_set_key(-1, "Info", "null")
         if not removed and not cleared and not metadata:
             return Redaction(data)
         out = doc.tobytes(garbage=4, deflate=True, no_new_id=True)
@@ -482,7 +488,10 @@ def _detail_markers(raw: bytes) -> list[str]:
 
 def _file_markers(data: bytes, where: str) -> list[str]:
     body = data.removeprefix(_UTF8_BOM)
-    found = [f"{where}: {name}" for name, pattern in _MARKERS.items() if pattern.search(body)]
+    # In XML, long base64 runs are payloads, decoded and checked on their own below: searched as
+    # text, several MB of base64 spell a marker such as "PESEL" by chance.
+    text = _BASE64_RUN.sub(b"><", body) if body.lstrip().startswith(b"<") else body
+    found = [f"{where}: {name}" for name, pattern in _MARKERS.items() if pattern.search(text)]
     if body.lstrip().startswith(b"%PDF"):
         found.extend(_pdf_markers(body, where))
     elif body.lstrip().startswith(b"<"):
