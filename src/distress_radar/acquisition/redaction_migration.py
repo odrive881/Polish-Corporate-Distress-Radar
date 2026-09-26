@@ -1,18 +1,27 @@
-"""Replace stored downloads that still hold natural persons' data (ADR 0009).
+"""Replace stored objects that still hold natural persons' data (ADR 0009 and its addenda).
 
-For every raw object with personal-data markers:
+For every raw object with personal-data markers (`redaction.personal_data_markers`, given the
+filings a download holds):
 
-1. redact it (`redaction.redact_download`) and check the result is clean;
-2. store the redacted bytes as a new content-addressed object, with a sidecar
-   naming the redaction and the replaced hash;
+1. redact it under the current version and check the result is clean: a download with
+   `redact_download`, its members named from its `filing_index` rows' file names; an RDF
+   detail with `redact_rdf_detail`;
+2. store the redacted bytes as a new content-addressed object, with a sidecar naming the
+   redaction and the hash of the file as first received, the file name as a token, and no
+   `content-disposition`;
 3. in one transaction, point every manifest reference at the new hash
-   (`filing_index`, `raw_document_fetches`, `quarantine_events`), drop the old file's
-   `parsed_documents` rows (re-parsing recreates them), log the replacement in
-   `raw_redactions`, and delete the old `raw_documents` row;
+   (`filing_index`, `raw_document_fetches`, `quarantine_events`), set a detail's rows'
+   `file_name` to the token, drop the old file's `parsed_documents` rows (re-parsing recreates
+   them), log the replacement in `raw_redactions`, and delete the old `raw_documents` row;
 4. only then delete the old object and its sidecar.
 
-Re-running finds nothing to do. Derived datasets must be re-materialized
-afterwards, because `source_document_hash` changes.
+**Downloads go first** (plan 0011 step E): their members are named from `file_name`, which the
+detail phase replaces with tokens, so details are migrated only once no download is left. A
+download of several filings whose names are already tokens cannot be named any more and is
+refused.
+
+Re-running finds nothing to do. Derived datasets must be re-materialized afterwards, because
+`source_document_hash` and `source_member` change.
 
 Run: `uv run python -m distress_radar.acquisition.redaction_migration [--apply]`
 (without `--apply` it only reports).
@@ -43,6 +52,7 @@ from distress_radar.acquisition.redaction import (
     RDF_DETAIL_REDACTION_VERSION,
     REDACTION_VERSION,
     Redaction,
+    file_token,
     personal_data_markers,
     redact_download,
     redact_rdf_detail,
@@ -63,26 +73,49 @@ def _stored_meta(store: RedactableObjectStore, sha256: str) -> RawDocumentMeta:
     return RawDocumentMeta.model_validate({k: v for k, v in body.items() if k in fields})
 
 
+def _download_refs(conn: Connection) -> dict[str, list[str]]:
+    """The filings each stored download holds, by its hash."""
+    refs: dict[str, list[str]] = {}
+    for sha, ref in conn.execute(
+        "SELECT sha256, document_ref FROM filing_index WHERE sha256 IS NOT NULL ORDER BY 1, 2"
+    ):
+        refs.setdefault(sha, []).append(ref)
+    return refs
+
+
 def find_unredacted(conn: Connection, store: RedactableObjectStore) -> list[str]:
+    """Objects with markers, downloads before everything else, each group by hash."""
+    downloads = _download_refs(conn)
     hashes = [row[0] for row in conn.execute("SELECT sha256 FROM raw_documents ORDER BY sha256")]
-    return [sha for sha in hashes if personal_data_markers(store.get(raw_key(sha)))]
+    found = [
+        sha for sha in hashes if personal_data_markers(store.get(raw_key(sha)), downloads.get(sha))
+    ]
+    return sorted(found, key=lambda sha: (sha not in downloads, sha))
 
 
-def _redact(conn: Connection, sha256: str, data: bytes) -> tuple[Redaction, str]:
-    """The current redaction of a stored object, and its version.
+def _is_rdf_detail(data: bytes) -> bool:
+    return data.lstrip().startswith(b"{") and b'"nazwaPliku"' in data
 
-    A download's members are named from the file names its `filing_index` rows hold. Plan 0011
-    step E re-derives those rows' `file_name` (and every derived path) with the objects.
-    """
-    if data.lstrip().startswith(b"{"):
-        return redact_rdf_detail(data), RDF_DETAIL_REDACTION_VERSION
+
+def _redact(conn: Connection, sha256: str, data: bytes) -> tuple[Redaction, str, list[str] | None]:
+    """The current redaction of a stored object, its version, and the filings it holds."""
+    if _is_rdf_detail(data):
+        return redact_rdf_detail(data), RDF_DETAIL_REDACTION_VERSION, None
     names: dict[str, str | None] = dict(
         conn.execute(
             "SELECT document_ref, file_name FROM filing_index WHERE sha256 = %s ORDER BY 1",
             (sha256,),
         ).fetchall()
     )
-    return redact_download(data, names or None), REDACTION_VERSION
+    tokened = [
+        ref for ref, name in names.items() if name is not None and name == file_token(ref, name)
+    ]
+    if len(names) > 1 and tokened:
+        raise RuntimeError(
+            f"{sha256}: filings {tokened} already hold tokens, so this download's members "
+            "cannot be named; migrate downloads before details"
+        )
+    return redact_download(data, names or None), REDACTION_VERSION, list(names) or None
 
 
 def replace_document(
@@ -93,12 +126,30 @@ def replace_document(
     run_id: str,
     now: datetime,
 ) -> Replacement:
-    redaction, version = _redact(conn, old_sha256, store.get(raw_key(old_sha256)))
-    left = personal_data_markers(redaction.data)
+    redaction, version, refs = _redact(conn, old_sha256, store.get(raw_key(old_sha256)))
+    left = personal_data_markers(redaction.data, refs)
     if left:
         raise RuntimeError(f"{old_sha256}: redaction left personal data: {left}")
-    meta = _stored_meta(store, old_sha256).model_copy(
-        update={"redaction_version": version, "received_sha256": old_sha256}
+    old_meta = _stored_meta(store, old_sha256)
+    token: str | None = None
+    detail_ref: str | None = None
+    if refs is None and _is_rdf_detail(redaction.data):
+        detail = json.loads(redaction.data)
+        token, detail_ref = detail.get("nazwaPliku"), detail.get("identyfikator")
+    meta = old_meta.model_copy(
+        update={
+            "redaction_version": version,
+            # The chain back to the file as first received, across redaction passes.
+            "received_sha256": old_meta.received_sha256 or old_sha256,
+            "original_filename": (
+                file_token(refs[0], old_meta.original_filename)
+                if refs is not None and len(refs) == 1
+                else None
+            ),
+            "http_headers": {
+                k: v for k, v in old_meta.http_headers.items() if k.lower() != "content-disposition"
+            },
+        }
     )
     new_sha256 = put_raw(store, redaction.data, meta)
     with conn.transaction():
@@ -125,6 +176,11 @@ def replace_document(
         conn.execute(
             "UPDATE filing_index SET sha256 = %s WHERE sha256 = %s", (new_sha256, old_sha256)
         )
+        if detail_ref is not None:
+            conn.execute(
+                "UPDATE filing_index SET file_name = %s WHERE detail_sha256 = %s AND document_ref = %s",
+                (token, old_sha256, detail_ref),
+            )
         conn.execute(
             "UPDATE filing_index SET detail_sha256 = %s WHERE detail_sha256 = %s",
             (new_sha256, old_sha256),
@@ -167,11 +223,17 @@ def main(argv: list[str] | None = None) -> int:
         manifest.ensure_schema(conn)
         conn.commit()
         found = find_unredacted(conn, store)
-        print(f"{len(found)} stored objects hold personal data")
+        downloads = _download_refs(conn)
+        print(
+            f"{len(found)} stored objects hold personal data "
+            f"({sum(sha in downloads for sha in found)} downloads)"
+        )
         if not args.apply:
             for sha in found:
-                print(f"  {sha}: {personal_data_markers(store.get(raw_key(sha)))[:3]}")
+                markers = personal_data_markers(store.get(raw_key(sha)), downloads.get(sha))
+                print(f"  {sha}: {len(markers)} markers, e.g. {markers[:2]}")
             return 0
+        # Downloads come first, and a failure raises: no detail is touched while one is left.
         for sha in found:
             replaced = replace_document(conn, store, sha, run_id=run_id, now=datetime.now(UTC))
             print(

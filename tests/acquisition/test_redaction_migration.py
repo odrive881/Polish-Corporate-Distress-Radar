@@ -155,3 +155,96 @@ def test_signed_document_is_replaced_and_references_follow(conn: psycopg.Connect
         "SELECT received_sha256, redacted_sha256 FROM raw_redactions"
     ).fetchall() == [(signed_sha, new)]
     assert find_unredacted(conn, store) == []
+
+
+# --- redaction version 2: file names (ADR 0009 second addendum, plan 0011 step E) ------------------
+
+ORIG, CORR = "CCCCCCCCCCCCCCCCCCCC/w==", "DDDDDDDDDDDDDDDDDDDD+w=="
+NAMES = {ORIG: "SF podpisane Jan Testowy.xml", CORR: "SF korekta Jan Testowy.xml"}
+
+
+def _bundle() -> bytes:
+    """A download stored under redaction version 1: signatures gone, the filers' names kept."""
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        for name in NAMES.values():
+            archive.writestr(zipfile.ZipInfo(name, date_time=(2023, 6, 30, 0, 0, 0)), CLEAN)
+    return buffer.getvalue()
+
+
+def _detail(ref: str) -> bytes:
+    return json.dumps(
+        {"identyfikator": ref, "nazwaPliku": NAMES[ref], "czyKorekta": ref == CORR},
+        ensure_ascii=False,
+        separators=(",", ":"),
+    ).encode()
+
+
+def _seed_bundle(
+    conn: psycopg.Connection, store: InMemoryObjectStore
+) -> tuple[str, dict[str, str]]:
+    bundle = _record(conn, store, _bundle(), "https://rdf/tresc#b")
+    bir1 = _record(conn, store, b"<?xml version='1.0'?><root><Nazwa>X</Nazwa></root>", "https://bir1")
+    details = {
+        ref: _record(conn, store, _detail(ref), f"https://rdf/szczegoly#{ref}") for ref in NAMES
+    }
+    conn.execute(
+        "INSERT INTO entity_master (krs, nip, regon, name, legal_form_code, status, pkd_codes, "
+        "pkd_predominant, source_document_hash, pkd_source_document_hash, known_from, ingestion_run_id) "
+        "VALUES ('0000000001', NULL, '1', 'X', '117', 'active', '[]', '4120Z', %s, %s, '2026-09-14', 'run-a')",
+        (bir1, bir1),
+    )
+    for ref, name in NAMES.items():
+        conn.execute(
+            "INSERT INTO filing_index (krs, document_ref, rdf_type_code, status, period_start, "
+            "period_end, file_name, detail_sha256, sha256, discovered_at, ingestion_run_id) "
+            "VALUES ('0000000001', %s, '18', 'x', '2022-01-01', '2022-12-31', %s, %s, %s, %s, 'run-a')",
+            (ref, name, details[ref], bundle, NOW),
+        )
+    conn.commit()
+    return bundle, details
+
+
+def test_a_bundle_and_its_details_lose_the_filers_names(conn: psycopg.Connection) -> None:
+    store = InMemoryObjectStore()
+    bundle, details = _seed_bundle(conn, store)
+
+    found = find_unredacted(conn, store)
+    assert found[0] == bundle and set(found[1:]) == set(details.values())  # downloads first
+    for sha in found:
+        replace_document(conn, store, sha, run_id="redaction-2", now=NOW)
+
+    assert find_unredacted(conn, store) == []
+    rows = conn.execute(
+        "SELECT document_ref, file_name, sha256, detail_sha256 FROM filing_index ORDER BY 1"
+    ).fetchall()
+    assert [(ref, name) for ref, name, *_ in rows] == [
+        (ORIG, "CCCCCCCCCCCCCCCCCCCC_w.xml"),
+        (CORR, "DDDDDDDDDDDDDDDDDDDD-w.xml"),
+    ]
+    [new_bundle] = {sha for _, _, sha, _ in rows}
+    members = zipfile.ZipFile(io.BytesIO(store.get(raw_key(new_bundle)))).namelist()
+    assert members == ["CCCCCCCCCCCCCCCCCCCC_w.xml", "DDDDDDDDDDDDDDDDDDDD-w.xml"]
+    for _, name, _, detail_sha in rows:
+        assert json.loads(store.get(raw_key(detail_sha)))["nazwaPliku"] == name
+    # No object or sidecar still names anyone, and each sidecar keeps the chain to what was received.
+    assert not any(b"Jan Testowy" in data for data in store.objects.values())
+    sidecar = json.loads(store.get(sidecar_key(new_bundle)))
+    assert (sidecar["redaction_version"], sidecar["received_sha256"]) == (REDACTION_VERSION, bundle)
+    assert sidecar["original_filename"] is None  # a bundle: several files
+    versions = dict(
+        conn.execute("SELECT received_sha256, redaction_version FROM raw_redactions").fetchall()
+    )
+    assert versions == {bundle: "2", **{sha: "rdf-detail-1" for sha in details.values()}}
+
+
+def test_a_detail_before_its_download_leaves_the_download_unnameable(
+    conn: psycopg.Connection,
+) -> None:
+    store = InMemoryObjectStore()
+    bundle, details = _seed_bundle(conn, store)
+    replace_document(conn, store, details[ORIG], run_id="redaction-2", now=NOW)
+
+    with pytest.raises(RuntimeError, match="migrate downloads before details"):
+        replace_document(conn, store, bundle, run_id="redaction-2", now=NOW)
+    assert store.exists(raw_key(bundle))  # nothing deleted
