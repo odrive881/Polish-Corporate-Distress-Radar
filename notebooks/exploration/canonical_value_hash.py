@@ -12,6 +12,10 @@ Recipe (so a later comparison means something): rows sorted by the engine's own
 `str()` of each value, NUL-separated. It is the column order and the sort that
 make it reproducible — not the Parquet bytes, which also carry run ids.
 
+A second hash, **without lineage**, drops `source_document_hash` and `source_member` too and sorts by every remaining column. It is the
+one to compare across a re-store of the raw objects (plan 0011 step E), which moves every
+file's hash and member path by design and must move no figure.
+
 Read-only: reads `WAREHOUSE_DIR`, touches no database, no object store, no
 network. Run it before and after a mapping change:
 
@@ -86,6 +90,21 @@ def _(PHASE_2, column_hash, facts, mo, pl):
         print(f"{row['scope']:32} {row['rows']:>6}  {row['value_hash']}")
     mo.ui.table(hashes)
     return (hashes,)
+
+
+@app.cell
+def _(facts, hashlib):
+    # Lineage columns a re-store of the raw objects rewrites (plan 0011 step E). What is left
+    # is the figures and what they describe; sorted by all of it, so no lineage sets the order.
+    LINEAGE = {"source_document_hash", "source_member", "ingestion_run_id"}
+    kept = [c for c in facts.columns if c not in LINEAGE]
+    values = facts.select(kept).sort(kept)
+    lineage_free = hashlib.sha256()
+    for column in kept:
+        lineage_free.update(column.encode())
+        lineage_free.update(b"\0".join(str(v).encode() for v in values[column].to_list()))
+    print(f"{'all rows, without lineage':32} {values.height:>6}  {lineage_free.hexdigest()}")
+    return (lineage_free,)
 
 
 if __name__ == "__main__":
