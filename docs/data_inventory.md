@@ -4,7 +4,7 @@ Everything the pipeline has to get hold of, gathered from the spec documents in 
 
 Sources: `AGENT_SPEC.md`, `DIRECTORY_STRUCTURE.md`, `README.md`, `CLAUDE.md`, `docs/PROJECT_OVERVIEW.md`, `docs/TECHNICAL_ARCHITECTURE.md`, with `.env.example` and `docs/adr/` checked for status. If this file and the spec disagree, the spec wins. Fix this file.
 
-Stage codes use the letter scheme from `AGENT_SPEC.md` §6. The numbered stage (1–12) from `docs/PROJECT_OVERVIEW.md` is in brackets. Status was first compiled on 2026-09-14; rows are updated as plans land (latest: plan 0010 step B, 2026-09-24).
+Stage codes use the letter scheme from `AGENT_SPEC.md` §6. The numbered stage (1–12) from `docs/PROJECT_OVERVIEW.md` is in brackets. Status was first compiled on 2026-09-14; rows are updated as plans land (latest: plan 0010 step H, 2026-09-26).
 
 ---
 
@@ -123,12 +123,12 @@ The spec forbids bulk enumeration of any source. Acquisition is per entity, seed
 
 | Item | Source | Stage | Stored as | Feeds | Req. | Spec ref | Status |
 |---|---|---|---|---|---|---|---|
-| NBP reference rate history | NBP web API (JSON) | A5 | raw → Parquet | macro features | required | SPEC §6A, §6H | not started |
+| NBP reference rate history | NBP web API (JSON) | A5 | raw → Parquet | macro features | required | SPEC §6A, §6H | not started; macro and sector features deferred to their own plan (plan 0010 owner decision 5) |
 | Sector financial aggregates (construction) | GUS BDL (JSON) | A5 | raw → Parquet | macro / sector features, dashboards | required | SPEC §6H | not started |
 | Regional indicators by voivodeship | GUS BDL | A5 | raw → Parquet | regional features, heatmaps | required | SPEC §6H; OVERVIEW stage 12 | not started |
 | Eurostat series | Eurostat | A5 | raw → Parquet | macro context | optional | TECH_ARCH §3 A5 | not started |
 | Official MF XSD schemas, one per structure version | Ministry of Finance | C1 | committed reference files | XSD validation | required | SPEC §6C1 | collected (`config/xsd/`, plan 0004; small, micro and the two remaining CRWDE templates added in plan 0005) |
-| UoR size-class thresholds (balance sheet total, revenue, average employment; multi-year rule), dated | Ustawa o rachunkowości | E / H | `config/statutory/size_thresholds.yaml` | `entity_size_class_history` | required | SPEC §4.4 | not written |
+| UoR size-class thresholds (balance sheet total, revenue, average employment; multi-year rule), dated | Ustawa o rachunkowości | E / H | `config/statutory/size_thresholds.yaml` | `entity_size_class_history` | required | SPEC §4.4 | not written: deferred with `entity_size_class_history` (plan 0010 owner decision 4), because average employment has no source (gap 8). Balance-sheet total and revenue enter `feature_store` as raw inputs meanwhile |
 | KSH tripwire ratios: Art. 233 (sp. z o.o., ½ share capital), Art. 397 (S.A., ⅓ share capital), dated | Kodeks spółek handlowych | H | `config/statutory/ksh_tripwires.yaml` | tripwire features, `tripwire_triggered` alerts | required | SPEC §4.5 | written (plan 0010 step B): Art. 233 excludes the revaluation reserve, a choice recorded in the file |
 | Annual statement filing deadlines: approval within 6 months, filing within 15 days (UoR art. 53, 69), COVID-era extensions (Dz.U. 2020 poz. 570 as amended), dated | Ustawa o rachunkowości; MF regulation | H | `config/statutory/filing_deadlines.yaml` | missing-year and late-filing features | required | plan 0010 decision 4 | written (plan 0010 step B), checked against the consolidated regulation |
 | Insolvency / restructuring procedure taxonomy, dated | Prawo upadłościowe, Prawo restrukturyzacyjne, COVID-era acts | F | `config/statutory/procedure_taxonomy.yaml` | `outcome_labels` | required | SPEC §4.6 | written: KRS (plan 0008 step B), MSiG (plan 0008 step F), registry changes (plan 0010 step B) |
@@ -192,6 +192,7 @@ The spec forbids bulk enumeration of any source. Acquisition is per entity, seed
    - **Candidate feature:** a management-report gap could be a filing-behaviour signal alongside the statement gaps (SPEC §6H).
    - **Why it may be a false correlation:** micro entities are exempt from the report, and small entities can be under UoR art. 49. So a missing report is not always a lapse; e.g. `0000041651` files micro-form statements and has no reports since 2017. Any such feature must be conditioned on the entity's size class.
    - **Until decided,** size classification (§4.4) needs another route: employment from the attached notes (C3/G), or GUS employment bands as a proxy.
+   - **Consequence (plan 0010 owner decision 4, 2026-09-24):** `entity_size_class_history` and `size_thresholds.yaml` are deferred, and Phase 5's features carry no size class. Classifying on two of the three statutory inputs was rejected.
 9. **RDF's `czyMSR` flag (`filing_index.is_ifrs`) is unreliable.** 29 seed statements flagged IFRS are UoR structures. Never route on it.
 10. ~~**Raw downloads contain natural persons' data.**~~ Decided 2026-09-17: signer data is redacted at acquisition, before hashing, and stored files were replaced (ADR 0009). Residual: free text in notes, and signatories' first names in some uploaded file names (plan 0011, draft).
 11. **Notes and user-defined breakdowns are not captured yet.** Attached notes (`Plik`, base64 PDFs/docs) wait for C3/G. Breakdowns of a single line (`PozycjaUszczegolawiajaca` inside a leaf, `Podpozycja`) are skipped because the line's total is already a fact.

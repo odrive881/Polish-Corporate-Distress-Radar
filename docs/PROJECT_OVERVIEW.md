@@ -223,6 +223,7 @@ Stage-by-stage implementation plans live in `docs/plans/`, one numbered `.md` fi
   - **Registry dynamics** from Stage 7, such as frequent board turnover or office moves.
   - **Macro and sector context:** NBP reference rate, sector-level financial aggregates, and regional indicators.
 - Automated leakage tests fail the build if any feature references data with an availability date later than the prediction date.
+- As built in Phase 5 (plan 0010): the financial, construction, tripwire, filing-behaviour, registry and legal-history families. Text signals, auditor change and loss-coverage history wait for Stage 6; macro and sector context, and the size class, are deferred (AGENT_SPEC §6H).
 
 **Output:** `feature_store` (entity, as-of date, feature vector, feature set version).
 

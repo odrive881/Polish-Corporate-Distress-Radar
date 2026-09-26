@@ -249,7 +249,13 @@ Lives in Postgres.
 
 ### `feature_store`
 
-`krs`, `as_of_date`, `feature_set_version`, plus feature columns. Every feature column has a companion `<name>__known_from` used by the leakage test.
+`krs`, `as_of_date`, `as_of_year` (the partition), `feature_set_version`, `feature_set_hash`, then each feature and its companion `<name>__known_from`, in the feature set's order. Booleans are `Boolean`, counts `Int32`, the rest `Float64`. One row per `(krs, as_of_date)` on the label grid without horizons: month-ends from the label config's start, or the entity's registration, to its cutoff; rows the labels exclude still get features. Built by `features/asof_assembly.py` (plan 0010, ADR 0012), written under `WAREHOUSE_DIR/feature_store/` and replaced whole on every run (ADR 0008).
+
+Rules:
+- `<name>__known_from` is the latest `known_from` of every fact the value was built from. A feature is non-null exactly when its companion is, and the companion is never after `as_of_date` (the `FEATURE_STORE` contract, and §9.1).
+- Nothing is imputed (invariant 4). A feature is null when an input is missing (the micro form has no liability split or equity breakdown), when a denominator is zero, or when a flow-based feature reads a period outside 335–396 days or of unknown length (plan 0010 owner decision 7: never annualised). A count of zero is a value.
+- `config/features/<feature_set_version>.yaml` defines the features; the file name is the version and its hash is on every row. `FEATURE_SET_VERSION` picks one (default `feature_set_v1`). Quarantined statements are excluded from financial features unless the feature set's `include_quarantined_statements` is on.
+- Ratios over near-zero denominators reach extreme values; they are data, and models transform them (e.g. rank or winsorise) rather than read them raw.
 
 ---
 
@@ -368,17 +374,22 @@ marimo notebooks in `notebooks/`, `.py` format, reading via DuckDB. Not part of 
 
 **H1** Assembly via DuckDB `ASOF JOIN`, run in-process from Python in `src/distress_radar/features/`, not in SQLMesh (ADR 0012): for each `(krs, as_of_date)`, join the most recent fact with `known_from <= as_of_date`.
 
-Feature families:
+- **The financial panel** (`panel.py`) says which statement speaks for each period, and from when. The statement filed for a period wins; a correction replaces it from its own filing date; a later filing's prior-year column only fills a period with no usable statement (a restatement never replaces filed figures, it is a feature); a deleted statement stops speaking from its deletion. It is keyed by period, not fiscal year: a liquidation or bankruptcy can split a year.
+- **Financial families** are computed once per entity at each date its known figures change, and the ASOF join gives each row the latest such snapshot. Growth and volatility look back by time ("the period that ended 12 months before", within 31 days), not by count.
+- **Filing and event families** are evaluated per row: a deadline passing or a window sliding changes them without new data. Events are counted by `known_from`, never by `event_date`, and keyed by (event type, event date), not `dedup_group_id`, which a later notice can change.
 
-- Financial ratios: liquidity, leverage, profitability, efficiency, working capital, interest coverage; plus 1/2/3-year trends and volatility.
-- Construction-specific: receivables and payables turnover, contract-related balances, backlog proxies where available.
-- Legal tripwires (§4.5).
-- Filing behaviour: days from fiscal year-end to filing, missing years, late filings, corrections, auditor change.
-- Text signals (§G).
-- Registry dynamics: board turnover count, registered office changes, capital changes.
-- Macro: NBP reference rate, sector aggregates, regional indicators.
+Feature families as built (feature set v1, 44 features):
 
-**H2** Leakage tests — see §9.1.
+- Financial ratios: current and quick ratio; debt- and equity-to-assets; ROA, ROE, net and operating margin; asset turnover; working capital to assets; operating result over financial costs (the statements do not separate interest, so this stands in for interest coverage); revenue and equity growth over 1, 2 and 3 years; 3-year net-margin volatility. Each input is mapped per form and income-statement variant in `config/features/line_items_v1.yaml`, never derived across variants (§4.1).
+- Construction-specific: receivable days and short-term liability days (revenue-based), short-term prepayments and accruals to assets (where UoR art. 34a contract accounting sits). No backlog proxy: nothing in the data carries one.
+- Legal tripwires (§4.5): `art233_triggered` (revaluation reserve excluded, a choice recorded in the config) and `negative_equity`.
+- Filing behaviour: days from year-end to filing for the latest year; missing years and late filings over 3 years, counted only once the statutory deadline (`config/statutory/filing_deadlines.yaml`, COVID extensions included) has passed; corrections; latest statement filed as PDF; statements quarantined; restating filings and the largest restated line over total assets.
+- Registry dynamics: board changes, office moves and capital changes in 12 and 36 months, from the KRS extract's entries (counts only, no names, §12); arrears enforcements in 12 months; curators ever appointed.
+- Legal history: petitions and closed proceedings by class, ever.
+
+Deferred, each with its reason in plan 0010: auditor change and loss-coverage history (text, Phase 7); text signals (§G, Phase 7); macro and sector context (A5 has no adapter, and sector aggregates over the seed would leak its own outcomes); size class (§4.4 needs average employment, which no structured source carries, `docs/data_inventory.md` gap 8).
+
+**H2** Leakage tests — see §9.1. `features/leakage.py` holds both checks: §9.1 as written, and the per-family variant, which recomputes each family from the sources cut to what was public on each `as_of_date` and requires identical output. `tests/features/test_leakage.py` runs them on a synthetic warehouse with traps and shows leaky families fail; the Dagster `feature_store` asset runs them on the live store as a blocking asset check.
 
 ### I — Modelling
 
