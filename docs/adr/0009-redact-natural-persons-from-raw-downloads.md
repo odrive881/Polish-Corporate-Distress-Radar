@@ -34,7 +34,7 @@ The owner decided to redact.
 - **Parsing is unaffected.** Statements parse as before, and `containers.unwrap` still handles wrapped files if any arrive. Derived datasets must be re-materialized after the migration, because `source_document_hash` changes.
 - **Residual personal data, accepted for now:**
   - **Free text:** notes and accounting-policy text can name board members, and signature stamps drawn into page content are not removed. Board composition is public KRS data, and text extraction (G) must not emit person names (PROJECT_OVERVIEW: pseudonymise).
-  - **File names:** uploaders' names sometimes include signatories' first names (one seed file name ends "signed by" and two first names), in `filing_index.file_name`, the RDF detail JSON and ZIP member names. They are matching keys and are left as they are.
+  - ~~**File names:** uploaders' names sometimes include signatories' first names (one seed file name ends "signed by" and two first names), in `filing_index.file_name`, the RDF detail JSON and ZIP member names. They are matching keys and are left as they are.~~ Reopened and decided in the second addendum below (2026-09-26, plan 0011): file names are no longer kept as text.
 - **Local copies outside the raw store are gone (2026-09-17).** The manual HAR captures in `.cache/rdf_inbox/` and the step-A HAR `tests/fixtures/rdf/rdf-przegladarka_ms_gov_pl.cleaned.har` held the files as filed; both were deleted after import. `test_har_import.py`'s replay test is guarded by `skipif(not RECORDED_HAR.exists())` and now skips. Re-importing needs a fresh capture, and a capture must be deleted once imported. Importing a HAR now stores only redacted files.
 - **Public git history was rewritten (2026-09-17).** The original `neobis_001.xml` (two PESEL numbers, in every commit since the initial one) was replaced by the redacted file across all 13 commits with `git filter-repo`, and the public GitHub repository was deleted and recreated rather than force-pushed, so the old objects are not retrievable by SHA. Old commits `77a012b`/`d3242f3` and blob `a6abde3` return 404/422 from the API; scanning every object in the remote, in local `.git`, and in the working tree with `personal_data_markers()` returns nothing.
 - **A new redaction rule means a new `REDACTION_VERSION`** and another migration pass. `personal_data_markers()` is the check both the migration and the tests use.
@@ -97,3 +97,63 @@ stored as downloaded *except for the documented, deterministic redactions of thi
 
 Residual, accepted: a legal entity's name can contain a founder's surname (e.g. "KOWALSKI SP. Z O.O."). That is the
 public name of a legal entity, not a natural person's record.
+
+## Second addendum, 2026-09-26: file names and document metadata (plan 0011)
+
+The owner reopened the file-name residual above and decided plan 0011's decisions 0–4 on 2026-09-26, then
+widened it to two things plan 0011's census found inside the statement files. Invariant 2's exception covers
+these too: they are removed before hashing, deterministically, and a stored object records the version that
+removed them.
+
+**What was found (plan 0011 step A, counts only).** A filer's file name is stored in the RDF detail
+(`nazwaPliku`, 134 details), in `filing_index.file_name`, in the ZIP member names of all 126 downloads, in the
+sidecar's `original_filename` (118), in every `source_member` path derived from a member, and potentially in
+`quarantine_events.detail` and a kept `content-disposition` header. 68 of the 129 distinct names keep words
+that are neither statement vocabulary, numbers nor the company's own name, so which of them name a person
+cannot be settled without reading them. Inside the statements, 295 attachment names (`Plik/Nazwa`, in 108
+downloads) are the same kind of free text, and of 284 embedded PDFs, 108 carry an `/Author`, 165 a title
+and 163 XMP metadata: an author is usually the person who wrote the notes.
+
+**Decision.**
+1. **A filer's file name is never kept as text** (plan 0011 decision 1). It becomes a **token**: the
+   filing's `document_ref` in URL-safe base64 (`+` → `-`, `/` → `_`, padding dropped, so it is safe as a path
+   component and maps one-to-one onto the `document_ref`) followed by the original's extension, lower-cased,
+   when that is one of `.xml`, `.xades`, `.pdf`, `.doc`, `.docx`, `.xls`, `.xlsx`, `.odt`, `.ods`, `.rtf`,
+   `.txt`, `.zip`, and by nothing otherwise. The token is derived from the filing alone, needs no secret, and
+   reveals nothing a hash of a short name would (a salted hash was the alternative; an unsalted one is
+   reversible by trying common names).
+2. **Everywhere the name is stored, the token replaces it**, before hashing where the name is inside stored
+   bytes (plan 0011 decision 2):
+   - the RDF detail's `nazwaPliku` (the detail is otherwise stored as received);
+   - `filing_index.file_name`;
+   - the ZIP members: a member named by a filing's `nazwaPliku` takes that filing's token; when a download
+     has one content member and one filing, the member takes the token whatever its name (as matching already
+     pairs them); any other member becomes `unmatched-<n>` plus its extension, and parsing quarantines it as
+     `member_not_in_filing_index`, as it would have. Directory components inside the ZIP are dropped;
+   - the sidecar's `original_filename`, and the filename in a kept `content-disposition` header;
+   - `source_member` paths, which are built from the renamed members (plan 0011 decision 4), and with them
+     every derived dataset and the quarantine details that quote a member.
+   Member matching (`parsing/containers.py`) keeps comparing names for equality, now tokens (decision 3).
+3. **Attachment names inside a statement (`Plik/Nazwa`) become `plik-<n>`** plus the extension under the same
+   list, `n` counting the statement's `Plik` elements in document order from 1. The attachment's content is
+   kept, redacted as before.
+4. **Embedded and top-level PDFs lose their document metadata:** the whole document information dictionary
+   (author, title, subject, keywords, creator, producer and dates) and the XMP metadata stream. Nothing in the
+   project reads them. Page content is unchanged, and the free-text residual above still applies to it.
+5. **Versions.** Downloads are redacted under `REDACTION_VERSION = "2"` (version 1's signature removal plus
+   rules 1–4); details under their own version, `rdf-detail-1`. The sidecar and `raw_redactions` record them
+   as before. Already-stored objects are re-derived once by a migration of the same shape as the signature
+   one: the new object written, the manifest repointed in one transaction, the old object deleted only after
+   the new one verifies (plan 0011 step E).
+6. **Fail closed, and a standing check.** A download whose members cannot all be named, or a detail without
+   the `document_ref` its token needs, is not stored. `personal_data_markers()` gains checks for a member,
+   `nazwaPliku`, `Plik/Nazwa` or sidecar filename that is not a token, and for PDF metadata; the fixtures test
+   and an asset check on new downloads run it (plan 0011 step F).
+
+**Consequences.** Every stored download's hash changes, and with it every derived row's
+`source_document_hash`, `source_member` and `ingestion_run_id`; the figures must not move, which
+`notebooks/exploration/canonical_value_hash.py` checks. A file's own name is no longer evidence of anything:
+a `.pdf` test (`latest_filed_as_pdf`) reads the token's extension, which is kept. Old public commits still hold
+this ADR's earlier quote of one file name; removing it from the history is a separate, owner-only decision
+(plan 0011, Risks).
+
