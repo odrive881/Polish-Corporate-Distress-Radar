@@ -55,7 +55,8 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │
 ├── config/
 │   ├── segments/
-│   │   └── construction_sme_v1.yaml   # declarative universe spec
+│   │   ├── construction_sme_v1.yaml   # declarative universe spec
+│   │   └── construction_sme_v1_seed.yaml  # the hand-picked 17-entity seed, with status hints
 │   ├── mappings/
 │   │   ├── canonical_chart.yaml       # the canonical chart of accounts
 │   │   ├── msig_vocabulary.yaml       # procedural terms kept from MSiG notice text (ADR 0009)
@@ -160,6 +161,8 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
     │   ├── test_feature_definitions.py # each family on hand-computed values
     │   ├── test_asof_assembly.py       # the grid, the pivot, the contract, equal bytes
     │   ├── test_asof_assembly_integration.py  # the build against a real manifest schema
+    │   ├── test_coverage.py            # the row's form, shares by family and form
+    │   ├── test_feature_assets.py      # the features group, job and checks
     │   └── test_leakage.py             # §9.1 of AGENT_SPEC.md — blocking
     ├── models/
     ├── transform/                      # SQLMesh boundary and Dagster DQ wiring (pytest side)
@@ -184,7 +187,8 @@ src/distress_radar/
 │   ├── document_retrieval.py    # A3
 │   ├── har_import.py            # A3, manual tier (HAR captures)
 │   ├── redaction.py             # invariant 6: signer data, file names, PDF metadata out before storing (ADR 0009)
-│   ├── redaction_migration.py   # one-off replacement of unredacted stored files
+│   ├── redaction_migration.py   # re-store objects under the current redaction; the store-wide scan
+│   ├── personal_data_scan.py    # pre-commit scan of staged files (`make hooks`)
 │   ├── krs_extract.py           # A4 — full KRS extracts (open KRS API), redacted, content-addressed
 │   ├── msig_client.py           # A4 — MSiG notices, reduced to person-free records at fetch time
 │   └── reference_data.py        # A5
@@ -222,6 +226,7 @@ src/distress_radar/
 │   ├── panel.py                  # point-in-time financial panel: filed-wins rule, quarantine switch
 │   ├── asof_assembly.py          # H1 — the grid, assembly, the feature_store dataset
 │   ├── contracts.py              # Pandera contract for feature_store, built from the feature set
+│   ├── coverage.py               # non-null shares by family and statement form (asset check)
 │   ├── leakage.py                # H2 — §9.1 check and the per-family truncation check
 │   └── feature_definitions.py    # one function per feature family, §6H
 │
