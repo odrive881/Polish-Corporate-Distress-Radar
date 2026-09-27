@@ -10,7 +10,7 @@
 **Order:** after plans 0010 and 0011, which are complete. Phase 7 (text signals) and Phase 8 (LightGBM,
 survival, SHAP) build on the harness this plan makes.
 
-## Status: draft (2026-09-26); owner decisions pending before step A
+## Status: active (2026-09-27); owner decisions made, step A next
 
 ## Why
 
@@ -49,64 +49,80 @@ licensed aggregator feed, remain open), and no A1 aggregator is chosen. Manual c
 thousand entities with several filings each is hundreds of hours of clicking at the confirmed pace. Owner
 decision 0 is about this, not about models.
 
-## Owner decisions needed before step A (recommendations first)
+## Owner decisions (made 2026-09-27)
 
-0. **Build Phase 6 on the seed now, and open the scale question in parallel.** *Recommended:* build the
-   harness now, every result marked "seed, 11 events, not evidence"; and start an ADR on scaled RDF access
-   (ADR 0007 options a and b: a formal request for an allow-listed client to KRS / the Ministry of Justice,
-   and quotes for a licensed aggregator feed) plus the A1 aggregator choice. The harness is needed either
-   way, and does not change when the universe grows.
-   - *Alternative:* pause modelling until the universe grows. Nothing built would be wasted by waiting,
-     but nothing would be learned either, and the harness's bugs would surface later.
-   - *Alternative:* hand-capture a larger seed first (50–100 entities). More events, but a distress-heavy
-     hand-picked sample keeps the calibration problem, at a cost of days of manual capture.
-1. **Target: one binary model per horizon.** *Recommended:* distress (`bankruptcy`, `restructuring`,
-   `liquidation`, `silent_exit`) against `alive`, at 12 and 24 months. Censored rows are left out of the
-   binary models (they are for Phase 8's survival models); rows the labels exclude are already absent.
-   Per-class models have one to four events each and wait for scale.
-2. **Out-of-time scheme: expanding window by calendar year, with purged label windows.** *Recommended:* for a
-   test year Y, train on rows whose whole label window has closed before 1 January Y (`as_of_date +
-   horizon < Y-01-01`); otherwise a training label would already know the test period. Test years 2020–2025,
-   which cover COVID (2020–21), the 2022 rate rises and the 2022–23 energy shock (§6I). On the seed, the
-   financial models have almost no training positives before 2022, and the report says so per fold.
-   - The same entities appear on both sides of a split, by design of a panel; at scale, an entity-disjoint
-     check is added to catch a model memorising companies. On 17 entities it would be meaningless.
-3. **Altman inputs and the Polish models' ratios enter as features, in `feature_set_v2`.** *Recommended:*
-   the baselines need ratios v1 does not carry (e.g. retained earnings and operating result over total
-   assets). Adding them to the feature set keeps them under the leakage test and the contract; computing them
-   inside the model code would bypass both.
-4. **Which classical models, and from which sources.** *Recommended:* Altman's Z'' (the four-ratio variant
-   for private, non-manufacturing firms), plus two or three Polish discriminant models chosen from the
-   literature (candidates: Mączyńska, Gajdka–Stos, Hadasik, Hołda, Prusak, the Poznań model).
+The owner accepted the recommendations below on 2026-09-27. Decisions 1, 2, 5, 7 and 8 carry additions
+from the review that preceded them; decision 9 was changed, because the recommendation it replaces would
+have leaked the future (see there).
+
+0. **Build Phase 6 on the seed now, and open the scale question in parallel.** The harness is built now,
+   every result marked "seed, N events, not evidence". An ADR on scaled RDF access (ADR 0007 options a, a
+   formal request to KRS / the Ministry of Justice for an allow-listed client, and b, quotes for a licensed
+   aggregator feed) and the A1 aggregator choice is opened alongside; it is the critical path to a model
+   that means anything, and this plan does not wait for it. A larger hand-captured seed was rejected: still
+   hand-picked and distress-heavy, so calibration stays meaningless, at days of manual capture.
+1. **Target: one binary model per horizon.** Distress (`bankruptcy`, `restructuring`, `liquidation`,
+   `silent_exit`) against `alive`, at 12 and 24 months. Censored rows are left out of the binary models
+   (they are for Phase 8's survival models); rows the labels exclude are already absent. Per-class models
+   wait for scale. *Addition:* each fold's report gives the class mix of its positives, since a
+   `silent_exit` behaves differently from a court proceeding.
+2. **Out-of-time scheme: expanding window by calendar year, with purged label windows.** For a test year Y,
+   train on rows whose whole label window has closed before 1 January Y (`as_of_date + horizon <
+   Y-01-01`). Test years 2020–2025. The same entities appear on both sides of a split, by design of a panel;
+   an entity-disjoint check is added at scale.
+   - *Addition, a minimum-events rule:* a fold with fewer training events, or fewer test events, than
+     `min_events` (in `config/models/backtest.yaml`, initially 3) is reported as **not evaluable**: its rows
+     and events are listed, no metric is printed. Expected on the seed: at 12 months the 2020 fold trains
+     only on `as_of_date < 2019-01-01`, before the first public statement (2019-03-31), so the 2020 and 2021
+     folds have no financial training data; at 24 months the gap reaches a year further.
+3. **The baselines' ratios enter as features, in `feature_set_v2`.** Computing them inside model code would
+   bypass the leakage test and the contract.
+4. **Classical models: Altman's Z'' and two Polish discriminant models.** Z'' is the four-ratio variant for
+   private, non-manufacturing firms. The two Polish models are chosen by whether the primary publication and
+   a worked example can be obtained, not by reputation; candidates in order: Mączyńska, then Hołda or
+   Hadasik (then Gajdka–Stos, Prusak, the Poznań model).
    - **Coefficients are taken from the primary publications, never from memory,** each with its citation,
-     sample and published cut-off, into versioned config (`config/models/`): they change by literature, not
-     engineering (DIRECTORY_STRUCTURE §3).
+     sample and published cut-off, into versioned config (`config/models/`). A model whose source cannot be
+     verified is not configured.
    - A fixed-coefficient score is not a probability. Each is reported as a score (discrimination, and its
-     published zones), and mapped to a probability only by a one-variable logistic fit on the training folds,
-     so its Brier score is comparable.
-5. **Logistic regression without imputation.** *Recommended:* a small fixed set of ratios, fitted on the rows
-   where all of them are present (complete cases), with the rows and events left out reported per fold.
-   Extreme ratios are rank-transformed within each training fold (fitted on the training rows only), per plan
-   0010's note on near-zero denominators. Missingness indicators with a filled value would be imputation;
-   native missing-value handling is LightGBM's, in Phase 8.
-6. **MLflow: a local tracking store now, a server later.** *Recommended:* SQLite backend and file artifacts
-   under `.data/mlflow/` (gitignored), no service to run; the Docker Compose server (Postgres backend, MinIO
-   artifacts) comes with serving in Phase 9. *Alternative:* the Compose server now.
-7. **The four identifiers, and what makes a run invalid.** *Recommended:*
-   - **code commit:** `git rev-parse HEAD`; a run from a working tree with uncommitted changes is refused,
-     since its code has no commit;
+     published zones), and mapped to a probability only by a one-variable logistic fit on the training
+     folds, so its Brier score is comparable.
+5. **Logistic regression without imputation.** Complete cases on a small fixed set of ratios, with the rows
+   and events left out reported per fold; extreme ratios rank-transformed within each training fold (fitted
+   on the training rows only). Missingness indicators with a filled value would be imputation; native
+   missing-value handling is LightGBM's, in Phase 8.
+   - *Addition:* the ratio list (four to six ratios) and the regularisation strength are fixed in
+     `config/models/` and committed **before the first backtest run**; changing either after seeing results
+     is a new config version, recorded as such. The regularisation strength is not tuned: tuning on six
+     events fits noise.
+6. **MLflow: a local tracking store now, a server later.** SQLite backend and file artifacts under
+   `.data/mlflow/` (gitignored), no service to run; the Docker Compose server (Postgres backend, MinIO
+   artifacts) comes with serving in Phase 9.
+7. **The four identifiers, and what makes a run invalid.**
+   - **code commit:** `git rev-parse HEAD`; a run from a working tree with uncommitted changes is refused;
    - **data snapshot hash:** SHA-256 over the `feature_store` Parquet bytes, which are byte-reproducible
-     (plan 0010). This closes the question ADR 0012 left to Phase 6;
+     (plan 0010). This closes the question ADR 0012 left to Phase 6. *Addition:* the files are hashed in
+     sorted path order, and each file's own hash is logged beside the combined one, so a changed snapshot
+     can be traced to the file that changed;
    - **label version:** the `label_set_hash` (with `label_version`);
    - **feature-set version:** `feature_set_version` and `feature_set_hash`.
    A run missing any of them is not logged at all, rather than logged incomplete.
-8. **The report: generated Markdown tables, no plotting yet.** *Recommended:* per test year and pooled —
-   Brier score, log loss, AUC, precision in the top decile, a reliability table by probability bin, and
-   bootstrap intervals resampled by entity (wide on the seed, and shown). Written under
-   `WAREHOUSE_DIR/reports/backtest/` and logged to MLflow as an artifact. Charts wait for the Quarto report
-   (Phase 9), so this phase adds no plotting library to the locked stack.
-9. **The 2020–21 regime.** *Recommended:* train on all rows with `regime_flag` as a feature, and report a
-   sensitivity run without the flagged rows (§4.6: models must be able to exclude or control for it).
+8. **The report: generated Markdown tables, no plotting yet.** Per test year and pooled: Brier score, log
+   loss, AUC, precision in the top decile, a reliability table by probability bin, and bootstrap intervals
+   resampled by entity. Written under `WAREHOUSE_DIR/reports/backtest/` and logged to MLflow as an artifact.
+   Charts wait for the Quarto report (Phase 9).
+   - *Addition:* below `min_events` (decision 2) a metric prints as `n/a (<k events)`, not a number. This
+     matters most for top-decile precision, whose decile holds a fraction of one event on the seed; the
+     metric stays in the code for scale.
+9. **The 2020–21 regime: a sensitivity run, not a feature.** *Changed from the draft,* which proposed
+   `regime_flag` as a feature. In `outcome_labels`, `regime_flag` marks a row whose **label window**
+   overlaps 2020–21 (`labels_regime_flag_is_window_overlap`): a fact about the months after `as_of_date`,
+   which no model scoring today can know. As a feature it would leak the future. Instead:
+   - the main run trains on all rows, without the flag;
+   - a sensitivity run excludes the flagged rows from training and test, and the report gives both (§4.6:
+     models must be able to exclude or control for the regime);
+   - if the model should control for the regime itself, that is a feature defined on `as_of_date` alone,
+     added to a feature set and so covered by the leakage test; not in this plan.
 
 ## Out of scope
 
@@ -114,7 +130,7 @@ decision 0 is about this, not about models.
 - Text signals (Phase 7); serving and the Quarto report (Phase 9).
 - Growing the universe and scaled RDF access: their own ADR and plan (owner decision 0).
 
-## Steps (after the owner's decisions)
+## Steps
 
 ### A. Dependencies and tracking
 
@@ -128,13 +144,17 @@ still holds for `src/`). `MLFLOW_TRACKING_URI` defaults to the local store (owne
   cut-offs, citation, estimation sample — with a loader that rejects a ratio the feature set cannot supply.
 - `config/features/feature_set_v2.yaml`: v1 plus the ratios step B's models need, each mapped per form and
   variant as in v1. The leakage test and the contract cover them without change.
+- `config/models/backtest.yaml`: test years, `min_events` (owner decision 2), and the logistic regression's
+  ratio list and regularisation strength (owner decision 5), committed before the first backtest run.
 - The primary sources are read and cited; a coefficient without a verifiable source is not configured.
 
 ### C. The modelling dataset and the splits
 
 `src/distress_radar/models/dataset.py` joins `feature_store` (one `feature_set_version`) to one frozen label
 set by hash, with a Pandera contract; `splits.py` builds the purged expanding-window folds of owner
-decision 2 and reports, per fold, training and test rows, events and entities.
+decision 2 and reports, per fold, training and test rows, events (with their class mix) and entities, and
+whether the fold clears `min_events`. `regime_flag` is carried for the sensitivity run's row filter, never
+as a model input (owner decision 9).
 
 ### D. Models
 
@@ -144,7 +164,8 @@ decision 2 and reports, per fold, training and test rows, events and entities.
 ### E. Evaluation and the report
 
 `evaluation.py`: the metrics of owner decision 8, hand-checked on small cases, and the Markdown report
-generated from them, with the seed caveat and event counts at the top of every table.
+generated from them, with the seed caveat and event counts at the top of every table; `n/a (<k events)`
+below `min_events`; the main run and the regime sensitivity run side by side.
 
 ### F. Tracking
 
@@ -166,16 +187,21 @@ to run the backtest; `docs/data_inventory.md` (Altman and Polish coefficients: c
 - **Purging:** no training row's label window reaches its test period, on every fold (blocking, like the
   leakage test).
 - **No imputation:** the logistic regression never sees a null; rows it drops are counted, not lost.
-- **Identifiers:** a run from a dirty tree, or missing any of the four, is refused.
+- **Identifiers:** a run from a dirty tree, or missing any of the four, is refused; the snapshot hash does
+  not depend on file listing order.
+- **No regime leak:** `regime_flag` is not among any model's inputs.
+- **Minimum events:** a fold below `min_events` prints no metric.
 - **Determinism:** two runs on the same inputs give identical metrics and report bytes.
 - **Metrics:** Brier, log loss, AUC and the reliability table against hand-computed values.
 - **Coefficients:** each configured model reproduces a worked example from its source.
 
 ## Definition of done
 
-- [ ] Owner decisions 0–9 made.
+- [x] Owner decisions 0–9 made (2026-09-27).
+- [ ] The scaled-access ADR opened (owner decision 0; its outcome is not part of this plan).
 - [ ] Coefficients sourced and cited; `feature_set_v2` built, leak-free, byte-reproducible.
-- [ ] Purged out-of-time folds for 2020–2025 at 12 and 24 months, each fold's rows and events reported.
+- [ ] Purged out-of-time folds for 2020–2025 at 12 and 24 months, each fold's rows, events and class mix
+      reported, folds below `min_events` marked not evaluable.
 - [ ] Altman Z'', the chosen Polish models and logistic regression evaluated on every fold, Brier score beside
       AUC, bootstrap intervals, the regime sensitivity run.
 - [ ] Every run in MLflow with its four identifiers; incomplete runs refused.
