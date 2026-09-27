@@ -32,3 +32,7 @@ report/_output/
 
 # SQLMesh writes run logs to ./logs when called directly (make targets use .cache/)
 logs/
+
+# Dagster's temporary home during `dagster job execute`; also keeps the tree clean for the
+# backtest's code-commit check (plan 0012 step F)
+.tmp_dagster_home_*/
