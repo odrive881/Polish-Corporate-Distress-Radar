@@ -92,6 +92,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │   └── line_items_v3.yaml         # v2 + the 2025 calculation-variant revenue line
 │   ├── models/                        # classical models' published coefficients, cited (plan 0012)
 │   │   ├── altman_z2_2000.yaml        # Altman Z'', from Altman (2000)
+│   │   ├── backtest_v1.yaml           # inputs pinned by hash, horizons, test years, minimum events
 │   │   └── poznan_2004.yaml           # the Poznań model, Hamrol, Czajka, Piechocki (2004)
 │   ├── labels/
 │   │   ├── outcome_labels_v1.yaml     # label parameters; the file name is the label_version
@@ -238,6 +239,8 @@ src/distress_radar/
 │   └── feature_definitions.py    # one function per feature family, §6H
 │
 ├── models/
+│   ├── dataset.py                 # feature_store joined to one frozen label set, the binary target
+│   ├── splits.py                  # purged expanding-window folds and their per-fold report
 │   ├── baselines.py               # Altman, Polish discriminant models: config/models/ loader
 │   ├── classical.py               # logistic regression
 │   ├── gbm.py                     # LightGBM
