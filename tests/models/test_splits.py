@@ -6,10 +6,13 @@ leakage test: never skip or weaken it."""
 
 from __future__ import annotations
 
+import shutil
 from datetime import date
+from pathlib import Path
 
 import polars as pl
 import pytest
+import yaml
 from tests.models.frames import features, labels, month_ends
 
 from distress_radar.models.dataset import ModellingDataset, modelling_dataset
@@ -19,6 +22,7 @@ from distress_radar.models.splits import (
     purged_folds,
     window_end,
 )
+from distress_radar.parsing.canonical_schema import CONFIG_DIR
 
 DISTRESS = ("bankruptcy", "restructuring", "liquidation", "silent_exit")
 YEARS = tuple(range(2014, 2027))
@@ -96,3 +100,18 @@ def test_the_repository_backtest_config_loads() -> None:
     assert config.label_set_hash.startswith("066d18bbd4cd")  # plan 0009's frozen v2 set
     assert config.test_years == (2020, 2021, 2022, 2023, 2024, 2025)
     assert config.min_events == 3 and config.horizons == (12, 24)
+    # Owner decision 5, approved 2026-09-27: fixed before the first run.
+    lr = config.logistic_regression
+    assert lr.features == ("equity_to_assets", "working_capital_to_assets", "roa", "asset_turnover")
+    assert (lr.penalty, lr.c, lr.class_weight) == ("l2", 1.0, "none")
+
+
+def test_the_regression_may_only_read_ratio_features(tmp_path: Path) -> None:
+    config_dir = tmp_path / "config"
+    shutil.copytree(CONFIG_DIR, config_dir)
+    path = config_dir / "models" / "backtest_v1.yaml"
+    raw = yaml.safe_load(path.read_text("utf-8"))
+    raw["logistic_regression"]["features"] = ["roa", "late_filings_3y"]
+    path.write_text(yaml.safe_dump(raw), "utf-8")
+    with pytest.raises(ValueError, match="late_filings_3y"):
+        load_backtest_config("backtest_v1", config_dir)

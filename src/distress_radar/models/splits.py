@@ -18,13 +18,32 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
+from typing import Literal
 
 import polars as pl
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from distress_radar.features.config import RatioFeature, load_feature_set
 from distress_radar.models.dataset import TARGET, ModellingDataset, event_day
 from distress_radar.parsing.canonical_schema import CONFIG_DIR
+
+
+class LogisticConfig(BaseModel):
+    """Owner decision 5: fixed before the first run, never tuned."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid", populate_by_name=True)
+
+    features: tuple[str, ...] = Field(min_length=1, max_length=6)
+    penalty: Literal["l2"]
+    c: float = Field(alias="C", gt=0)
+    class_weight: Literal["none"]
+
+    @model_validator(mode="after")
+    def _distinct(self) -> LogisticConfig:
+        if len(set(self.features)) != len(self.features):
+            raise ValueError("logistic_regression.features has a repeat")
+        return self
 
 
 class BacktestConfig(BaseModel):
@@ -37,6 +56,7 @@ class BacktestConfig(BaseModel):
     distress_classes: tuple[str, ...] = Field(min_length=1)
     test_years: tuple[int, ...] = Field(min_length=1)
     min_events: int = Field(ge=1)
+    logistic_regression: LogisticConfig
 
     @model_validator(mode="after")
     def _ordered(self) -> BacktestConfig:
@@ -48,10 +68,16 @@ class BacktestConfig(BaseModel):
 
 
 def load_backtest_config(version: str, config_dir: Path = CONFIG_DIR) -> BacktestConfig:
+    """The backtest, checked against its feature set: the regression reads ratio features only."""
     path = config_dir / "models" / f"{version}.yaml"
     config = BacktestConfig.model_validate(yaml.safe_load(path.read_text(encoding="utf-8")))
     if config.backtest != path.stem:
         raise ValueError(f"{path}: `backtest: {config.backtest}` must match the file name")
+    feature_set = load_feature_set(config.feature_set_version, config_dir).feature_set
+    ratios = {f.name for f in feature_set.features if isinstance(f, RatioFeature)}
+    missing = sorted(set(config.logistic_regression.features) - ratios)
+    if missing:
+        raise ValueError(f"{path}: not ratio features of {config.feature_set_version}: {missing}")
     return config
 
 
