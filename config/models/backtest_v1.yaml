@@ -15,3 +15,14 @@ test_years: [2020, 2021, 2022, 2023, 2024, 2025]
 # Decision 2's minimum-events rule: a fold with fewer distinct training or test events than this
 # is reported as not evaluable, and its metrics print as n/a (decision 8).
 min_events: 3
+
+# Decision 5, approved by the owner on 2026-09-27 and committed before the first backtest run.
+# Complete cases on a small fixed set of ratios, one per dimension (solvency, liquidity,
+# profitability, activity), chosen for coverage: none of them loses a seed event. Each ratio is
+# rank-transformed within the training fold to [0, 1], ties averaged, so extreme ratios cannot
+# dominate and the penalty acts on one scale. Not tuned: tuning on six events fits noise.
+logistic_regression:
+  features: [equity_to_assets, working_capital_to_assets, roa, asset_turnover]
+  penalty: l2
+  C: 1.0
+  class_weight: none  # weighting would distort the probabilities the Brier score judges
