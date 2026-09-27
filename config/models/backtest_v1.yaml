@@ -1,0 +1,17 @@
+# The out-of-time backtest (plan 0012 owner decisions 1, 2, 5). Engineering choices, not statute.
+# Loaded by `distress_radar.models.splits.load_backtest_config`. The file name is the version:
+# change a value after seeing results, and it is a new file (owner decision 5), never an edit.
+
+backtest: backtest_v1
+# The inputs, pinned: one feature set and one frozen label set (plan 0009), by hash.
+feature_set_version: feature_set_v3
+label_set_hash: 066d18bbd4cde37fdd9d239ce687fd601f7075570b1a1593540cd009f75389a1
+horizons: [12, 24]
+# Decision 1: distress against `alive`; censored rows are left out of the binary models.
+distress_classes: [bankruptcy, restructuring, liquidation, silent_exit]
+# Decision 2: expanding window by calendar year. A test year trains on rows whose whole label
+# window closed before its 1 January. 2020-21 COVID, 2022 rate rises, 2022-23 energy shock.
+test_years: [2020, 2021, 2022, 2023, 2024, 2025]
+# Decision 2's minimum-events rule: a fold with fewer distinct training or test events than this
+# is reported as not evaluable, and its metrics print as n/a (decision 8).
+min_events: 3

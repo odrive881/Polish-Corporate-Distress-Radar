@@ -37,6 +37,30 @@ survival, SHAP) build on the harness this plan makes.
     statements. The owner decided (2026-09-27) to count it as revenue: `line_items_v3`, read by
     `feature_set_v3`, which is v2's features unchanged and the new default. No other ratio input is
     remapped by a 2025 spec.
+  - **`feature_store` rebuilt on `feature_set_v3`:** the `leakage` check passed, and two builds gave
+    the same bytes (SHA-256 over the sorted files `028c4290…`).
+- **Step C (2026-09-27):** `models/dataset.py` joins `feature_store` to the frozen label set named in
+  `config/models/backtest_v1.yaml`, recomputing the set's hash before use; `models/splits.py` builds
+  the purged folds and their report. The purging test is blocking and fails on an unpurged split.
+  - **Undated declarations.** A declaration with no decision date has a null `event_date` and is
+    dated by `event_known_from` (plan 0008). The dataset carries both, and an event is identified by
+    entity, class, trigger and that date.
+  - **Seed folds** (events are distinct events, not rows; `min_events` 3):
+
+    | test year | 12 m: train / test events | evaluable | 24 m: train / test events | evaluable |
+    |---|---|---|---|---|
+    | 2020 | 3 / 2 | no | 3 / 3 | yes |
+    | 2021 | 4 / 3 | yes | 4 / 4 | yes |
+    | 2022 | 5 / 3 | yes | 5 / 3 | yes |
+    | 2023 | 7 / 1 | no | 6 / 3 | yes |
+    | 2024 | 9 / 2 | no | 8 / 2 | no |
+    | 2025 | 9 / 2 | no | 9 / 2 | no |
+
+    11 events at each horizon, 2,127 labelled rows at 12 months (220 censored) and 2,031 at 24
+    (316 censored). The 2025 test year has 8 rows: the lag allowance censors the rest (plan 0009).
+  - **For step D: these counts are the fold's, not a model's.** The training events before 2019
+    have no financial features, so a complete-case model sees fewer. `min_events` is applied again
+    to the rows each model actually fits and scores.
 
 ## Why
 
@@ -97,7 +121,7 @@ have leaked the future (see there).
    Y-01-01`). Test years 2020–2025. The same entities appear on both sides of a split, by design of a panel;
    an entity-disjoint check is added at scale.
    - *Addition, a minimum-events rule:* a fold with fewer training events, or fewer test events, than
-     `min_events` (in `config/models/backtest.yaml`, initially 3) is reported as **not evaluable**: its rows
+     `min_events` (in `config/models/backtest_v1.yaml`, initially 3) is reported as **not evaluable**: its rows
      and events are listed, no metric is printed. Expected on the seed: at 12 months the 2020 fold trains
      only on `as_of_date < 2019-01-01`, before the first public statement (2019-03-31), so the 2020 and 2021
      folds have no financial training data; at 24 months the gap reaches a year further.
@@ -170,7 +194,7 @@ still holds for `src/`). `MLFLOW_TRACKING_URI` defaults to the local store (owne
   cut-offs, citation, estimation sample — with a loader that rejects a ratio the feature set cannot supply.
 - `config/features/feature_set_v2.yaml`: v1 plus the ratios step B's models need, each mapped per form and
   variant as in v1. The leakage test and the contract cover them without change.
-- `config/models/backtest.yaml`: test years, `min_events` (owner decision 2), and the logistic regression's
+- `config/models/backtest_v1.yaml`: test years, `min_events` (owner decision 2), and the logistic regression's
   ratio list and regularisation strength (owner decision 5), committed before the first backtest run.
 - The primary sources are read and cited; a coefficient without a verifiable source is not configured.
 
