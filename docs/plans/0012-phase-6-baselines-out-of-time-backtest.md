@@ -10,7 +10,7 @@
 **Order:** after plans 0010 and 0011, which are complete. Phase 7 (text signals) and Phase 8 (LightGBM,
 survival, SHAP) build on the harness this plan makes.
 
-## Status: active (2026-09-27); owner decisions made, step A next
+## Status: active (2026-09-27); steps A–D built, step E next
 
 ### Progress
 
@@ -263,8 +263,9 @@ to run the backtest; `docs/data_inventory.md` (Altman and Polish coefficients: c
 
 - [x] Owner decisions 0–9 made (2026-09-27).
 - [ ] The scaled-access ADR opened (owner decision 0; its outcome is not part of this plan).
-- [ ] Coefficients sourced and cited; `feature_set_v2` built, leak-free, byte-reproducible.
-- [ ] Purged out-of-time folds for 2020–2025 at 12 and 24 months, each fold's rows, events and class mix
+- [x] Coefficients sourced and cited; the feature set built, leak-free, byte-reproducible (`feature_set_v3`,
+      2026-09-27; Mączyńska and Hołda not obtainable, see Progress).
+- [x] Purged out-of-time folds for 2020–2025 at 12 and 24 months, each fold's rows, events and class mix
       reported, folds below `min_events` marked not evaluable.
 - [ ] Altman Z'', the chosen Polish models and logistic regression evaluated on every fold, Brier score beside
       AUC, bootstrap intervals, the regime sensitivity run.

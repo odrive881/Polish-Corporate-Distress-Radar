@@ -441,6 +441,8 @@ This is the most important test in the repository. It is the mechanism that turn
 
 **→ Pick:** `statsmodels` for replicating the classical Polish discriminant models and logit baselines; `scikit-learn` pipelines as the harness; `LightGBM` for the gradient-boosted models; `scikit-survival` for discrete-time survival with censoring; `Optuna` for tuning.
 
+*As built (plan 0012):* the classical models proved not to need estimation. Altman's Z'' and the Poznań model are applied with their published coefficients from `config/models/`, and their scores are mapped to probabilities per fold with scikit-learn, as is the logistic regression. `statsmodels` stays in the stack, unused so far.
+
 Two specific reasons. **LightGBM** handles missing values natively, which matters here because absent line items are *legitimately* missing — a small entity filing the simplified form genuinely does not report them, and imputing them would fabricate information. **scikit-survival** over `lifelines` because its sklearn-compatible API reuses the same pipeline and cross-validation machinery as everything else; reach for `lifelines` only if you want classical statistical output tables.
 
 #### I3 — Calibration and explainability
