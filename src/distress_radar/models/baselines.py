@@ -5,17 +5,40 @@ citation, the page they were read from and the hash of the document read: they c
 literature, not engineering (plan 0012 owner decision 4). `load_classical_model` checks a model
 against the feature set it will score, so a model naming a ratio the set cannot supply fails at
 load time rather than as a null score.
+
+A fixed-coefficient score is not a probability (owner decision 4). Per fold, it is reported as a
+score with its published zone, and mapped to a probability by a one-variable logistic fit on the
+training fold's scores: the same fold-fitted rank transform and penalty as the regression
+(`classical.py`), so its Brier score is comparable. A row missing any of the model's ratios has no
+score: it is left out and counted, never imputed.
 """
+
+# polars's signatures reference types pyright cannot resolve; scoped to this module.
+# pyright: reportUnknownMemberType=false
 
 from __future__ import annotations
 
+from dataclasses import replace
 from decimal import Decimal
 from pathlib import Path
 
+import polars as pl
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from distress_radar.features.config import FeatureSet, RatioFeature
+from distress_radar.models.classical import (
+    FitSummary,
+    FoldPredictions,
+    distress_probability,
+    empty_predictions,
+    fit_rank_logistic,
+    one_class_note,
+    parameters,
+    with_probability,
+)
+from distress_radar.models.dataset import TARGET
+from distress_radar.models.splits import Fold, LogisticConfig, events
 from distress_radar.parsing.canonical_schema import CONFIG_DIR
 
 _NAME = r"^[a-z][a-z0-9_]*[a-z0-9]$"
@@ -100,3 +123,62 @@ def load_classical_model(
         raise ValueError(f"{path}: `model: {model.model}` must match the file name")
     model.check_against(feature_set)
     return model
+
+
+def score(model: ClassicalModel) -> pl.Expr:
+    """The published linear score; null when any of its ratios is (Polars propagates nulls)."""
+    expr = pl.lit(float(model.intercept), dtype=pl.Float64)
+    for term in model.terms:
+        expr = expr + float(term.coefficient) * pl.col(term.feature)
+    return expr.alias("score")
+
+
+def zone(model: ClassicalModel) -> pl.Expr:
+    """The published zone of the score column; null when the source publishes none."""
+    if not model.zones:
+        return pl.lit(None, dtype=pl.String).alias("zone")
+    expr = pl.when(pl.col("score").is_null()).then(pl.lit(None, dtype=pl.String))
+    for z in model.zones:
+        above = pl.lit(True) if z.lower is None else pl.col("score") > float(z.lower)
+        below = pl.lit(True) if z.upper is None else pl.col("score") <= float(z.upper)
+        expr = expr.when(above & below).then(pl.lit(z.label))
+    return expr.otherwise(None).alias("zone")
+
+
+def fit_predict_classical(
+    fold: Fold, model: ClassicalModel, mapping: LogisticConfig
+) -> FoldPredictions:
+    """Score both sides, map the score to a probability on the training fold, score the test."""
+    train = fold.train.with_columns(score(model)).filter(pl.col("score").is_not_null())
+    test = (
+        fold.test.with_columns(score(model))
+        .filter(pl.col("score").is_not_null())
+        .with_columns(zone(model))
+    )
+    y = train.get_column(TARGET).to_numpy()
+    note = one_class_note(y)
+    summary = FitSummary(
+        model=model.model,
+        horizon_months=fold.horizon_months,
+        test_year=fold.test_year,
+        train_rows=train.height,
+        train_events=events(train).height,
+        train_rows_left_out=fold.train.height - train.height,
+        test_rows=test.height,
+        test_events=events(test).height,
+        test_rows_left_out=fold.test.height - test.height,
+        fitted=not note,
+        note=note,
+    )
+    if note:
+        return FoldPredictions(summary, empty_predictions())
+    ranks, mapper = fit_rank_logistic(train.select("score").to_numpy(), y, mapping)
+    (slope,), intercept = parameters(mapper)
+    summary = replace(summary, coefficients=(("score_rank", slope),), intercept=intercept)
+    if test.is_empty():
+        return FoldPredictions(summary, empty_predictions())
+    probability = distress_probability(mapper, ranks, test.select("score").to_numpy())
+    return FoldPredictions(
+        summary,
+        with_probability(test, probability, test.get_column("score"), test.get_column("zone")),
+    )

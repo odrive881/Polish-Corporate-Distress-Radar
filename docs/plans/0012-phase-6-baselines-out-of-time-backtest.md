@@ -61,6 +61,19 @@ survival, SHAP) build on the harness this plan makes.
   - **For step D: these counts are the fold's, not a model's.** The training events before 2019
     have no financial features, so a complete-case model sees fewer. `min_events` is applied again
     to the rows each model actually fits and scores.
+- **Owner decision 5 filled in (2026-09-27, commit `ecc61bc`, before any model code):** equity/assets,
+  working capital/assets, ROA, asset turnover; L2, C = 1.0, no class weighting. On the seed no fold
+  clears `min_events` with complete cases, under any ratio set tried; the regression is fitted and
+  logged, its metrics print n/a.
+- **Step D (2026-09-27):** `models/classical.py` (the regression: complete cases counted, fold-fitted
+  mid-rank transform, `lbfgs`) and `models/baselines.py` (the published score, its zone, and its
+  mapping to a probability). The mapping reuses the regression's rank transform and penalty on the
+  one variable, so both are judged by the same Brier score. A fold whose complete training rows
+  hold one class is reported with the reason and not fitted.
+  - **Seed smoke run:** all three models run on every fold. The regression and the Poznań model fit
+    from 2021 (12 m) and 2022 (24 m). Z'' needs the operating result and the equity breakdown, which
+    small income statements and micro balance sheets lack, so its training rows hold no event
+    until 2023 (12 m) and 2024 (24 m).
 
 ## Why
 
