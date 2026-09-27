@@ -149,6 +149,7 @@ from dagster_defs.assets.dq import dq_assets
 from dagster_defs.assets.features import features_assets
 from dagster_defs.assets.labels import label_assets
 from dagster_defs.assets.legal import legal_assets
+from dagster_defs.assets.models import models_assets
 from dagster_defs.assets.parsing import parsing_assets
 from dagster_defs.checks.accounting_identities import accounting_identity_checks
 
@@ -170,6 +171,14 @@ features = dg.define_asset_job(
     description="Parsing outputs and legal events rebuilt from stored bytes → feature_store.",
 )
 
+# Plan 0012 step G: the backtest, alone and by hand. No schedule: a backtest is a decision, not a
+# refresh. It reads the stored `feature_store` and a frozen label set; it rebuilds neither.
+backtest = dg.define_asset_job(
+    "backtest",
+    selection=dg.AssetSelection.assets("backtest"),
+    description="The out-of-time backtest: report under WAREHOUSE_DIR, one MLflow run per cell set.",
+)
+
 defs = dg.Definitions(
     assets=[
         *acquisition_assets,
@@ -178,8 +187,9 @@ defs = dg.Definitions(
         *legal_assets,
         *label_assets,
         *features_assets,
+        *models_assets,
     ],
-    jobs=[legal_to_labels, features],
+    jobs=[legal_to_labels, features, backtest],
     asset_checks=accounting_identity_checks,
     resources={
         "postgres": PostgresResource(),

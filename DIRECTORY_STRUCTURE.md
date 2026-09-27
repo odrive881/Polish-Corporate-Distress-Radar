@@ -137,7 +137,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │   ├── dq.py                      # E3/F: SQLMesh DQ models, audits as asset checks
 │   │   ├── extraction.py
 │   │   ├── features.py
-│   │   └── models.py
+│   │   └── models.py                  # plan 0012: the backtest asset, its own job, run by hand
 │   ├── checks/                        # asset checks — accounting identities, leakage guard
 │   ├── partitions.py
 │   ├── schedules.py
