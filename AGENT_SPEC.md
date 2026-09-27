@@ -401,11 +401,12 @@ Three generations trained on identical data and compared:
 2. `scikit-learn` — regularised logistic regression.
 3. `LightGBM` + `scikit-survival` — gradient boosting and discrete-time survival with censoring.
 
-As built so far (plan 0012, steps A–D):
+As built so far (plan 0012, steps A–E):
 
 - **Dataset** (`models/dataset.py`): `feature_store` joined to one frozen label set, both pinned in `config/models/backtest_v1.yaml`; the label set's hash is recomputed before use. The target is distress (bankruptcy, restructuring, liquidation, silent exit) against `alive`; censored rows are counted and left out. A labelled row with no feature row is an error, never dropped. `regime_flag` is carried for the sensitivity run and is never a model input: it describes the label window, which is the future. A declaration with no decision date is dated by `event_known_from`, as the labels do.
 - **Folds** (`models/splits.py`): expanding window by calendar year, test years 2020–2025. A test year trains only on rows whose whole label window closed before its 1 January (purged). Each fold reports rows, distinct events by class and entities; a fold with fewer than `min_events` (3) distinct training or test events is reported as not evaluable, and the rule is applied again to the rows each model actually uses.
 - **Generation 1** (`models/baselines.py`): Altman's Z'' and the Poznań model with their published coefficients, which need no estimation; the coefficients, zones and sources are in `config/models/`. A score is null when any of its ratios is. Each score is mapped to a probability per fold by a one-variable logistic fit (scikit-learn) on fold-fitted ranks, so it shares the regression's Brier score. `statsmodels` is installed but not yet used.
+- **Evaluation and report** (`models/evaluation.py`, `backtest.py`, `report.py`): Brier score, log loss, AUC and top-decile precision, written out and pinned by hand-computed tests; 95% intervals from 1,000 resamples of entities with a fixed seed; a reliability table for each pooled cell that is scored. Two runs side by side: `main` and `no_regime` (the 2020–21 regime rows left out of training and test). A cell is scored only when its model was fitted and trained and was scored on at least `min_events` distinct events; otherwise the report gives the reason and no numbers. The report opens every table with the seed caveat and its event count, and is written to `WAREHOUSE_DIR/reports/backtest/<backtest>.md`, byte for byte reproducible.
 - **Generation 2** (`models/classical.py`): L2 logistic regression, C = 1.0, no class weighting, never tuned, on equity/assets, working capital/assets, ROA and asset turnover (owner-approved), complete cases only, each ratio mid-ranked on the training fold alone.
 
 Rules:

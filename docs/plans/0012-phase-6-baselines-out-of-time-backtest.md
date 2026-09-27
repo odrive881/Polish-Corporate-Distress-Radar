@@ -10,7 +10,7 @@
 **Order:** after plans 0010 and 0011, which are complete. Phase 7 (text signals) and Phase 8 (LightGBM,
 survival, SHAP) build on the harness this plan makes.
 
-## Status: active (2026-09-27); steps A–D built, step E next
+## Status: active (2026-09-27); steps A–E built, step F next
 
 ### Progress
 
@@ -74,6 +74,17 @@ survival, SHAP) build on the harness this plan makes.
     from 2021 (12 m) and 2022 (24 m). Z'' needs the operating result and the equity breakdown, which
     small income statements and micro balance sheets lack, so its training rows hold no event
     until 2023 (12 m) and 2024 (24 m).
+- **Step E (2026-09-27):** `models/evaluation.py` (metrics written out and pinned by hand-computed
+  cases, the entity bootstrap, reliability bins), `models/backtest.py` (every model on every fold,
+  horizon and run) and `models/report.py` (the Markdown report). The report is `report.py`, not
+  `evaluation.py`: the runner imports the metrics, so rendering there would be an import cycle.
+  - **Bootstrap and bins in the config:** 1,000 entity resamples, seed 20260927, 95%; ten
+    reliability bins (`backtest_v1.yaml`, added before the first run).
+  - **Pooled cells** gather the test rows of the folds whose model trained on at least `min_events`
+    events: a fold trained on fewer does not speak for the pool.
+  - **Seed run:** one cell is scored, the pooled 12-month regression (3 events): Brier 0.137
+    [0.021–0.274], AUC 0.505 [0.088–0.827], i.e. noise, as expected. Every other cell prints its
+    reason. The `no_regime` run has no fold trained on 3 events. Two runs gave identical bytes.
 
 ## Why
 
