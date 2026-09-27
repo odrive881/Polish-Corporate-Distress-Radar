@@ -77,8 +77,10 @@ class Settings(BaseSettings):
     # Which `config/labels/<label_version>.yaml` the label models build (plan 0009). A frozen set
     # records its version, so switching back rebuilds the older version's labels.
     label_version: str = "outcome_labels_v2"
-    # Which `config/features/<feature_set_version>.yaml` builds `feature_store` (plan 0010).
-    feature_set_version: str = "feature_set_v1"
+    # Which `config/features/<feature_set_version>.yaml` builds `feature_store` (plan 0010). v3 is
+    # v1 plus the classical models' ratios, which the backtest reads, and the 2025 revenue line
+    # (plan 0012).
+    feature_set_version: str = "feature_set_v3"
 
     # MLflow (plan 0012 decision 6): a local SQLite store, no service to run, until the Compose
     # server arrives with serving in Phase 9. Run artifacts go under `mlflow_artifact_dir`, set

@@ -254,7 +254,7 @@ Lives in Postgres.
 Rules:
 - `<name>__known_from` is the latest `known_from` of every fact the value was built from. A feature is non-null exactly when its companion is, and the companion is never after `as_of_date` (the `FEATURE_STORE` contract, and §9.1).
 - Nothing is imputed (invariant 4). A feature is null when an input is missing (the micro form has no liability split or equity breakdown), when a denominator is zero, or when a flow-based feature reads a period outside 335–396 days or of unknown length (plan 0010 owner decision 7: never annualised). A count of zero is a value.
-- `config/features/<feature_set_version>.yaml` defines the features; the file name is the version and its hash is on every row. `FEATURE_SET_VERSION` picks one (default `feature_set_v1`). Quarantined statements are excluded from financial features unless the feature set's `include_quarantined_statements` is on.
+- `config/features/<feature_set_version>.yaml` defines the features; the file name is the version and its hash is on every row. `FEATURE_SET_VERSION` picks one (default `feature_set_v3`: v1 plus the ratios of the classical models in `config/models/`, and `IS.CALC.A.R2025` counted as revenue; plan 0012). Quarantined statements are excluded from financial features unless the feature set's `include_quarantined_statements` is on.
 - Ratios over near-zero denominators reach extreme values; they are data, and models transform them (e.g. rank or winsorise) rather than read them raw.
 
 ---

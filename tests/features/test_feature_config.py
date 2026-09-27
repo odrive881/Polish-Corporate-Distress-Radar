@@ -243,3 +243,59 @@ def test_an_experimental_set_can_include_quarantined_statements(tmp_path: Path) 
     experimental = load_feature_set("feature_set_v1q", config_dir)
     assert experimental.feature_set.include_quarantined_statements is True
     assert experimental.feature_set_hash != load_feature_set("feature_set_v1").feature_set_hash
+
+
+# --- feature set v2 (plan 0012 step B) -----------------------------------------------------------
+
+V2_ADDED = {
+    "retained_earnings_to_assets",
+    "ebit_to_assets",
+    "equity_to_liabilities",
+    "long_term_capital_to_assets",
+    "sales_margin",
+}
+
+
+def test_v2_is_v1_plus_the_classical_model_ratios(config: FeatureConfig) -> None:
+    """v1's features carry over unchanged, so v1 results stay comparable with v2's."""
+    v2 = load_feature_set("feature_set_v2")
+    v1_features = {f.name: f for f in config.feature_set.features}
+    v2_features = {f.name: f for f in v2.feature_set.features}
+    assert set(v2_features) - set(v1_features) == V2_ADDED
+    assert all(v2_features[name] == f for name, f in v1_features.items())
+    assert v2.line_items.inputs == {
+        **config.line_items.inputs,
+        "sales_result": ("IS.COMP.C", "IS.CALC.F", "IS.CALC.MALA.E"),
+    }
+    assert v2.feature_set_hash != config.feature_set_hash
+
+
+def test_the_sales_result_is_carried_by_full_and_small_forms_only() -> None:
+    coverage = load_feature_set("feature_set_v2").line_items.coverage(load_mapping_config())
+    assert coverage["sales_result"] == {"jednostka_inna", "jednostka_mala"}
+
+
+def test_v3_is_v2_with_the_2025_revenue_line() -> None:
+    """Owner decision 2026-09-27: the narrowed calculation line counts as revenue (plan 0012)."""
+    v2 = load_feature_set("feature_set_v2")
+    v3 = load_feature_set("feature_set_v3")
+    assert v3.feature_set.features == v2.feature_set.features
+    assert v3.line_items.inputs == {
+        **v2.line_items.inputs,
+        "revenue": ("IS.COMP.A", "IS.CALC.A", "IS.CALC.A.R2025", "IS.MIKRO.A"),
+    }
+
+
+def test_no_2025_override_leaves_a_ratio_input_behind() -> None:
+    """A spec's `code_overrides` rename lines; every renamed input code has its new code listed."""
+    inputs = load_feature_set("feature_set_v3").line_items.inputs
+    listed = {c for codes in inputs.values() for c in codes}
+    for spec in (CONFIG_DIR / "mappings" / "structures").glob("*.yaml"):
+        overrides: dict[str, str] = _load_yaml(spec).get("code_overrides") or {}
+        for old, new in overrides.items():
+            if old in listed:
+                assert new in listed, f"{spec.name}: {old} → {new} is not a ratio input"
+
+
+def _load_yaml(path: Path) -> dict[str, Any]:
+    return yaml.safe_load(path.read_text("utf-8"))

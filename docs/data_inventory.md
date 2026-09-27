@@ -133,7 +133,7 @@ The spec forbids bulk enumeration of any source. Acquisition is per entity, seed
 | Annual statement filing deadlines: approval within 6 months, filing within 15 days (UoR art. 53, 69), COVID-era extensions (Dz.U. 2020 poz. 570 as amended), dated | Ustawa o rachunkowości; MF regulation | H | `config/statutory/filing_deadlines.yaml` | missing-year and late-filing features | required | plan 0010 decision 4 | written (plan 0010 step B), checked against the consolidated regulation |
 | Insolvency / restructuring procedure taxonomy, dated | Prawo upadłościowe, Prawo restrukturyzacyjne, COVID-era acts | F | `config/statutory/procedure_taxonomy.yaml` | `outcome_labels` | required | SPEC §4.6 | written: KRS (plan 0008 step B), MSiG (plan 0008 step F), registry changes (plan 0010 step B) |
 | Canonical chart of line items | built from the UoR annexes | C2 | `config/mappings/canonical_chart.yaml` | every mapping spec | required | SPEC §5, §6C2 | written (plan 0004), extended for the small and micro forms (plan 0005 step C) |
-| Altman Z-score variants and Polish discriminant model coefficients | academic literature | I | model code / config | baseline models | required | SPEC §6I | not collected |
+| Altman Z-score variants and Polish discriminant model coefficients | academic literature | I | `config/models/` | baseline models | required | SPEC §6I | partly collected (plan 0012): Altman Z'' and the Poznań model, read from their primary sources; Mączyńska and Hołda are print-only, not obtained |
 
 ---
 

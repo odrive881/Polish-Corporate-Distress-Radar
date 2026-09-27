@@ -29,7 +29,7 @@ from distress_radar.features.asof_assembly import (
     feature_inputs,
     widen,
 )
-from distress_radar.features.config import Family, FeatureConfig, load_feature_set
+from distress_radar.features.config import Family, FeatureConfig, RatioFeature, load_feature_set
 from distress_radar.features.leakage import (
     FamilyFn,
     known_from_violations,
@@ -61,6 +61,7 @@ FULL = {
     "operating_result": 100,
     "financial_costs": 20,
     "net_result": -25,
+    "sales_result": 80,  # line_items_v2 onward
 }
 MICRO = {"total_assets": 500, "current_assets": 300, "equity": 100, "revenue": 800, "net_result": 5}
 
@@ -117,6 +118,8 @@ def _canonical(config: FeatureConfig) -> pl.DataFrame:
         micro = krs == B
         for column, figures in (("current_year", current), ("prior_year", prior)):
             for name, value in figures.items():
+                if name not in config.line_items.inputs:
+                    continue  # an input a later line-item map added
                 codes = config.line_items.inputs[name]
                 code = (
                     next(c for c in codes if "MIKRO" in c)
@@ -224,9 +227,10 @@ def _month_ends(first: date, last: date) -> list[date]:
     return out
 
 
-@pytest.fixture(scope="module")
-def config() -> FeatureConfig:
-    return load_feature_set("feature_set_v1")
+# Every feature set, so a set's new features are under the checks the day they are written.
+@pytest.fixture(scope="module", params=["feature_set_v1", "feature_set_v2", "feature_set_v3"])
+def config(request: pytest.FixtureRequest) -> FeatureConfig:
+    return load_feature_set(request.param)
 
 
 @pytest.fixture(scope="module")
@@ -284,6 +288,17 @@ def test_the_checks_are_not_vacuous(
     """Every family computes something on this warehouse, so the checks above see it."""
     for name, compute in fd.FAMILIES.items():
         assert compute(grid, inputs, config).height > 0, name
+
+
+def test_every_ratio_is_computed_somewhere(store: pl.DataFrame, config: FeatureConfig) -> None:
+    """Company A files every input, so a ratio null on all its rows is one the checks never saw."""
+    rows = store.filter(pl.col("krs") == A)
+    never = [
+        f.name
+        for f in config.feature_set.features
+        if isinstance(f, RatioFeature) and rows.get_column(f.name).is_null().all()
+    ]
+    assert never == []
 
 
 # --- the traps -----------------------------------------------------------------------------------
