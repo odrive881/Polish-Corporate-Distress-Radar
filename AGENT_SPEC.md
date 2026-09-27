@@ -387,6 +387,8 @@ Feature families as built (feature set v1, 44 features):
 - Registry dynamics: board changes, office moves and capital changes in 12 and 36 months, from the KRS extract's entries (counts only, no names, §12); arrears enforcements in 12 months; curators ever appointed.
 - Legal history: petitions and closed proceedings by class, ever.
 
+Feature sets v2 and v3 (plan 0012) keep v1's 44 features unchanged and add five ratios the classical models read: retained earnings (prior years' result plus the year's) to assets, operating result to assets (standing in for EBIT), equity to liabilities, long-term capital (equity plus long-term liabilities) to assets, and the result on sales to revenue. v3, the default, also counts the 2025 calculation-variant revenue line (`IS.CALC.A.R2025`, products and goods, no longer materials) as revenue; without it, revenue was null for those statements. The leakage test runs on every feature set.
+
 Deferred, each with its reason in plan 0010: auditor change and loss-coverage history (text, Phase 7); text signals (§G, Phase 7); macro and sector context (A5 has no adapter, and sector aggregates over the seed would leak its own outcomes); size class (§4.4 needs average employment, which no structured source carries, `docs/data_inventory.md` gap 8).
 
 **H2** Leakage tests — see §9.1. `features/leakage.py` holds both checks: §9.1 as written, and the per-family variant, which recomputes each family from the sources cut to what was public on each `as_of_date` and requires identical output. `tests/features/test_leakage.py` runs them on a synthetic warehouse with traps and shows leaky families fail; the Dagster `feature_store` asset runs them on the live store as a blocking asset check.
@@ -398,6 +400,13 @@ Three generations trained on identical data and compared:
 1. `statsmodels` — Altman Z-score variants and Polish discriminant models from the literature, as baselines.
 2. `scikit-learn` — regularised logistic regression.
 3. `LightGBM` + `scikit-survival` — gradient boosting and discrete-time survival with censoring.
+
+As built so far (plan 0012, steps A–D):
+
+- **Dataset** (`models/dataset.py`): `feature_store` joined to one frozen label set, both pinned in `config/models/backtest_v1.yaml`; the label set's hash is recomputed before use. The target is distress (bankruptcy, restructuring, liquidation, silent exit) against `alive`; censored rows are counted and left out. A labelled row with no feature row is an error, never dropped. `regime_flag` is carried for the sensitivity run and is never a model input: it describes the label window, which is the future. A declaration with no decision date is dated by `event_known_from`, as the labels do.
+- **Folds** (`models/splits.py`): expanding window by calendar year, test years 2020–2025. A test year trains only on rows whose whole label window closed before its 1 January (purged). Each fold reports rows, distinct events by class and entities; a fold with fewer than `min_events` (3) distinct training or test events is reported as not evaluable, and the rule is applied again to the rows each model actually uses.
+- **Generation 1** (`models/baselines.py`): Altman's Z'' and the Poznań model with their published coefficients, which need no estimation; the coefficients, zones and sources are in `config/models/`. A score is null when any of its ratios is. Each score is mapped to a probability per fold by a one-variable logistic fit (scikit-learn) on fold-fitted ranks, so it shares the regression's Brier score. `statsmodels` is installed but not yet used.
+- **Generation 2** (`models/classical.py`): L2 logistic regression, C = 1.0, no class weighting, never tuned, on equity/assets, working capital/assets, ROA and asset turnover (owner-approved), complete cases only, each ratio mid-ranked on the training fold alone.
 
 Rules:
 
@@ -516,6 +525,7 @@ Plus per-family variants asserting no contributing source violated the bound. A 
 | Extraction eval | Precision/recall per signal type against `evals/` |
 | Idempotence | Re-running any stage on identical input produces byte-identical output |
 | Statutory config | Threshold lookups resolve correctly across effective-date boundaries |
+| Out-of-time purging (blocking) | No training row's label window reaches its test year, at every horizon (`tests/models/test_splits.py`, plan 0012) |
 
 ---
 
