@@ -81,6 +81,8 @@ class Settings(BaseSettings):
     # v1 plus the classical models' ratios, which the backtest reads, and the 2025 revenue line
     # (plan 0012).
     feature_set_version: str = "feature_set_v3"
+    # Which `config/models/<backtest_version>.yaml` the `backtest` job runs (plan 0012).
+    backtest_version: str = "backtest_v1"
 
     # MLflow (plan 0012 decision 6): a local SQLite store, no service to run, until the Compose
     # server arrives with serving in Phase 9. Run artifacts go under `mlflow_artifact_dir`, set
