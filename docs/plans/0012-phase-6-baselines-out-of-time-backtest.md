@@ -10,7 +10,7 @@
 **Order:** after plans 0010 and 0011, which are complete. Phase 7 (text signals) and Phase 8 (LightGBM,
 survival, SHAP) build on the harness this plan makes.
 
-## Status: active (2026-09-27); steps A–E built, step F next
+## Status: active (2026-09-27); steps A–F built, step G next
 
 ### Progress
 
@@ -85,6 +85,12 @@ survival, SHAP) build on the harness this plan makes.
   - **Seed run:** one cell is scored, the pooled 12-month regression (3 events): Brier 0.137
     [0.021–0.274], AUC 0.505 [0.088–0.827], i.e. noise, as expected. Every other cell prints its
     reason. The `no_regime` run has no fold trained on 3 events. Two runs gave identical bytes.
+- **Step F (2026-09-27):** `models/registry.py`. The identifiers are parameters of every run, and the
+  code commit also the standard `mlflow.source.git.commit` tag. Untracked files count as dirty too:
+  code not in the commit is code the commit does not identify. Dagster's temporary home
+  (`.tmp_dagster_home_*/`) is now gitignored, so a job run does not dirty the tree.
+  - **Seed run logged** at `58f47a4`: 12 runs (3 models, 2 horizons, 2 runs), all finished, snapshot
+    `bd6d10d5…`; only the pooled 12-month regression carries metric values.
 
 ## Why
 
@@ -280,7 +286,7 @@ to run the backtest; `docs/data_inventory.md` (Altman and Polish coefficients: c
       reported, folds below `min_events` marked not evaluable.
 - [ ] Altman Z'', the chosen Polish models and logistic regression evaluated on every fold, Brier score beside
       AUC, bootstrap intervals, the regime sensitivity run.
-- [ ] Every run in MLflow with its four identifiers; incomplete runs refused.
+- [x] Every run in MLflow with its four identifiers; incomplete runs refused.
 - [ ] The backtest report generated, reproducible byte for byte, with the seed caveat.
 - [ ] `make check` and `make test-integration` green; docs from step H updated.
 

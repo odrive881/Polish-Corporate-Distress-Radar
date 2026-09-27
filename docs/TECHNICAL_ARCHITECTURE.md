@@ -384,7 +384,7 @@ Context worth knowing: Fivetran acquired Tobiko Data, SQLMesh's originator, in S
 
 The reasoning is that this project's bitemporality is *domain* bitemporality — fiscal period versus document public-availability date. Modelling it explicitly in the schema is more honest and more defensible than delegating it to a table format's commit history, and it makes the leakage tests in stage H trivially expressible.
 
-*As built (ADR 0012):* the explicit validity columns live on the canonical tables themselves: `period_start` / `period_end` are the fiscal period and `known_from` the filing date. No separate snapshot copy partitioned by `as_of_month` is built. Feature assembly ASOF-joins on `known_from` over the canonical Parquet, and `feature_store`, partitioned by `as_of_date` year, is the monthly as-of view. The data snapshot hash that MLflow runs log is designed in Phase 6.
+*As built (ADR 0012):* the explicit validity columns live on the canonical tables themselves: `period_start` / `period_end` are the fiscal period and `known_from` the filing date. No separate snapshot copy partitioned by `as_of_month` is built. Feature assembly ASOF-joins on `known_from` over the canonical Parquet, and `feature_store`, partitioned by `as_of_date` year, is the monthly as-of view. The data snapshot hash that MLflow runs log is SHA-256 over the `feature_store` Parquet files in sorted path order (plan 0012).
 
 ---
 
