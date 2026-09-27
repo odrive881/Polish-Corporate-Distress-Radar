@@ -46,6 +46,14 @@ class LogisticConfig(BaseModel):
         return self
 
 
+class BootstrapConfig(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    replicates: int = Field(ge=100)
+    seed: int = Field(ge=0)
+    level: float = Field(gt=0.5, lt=1)
+
+
 class BacktestConfig(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -57,6 +65,8 @@ class BacktestConfig(BaseModel):
     test_years: tuple[int, ...] = Field(min_length=1)
     min_events: int = Field(ge=1)
     logistic_regression: LogisticConfig
+    bootstrap: BootstrapConfig
+    reliability_bins: int = Field(ge=2, le=20)
 
     @model_validator(mode="after")
     def _ordered(self) -> BacktestConfig:

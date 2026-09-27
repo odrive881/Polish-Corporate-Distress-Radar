@@ -26,3 +26,13 @@ logistic_regression:
   penalty: l2
   C: 1.0
   class_weight: none  # weighting would distort the probabilities the Brier score judges
+
+# Decision 8: bootstrap intervals resampled by entity (rows of one company move together), a
+# percentile interval over `replicates` resamples drawn from a fixed seed, so the report is
+# reproducible byte for byte. Wide on the seed, and shown.
+bootstrap:
+  replicates: 1000
+  seed: 20260927
+  level: 0.95
+# Decision 8: the reliability table's probability bins, [0, 0.1), [0.1, 0.2), ... [0.9, 1.0].
+reliability_bins: 10

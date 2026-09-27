@@ -243,6 +243,9 @@ src/distress_radar/
 │   ├── splits.py                  # purged expanding-window folds and their per-fold report
 │   ├── baselines.py               # Altman, Polish discriminant models: config/models/ loader
 │   ├── classical.py               # logistic regression
+│   ├── evaluation.py              # metrics, entity bootstrap, reliability, the n/a rule per cell
+│   ├── backtest.py                # every model on every fold, horizon and run (main, no_regime)
+│   ├── report.py                  # the backtest report as generated Markdown
 │   ├── gbm.py                     # LightGBM
 │   ├── survival.py                # scikit-survival
 │   ├── calibration.py
