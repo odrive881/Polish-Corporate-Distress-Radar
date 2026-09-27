@@ -1,4 +1,5 @@
-"""`dq_mart` suppression threshold setting (plan 0007 decision 9)."""
+"""Settings with a rule behind their default: `dq_mart` suppression (plan 0007 decision 9) and
+the MLflow store (plan 0012 decision 6)."""
 
 import pydantic
 import pytest
@@ -21,3 +22,14 @@ def test_a_threshold_that_suppresses_nothing_is_rejected(monkeypatch: pytest.Mon
     monkeypatch.setenv("DQ_MART_MIN_CELL_ENTITIES", "0")
     with pytest.raises(pydantic.ValidationError):
         Settings(_env_file=None)  # type: ignore[call-arg]
+
+
+def test_mlflow_defaults_to_a_local_store_in_the_gitignored_data_dir(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """No service to run in Phase 6, and nothing tracked lands in git (`.data/` is ignored)."""
+    monkeypatch.delenv("MLFLOW_TRACKING_URI", raising=False)
+    monkeypatch.delenv("MLFLOW_ARTIFACT_DIR", raising=False)
+    settings = Settings(_env_file=None)  # type: ignore[call-arg]
+    assert settings.mlflow_tracking_uri == "sqlite:///.data/mlflow/mlflow.db"
+    assert settings.mlflow_artifact_dir.parts[0] == ".data"

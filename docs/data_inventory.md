@@ -168,7 +168,7 @@ The spec forbids bulk enumeration of any source. Acquisition is per entity, seed
 | LLM API key (vision tier and text extraction) | none yet; must be added to `.env.example` | C3, G2 | required from Phase 3 / 7 | not configured |
 | Postgres | `POSTGRES_HOST/PORT/DB/USER/PASSWORD` | B, J | required | local Docker Compose |
 | MinIO | `MINIO_ENDPOINT/ACCESS_KEY/SECRET_KEY/BUCKET` | B | required | local Docker Compose |
-| MLflow tracking server | `MLFLOW_TRACKING_URI` | I, J | required from Phase 6 | not deployed |
+| MLflow tracking store | `MLFLOW_TRACKING_URI`, `MLFLOW_ARTIFACT_DIR` | I, J | required from Phase 6 | local SQLite store under `.data/mlflow/` by default (plan 0012); the server comes in Phase 9 |
 | Sentry DSN | `SENTRY_DSN` | L | optional | not configured |
 | SOPS `age` key for encrypted committed config | — | platform | required for committed secrets | not set up |
 | GitHub Actions secrets | — | CI | required | — |

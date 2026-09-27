@@ -29,6 +29,12 @@ dependencies = [
     # SQLMesh state backend driver (ADR 0010). Project code uses psycopg 3.
     "psycopg2-binary>=2.9.10",
     "pymupdf>=1.24",
+    # Stage I (plan 0012): classical baselines, logistic regression, run tracking. Project code
+    # hands them NumPy arrays from Polars; the pandas they pull in stays out of `src/`.
+    "statsmodels>=0.14",
+    "scikit-learn>=1.5",
+    # Full package, not mlflow-skinny: the local SQLite tracking store needs SQLAlchemy/Alembic.
+    "mlflow>=3.1",
 ]
 
 [project.optional-dependencies]

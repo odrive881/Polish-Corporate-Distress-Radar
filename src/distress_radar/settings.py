@@ -80,6 +80,13 @@ class Settings(BaseSettings):
     # Which `config/features/<feature_set_version>.yaml` builds `feature_store` (plan 0010).
     feature_set_version: str = "feature_set_v1"
 
+    # MLflow (plan 0012 decision 6): a local SQLite store, no service to run, until the Compose
+    # server arrives with serving in Phase 9. Run artifacts go under `mlflow_artifact_dir`, set
+    # when an experiment is created; left to MLflow, they would land in `./mlruns` of whatever
+    # directory the run started from.
+    mlflow_tracking_uri: str = "sqlite:///.data/mlflow/mlflow.db"
+    mlflow_artifact_dir: Path = Path(".data/mlflow/artifacts")
+
     @property
     def postgres_conninfo(self) -> str:
         return (
