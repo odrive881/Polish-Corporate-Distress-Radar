@@ -158,13 +158,13 @@ The spec forbids bulk enumeration of any source. Acquisition is per entity, seed
 | Credential / access | Env var | Stage | Req. | Status |
 |---|---|---|---|---|
 | GUS BIR1 **production** API key (issued by GUS on request) | `GUS_BIR1_API_KEY`, `GUS_BIR1_ENDPOINT=prod`, `BIR1_REQUESTS_PER_MINUTE` | A2 | required for real data | obtained 2026-09-16; set in the local `.env` (gitignored), verified with one production lookup |
-| RDF portal access | `RDF_REQUESTS_PER_MINUTE`, `RDF_MANUAL_INBOX` | A3 | required | no login; WAF blocks plain HTTP, and automated browsers get a CAPTCHA (ADR 0007), so captured by hand for now |
+| RDF portal access | `RDF_REQUESTS_PER_MINUTE`, `RDF_MANUAL_INBOX` | A3 | required | no login; WAF blocks plain HTTP, and automated browsers get a CAPTCHA (ADR 0007), so captured by hand for now; scaled access: ADR 0013, proposed |
 | KRS extract access | `KRS_API_REQUESTS_PER_MINUTE` | A2, A4 | required | open KRS API, no key; open-data act basis, no published limit, 15/min here (ADR 0011) |
 | KRZ access | — | A4 | required | Imperva WAF; no automated access (ADR 0011); a sanctioned channel is the owner's to pursue |
 | MSiG search access | `MSIG_REQUESTS_PER_MINUTE` | A4 | required | public JSON API, no key, no terms page; per entity, 15/min (ADR 0011) |
 | NBP API | — | A5 | required | public, no key |
 | GUS BDL API (optional client key raises rate limits) | none yet; add one if a key is used | A5 | optional | not requested |
-| Registry aggregator account / ToS acceptance | none yet | A1 | required for scaled discovery | aggregator not chosen |
+| Registry aggregator account / ToS acceptance | none yet | A1 | required for scaled discovery | aggregator not chosen; a vendor quote may cover it with A3 (ADR 0013, proposed) |
 | LLM API key (vision tier and text extraction) | none yet; must be added to `.env.example` | C3, G2 | required from Phase 3 / 7 | not configured |
 | Postgres | `POSTGRES_HOST/PORT/DB/USER/PASSWORD` | B, J | required | local Docker Compose |
 | MinIO | `MINIO_ENDPOINT/ACCESS_KEY/SECRET_KEY/BUCKET` | B | required | local Docker Compose |

@@ -241,7 +241,7 @@ Stage-by-stage implementation plans live in `docs/plans/`, one numbered `.md` fi
   3. **Modern models:** regularized logistic regression, gradient boosting, and discrete-time survival models that handle censoring.
 - Evaluation is strictly **out-of-time**: train on earlier years, test on later years, rolling forward. Test windows deliberately include known stress periods: COVID, the 2022 rate hiking cycle, and the energy price shock.
 - Reported metrics: discrimination (AUC, precision at top deciles), calibration (Brier score, reliability curves), stability across years, and performance per outcome class and sub-sector.
-- Every model run is registered with its code version, feature set version, label version, and hyperparameters. A model can only be promoted if it beats the current champion on the agreed metrics.
+- Every model run is registered with its code version, data snapshot, feature set version, label version, and hyperparameters. A model can only be promoted if it beats the current champion on the agreed metrics.
 
 **Output:** registered model versions in MLflow and an auto-generated backtest report.
 

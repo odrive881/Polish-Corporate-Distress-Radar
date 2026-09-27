@@ -401,7 +401,7 @@ Three generations trained on identical data and compared:
 2. `scikit-learn` — regularised logistic regression.
 3. `LightGBM` + `scikit-survival` — gradient boosting and discrete-time survival with censoring.
 
-As built so far (plan 0012, steps A–G):
+As built in Phase 6 (plan 0012, complete 2026-09-27; generation 3 is Phase 8):
 
 - **Dataset** (`models/dataset.py`): `feature_store` joined to one frozen label set, both pinned in `config/models/backtest_v1.yaml`; the label set's hash is recomputed before use. The target is distress (bankruptcy, restructuring, liquidation, silent exit) against `alive`; censored rows are counted and left out. A labelled row with no feature row is an error, never dropped. `regime_flag` is carried for the sensitivity run and is never a model input: it describes the label window, which is the future. A declaration with no decision date is dated by `event_known_from`, as the labels do.
 - **Folds** (`models/splits.py`): expanding window by calendar year, test years 2020–2025. A test year trains only on rows whose whole label window closed before its 1 January (purged). Each fold reports rows, distinct events by class and entities; a fold with fewer than `min_events` (3) distinct training or test events is reported as not evaluable, and the rule is applied again to the rows each model actually uses.

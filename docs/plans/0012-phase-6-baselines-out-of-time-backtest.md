@@ -10,7 +10,7 @@
 **Order:** after plans 0010 and 0011, which are complete. Phase 7 (text signals) and Phase 8 (LightGBM,
 survival, SHAP) build on the harness this plan makes.
 
-## Status: active (2026-09-27); steps A–G built, step H next
+## Status: complete (2026-09-27); scale waits on the owner's decision in ADR 0013 (proposed)
 
 ### Progress
 
@@ -96,6 +96,16 @@ survival, SHAP) build on the harness this plan makes.
   the latest `outcome_labels`; its dependency on `outcome_labels` is lineage only.
   - **Job run twice at `e0a51c0`:** both succeeded (84 cells, 1 scored, 12 MLflow runs each), the
     report bytes identical, the tree clean after each run.
+- **Step H (2026-09-27), close-out:** the living docs describe Phase 6 as built (README status and
+  how to run the backtest, AGENT_SPEC stage I and §9.2, TECHNICAL_ARCHITECTURE, DIRECTORY_STRUCTURE,
+  `docs/data_inventory.md`, PROJECT_OVERVIEW's run identifiers, CLAUDE.md's `.R2025` trap and RDF
+  note). ADR 0013 opens the scale question (decision 0) with a recommendation, status proposed.
+  - **What Phase 6 proved:** the machinery. Leak-free, purged out-of-time folds; no imputation; the
+    seed caveat generated into every table; calibration beside discrimination; four identifiers on
+    every run; a byte-reproducible store and report. **What it did not:** anything about model
+    quality. One cell of 84 is scored, and its AUC interval spans 0.09 to 0.83.
+  - **Carried forward:** only one Polish model (Mączyńska and Hołda are print-only); Z'' without
+    zones; `statsmodels` unused; `min_events` 3 is a reporting floor, not a significance test.
 
 ## Why
 
@@ -284,16 +294,17 @@ to run the backtest; `docs/data_inventory.md` (Altman and Polish coefficients: c
 ## Definition of done
 
 - [x] Owner decisions 0–9 made (2026-09-27).
-- [ ] The scaled-access ADR opened (owner decision 0; its outcome is not part of this plan).
+- [x] The scaled-access ADR opened (owner decision 0; its outcome is not part of this plan): ADR 0013,
+      proposed 2026-09-27.
 - [x] Coefficients sourced and cited; the feature set built, leak-free, byte-reproducible (`feature_set_v3`,
       2026-09-27; Mączyńska and Hołda not obtainable, see Progress).
 - [x] Purged out-of-time folds for 2020–2025 at 12 and 24 months, each fold's rows, events and class mix
       reported, folds below `min_events` marked not evaluable.
-- [ ] Altman Z'', the chosen Polish models and logistic regression evaluated on every fold, Brier score beside
+- [x] Altman Z'', the chosen Polish models and logistic regression evaluated on every fold, Brier score beside
       AUC, bootstrap intervals, the regime sensitivity run.
 - [x] Every run in MLflow with its four identifiers; incomplete runs refused.
-- [ ] The backtest report generated, reproducible byte for byte, with the seed caveat.
-- [ ] `make check` and `make test-integration` green; docs from step H updated.
+- [x] The backtest report generated, reproducible byte for byte, with the seed caveat.
+- [x] `make check` and `make test-integration` green; docs from step H updated.
 
 ## Risks
 
