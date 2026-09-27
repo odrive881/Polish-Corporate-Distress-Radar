@@ -1,0 +1,37 @@
+# The Poznań model (plan 0012 owner decision 4): a discriminant function estimated on Polish
+# commercial companies. A fixed-coefficient score from the literature, not fitted here: its
+# coefficients change by literature, not engineering (DIRECTORY_STRUCTURE §3). The file name is
+# the model's version.
+#
+# Read from the primary source, never from memory: every value below is quoted from the source's
+# page named with it. Loaded and checked against a feature set by
+# `distress_radar.models.baselines.load_classical_model`.
+
+model: poznan_2004
+name: "Hamrol, Czajka, Piechocki (2004), the Poznań model"
+# "Jeżeli otrzymany wynik jest liczbą większą od zera, analizowaną jednostkę należy zaliczyć do
+# dobrych" (p. 38): a higher score means a sounder firm.
+higher_is_safer: true
+intercept: "-2.368"
+terms:
+  - {feature: roa, coefficient: "3.562", published_as: "W7 Wynik finansowy netto / Majątek całkowity"}
+  - {feature: quick_ratio, coefficient: "1.588", published_as: "W16 (Majątek obrotowy – Zapasy) / Zobowiązania krótkoterminowe"}
+  - {feature: long_term_capital_to_assets, coefficient: "4.288", published_as: "W5 Kapitał stały / Majątek całkowity"}
+  - {feature: sales_margin, coefficient: "6.719", published_as: "W13 Wynik finansowy ze sprzedaży / Przychody ze sprzedaży"}
+# The single published cut-off, 0 (p. 38): above it "dobre", otherwise "kandydat do rychłego
+# bankructwa". A zone covers (lower, upper]; null is unbounded.
+zones:
+  - {label: at_risk, lower: null, upper: "0"}
+  - {label: sound, lower: "0", upper: null}
+source:
+  citation: >-
+    Hamrol, M., Czajka, B., Piechocki, M. (2004). Upadłość przedsiębiorstwa – model analizy
+    dyskryminacyjnej. Przegląd Organizacji, 6(773), 35-39. https://doi.org/10.33141/po.2004.06.09
+  locator: "p. 38, equation (2), and the variable definitions below it"
+  url: https://przegladorganizacji.pl/plik/5e09249441aff/po.2004.06.09.pdf
+  sha256: 907c8a166fbed10015a461e4e57939682a65134029cd8b29584d6ed6fbc7f55b
+  estimation_sample: >-
+    100 Polish commercial companies, 50 bankrupt and 50 continuing, paired by asset size and year;
+    statements for 1999-2002 from Monitor Polski B, so firms above the publication thresholds;
+    banks and insurers excluded; mean assets about PLN 29 million (pp. 35-36).
+  worked_example: none in the source

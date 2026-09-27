@@ -85,7 +85,14 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   ├── xsd/                           # official MF/CRWDE XSDs, vendored (catalog.yaml)
 │   ├── features/                      # feature-set definitions (plan 0010, ADR 0012)
 │   │   ├── feature_set_v1.yaml        # features, families, inputs; the file name is the feature_set_version
-│   │   └── line_items_v1.yaml         # ratio inputs → chart code, per form and income-statement variant
+│   │   ├── feature_set_v2.yaml        # v1 + the classical models' ratios (plan 0012)
+│   │   ├── feature_set_v3.yaml        # v2 over line_items_v3
+│   │   ├── line_items_v1.yaml         # ratio inputs → chart code, per form and income-statement variant
+│   │   ├── line_items_v2.yaml         # v1 + the result on sales
+│   │   └── line_items_v3.yaml         # v2 + the 2025 calculation-variant revenue line
+│   ├── models/                        # classical models' published coefficients, cited (plan 0012)
+│   │   ├── altman_z2_2000.yaml        # Altman Z'', from Altman (2000)
+│   │   └── poznan_2004.yaml           # the Poznań model, Hamrol, Czajka, Piechocki (2004)
 │   ├── labels/
 │   │   ├── outcome_labels_v1.yaml     # label parameters; the file name is the label_version
 │   │   └── outcome_labels_v2.yaml     # v1 + lag allowance, petition expiry (plan 0009)
@@ -231,7 +238,7 @@ src/distress_radar/
 │   └── feature_definitions.py    # one function per feature family, §6H
 │
 ├── models/
-│   ├── baselines.py               # Altman, Polish discriminant models
+│   ├── baselines.py               # Altman, Polish discriminant models: config/models/ loader
 │   ├── classical.py               # logistic regression
 │   ├── gbm.py                     # LightGBM
 │   ├── survival.py                # scikit-survival

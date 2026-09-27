@@ -12,6 +12,32 @@ survival, SHAP) build on the harness this plan makes.
 
 ## Status: active (2026-09-27); owner decisions made, step A next
 
+### Progress
+
+- **Step A (2026-09-27):** `statsmodels`, `scikit-learn`, `mlflow` locked; `MLFLOW_TRACKING_URI` and
+  `MLFLOW_ARTIFACT_DIR` default to a SQLite store and artifacts under `.data/mlflow/`.
+- **Step B (2026-09-27), what the sources allowed:**
+  - **Configured:** Altman's Z'' (Altman 2000, p. 27) and the Poznań model (Hamrol, Czajka,
+    Piechocki 2004, *Przegląd Organizacji* 6/2004, p. 38). Both documents were read, and their
+    SHA-256 is recorded with the coefficients.
+  - **Not configured:** Mączyńska (*Życie Gospodarcze* 38/1994) and Hołda (*Rachunkowość* 5/2001)
+    exist only in print; their coefficients circulate in secondary sources, which decision 4 rules
+    out. They wait until someone obtains the publications. Decision 4 asked for two Polish models;
+    there is one.
+  - **Z'' has no published zones in its source.** The 2000 paper says the cut-offs changed without
+    printing them. The zones usually quoted come from later publications, not read here, so Z'' is
+    reported as a score only.
+  - **Neither source prints a worked example**, so the coefficient test pins the published values and
+    the zone boundaries instead (see Tests).
+  - **The leakage test was hard-wired to `feature_set_v1`,** contrary to decision 3's "without change".
+    It now runs on every feature set, and fails if a ratio is never computed on its fixtures.
+  - **FY2025+ calculation-variant revenue was null.** Schemas 1-3 and wariant 2 map the calculation
+    variant's revenue to `IS.CALC.A.R2025` (sales of products and goods, no longer materials), which
+    `line_items_v1` and `v2` do not list, so revenue and every ratio over it were null for those
+    statements. The owner decided (2026-09-27) to count it as revenue: `line_items_v3`, read by
+    `feature_set_v3`, which is v2's features unchanged and the new default. No other ratio input is
+    remapped by a 2025 spec.
+
 ## Why
 
 Phase 5 made every feature knowable on its date; Phase 6 asks what they predict, honestly: trained on the
@@ -193,7 +219,8 @@ to run the backtest; `docs/data_inventory.md` (Altman and Polish coefficients: c
 - **Minimum events:** a fold below `min_events` prints no metric.
 - **Determinism:** two runs on the same inputs give identical metrics and report bytes.
 - **Metrics:** Brier, log loss, AUC and the reliability table against hand-computed values.
-- **Coefficients:** each configured model reproduces a worked example from its source.
+- **Coefficients:** each configured model holds its published coefficients and zone boundaries (neither
+  source prints a worked example); a model naming a ratio its feature set lacks is refused.
 
 ## Definition of done
 

@@ -1,0 +1,37 @@
+# Altman's Z'' (plan 0012 owner decision 4): the four-variable Z-score without sales / total assets,
+# with the book value of equity in X4, for non-manufacturers and private firms. A fixed-coefficient
+# score from the literature, not fitted here: its coefficients change by literature, not engineering
+# (DIRECTORY_STRUCTURE §3). The file name is the model's version.
+#
+# Read from the primary source, never from memory: every value below is quoted from the source's
+# page named with it. Loaded and checked against a feature set by
+# `distress_radar.models.baselines.load_classical_model`.
+
+model: altman_z2_2000
+name: "Altman Z'' (four-variable, book equity)"
+# A higher score means a sounder firm ("the greater a firm's distress potential, the lower its
+# discriminant score", source p. 14, said of the 1968 model whose signs Z'' keeps).
+higher_is_safer: true
+intercept: "0"  # none in the Z'' form; +3.25 is the emerging-markets (EMS) variant, not configured
+terms:
+  - {feature: working_capital_to_assets, coefficient: "6.56", published_as: "X1 working capital/total assets"}
+  - {feature: retained_earnings_to_assets, coefficient: "3.26", published_as: "X2 retained earnings/total assets"}
+  - {feature: ebit_to_assets, coefficient: "6.72", published_as: "X3 earnings before interest and taxes/total assets"}
+  - {feature: equity_to_liabilities, coefficient: "1.05", published_as: "X4 book value of equity/book value of total liabilities"}
+# The source publishes no cut-offs for Z'': "all of the coefficients ... are changed as are the
+# group means and cutoff scores" (p. 27), without the new values. The zones widely quoted for Z''
+# come from other publications, not read here, so none are configured.
+zones: []
+# Ratios enter as decimals (0.10 for 10%): the source moved the model to that convention (p. 13)
+# and states Z' in it (p. 25, "the coefficient for X1 went from 1.2 to 0.7"); Z'' follows Z'.
+source:
+  citation: >-
+    Altman, E. I. (2000). Predicting Financial Distress of Companies: Revisiting the Z-Score and
+    ZETA Models. Working paper, Stern School of Business, New York University, July 2000.
+  locator: "PDF p. 27, \"A Further revision - Adapting the Model for Non-Manufacturers\""
+  url: https://web.archive.org/web/20240717121208/https://pages.stern.nyu.edu/~ealtman/Zscores.pdf
+  sha256: cc9acbf25f3618afcd39820689d5950eeebaec478fea71e4d8d513fd7f763074
+  estimation_sample: >-
+    The 1968 sample re-estimated: 33 bankrupt US manufacturers (Chapter X petitions, 1946-1965)
+    and 33 matched non-bankrupt manufacturers, assets USD 1-25 million (pp. 7, 25-27).
+  worked_example: none in the source
