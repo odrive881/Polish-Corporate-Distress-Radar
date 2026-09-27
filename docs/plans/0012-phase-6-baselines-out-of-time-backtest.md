@@ -10,7 +10,7 @@
 **Order:** after plans 0010 and 0011, which are complete. Phase 7 (text signals) and Phase 8 (LightGBM,
 survival, SHAP) build on the harness this plan makes.
 
-## Status: active (2026-09-27); steps A–F built, step G next
+## Status: active (2026-09-27); steps A–G built, step H next
 
 ### Progress
 
@@ -91,6 +91,11 @@ survival, SHAP) build on the harness this plan makes.
   (`.tmp_dagster_home_*/`) is now gitignored, so a job run does not dirty the tree.
   - **Seed run logged** at `58f47a4`: 12 runs (3 models, 2 horizons, 2 runs), all finished, snapshot
     `bd6d10d5…`; only the pooled 12-month regression carries metric values.
+- **Step G (2026-09-27):** `dagster_defs/assets/models.py`, the `backtest` asset in its own `backtest`
+  job; `BACKTEST_VERSION` setting. The asset reads the frozen label set pinned in the config, not
+  the latest `outcome_labels`; its dependency on `outcome_labels` is lineage only.
+  - **Job run twice at `e0a51c0`:** both succeeded (84 cells, 1 scored, 12 MLflow runs each), the
+    report bytes identical, the tree clean after each run.
 
 ## Why
 
