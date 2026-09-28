@@ -36,3 +36,6 @@ logs/
 # Dagster's temporary home during `dagster job execute`; also keeps the tree clean for the
 # backtest's code-commit check (plan 0012 step F)
 .tmp_dagster_home_*/
+
+# Outgoing correspondence drafts (ADR 0013 option a): personal contact details, never committed
+docs/rdf_api_inquiry_email.md
