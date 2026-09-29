@@ -23,8 +23,9 @@ hooks:      ## install the pre-commit personal-data scan of staged files (once p
 	printf '#!/bin/sh\n# Installed by `make hooks`: refuse staged personal data (ADR 0009).\nexec $(UV) run --locked python -m distress_radar.acquisition.personal_data_scan\n' > .git/hooks/pre-commit
 	chmod +x .git/hooks/pre-commit
 
-lint:
+lint:       ## ruff: lint rules, and the formatter's layout (changes nothing; `ruff format` fixes it)
 	$(UV) run --locked ruff check .
+	$(UV) run --locked ruff format --check .
 
 typecheck:
 	$(UV) run --locked pyright
