@@ -12,8 +12,18 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.12"
+          # cache uv's package downloads, keyed by uv.lock
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
       - name: Install
         run: make install
+      - name: Cache the Polish spaCy model
+        uses: actions/cache@v4
+        with:
+          path: .cache/models
+          key: spacy-model-${{ hashFiles('Makefile') }}
+      - name: Fetch the Polish spaCy model (plan 0013)
+        run: make models
       - name: Check (lint, type-check, tests — includes the blocking leakage
           test, tests/features/test_leakage.py)
         run: make check

@@ -84,6 +84,9 @@ class Settings(BaseSettings):
     # Which `config/models/<backtest_version>.yaml` the `backtest` job runs (plan 0012).
     backtest_version: str = "backtest_v1"
 
+    # The Polish spaCy model, unpacked by `make models` (plan 0013; ADR 0009, third addendum).
+    spacy_model_dir: Path = Path(".cache/models")
+
     # MLflow (plan 0012 decision 6): a local SQLite store, no service to run, until the Compose
     # server arrives with serving in Phase 9. Run artifacts go under `mlflow_artifact_dir`, set
     # when an experiment is created; left to MLflow, they would land in `./mlruns` of whatever
