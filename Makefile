@@ -2,7 +2,7 @@ UV ?= uv
 export UV_LINK_MODE := copy
 
 .PHONY: install lock lint typecheck test test-integration check dev-up dev-down \
-	transform-setup transform-plan transform-run transform-test docs-check hooks
+	transform-setup transform-plan transform-run transform-test docs-check hooks models
 
 install:    ## create/sync .venv exactly from uv.lock (fails if lock is stale)
 	$(UV) sync --locked --extra dev
@@ -15,6 +15,29 @@ dev-down:   ## stop MinIO + Postgres (data persists in named volumes)
 
 lock:       ## re-resolve after editing pyproject.toml dependencies
 	$(UV) lock
+
+# The Polish spaCy model (plan 0013; ADR 0009, third addendum): pinned by version and SHA-256,
+# fetched resumably (550 MB; `uv` restarts a failed download from zero), unpacked under .cache/.
+# `extraction.masking` loads it from MODEL_DIR and refuses any other version.
+MODEL_NAME := pl_core_news_lg
+MODEL_VERSION := 3.8.0
+MODEL_SHA256 := 3bc7296cd4d67fa9ee0904b25401b0e9a9a772d5c4756edf54143a2ff4c9dcc0
+MODEL_DIR := .cache/models
+MODEL_WHEEL := $(MODEL_DIR)/$(MODEL_NAME)-$(MODEL_VERSION)-py3-none-any.whl
+MODEL_URL := https://github.com/explosion/spacy-models/releases/download/$(MODEL_NAME)-$(MODEL_VERSION)/$(MODEL_NAME)-$(MODEL_VERSION)-py3-none-any.whl
+
+models:     ## fetch and unpack the pinned Polish spaCy model (resumable; checks its SHA-256)
+	@mkdir -p $(MODEL_DIR)
+	@if ! echo "$(MODEL_SHA256)  $(MODEL_WHEEL)" | sha256sum -c --status 2>/dev/null; then \
+		for attempt in 1 2 3 4 5 6 7 8 9 10; do \
+			curl -sSL -C - --retry 5 --connect-timeout 30 -o $(MODEL_WHEEL) $(MODEL_URL) && break; \
+			echo "download interrupted, resuming ($$attempt)"; sleep 10; \
+		done; \
+	fi
+	@echo "$(MODEL_SHA256)  $(MODEL_WHEEL)" | sha256sum -c
+	@test -f $(MODEL_DIR)/$(MODEL_NAME)/$(MODEL_NAME)-$(MODEL_VERSION)/meta.json || \
+		$(UV) run --locked python -m zipfile -e $(MODEL_WHEEL) $(MODEL_DIR)
+	@echo "$(MODEL_NAME) $(MODEL_VERSION) in $(MODEL_DIR)"
 
 docs-check: ## mechanical doc drift: missing paths, the tree, plan and ADR statuses (in `check` too)
 	$(UV) run --locked pytest -q tests/test_docs.py

@@ -410,5 +410,59 @@ def _(embedded, intros, pl, seed_events):
     return by_group, scans
 
 
+@app.cell
+def _(S3ObjectStore, collections, pl, settings, statements, unwrap):
+    # 6. Plan 0013 step C on the seed: the text layer by `extraction.page_text`, and what
+    # `extraction.masking` replaces on each text page. Counts only; no text is printed.
+    from distress_radar.extraction.masking import load_model as _load_model
+    from distress_radar.extraction.masking import mask as _mask
+    from distress_radar.extraction.page_text import AttachmentError as _AttachmentError
+    from distress_radar.extraction.page_text import attachments as _attachments
+    from distress_radar.extraction.page_text import pages as _pages
+
+    _store = S3ObjectStore.from_endpoint(
+        settings.minio_endpoint,
+        settings.minio_access_key,
+        settings.minio_secret_key.get_secret_value(),
+        settings.minio_bucket,
+    )
+    _nlp = _load_model()
+    page_status: collections.Counter[str] = collections.Counter()
+    masked_kinds: collections.Counter[str] = collections.Counter()
+    _pages_with_person = 0
+    _errors: collections.Counter[str] = collections.Counter()
+    for _doc in statements.iter_rows(named=True):
+        _members = {m.source_member: m for m in unwrap(_store.get(_doc["object_key"]))}
+        _member = _members.get(_doc["source_member"])
+        if _member is None or not _member.data.lstrip().startswith(b"<"):
+            continue
+        for _att in _attachments(_member.data):
+            if _att.kind != "pdf":
+                page_status["unsupported attachment"] += 1
+                continue
+            try:
+                for _page in _pages(_att.data):
+                    page_status[_page.status] += 1
+                    if _page.status != "text":
+                        continue
+                    _masked = _mask(_page.text, _nlp)
+                    masked_kinds.update(_masked.counts)
+                    _pages_with_person += _masked.counts.get("person", 0) > 0
+            except _AttachmentError as _exc:
+                _errors[_exc.reason_code] += 1
+    print("6. text layer and masking on the seed's embedded notes")
+    print("pages by status:", dict(sorted(page_status.items())))
+    print("replacements by kind:", dict(sorted(masked_kinds.items())))
+    print("text pages with at least one person masked:", _pages_with_person)
+    print("attachment errors:", dict(_errors) or "none")
+    step_c = pl.DataFrame(
+        {
+            "measure": list(page_status) + list(masked_kinds),
+            "count": [*page_status.values(), *masked_kinds.values()],
+        }
+    )
+    return masked_kinds, page_status, step_c
+
+
 if __name__ == "__main__":
     app.run()

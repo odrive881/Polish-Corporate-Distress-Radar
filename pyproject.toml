@@ -36,6 +36,10 @@ dependencies = [
     "scikit-learn>=1.8",
     # Full package, not mlflow-skinny: the local SQLite tracking store needs SQLAlchemy/Alembic.
     "mlflow>=3.1",
+    # Stage G (plan 0013): Polish sentences, lemmas and the person-name masker. Its model,
+    # pl_core_news_lg (550 MB), is fetched by `make models`, resumable and hash-checked, not locked
+    # here: a new model version is a new masking version (ADR 0009, third addendum).
+    "spacy>=3.8,<3.9",
 ]
 
 [project.optional-dependencies]

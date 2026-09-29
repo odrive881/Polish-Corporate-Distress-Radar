@@ -11,7 +11,7 @@
 **Order:** after plan 0012 (complete). It does not wait for ADR 0013: like Phase 6, it builds and measures
 machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set this plan adds.
 
-## Status: active (2026-09-29): owner decisions 0–8 accepted; steps A and B built
+## Status: active (2026-09-29): owner decisions 0–8 accepted; steps A, B and C built
 
 ### Progress
 
@@ -74,6 +74,24 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
     one statement the canonical stage does not map. `financial_statements_canonical`, `identity_check_results`,
     `restatement_events`, `legal_events` and `feature_store` are byte for byte unchanged: the new config is not
     part of the spec hash, so no file is re-parsed under a new run id; each row carries `config_version`.
+- **Step C (2026-09-30):** `extraction/page_text.py` (the attachments embedded in a statement, each PDF's text
+  layer per page: `text`, `needs_ocr` for a scan, `sparse` for a blank or signature page; office files
+  `unsupported`) and `extraction/masking.py` (`[osoba]` for `persName`, `[pesel]` for 11-digit runs, `[email]`,
+  `[telefon]` after a phone marker; company names kept). ADR 0009's third addendum records the rule.
+  - **The model is not in `uv.lock`.** `pl_core_news_lg` 3.8.0 is a 550 MB wheel, and `uv` restarts a failed
+    download from zero: on this connection it failed after hours. `make models` fetches it resumably, checks the
+    SHA-256 pinned in the Makefile and unpacks it under `.cache/models/` (`SPACY_MODEL_DIR`); CI runs it with
+    its own cache. spaCy itself is locked. The masker refuses any other model version (`MASKING_VERSION` 1).
+    The pinned file was downloaded by the owner through a browser and matched the first 382 MB of an
+    interrupted download byte for byte, and the archive tests clean.
+  - **Tests:** planted, invented names in inflected forms (*Annie Wiśniewskiej*, *Janem Kowalskim*), a double
+    surname and signature lines are all masked; company names and figures stay; an amount written with spaces
+    is not a phone number; masking is stable and idempotent. Synthetic PDFs only: real notes stay out of git.
+  - **On the seed** (census section 6, counts only): 702 text pages, 459 scanned (`needs_ocr`), 21 sparse, 15
+    unsupported attachments, no unreadable PDF. The masker replaced 697 names on 217 pages, 43 e-mail
+    addresses and 43 phone numbers, and no PESEL. These are counts, not quality: the masker's recall and
+    over-masking are measured on the golden set (step E). Masked page text is not stored yet; step H decides
+    where it lives.
 
 ## Why
 

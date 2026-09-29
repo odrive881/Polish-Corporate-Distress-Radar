@@ -27,6 +27,7 @@ Requires [uv](https://docs.astral.sh/uv/). `.venv` is created and kept in sync w
 
 ```bash
 make install   # uv sync --locked --extra dev
+make models    # once: the Polish spaCy model (550 MB, resumable, SHA-256 checked) that text masking needs
 make check     # ruff + pyright + pytest (no network, no services)
 make test-integration   # tests needing live Postgres/MinIO — after make dev-up
 make hooks     # once per clone: a pre-commit scan refusing staged personal data (ADR 0009)

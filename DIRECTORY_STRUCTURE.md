@@ -233,6 +233,8 @@ src/distress_radar/
 │       └── vision_llm_extractor.py
 │
 ├── extraction/
+│   ├── page_text.py             # G1 — embedded attachments, PDF text layer per page (plan 0013)
+│   ├── masking.py               # G1 — person names, PESEL, contacts masked (ADR 0009, third addendum)
 │   ├── preprocessing.py         # G1 — spaCy + keyword prefilter
 │   ├── schemas.py                # G2 — extraction response models
 │   ├── extractor.py              # G2 — constrained LLM call

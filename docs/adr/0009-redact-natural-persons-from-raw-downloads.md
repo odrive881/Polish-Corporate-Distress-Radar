@@ -167,3 +167,33 @@ a `.pdf` test (`latest_filed_as_pdf`) reads the token's extension, which is kept
 this ADR's earlier quote of one file name; removing it from the history is a separate, owner-only decision
 (plan 0011, Risks).
 
+
+## Third addendum, 2026-09-29: masking free text before it leaves the page (plan 0013 decision 1)
+
+**Context.** The residual this ADR accepted ("free text: notes and accounting-policy text can name board
+members … text extraction (G) must not emit person names") becomes live in Phase 7. Page text read from the
+embedded notes is sent to a model, quoted as evidence in `text_signals`, and excerpted into a golden set that is
+committed to a public repository. The stored raw documents do not change: this addendum is about what is
+*derived* from their text.
+
+**Decision.**
+1. **Text is masked at the page, before anything else sees it.** `extraction.masking` replaces person names
+   found by the NER of spaCy's `pl_core_news_lg` (label `persName`) with `[osoba]`, 11-digit runs with
+   `[pesel]` (the registry redaction's rule), e-mail addresses with `[email]` and phone numbers after a phone
+   marker with `[telefon]`. Company names stay. The masked page is the only text the prefilter, a model, an
+   evidence span or an eval example may use; raw page text is never stored, sent, printed or committed.
+2. **Versioned like redaction.** `MASKING_VERSION = "1"` means these rules and `pl_core_news_lg` 3.8.0 exactly;
+   loading any other model version fails. A new rule or model is a new masking version, and derived text is
+   re-masked from the raw documents, which are kept.
+3. **Measured, not trusted.** NER misses names. The masker's recall is measured on the golden set (plan 0013
+   decision 5) and reported beside the extractors' scores; a blocking check re-runs the masker over stored
+   signals and committed eval files, and the pre-commit scan covers `evals/`.
+4. **Scanned pages are not read.** A page without a text layer is recorded `needs_ocr` and counted. OCR, or a
+   vision model, would send page images that no masker has seen, and is its own decision.
+5. **Resolutions, if they are ever captured** (plan 0013 decision 0c), are reduced at capture to a person-free
+   record of their outcome, as MSiG notices are, and never stored as documents: they name shareholders and
+   how each voted, which masking alone should not be trusted with.
+
+**Consequences.** Some company names that contain a surname may be masked with it; over-masking is accepted,
+under-masking is what the checks look for. A signal whose evidence falls in a masked span still carries its
+evidence, masked.
