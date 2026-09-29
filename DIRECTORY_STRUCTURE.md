@@ -173,6 +173,14 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
     │   ├── test_feature_assets.py      # the features group, job and checks
     │   └── test_leakage.py             # §9.1 of AGENT_SPEC.md — blocking
     ├── models/
+    │   ├── frames.py                   # synthetic feature_store and label-set frames
+    │   ├── test_dataset.py             # the join, the target, censored rows counted, regime not a feature
+    │   ├── test_splits.py              # purged folds, labels settled by each test year — blocking
+    │   ├── test_classical.py           # complete cases, fold-fitted ranks, a score mapped to a probability
+    │   ├── test_baselines.py           # published coefficients and zones; a model its feature set can't feed
+    │   ├── test_evaluation.py          # hand-computed metrics, bootstrap, the report's bytes
+    │   ├── test_registry.py            # the four identifiers, a dirty tree refused
+    │   └── test_backtest_asset.py      # the models group and its hand-run job
     ├── transform/                      # SQLMesh boundary and Dagster DQ wiring (pytest side)
     ├── fixtures/                       # golden XML/PDF documents for mapping tests
     │   └── legal/                      # redacted KRS extracts, reduced MSiG notices (plan 0008)

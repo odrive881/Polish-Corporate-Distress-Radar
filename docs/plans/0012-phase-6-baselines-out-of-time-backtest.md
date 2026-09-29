@@ -10,7 +10,7 @@
 **Order:** after plans 0010 and 0011, which are complete. Phase 7 (text signals) and Phase 8 (LightGBM,
 survival, SHAP) build on the harness this plan makes.
 
-## Status: complete (2026-09-27); scale waits on the owner's decision in ADR 0013 (proposed)
+## Status: complete (2026-09-27; folds corrected 2026-09-29); scale waits on the owner's decision in ADR 0013 (proposed)
 
 ### Progress
 
@@ -85,6 +85,7 @@ survival, SHAP) build on the harness this plan makes.
   - **Seed run:** one cell is scored, the pooled 12-month regression (3 events): Brier 0.137
     [0.021–0.274], AUC 0.505 [0.088–0.827], i.e. noise, as expected. Every other cell prints its
     reason. The `no_regime` run has no fold trained on 3 events. Two runs gave identical bytes.
+    *Superseded by the correction of 2026-09-29 below: one of those 3 events was not yet public.*
 - **Step F (2026-09-27):** `models/registry.py`. The identifiers are parameters of every run, and the
   code commit also the standard `mlflow.source.git.commit` tag. Untracked files count as dirty too:
   code not in the commit is code the commit does not identify. Dagster's temporary home
@@ -95,7 +96,7 @@ survival, SHAP) build on the harness this plan makes.
   job; `BACKTEST_VERSION` setting. The asset reads the frozen label set pinned in the config, not
   the latest `outcome_labels`; its dependency on `outcome_labels` is lineage only.
   - **Job run twice at `e0a51c0`:** both succeeded (84 cells, 1 scored, 12 MLflow runs each), the
-    report bytes identical, the tree clean after each run.
+    report bytes identical, the tree clean after each run. (0 scored after the 2026-09-29 correction.)
 - **Step H (2026-09-27), close-out:** the living docs describe Phase 6 as built (README status and
   how to run the backtest, AGENT_SPEC stage I and §9.2, TECHNICAL_ARCHITECTURE, DIRECTORY_STRUCTURE,
   `docs/data_inventory.md`, PROJECT_OVERVIEW's run identifiers, CLAUDE.md's `.R2025` trap and RDF
@@ -103,9 +104,39 @@ survival, SHAP) build on the harness this plan makes.
   - **What Phase 6 proved:** the machinery. Leak-free, purged out-of-time folds; no imputation; the
     seed caveat generated into every table; calibration beside discrimination; four identifiers on
     every run; a byte-reproducible store and report. **What it did not:** anything about model
-    quality. One cell of 84 is scored, and its AUC interval spans 0.09 to 0.83.
+    quality. ~~One cell of 84 is scored, and its AUC interval spans 0.09 to 0.83.~~ No cell of 84 is
+    scored, and the folds were leak-free only after the correction below.
   - **Carried forward:** only one Polish model (Mączyńska and Hołda are print-only); Z'' without
     zones; `statsmodels` unused; `min_events` 3 is a reporting floor, not a significance test.
+- **Correction (2026-09-29), found in a review of Phase 6:** the folds trained on labels that were not
+  yet known. Decision 2's purge asked only that a training row's label *window* close before the test
+  year; the registry enters decisions up to 21 months late (plan 0008), so a window can close with its
+  event still unpublished. On the seed, a bankruptcy decided 2022-03-25 and entered 2024-03-26 trained
+  the 2023 and 2024 folds at both horizons, and it was one of the 3 training events of the only scored
+  cell. The same holds for `alive`: the label set knows a window stayed quiet through the lag
+  allowance (plan 0009), which the model on the test year's eve could not.
+  - **The rule now** (`splits.py`, `settled_by`): a training row is one whose label the label set's own
+    rules gave on 31 December before the test year. A distress row needs `event_known_from` by then; an
+    `alive` row whose window ends on or after KRZ's launch needs the window to end `alive_lag_months`
+    before it. Unsettled rows are left out and counted (the fold table's "unsettled, left out"), never
+    relabelled; the timing is read from the label version and logged with every MLflow run. Test rows
+    keep their final labels. Four tests fail on the old rule; the window test and the new one are both
+    blocking.
+  - **Seed folds after it** (train / test events, main run; test counts unchanged):
+
+    | test year | 12 m | unsettled rows | 24 m | unsettled rows |
+    |---|---|---|---|---|
+    | 2020 | 3 / 2 | 0 | 3 / 3 | 0 |
+    | 2021 | 4 / 3 | 0 | 4 / 4 | 0 |
+    | 2022 | 5 / 3 | 12 | 5 / 3 | 12 |
+    | 2023 | 6 / 1 | 144 | 5 / 3 | 144 |
+    | 2024 | 8 / 2 | 138 | 7 / 2 | 148 |
+    | 2025 | 9 / 2 | 120 | 9 / 2 | 120 |
+
+    Which folds clear `min_events` is unchanged. For the models, it is not: the regression's 2023
+    fold now trains on 2 complete-case events, so the pooled 12-month regression falls below 3 and
+    **no cell of 84 is scored**. Job run twice after the fix (`6e219c4`): 84 cells, 0 scored, 12 MLflow
+    runs each, the report bytes identical, the tree clean.
 
 ## Why
 
@@ -163,7 +194,7 @@ have leaked the future (see there).
    `silent_exit` behaves differently from a court proceeding.
 2. **Out-of-time scheme: expanding window by calendar year, with purged label windows.** For a test year Y,
    train on rows whose whole label window has closed before 1 January Y (`as_of_date + horizon <
-   Y-01-01`). Test years 2020–2025. The same entities appear on both sides of a split, by design of a panel;
+   Y-01-01`) *and, from the 2026-09-29 correction, whose label was already known then* (Progress). Test years 2020–2025. The same entities appear on both sides of a split, by design of a panel;
    an entity-disjoint check is added at scale.
    - *Addition, a minimum-events rule:* a fold with fewer training events, or fewer test events, than
      `min_events` (in `config/models/backtest_v1.yaml`, initially 3) is reported as **not evaluable**: its rows
@@ -279,8 +310,8 @@ to run the backtest; `docs/data_inventory.md` (Altman and Polish coefficients: c
 
 ## Tests
 
-- **Purging:** no training row's label window reaches its test period, on every fold (blocking, like the
-  leakage test).
+- **Purging:** no training row's label window reaches its test period, and (from 2026-09-29) no training
+  label was unknown on the test year's eve, on every fold (blocking, like the leakage test).
 - **No imputation:** the logistic regression never sees a null; rows it drops are counted, not lost.
 - **Identifiers:** a run from a dirty tree, or missing any of the four, is refused; the snapshot hash does
   not depend on file listing order.
