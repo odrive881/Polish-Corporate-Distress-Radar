@@ -49,7 +49,16 @@ def _():
     # Short, non-personal categorical fields worth printing verbatim.
     CATEGORY_KEYS = {"rodzajPostepowania", "sposobProwadzeniaPostepowania", "charakterZaleglosci"}
     # Entry descriptions are printed only as the keywords they contain.
-    ENTRY_KEYWORDS = ("WYKREŚL", "UPADŁ", "LIKWID", "RESTRUKTUR", "UKŁAD", "SANAC", "ROZWIĄZ", "KURATOR")
+    ENTRY_KEYWORDS = (
+        "WYKREŚL",
+        "UPADŁ",
+        "LIKWID",
+        "RESTRUKTUR",
+        "UKŁAD",
+        "SANAC",
+        "ROZWIĄZ",
+        "KURATOR",
+    )
     client = httpx.Client(headers={"User-Agent": USER_AGENT}, timeout=30, follow_redirects=False)
     return (
         Any,
@@ -163,9 +172,11 @@ def _(ENTITIES, ENTRY_KEYWORDS, entry_dates, extracts, proceedings):
             for k in (_odpis["dane"].get(s) or {})
         )
         _iso = sorted("-".join(reversed(d.split("."))) for d in _dates.values())
-        print(f"\n{_krs}  hint={_hint!r}  entries={len(_dates)}  "
-              f"first={_iso[0] if _iso else '-'}  last={_iso[-1] if _iso else '-'}  "
-              f"stanZDnia={_odpis['naglowekP'].get('stanZDnia')}")
+        print(
+            f"\n{_krs}  hint={_hint!r}  entries={len(_dates)}  "
+            f"first={_iso[0] if _iso else '-'}  last={_iso[-1] if _iso else '-'}  "
+            f"stanZDnia={_odpis['naglowekP'].get('stanZDnia')}"
+        )
         for _w in _odpis["naglowekP"].get("wpis", []):
             _hits = [k for k in ENTRY_KEYWORDS if k in (_w.get("opis") or "").upper()]
             if _hits:
@@ -221,8 +232,10 @@ def _(extracts):
         for _krs, _why in FIXTURE_ENTITIES.items():
             _redaction = redact_registry_extract(extracts[_krs])
             (_out / f"odpis_pelny_{_krs}.json").write_bytes(_redaction.data)
-            print(f"{_krs} ({_why}): {_redaction.persons} person values redacted, "
-                  f"{_redaction.reduced} texts reduced, {_redaction.blanked} further fields blanked")
+            print(
+                f"{_krs} ({_why}): {_redaction.persons} person values redacted, "
+                f"{_redaction.reduced} texts reduced, {_redaction.blanked} further fields blanked"
+            )
     else:
         print("fixtures not written (set PROBE_WRITE_FIXTURES=1)")
 
@@ -235,8 +248,10 @@ def _(PAUSE_SECONDS, client, re, time):
         r = client.get(url)
         gate = [h for h in r.headers if h.lower().startswith(("x-iinfo", "x-cdn", "cf-"))]
         body = r.text
-        print(f"\n{url}: HTTP {r.status_code}  {r.headers.get('content-type')}  "
-              f"{len(r.content)} bytes  server={r.headers.get('server')}  gate_headers={gate}")
+        print(
+            f"\n{url}: HTTP {r.status_code}  {r.headers.get('content-type')}  "
+            f"{len(r.content)} bytes  server={r.headers.get('server')}  gate_headers={gate}"
+        )
         if any(m in body for m in ("Incapsula", "_Incapsula_Resource", "hcaptcha", "captcha")):
             print("   bot protection seen: stopping here")
             return
@@ -246,8 +261,17 @@ def _(PAUSE_SECONDS, client, re, time):
             time.sleep(PAUSE_SECONDS)
             full = src if src.startswith("http") else url.rstrip("/") + "/" + src.lstrip("/")
             js = client.get(full)
-            apis = sorted(set(re.findall(r'["\'`]([A-Za-z0-9_/\-{}.:]*(?:api|Api|rest|service)[A-Za-z0-9_/\-{}.]*)["\'`]', js.text)))
-            hosts = sorted(set(re.findall(r'https://[a-z0-9.\-]+\.gov\.pl[A-Za-z0-9_/\-]*', js.text)))
+            apis = sorted(
+                set(
+                    re.findall(
+                        r'["\'`]([A-Za-z0-9_/\-{}.:]*(?:api|Api|rest|service)[A-Za-z0-9_/\-{}.]*)["\'`]',
+                        js.text,
+                    )
+                )
+            )
+            hosts = sorted(
+                set(re.findall(r"https://[a-z0-9.\-]+\.gov\.pl[A-Za-z0-9_/\-]*", js.text))
+            )
             print(f"   {src}: HTTP {js.status_code}, {len(js.content)} bytes")
             print("      api-like paths:", apis[:40])
             print("      gov.pl URLs:", hosts[:20])

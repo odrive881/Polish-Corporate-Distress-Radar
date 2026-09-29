@@ -72,8 +72,12 @@ def _run(
         async with client:
             for _ in responses:
                 result = await fetch_extract(
-                    KRS, client=client, store=store, ingestion_run_id="run-1",
-                    previous=prev, now=lambda: NOW,
+                    KRS,
+                    client=client,
+                    store=store,
+                    ingestion_run_id="run-1",
+                    previous=prev,
+                    now=lambda: NOW,
                 )
                 results.append(result)
                 if result.fetch is not None:
@@ -84,7 +88,9 @@ def _run(
 
 
 def _ok(body: bytes) -> httpx.Response:
-    return httpx.Response(200, content=body, headers={"content-type": "application/json", "set-cookie": "s=1"})
+    return httpx.Response(
+        200, content=body, headers={"content-type": "application/json", "set-cookie": "s=1"}
+    )
 
 
 def test_stores_the_redacted_extract_with_its_redaction(tmp_path: Path) -> None:
@@ -92,7 +98,10 @@ def test_stores_the_redacted_extract_with_its_redaction(tmp_path: Path) -> None:
     calls: list[httpx.Request] = []
     [result] = _run(tmp_path, [_ok(_body())], store, calls=calls)
 
-    assert str(calls[0].url) == f"https://api-krs.ms.gov.pl/api/krs/OdpisPelny/{KRS}?rejestr=P&format=json"
+    assert (
+        str(calls[0].url)
+        == f"https://api-krs.ms.gov.pl/api/krs/OdpisPelny/{KRS}?rejestr=P&format=json"
+    )
     assert result.fetch is not None and result.fetch.stored_new
     stored = store.get(raw_key(result.fetch.sha256))
     assert b"PRZYK\xc5\x81ADOWSKI" not in stored and b"90010112345" not in stored
@@ -125,7 +134,9 @@ def test_unchanged_extract_is_fetched_but_not_stored_again(tmp_path: Path) -> No
 
 def test_changed_extract_is_stored_as_a_new_object(tmp_path: Path) -> None:
     store = InMemoryObjectStore()
-    changed = _body(dzial4={"zaleglosci": [{"wszczecieEgzekucji": [{"dataWszczeciaEgzekucji": "09.10.2024"}]}]})
+    changed = _body(
+        dzial4={"zaleglosci": [{"wszczecieEgzekucji": [{"dataWszczeciaEgzekucji": "09.10.2024"}]}]}
+    )
     first, second = _run(tmp_path, [_ok(_body()), _ok(changed)], store)
     assert first.fetch is not None and second.fetch is not None
     assert second.fetch.stored_new
@@ -148,7 +159,12 @@ def test_unknown_krs_is_quarantined(tmp_path: Path) -> None:
     [result] = _run(tmp_path, [not_found], store)
     assert result.fetch is None and store.write_count == 0
     [row] = result.quarantine
-    assert (row.stage, row.reason_code, row.krs, row.entity_key) == ("A4", "krs_extract_not_found", KRS, KRS)
+    assert (row.stage, row.reason_code, row.krs, row.entity_key) == (
+        "A4",
+        "krs_extract_not_found",
+        KRS,
+        KRS,
+    )
 
 
 def test_unredactable_extract_is_quarantined_and_not_stored(tmp_path: Path) -> None:
@@ -160,7 +176,12 @@ def test_unredactable_extract_is_quarantined_and_not_stored(tmp_path: Path) -> N
 
 @pytest.mark.parametrize(
     "body",
-    [b"<html>maintenance</html>", json.dumps({"odpis": {"naglowekP": {"numerKRS": "0000000001", "wpis": []}, "dane": {}}}).encode()],
+    [
+        b"<html>maintenance</html>",
+        json.dumps(
+            {"odpis": {"naglowekP": {"numerKRS": "0000000001", "wpis": []}, "dane": {}}}
+        ).encode(),
+    ],
     ids=["not-json", "other-entity"],
 )
 def test_wrong_shape_stops_the_run(tmp_path: Path, body: bytes) -> None:
