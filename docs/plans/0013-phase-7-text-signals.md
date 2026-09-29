@@ -1,0 +1,258 @@
+# 0013 — Phase 7: text signals, measured, folded into features
+
+**Stage:** Phase 7 (AGENT_SPEC §10: "Text extraction with measured eval, folded into features").
+- **Spec stages:** G1 (Polish preprocessing, lemma prefilter), G2 (constrained extraction with evidence), G3
+  (golden set and CI gate), §6G; the text family of H (§6H); PROJECT_OVERVIEW stage 6.
+- **Output:** the canonical dataset `text_signals` (§5), and a feature set that reads it.
+- **Domain rules:** point-in-time (§4.7, invariant 1): a signal is known when the document carrying it was
+  filed; no silent loss (invariant 4): an absent document is not an absent signal; legal entities only
+  (invariant 6): filed text names people, and no name may reach a stored signal, a prompt or a committed file.
+
+**Order:** after plan 0012 (complete). It does not wait for ADR 0013: like Phase 6, it builds and measures
+machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set this plan adds.
+
+## Status: draft (2026-09-29), owner decisions pending; nothing built
+
+## Why
+
+Numbers arrive late and say little about intent; the text around them says what management and auditors
+already know. A going-concern warning, a modified audit opinion or a vote on whether to dissolve the company
+comes before the petition, and none of it is in the balance sheet. Phase 7 turns that text into dated, typed,
+evidenced signals, with their extraction quality measured, so later models can use them without trusting an
+unmeasured extractor.
+
+## What there is to build on (seed, 2026-09-29)
+
+What was read for this draft; counts marked *census* are step A's to establish, since Postgres and MinIO were
+not running when it was written.
+
+- **A structured going-concern disclosure in every XML statement, not parsed yet.** The introduction to the
+  statement (`WprowadzenieDoSprawozdaniaFinansowego`, every form and structure version in `config/xsd/`) holds
+  `P_5A` (prepared on the going-concern basis?), `P_5B` (no circumstances threatening it?) and `P_5C` (free-text
+  description of the threats). Of the 17 statement fixtures, which are seed statements, three report a threat:
+  `full_2018_v1_0_kalk_b1_2018` (`P_5B` false), `full_2018_v1_2_kalk_2021` (`P_5A` and `P_5B` false: *not*
+  prepared on the going-concern basis) and `small_2025_v1_3_mala_kalk_2025` (`P_5B` false). **Wariant 2 encodes
+  both flags as codes** (`full_2025_w2_kalk_2025`: `P_5A` 2, `P_5B` 2, `P_5C` "SPÓLKA ZNAJDUJE SIĘ W
+  UPADŁOŚCI"), so their meaning must be read from the XSD documentation, as with the `.R2025` lines (plan 0005).
+  No LLM, no PDF, already dated by the filing's `known_from`. This is the cheapest signal the phase has.
+- **Notes embedded in the statements.** ADR 0009's second addendum counted 284 embedded PDFs (`Plik/Zawartosc`)
+  in 108 downloads: mostly the notes (*informacja dodatkowa*), stored redacted (signatures, file names, PDF
+  metadata removed). Their free text is kept and can name people (ADR 0009, "residual personal data, accepted
+  for now": "text extraction (G) must not emit person names"). Whether each has a text layer or is a scan:
+  *census*.
+- **Separately filed documents are indexed, not downloaded.** Auditor reports (RDF type 19), management
+  reports (20, and 5 before 2018) and resolutions on approval (3) and on profit allocation or loss coverage (4)
+  are `download: false` in `config/mappings/rdf_document_types.yaml`, and have no detail, so no submission date
+  (plan 0003: 404 rows without a detail across these and the pre-2018 types). Counts per type and entity:
+  *census*.
+- **Where the text signals of §5 can come from:**
+
+  | `signal_type` | Source | In hand? |
+  |---|---|---|
+  | `going_concern_uncertainty` | statement `P_5A`/`P_5B`/`P_5C`; notes; auditor report | yes (XML, notes) |
+  | `opinion_type`, `emphasis_of_matter` | auditor report | no: type 19 not downloaded, and many small `sp. z o.o.` are not audited (UoR art. 64) |
+  | `covenant_breach`, `key_customer_loss`, `litigation`, `post_balance_sheet_event` | notes; management report | notes only |
+  | `loss_coverage_resolution` | resolution (type 4) | no |
+  | `continued_existence_vote` | a shareholders' resolution under KSH art. 233; not an RDF type seen so far | unknown |
+
+- **Nothing for G is installed.** `src/distress_radar/extraction/` holds only `__init__.py`; `evals/text_signals/`
+  and `prompts/extraction/` are empty; no spaCy, no `pl_core_news_lg`, no LLM SDK or key (`docs/data_inventory.md`:
+  "LLM API key: not configured"). PyMuPDF is installed (redaction uses it).
+
+## The constraints that decide what this phase can show
+
+1. **Seventeen entities, eleven events** (plan 0012). No text feature can be shown to predict anything here. What
+   Phase 7 can measure honestly is **extraction quality** against a hand-labelled set, and even that set is small:
+   the gate it feeds is a regression guard, not a quality claim.
+2. **The distressed file least.** All nine seed entities with a distress hint file management reports late or
+   never (`docs/data_inventory.md` gap 8). Text signals will be missing exactly where they matter, and the gap is
+   already a filing-behaviour feature. A missing document must stay null, never read as "no warning".
+3. **Every text source but the XML flag carries personal data.** Notes and reports name board members;
+   resolutions name shareholders and how each voted. The person has to be removed before text is stored as a
+   signal, sent to a model or committed as an eval example, and the check has to be a test, not a promise.
+4. **LLM output is not deterministic**, and invariant 5 requires byte-identical reruns. Responses have to be
+   stored and replayed, not regenerated.
+
+## Owner decisions (pending)
+
+Recommendations first; each is the owner's to accept, change or reject before the step that needs it.
+
+0. **Scope: which sources this phase reads.**
+   - **(a) The XML going-concern flags.** Recommended, first: structured, free, already dated.
+   - **(b) The embedded notes**, through a PyMuPDF text layer (plan 0006's tier 1, text only: no statement label
+     map, so plan 0006 stays deferred). Recommended.
+   - **(c) Auditor reports and loss-coverage resolutions (types 19 and 4)**, captured by hand for the seed, as
+     statements were (plan 0003), with their details for `known_from`. Recommended *after* the census shows how
+     many exist; flipping `download` is a new version of `rdf_document_types.yaml`. Management reports (20) only
+     if the census finds them in the pre-event years that matter.
+   - Resolutions are the densest personal data of any source (see decision 1): if (c) is chosen, they need their
+     own rule before the first one is stored.
+1. **Personal data in text: mask before anything leaves the page.** Recommended, as ADR 0009's third addendum:
+   - page text is masked at the page-text step: person names found by spaCy's NER (`persName`) and the patterns
+     `personal_data_markers` already knows (PESEL) become `[osoba]`; the masked page is the only text any later
+     step sees: prefilter, LLM, evidence span, eval set;
+   - `evidence_span` is stored masked; a blocking check re-runs the masker over `text_signals` and
+     `evals/text_signals/`, and the pre-commit scan covers the eval files;
+   - the masker's own recall is measured on the golden set (decision 5): NER misses names, and the rate is a
+     number, not an assumption;
+   - resolutions (if decision 0c): reduced at capture to a person-free record of the resolution's outcome (loss
+     amount and how it is covered; the continuation vote's result), as MSiG notices are (ADR 0009 addendum), and
+     never stored as documents. This gives up re-extraction for them, as MSiG did; the alternative, storing them
+     masked, rests on NER catching every shareholder.
+2. **Model and API: Claude through the Anthropic SDK, structured outputs, batches for backfills.** Recommended:
+   - `claude-opus-5` (the SDK's current default). A cheaper model (`claude-sonnet-5`) is the owner's choice, and
+     is compared on the golden set before it replaces anything;
+   - responses validated against the Pydantic schema by the SDK (`messages.parse`), never parsed from free text;
+   - the API's citations feature cannot be combined with structured outputs, so the evidence span is a schema
+     field, and the code checks it is a verbatim substring of the masked page; an extraction whose span is not
+     found is discarded and counted (§6G2: "an extraction without evidence is discarded");
+   - backfills through the Message Batches API (asynchronous, half price); single calls only for development;
+   - only masked text is sent. The owner confirms the organisation's data-retention terms with the provider
+     before the first call, and `ANTHROPIC_API_KEY` joins `.env.example` and the credentials table.
+   - Rules before models: auditor opinions use the standard wording of the Polish auditing standards (*opinia
+     bez zastrzeżeń*, *z zastrzeżeniem*, *negatywna*, *odmowa wyrażenia opinii*; *istotna niepewność dotycząca
+     kontynuacji działalności*), so `opinion_type` and the auditor's going-concern paragraph are lemma rules,
+     measured like any extractor; the LLM takes the free-text signals.
+3. **Invariant 5: a response store, not re-generation.** Recommended: every response is stored content-addressed,
+   keyed by the SHA-256 of (masked page text, prompt file, model id, schema), in MinIO beside the raw store, with
+   a Postgres manifest row. A run calls the API only for keys it lacks; `text_signals` is rebuilt from the store
+   byte for byte. A new prompt or model is a new key, never an overwrite.
+4. **The CI gate without API calls in CI.** Recommended: `make eval` runs the extractors live (it costs money and
+   needs the key) and writes `evals/text_signals/results/<signal_type>/<prompt version>__<model>.json`: every
+   example's output, the scores and the hashes of the prompt, model, schema and golden file. `make check` then
+   re-scores the committed results offline and fails if the prompt or model in use has no result for the current
+   golden file, or if precision or recall fall below the last accepted result. The gate runs in the existing CI
+   job, so the separate `extraction-eval.yml` the tree names is not written (the tree is corrected).
+5. **The golden set: who labels, and what.** Recommended: the owner labels; a model may propose, and every
+   proposal is confirmed or corrected by the owner, with that provenance on the row. Examples are masked page
+   excerpts, one row per (page, `signal_type`), positives and negatives. They are drawn from every page the
+   prefilter selects on the seed **and** a fixed random sample of pages it rejects, so the prefilter's recall is
+   measured too. Expected size: tens of positives per signal at most; the scores print their counts, as the
+   backtest does.
+6. **Point in time.** A signal's `known_from` is the document's: the statement filing's for flags and embedded
+   notes, the own detail's submission date for a separately filed document (one without a detail is not used,
+   and counted). `fiscal_year` is the period the document reports on. The leakage test covers the new family the
+   day it is written.
+7. **Features: `feature_set_v4`, v3 plus a text family.** Recommended, first cut, each null when no document:
+   `going_concern_threat` and `going_concern_basis_abandoned` from the latest filed statement's flags; and, as
+   decision 0 allows, `going_concern_in_notes`, `modified_opinion`, `emphasis_of_matter`, `loss_coverage_by_capital`
+   from the latest document of their kind, with the count of prior filings flagging each. An auditor-change
+   feature, if the auditor report is captured, keys on the audit firm (a legal entity), never the key auditor.
+8. **The backtest.** Recommended: `backtest_v2` pins `feature_set_v4` and adds only `going_concern_threat` to the
+   regression's inputs. It is recorded before any run, as decision 5 of plan 0012 requires; nothing on the seed
+   is scored either way (plan 0012 correction).
+
+## Out of scope
+
+- The statement PDF tier (plan 0006 stays deferred: this plan reads text, not figures).
+- Average employment from management reports (`docs/data_inventory.md` gap 8), though the same text layer would
+  reach it; it waits for the size-class decision.
+- HerBERT distillation (TECHNICAL_ARCHITECTURE G2): it needs LLM-labelled data at scale.
+- KRZ, scale (ADR 0013), Phase 8 models.
+
+## Steps
+
+### A. Census (needs `make dev-up`)
+
+Counts only, no text printed: documents per RDF type and entity, with and without details, by year relative to
+each seed event; embedded PDFs with a text layer against scans (characters per page), pages per document; the
+`P_5` flags over every stored statement, by entity and year, beside the label events; which of the eleven events
+have any text document filed before them. The results go into this plan's progress, and decisions 0 and 5 are
+revisited with them.
+
+### B. Structured going concern (tier 0)
+
+`parsing/going_concern.py`: `P_5A`, `P_5B`, `P_5C` per structure version, the wariant 2 codes read from the XSD
+documentation and pinned by a test against it (as `test_every_code_label_matches_its_xsd_label` pins labels).
+Rows go to `text_signals` with `extraction_method` `xml_field`, `page` null and the element path as the locator;
+`P_5C` is masked (step C) before it is stored. The three fixtures that report a threat are the first tests.
+
+### C. Page text and masking
+
+`extraction/page_text.py`: the PyMuPDF text layer of each embedded (and, per decision 0, captured) PDF, page by
+page, deterministic; a page with no text layer is recorded `needs_ocr`, counted, not guessed. `extraction/masking.py`:
+spaCy `pl_core_news_lg` NER plus the PESEL patterns, `[osoba]` in place of each name. spaCy and its Polish model
+are locked with `make lock` (the model is a package pinned by URL and hash). ADR 0009's third addendum is written
+here, before the first masked text is stored.
+
+### D. Prefilter (G1)
+
+`extraction/preprocessing.py`: sentences and lemmas by spaCy; per-signal lemma lists in
+`config/extraction/prefilter_v1.yaml` (engineering config, versioned by file name like feature sets). Its recall
+is measured on step E's rejected-page sample.
+
+### E. Golden set (G3)
+
+`evals/text_signals/<signal_type>.jsonl`, one file per `signal_type` (DIRECTORY_STRUCTURE naming): masked excerpts,
+the label, its evidence, the document hash and page, and who labelled it. Committed only after the masking check
+passes on it.
+
+### F. Extractors (G2)
+
+`extraction/schemas.py` (Pydantic: value, evidence span, page, confidence, per signal), `extraction/rules.py` (the
+lemma rules of decision 2), `extraction/extractor.py` (the constrained call, the evidence check, the response store
+of decision 3), `prompts/extraction/<signal_type>_v1.md` with `prompts/CHANGELOG.md`.
+
+### G. Eval harness and gate
+
+`extraction/eval_harness.py`: precision, recall and F1 per `signal_type`, with counts, and the masker's recall;
+`make eval` (live) and the offline gate in `make check` (decision 4).
+
+### H. `text_signals` and wiring
+
+The dataset with its Pandera contract (AGENT_SPEC §5 columns, plus `document_ref`, `source_element_path` and
+`ingestion_run_id` for lineage, invariant 3); unreadable documents and discarded extractions to `quarantine_events`
+with reason codes; a `text` group and job in `dagster_defs/`, the masking check as a blocking asset check.
+
+### I. Features and backtest
+
+`feature_set_v4` (decision 7), the leakage test run on it, `feature_store` rebuilt twice to the same bytes;
+`backtest_v2` (decision 8) run twice.
+
+### J. Docs
+
+AGENT_SPEC §5 and §6G as built; DIRECTORY_STRUCTURE (the new modules, `config/extraction/`, the gate replacing
+`extraction-eval.yml`); `docs/data_inventory.md` §2.4 and the credentials table; README status and how to run the
+text job and `make eval`; this plan's status.
+
+## Tests
+
+- **No person in any output:** the masker finds planted names in synthetic Polish text (inflected forms included);
+  the blocking check fails on a `text_signals` row or eval file with an unmasked name.
+- **Evidence or nothing:** an extraction whose span is not in the masked page is discarded and counted.
+- **Replay:** a second run with the same inputs makes no API call and writes the same bytes; a changed prompt is a
+  new key.
+- **The gate:** a committed result below the accepted scores, or missing for the current prompt, fails `make check`.
+- **Going-concern flags:** every structure version's fixture read by hand, the wariant 2 codes pinned to the XSD.
+- **Point in time:** the leakage test on `feature_set_v4`, with a trap document filed after `as_of_date`.
+- **Null is not false:** an entity with no auditor report has a null `modified_opinion`, never false.
+
+## Definition of done
+
+- [ ] Owner decisions 0–8 made.
+- [ ] Census in the progress section; decisions revisited with it.
+- [ ] ADR 0009's third addendum (masking) accepted before the first masked text is stored.
+- [ ] `text_signals` built from the chosen sources, every row with evidence and lineage, no unmasked name.
+- [ ] Golden set labelled and committed; precision, recall and F1 per `signal_type` with counts; the gate in
+      `make check`.
+- [ ] `feature_set_v4` leak-free and byte-reproducible; `backtest_v2` run twice, identical.
+- [ ] `make check` and `make test-integration` green; docs from step J updated.
+
+## Risks
+
+- **The masker misses a name**, and a public eval file or a stored span carries it. Measured, gated, and the
+  pre-commit scan is the last line; a found leak means a history rewrite (ADR 0009).
+- **Scans.** If most embedded notes have no text layer, step C records them `needs_ocr` and the phase shrinks to
+  the XML flags and what text there is; OCR or a vision model is its own decision, not a silent fallback.
+- **A small golden set makes the gate noisy:** one example can move recall by several points. The gate compares
+  against the accepted result with the counts shown; tolerances, if any, are an owner decision recorded in config.
+- **Cost and terms of the API.** Decision 2 sends masked text only, batches backfills and stores every response
+  once; the owner confirms the terms before the first call.
+- **Post-event documents.** Distressed entities file late, often after the event (plan 0006: a statement filed
+  eight days after the bankruptcy). Point-in-time dating keeps them out of the features that would predict it;
+  the census shows how much text is left before each event.
+
+## After Phase 7
+
+Phase 8 adds LightGBM (native nulls suit the text family's missingness), survival models, calibration and SHAP on
+`feature_set_v4`. What any of it says about the population still waits on ADR 0013.
