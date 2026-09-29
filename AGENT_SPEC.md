@@ -190,6 +190,12 @@ These names are canonical. `PROJECT_OVERVIEW.md` refers to the same datasets and
 
 `signal_type` enum: `going_concern_uncertainty`, `opinion_type`, `emphasis_of_matter`, `covenant_breach`, `key_customer_loss`, `litigation`, `post_balance_sheet_event`, `loss_coverage_resolution`, `continued_existence_vote`.
 
+### `statement_disclosures`
+
+`krs`, `fiscal_year`, `period_start`, `period_end`, `item`, `value_bool`, `value_number`, `raw_value`, `structure_version`, `config_version`, `source_document_hash`, `source_member`, `source_element_path`, `document_ref`, `known_from`, `ingestion_run_id`.
+
+`item` enum: `going_concern_basis` (prepared on the going-concern basis), `going_concern_threat` (circumstances threaten it; the negation of the filed P_5B), `going_concern_threat_described` (a description is filed; its text is never kept, ADR 0009), and from wariant 2 (fiscal years from 2025) `average_employment` (full-time equivalents, UoR art. 64 ust. 1 pkt 4) and `audit_required`. One row per item a statement's introduction reports, one typed value each; an item not filed has no row. Written with `financial_statements_canonical` from the same files (plan 0013 step B), read with `config/mappings/statement_introduction.yaml`, contract `STATEMENT_DISCLOSURES`.
+
 ### `entity_size_class_history`
 
 `krs`, `fiscal_year`, `size_class` (`micro` | `small` | `medium` | `large`), `balance_sheet_total`, `net_revenue`, `average_employment`, `threshold_config_version`, `known_from`.

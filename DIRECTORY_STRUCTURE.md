@@ -63,6 +63,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │   ├── msig_notice_kinds.yaml     # rules typing a reduced MSiG notice (plan 0008 step F)
 │   │   ├── pkd_crosswalk.yaml         # PKD 2007 <-> PKD 2025
 │   │   ├── rdf_document_types.yaml    # observed RDF document types, A3 download scope
+│   │   ├── statement_introduction.yaml  # going-concern flags, employment, audit: where and how read (plan 0013)
 │   │   ├── structure_catalog.yaml     # versions recognised but not mapped yet
 │   │   └── structures/                # one file per XML structure version
 │   │       ├── bodies/                # statutory element paths shared by versions
@@ -221,6 +222,7 @@ src/distress_radar/
 │   ├── legal_acceptance.py      # seed acceptance: each status hint found in legal_events
 │   ├── mapping_engine.py        # C2 — reads config/mappings/structures/*.yaml
 │   ├── statements.py            # C1 + C2 for one stored download, no I/O
+│   ├── statement_introduction.py  # the introduction's disclosures → statement_disclosures (plan 0013)
 │   ├── accounting_identities.py # E2 — identity rules and grading, pure functions
 │   ├── contracts.py             # E1 — Pandera schemas for C2 output
 │   ├── manifest.py              # parsed_documents (Postgres)

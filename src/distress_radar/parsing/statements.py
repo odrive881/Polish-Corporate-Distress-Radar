@@ -35,6 +35,12 @@ from distress_radar.parsing.mapping_engine import (
     parse_statement,
     to_frame,
 )
+from distress_radar.parsing.statement_introduction import (
+    DisclosureContext,
+    IntroductionConfig,
+    read_introduction,
+)
+from distress_radar.parsing.statement_introduction import to_frame as disclosures_frame
 from distress_radar.parsing.version_detection import DetectionError, detect
 from distress_radar.parsing.xsd_validation import XsdValidator
 
@@ -200,3 +206,32 @@ def map_file(
         ingestion_run_id=ingestion_run_id,
     )
     return to_frame(parsed, ctx)
+
+
+def map_disclosures(
+    outcome: FileOutcome,
+    source: StatementSource,
+    config: IntroductionConfig,
+    ingestion_run_id: str,
+) -> pl.DataFrame:
+    """The introduction's disclosures of one `valid` file that `map_file` accepted (plan 0013
+    step B). Raises `MappingError` for quarantine (stage C2), like `map_file`."""
+    if outcome.status != "valid" or outcome.spec is None or outcome.filing is None:
+        raise ValueError(f"{outcome.source_member} is not a valid statement file")
+    filing = outcome.filing
+    if filing.submission_date is None:
+        raise MappingError("known_from_missing", "filing_index has no submission_date")
+    root = etree.fromstring(outcome.data, safe_parser())
+    ctx = DisclosureContext(
+        krs=source.krs,
+        document_ref=filing.document_ref,
+        period_start=filing.period_start,
+        period_end=filing.period_end,
+        structure_version=outcome.spec.structure_version,
+        source_document_hash=source.sha256,
+        source_member=outcome.source_member,
+        known_from=filing.submission_date,
+        ingestion_run_id=ingestion_run_id,
+        config_version=config.version,
+    )
+    return disclosures_frame(read_introduction(root, outcome.spec.structure_version, config), ctx)

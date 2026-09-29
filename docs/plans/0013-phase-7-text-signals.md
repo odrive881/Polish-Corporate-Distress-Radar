@@ -11,7 +11,7 @@
 **Order:** after plan 0012 (complete). It does not wait for ADR 0013: like Phase 6, it builds and measures
 machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set this plan adds.
 
-## Status: draft (2026-09-29), owner decisions pending; census taken (step A)
+## Status: active (2026-09-29): owner decisions 0–8 accepted; steps A and B built
 
 ### Progress
 
@@ -51,6 +51,29 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
   - **What changes in the decisions:** 0(a) stands and is the first build; 0(b) is viable without OCR for the
     distressed entities, but see the new risk on missingness; 0(c) is 316 documents of manual capture for the
     seed; decision 7 gains employment and the audit flag (below).
+- **Owner decisions (2026-09-29):** all nine accepted as recommended. Build order agreed: the introduction's
+  flags and employment first (step B), then masking and the notes' text layer (C, D), the golden set (E), the
+  extractors with the response store and gate (F, G), `text_signals` (H), features and the backtest (I); the
+  hand capture of decision 0(c) is decided after I.
+- **Step B (2026-09-29):** `parsing/statement_introduction.py`, read with
+  `config/mappings/statement_introduction.yaml`, written by the `financial_statements_canonical` asset to a new
+  dataset, `statement_disclosures` (AGENT_SPEC §5), from the same validated files and with their lineage.
+  - **Changed from the step as drafted, for the owner to see:** the flags go to their own dataset, not to
+    `text_signals` rows with `extraction_method` `xml_field`. Employment and the audit flag are not text
+    signals and have no `signal_type`, and `text_signals` carries an evidence span and a page that a
+    structured field does not have. `text_signals` will take its `going_concern_uncertainty` rows from the
+    notes (step F) and, if decided, the auditor reports. `P_5C`'s text is not kept at all yet: only whether it
+    is filed. It waits for step C's masking.
+  - **The config is pinned to the XSDs:** for every mapped version and every introduction block its XSD
+    declares, each item's element is documented as that item, and each flag's encoding is the XSD's own
+    (`xs:boolean`, or the enumeration 1, 2). Swapping employment to the wrong number fails the test. A new
+    structure version not listed in the config fails at load time.
+  - **Live run on the seed**, twice through the `features` job: 309 rows from 129 statements, the same bytes both
+    times. `going_concern_threat` true in 35, `going_concern_basis` false in 18, a description filed in 33;
+    employment and the audit flag in the 9 wariant 2 statements (5 audited). The census's 130 and 36 include
+    one statement the canonical stage does not map. `financial_statements_canonical`, `identity_check_results`,
+    `restatement_events`, `legal_events` and `feature_store` are byte for byte unchanged: the new config is not
+    part of the spec hash, so no file is re-parsed under a new run id; each row carries `config_version`.
 
 ## Why
 
@@ -112,7 +135,7 @@ not running when it was written.
 4. **LLM output is not deterministic**, and invariant 5 requires byte-identical reruns. Responses have to be
    stored and replayed, not regenerated.
 
-## Owner decisions (pending)
+## Owner decisions (accepted by the owner, 2026-09-29, as recommended)
 
 Recommendations first; each is the owner's to accept, change or reject before the step that needs it.
 
@@ -204,10 +227,12 @@ revisited with them.
 
 ### B. Structured going concern (tier 0)
 
-`parsing/going_concern.py`: `P_5A`, `P_5B`, `P_5C` per structure version, the wariant 2 codes read from the XSD
-documentation and pinned by a test against it (as `test_every_code_label_matches_its_xsd_label` pins labels).
-Rows go to `text_signals` with `extraction_method` `xml_field`, `page` null and the element path as the locator;
-`P_5C` is masked (step C) before it is stored. The three fixtures that report a threat are the first tests.
+*As built (see Progress):* `parsing/statement_introduction.py` into `statement_disclosures`, not `text_signals`.
+As drafted: `parsing/going_concern.py`: `P_5A`, `P_5B`, `P_5C` per structure version, the wariant 2 codes read
+from the XSD documentation and pinned by a test against it (as `test_every_code_label_matches_its_xsd_label` pins
+labels). Rows go to `text_signals` with `extraction_method` `xml_field`, `page` null and the element path as the
+locator; `P_5C` is masked (step C) before it is stored. The three fixtures that report a threat are the first
+tests.
 
 ### C. Page text and masking
 
@@ -271,7 +296,7 @@ text job and `make eval`; this plan's status.
 
 ## Definition of done
 
-- [ ] Owner decisions 0–8 made.
+- [x] Owner decisions 0–8 made (2026-09-29, all as recommended).
 - [x] Census in the progress section; decisions revisited with it (2026-09-29).
 - [ ] ADR 0009's third addendum (masking) accepted before the first masked text is stored.
 - [ ] `text_signals` built from the chosen sources, every row with evidence and lineage, no unmasked name.
