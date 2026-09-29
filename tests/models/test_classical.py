@@ -51,7 +51,7 @@ def _rows(n: int, year: int, seed: int, distressed_every: int = 4) -> pl.DataFra
 
 
 def _fold(train: pl.DataFrame, test: pl.DataFrame) -> Fold:
-    return Fold(horizon_months=12, test_year=2022, train=train, test=test)
+    return Fold(horizon_months=12, test_year=2022, train=train, test=test, train_rows_unsettled=0)
 
 
 # --- the rank transform ------------------------------------------------------------------------

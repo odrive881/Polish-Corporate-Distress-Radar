@@ -1,9 +1,17 @@
 """Purged expanding-window folds (plan 0012 step C, owner decision 2).
 
 For a test year Y, the test rows are those with `as_of_date` in Y; the training rows are those
-whose whole label window closed before 1 January Y, `as_of_date + horizon < Y-01-01`. A training
-label therefore never knows the test period. The same entities appear on both sides, as a panel
-does; an entity-disjoint check waits for scale.
+whose whole label window closed before 1 January Y, `as_of_date + horizon < Y-01-01`, and whose
+label was settled by then: what the label set's own rules would have said on 31 December Y-1.
+- A distress row trains only if its event was public by then (`event_known_from`). The registry
+  enters decisions up to 21 months late, so a window can close with its event still unknown.
+- An `alive` row trains only if its window ended by the alive limit the labels apply at that date:
+  the date itself, moved back by `alive_lag_months` for a window ending on or after KRZ's launch
+  (plan 0009). The label set knows the rows stayed alive later; the model on Y's eve could not.
+A row whose window closed but whose label was not settled is left out and counted, never
+relabelled: as of Y's eve it was censored. Test rows keep their final labels, the truth a model
+is judged against. The same entities appear on both sides, as a panel does; an entity-disjoint
+check waits for scale.
 
 Each fold is reported with its rows, distinct events (entity and event date: one event labels
 up to `horizon` consecutive month-ends), their class mix and entities, and whether it clears the
@@ -25,8 +33,10 @@ import yaml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from distress_radar.features.config import RatioFeature, load_feature_set
+from distress_radar.labels import load_label_config
 from distress_radar.models.dataset import TARGET, ModellingDataset, event_day
 from distress_radar.parsing.canonical_schema import CONFIG_DIR
+from distress_radar.parsing.legal_taxonomy import load_procedure_taxonomy
 
 
 class LogisticConfig(BaseModel):
@@ -97,25 +107,68 @@ def window_end(horizon_months: int) -> pl.Expr:
 
 
 @dataclass(frozen=True)
+class LabelTiming:
+    """The label set's rules for when a label is settled: its `alive` lag and KRZ's launch."""
+
+    alive_lag_months: int
+    krz_launch: date
+
+
+def label_timing(labels: pl.DataFrame, config_dir: Path = CONFIG_DIR) -> LabelTiming:
+    """The timing rules of the label version a frozen set was built with."""
+    versions = labels.get_column("label_version").unique().to_list()
+    if len(versions) != 1:
+        raise ValueError(f"a label set has one label_version, not {versions}")
+    config = load_label_config(str(versions[0]), config_dir)
+    return LabelTiming(config.alive_lag_months, load_procedure_taxonomy(config_dir).krz_launch)
+
+
+def settled_by(day: date, horizon_months: int, timing: LabelTiming) -> pl.Expr:
+    """True where a row's label, as the label set's rules give it, was already known on `day`."""
+    closes = window_end(horizon_months)
+    limit = pl.lit(day, dtype=pl.Date)
+    alive_limit = (
+        pl.when(closes >= timing.krz_launch)
+        .then(
+            limit.dt.offset_by(f"-{timing.alive_lag_months}mo")
+            if timing.alive_lag_months
+            else limit
+        )
+        .otherwise(limit)
+    )
+    known = pl.col("event_known_from").is_not_null() & (pl.col("event_known_from") <= day)
+    return pl.when(pl.col(TARGET)).then(known).otherwise(closes <= alive_limit)
+
+
+@dataclass(frozen=True)
 class Fold:
     horizon_months: int
     test_year: int
     train: pl.DataFrame
     test: pl.DataFrame
+    train_rows_unsettled: int  # window closed, label not yet known on the eve: counted, not used
 
 
-def purged_folds(dataset: ModellingDataset, test_years: tuple[int, ...]) -> list[Fold]:
+def purged_folds(
+    dataset: ModellingDataset, test_years: tuple[int, ...], timing: LabelTiming
+) -> list[Fold]:
     frame = dataset.frame
     closes = window_end(dataset.horizon_months)
-    return [
-        Fold(
-            horizon_months=dataset.horizon_months,
-            test_year=year,
-            train=frame.filter(closes < date(year, 1, 1)),
-            test=frame.filter(pl.col("as_of_date").dt.year() == year),
+    folds: list[Fold] = []
+    for year in test_years:
+        closed = frame.filter(closes < date(year, 1, 1))
+        settled = settled_by(date(year - 1, 12, 31), dataset.horizon_months, timing)
+        train = closed.filter(settled)
+        folds.append(
+            Fold(
+                horizon_months=dataset.horizon_months,
+                test_year=year,
+                train=train,
+                test=frame.filter(pl.col("as_of_date").dt.year() == year),
+                train_rows_unsettled=closed.height - train.height,
+            )
         )
-        for year in test_years
-    ]
+    return folds
 
 
 def events(rows: pl.DataFrame) -> pl.DataFrame:
@@ -131,7 +184,8 @@ def events(rows: pl.DataFrame) -> pl.DataFrame:
 def fold_report(
     folds: list[Fold], distress_classes: tuple[str, ...], min_events: int
 ) -> pl.DataFrame:
-    """One row per fold: rows, events by class, entities, and whether it is evaluable."""
+    """One row per fold: rows (and unsettled rows left out), events by class, entities, and
+    whether it is evaluable."""
     records: list[dict[str, object]] = []
     for fold in folds:
         record: dict[str, object] = {
@@ -143,6 +197,8 @@ def fold_report(
             found = events(rows)
             event_counts.append(found.height)
             record[f"{side}_rows"] = rows.height
+            if side == "train":
+                record["train_rows_unsettled"] = fold.train_rows_unsettled
             record[f"{side}_entities"] = rows.get_column("krs").n_unique()
             record[f"{side}_events"] = found.height
             for cls in distress_classes:

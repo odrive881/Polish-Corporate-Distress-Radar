@@ -11,7 +11,7 @@ from pathlib import Path
 import numpy as np
 import polars as pl
 import pytest
-from tests.models.frames import panel
+from tests.models.frames import TIMING, panel
 
 from distress_radar.features.config import load_feature_set
 from distress_radar.models.backtest import POOLED, BacktestResult, run_backtest
@@ -121,7 +121,7 @@ def result() -> BacktestResult:
     features, labels = panel(30, seed=3)
     feature_set = load_feature_set("feature_set_v3").feature_set
     models = [load_classical_model(m, feature_set) for m in ("altman_z2_2000", "poznan_2004")]
-    return run_backtest(features, labels, _config(), models)
+    return run_backtest(features, labels, _config(), TIMING, models)
 
 
 def test_every_model_horizon_run_and_year_has_a_cell(result: BacktestResult) -> None:
@@ -169,7 +169,7 @@ def test_the_report_is_reproducible_byte_for_byte(result: BacktestResult, tmp_pa
     features, labels = panel(30, seed=3)
     feature_set = load_feature_set("feature_set_v3").feature_set
     models = [load_classical_model(m, feature_set) for m in ("altman_z2_2000", "poznan_2004")]
-    again = run_backtest(features, labels, _config(), models)
+    again = run_backtest(features, labels, _config(), TIMING, models)
     first = write_report(render_report(result, "a" * 40), tmp_path, "backtest_v1").read_bytes()
     second = write_report(render_report(again, "a" * 40), tmp_path, "backtest_v1").read_bytes()
     assert first == second

@@ -11,8 +11,12 @@ from datetime import date
 import polars as pl
 
 from distress_radar.labels import OUTCOME_LABELS_SCHEMA, label_set_hash
+from distress_radar.models.splits import LabelTiming
 
 VERSION, HASH = "feature_set_vt", "f" * 64
+# Label version 2's timing (plan 0009): `alive` settles 12 months late for windows ending on or
+# after KRZ's launch.
+TIMING = LabelTiming(alive_lag_months=12, krz_launch=date(2021, 12, 1))
 
 
 def month_ends(first: date, last: date) -> list[date]:

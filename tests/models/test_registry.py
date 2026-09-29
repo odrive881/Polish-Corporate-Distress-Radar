@@ -13,7 +13,7 @@ from pathlib import Path
 import polars as pl
 import pytest
 from mlflow.tracking import MlflowClient
-from tests.models.frames import panel
+from tests.models.frames import TIMING, panel
 
 from distress_radar.features.config import load_feature_set
 from distress_radar.models.backtest import BacktestResult, run_backtest
@@ -109,7 +109,7 @@ def result() -> BacktestResult:
     )
     feature_set = load_feature_set("feature_set_v3").feature_set
     models = [load_classical_model(m, feature_set) for m in ("altman_z2_2000", "poznan_2004")]
-    return run_backtest(features, labels, config, models)
+    return run_backtest(features, labels, config, TIMING, models)
 
 
 def test_every_model_horizon_and_run_is_logged_with_its_identifiers(

@@ -7,17 +7,19 @@ leakage test: never skip or weaken it."""
 from __future__ import annotations
 
 import shutil
+from dataclasses import replace
 from datetime import date
 from pathlib import Path
 
 import polars as pl
 import pytest
 import yaml
-from tests.models.frames import features, labels, month_ends
+from tests.models.frames import TIMING, features, labels, month_ends
 
 from distress_radar.models.dataset import ModellingDataset, modelling_dataset
 from distress_radar.models.splits import (
     fold_report,
+    label_timing,
     load_backtest_config,
     purged_folds,
     window_end,
@@ -58,7 +60,7 @@ def _grid(horizon: int) -> ModellingDataset:
 @pytest.mark.parametrize("horizon", [12, 24])
 def test_no_training_label_window_reaches_its_test_period(horizon: int) -> None:
     """Owner decision 2: every training row's window closed before 1 January of the test year."""
-    for fold in purged_folds(_grid(horizon), YEARS):
+    for fold in purged_folds(_grid(horizon), YEARS, TIMING):
         boundary = date(fold.test_year, 1, 1)
         closes = fold.train.select(window_end(horizon).alias("closes")).get_column("closes")
         assert closes.is_empty() or closes.max() < boundary  # type: ignore[operator]
@@ -71,15 +73,82 @@ def test_no_training_label_window_reaches_its_test_period(horizon: int) -> None:
 
 def test_the_window_boundary_is_exact() -> None:
     """At 12 months, 2018-12-31 closes on 2019-12-31 and trains the 2020 fold; 2019-01-31 does not."""
-    fold = next(f for f in purged_folds(_grid(12), (2020,)))
+    fold = next(f for f in purged_folds(_grid(12), (2020,), TIMING))
     days = set(fold.train.get_column("as_of_date").to_list())
     assert date(2018, 12, 31) in days and date(2019, 1, 31) not in days
+
+
+def _late(dataset: ModellingDataset, known: date) -> ModellingDataset:
+    """B's event entered in the registry on `known`, long after its decision."""
+    frame = dataset.frame.with_columns(
+        pl.when(pl.col("distress"))
+        .then(pl.lit(known))
+        .otherwise(pl.col("event_known_from"))
+        .alias("event_known_from")
+    )
+    return replace(dataset, frame=frame)
+
+
+@pytest.mark.parametrize("horizon", [12, 24])
+def test_no_training_label_was_unknown_on_the_eve_of_its_test_year(horizon: int) -> None:
+    """BLOCKING, with the window test above: a training label is one the labels' own rules gave
+    on 31 December before the test year. A distress event public only later, or an `alive`
+    inside the lag allowance then, would train on the future."""
+    dataset = _late(_grid(horizon), date(2023, 3, 31))
+    for fold in purged_folds(dataset, YEARS, TIMING):
+        eve = date(fold.test_year - 1, 12, 31)
+        train = fold.train.with_columns(window_end(horizon).alias("closes"))
+        known = train.filter(pl.col("distress")).get_column("event_known_from")
+        assert known.is_empty() or known.max() <= eve  # type: ignore[operator]
+        alive = train.filter(~pl.col("distress") & (pl.col("closes") >= TIMING.krz_launch))
+        limit = date(eve.year - TIMING.alive_lag_months // 12, 12, 31)
+        assert alive.is_empty() or alive.get_column("closes").max() <= limit  # type: ignore[operator]
+
+
+def test_an_event_entered_late_trains_only_once_it_is_public() -> None:
+    """B's 2020 bankruptcy, entered on 2023-03-31: its rows closed by 2021, but the 2022 and 2023
+    folds could not have known it. They leave the rows out and count them; 2024 trains on them."""
+    folds = purged_folds(_late(_grid(12), date(2023, 3, 31)), (2022, 2023, 2024), TIMING)
+    by_year = {f.test_year: f for f in folds}
+    for year in (2022, 2023):
+        assert by_year[year].train.filter(pl.col("distress")).is_empty()
+    assert by_year[2024].train.filter(pl.col("distress")).height == 12
+    report = fold_report(folds, DISTRESS, min_events=1)
+    unsettled = dict(zip(report["test_year"], report["train_rows_unsettled"], strict=True))
+    assert unsettled[2022] >= 12 and unsettled[2023] >= 12
+
+
+def test_alive_after_krz_settles_only_after_the_lag_allowance() -> None:
+    """At 12 months, 2021-06-30 closes on 2022-06-30, after KRZ's launch: the labels call it
+    `alive` only 12 months on, so it trains the 2024 fold, not 2023. 2020-06-30 closes before the
+    launch, when MSiG published within weeks, and trains 2022."""
+    folds = {f.test_year: f for f in purged_folds(_grid(12), (2022, 2023, 2024), TIMING)}
+
+    def trains(year: int, day: date) -> bool:
+        rows = folds[year].train.filter(pl.col("krs") == A)
+        return day in rows.get_column("as_of_date").to_list()
+
+    assert trains(2022, date(2020, 6, 30))
+    assert not trains(2023, date(2021, 6, 30)) and trains(2024, date(2021, 6, 30))
+    # On the 2022 fold's eve, 2021-12-31: a window closing that day ends after the launch and is
+    # not settled yet; one closing on 2021-11-30 ends before it and is.
+    assert not trains(2022, date(2020, 12, 31)) and trains(2023, date(2020, 12, 31))
+    assert trains(2022, date(2020, 11, 30))
+
+
+def test_the_timing_is_read_from_the_label_version() -> None:
+    frame = labels([(A, date(2020, 1, 31), 12, "alive", None, False)]).with_columns(
+        pl.lit("outcome_labels_v2").alias("label_version")
+    )
+    assert label_timing(frame) == TIMING
+    v1 = frame.with_columns(pl.lit("outcome_labels_v1").alias("label_version"))
+    assert label_timing(v1).alive_lag_months == 0
 
 
 def test_events_are_counted_once_however_many_rows_they_label() -> None:
     dataset = _grid(12)
     assert dataset.frame.filter(pl.col("distress")).height == 12
-    report = fold_report(purged_folds(dataset, (2020, 2022)), DISTRESS, min_events=1)
+    report = fold_report(purged_folds(dataset, (2020, 2022), TIMING), DISTRESS, min_events=1)
     by_year = {r["test_year"]: r for r in report.iter_rows(named=True)}
     assert by_year[2020]["test_events"] == 1 and by_year[2020]["train_events"] == 0
     assert by_year[2022]["train_events"] == 1 and by_year[2022]["train_events_bankruptcy"] == 1
@@ -89,7 +158,7 @@ def test_events_are_counted_once_however_many_rows_they_label() -> None:
 
 
 def test_a_fold_below_min_events_is_reported_not_evaluable() -> None:
-    report = fold_report(purged_folds(_grid(12), (2021,)), DISTRESS, min_events=3)
+    report = fold_report(purged_folds(_grid(12), (2021,), TIMING), DISTRESS, min_events=3)
     assert report.row(0, named=True)["evaluable"] is False
     assert report.height == 1  # kept and reported, never dropped
 
