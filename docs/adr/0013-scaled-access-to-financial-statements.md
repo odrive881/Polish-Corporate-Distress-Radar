@@ -8,8 +8,9 @@
 ## Context
 
 Phase 6 built the modelling harness on the 17-entity seed, and the harness works. The seed cannot
-say whether a model works: it has 11 events in 9 entities, and in the backtest a single cell of 84
-reaches three events (plan 0012). It was also hand-picked with distress hints, so its base rate is
+say whether a model works: it has 11 events in 9 entities, and in the backtest no cell of 84
+reaches three events once each fold trains only on labels public by its test year (plan 0012,
+corrected 2026-09-29). It was also hand-picked with distress hints, so its base rate is
 wrong for the population by construction. **The critical path to a meaningful model is the size of
 the universe, not modelling.**
 
@@ -60,8 +61,11 @@ statements.
 
 **(d) A smaller universe first.** Grow the seed by hand to the scale where some folds clear the
 minimum-events rule, drawn by a documented sampling rule instead of distress hints.
-- *For:* no external dependency; fixes the calibration problem the hand-picked seed has.
-- *Against:* still manual, and still far short of v1; a stepping stone, not a route.
+- *For:* fixes the calibration problem the hand-picked seed has.
+- *Against:* still manual, and still far short of v1; a stepping stone, not a route. And it is
+  not free of A1: a sample needs a frame to be drawn from, a list of construction `sp. z o.o.`
+  KRS numbers, which only discovery provides. Probing KRS numbers at random until enough
+  construction companies turn up is the bulk enumeration AGENT_SPEC §6A forbids.
 
 ## Recommendation
 
@@ -74,9 +78,11 @@ Pursue (a) and (b) in parallel, and use (c) and (d) meanwhile.
 2. **Ask two or three vendors for quotes for (b)**, with the original filed documents as a hard
    requirement and A1 discovery (the candidate list) in the same quote. A feed of parsed figures
    only is out, whatever its price.
-3. **Meanwhile, (d):** capture a larger sample by hand, chosen by a written sampling rule (for
-   example, random KRS numbers from the construction segment, not distress hints), so the next
-   backtest measures calibration on something closer to the population.
+3. **Meanwhile, (d), once there is a frame to sample:** capture a larger sample by hand, drawn
+   by a written sampling rule (for example, at random from a candidate list of the construction
+   segment, never by distress hints and never by probing KRS numbers), so the next backtest
+   measures calibration on something closer to the population. The frame is A1's, so (d) waits
+   for a discovery source, from (b) or elsewhere.
 
 ## Decision
 
@@ -90,4 +96,4 @@ Open. To be recorded here by the owner, with the date and the chosen route or ro
 - A1 discovery needs a source whichever route is chosen for A3; option (b) may settle both.
 - Until one of these lands, Phase 7 (text signals) and Phase 8 (LightGBM, survival) can be built on
   the seed, but, like Phase 6, they prove machinery, not performance.
-- `CLAUDE.md`'s "Known moving targets" should point here once the owner decides.
+- `CLAUDE.md`'s "Known moving targets" points here; it records the owner's decision once made.

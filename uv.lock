@@ -3020,7 +3020,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.6" },
-    { name = "scikit-learn", specifier = ">=1.5" },
+    { name = "scikit-learn", specifier = ">=1.8" },
     { name = "sqlmesh", specifier = ">=0.236" },
     { name = "statsmodels", specifier = ">=0.14" },
     { name = "tenacity", specifier = ">=9.0" },

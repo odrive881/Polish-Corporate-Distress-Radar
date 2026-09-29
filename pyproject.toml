@@ -32,7 +32,8 @@ dependencies = [
     # Stage I (plan 0012): classical baselines, logistic regression, run tracking. Project code
     # hands them NumPy arrays from Polars; the pandas they pull in stays out of `src/`.
     "statsmodels>=0.14",
-    "scikit-learn>=1.5",
+    # 1.8 or later: an L2 penalty is written as `l1_ratio=0` (`models/classical.py`).
+    "scikit-learn>=1.8",
     # Full package, not mlflow-skinny: the local SQLite tracking store needs SQLAlchemy/Alembic.
     "mlflow>=3.1",
 ]
