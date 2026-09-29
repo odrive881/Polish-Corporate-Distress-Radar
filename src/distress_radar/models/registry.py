@@ -177,6 +177,9 @@ def log_backtest(
             "test_years": ",".join(map(str, config.test_years)),
             "min_events": str(config.min_events),
             "distress_classes": ",".join(config.distress_classes),
+            # When a training label counts as settled (`splits.py`), from the label version.
+            "label_alive_lag_months": str(result.timing.alive_lag_months),
+            "krz_launch": result.timing.krz_launch.isoformat(),
         }
         if model == "logistic_regression":
             lr = config.logistic_regression

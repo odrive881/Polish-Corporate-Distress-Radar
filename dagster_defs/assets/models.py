@@ -19,7 +19,7 @@ from distress_radar.models.baselines import load_classical_model
 from distress_radar.models.dataset import load_feature_store, load_label_set
 from distress_radar.models.registry import code_commit, data_snapshot, identifiers, log_backtest
 from distress_radar.models.report import render_report, write_report
-from distress_radar.models.splits import load_backtest_config
+from distress_radar.models.splits import label_timing, load_backtest_config
 from distress_radar.settings import Settings
 
 # The repository the code commit is read from: the one this module is part of.
@@ -33,8 +33,9 @@ def backtest(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
 
     Inputs: `feature_store` and the frozen label set pinned in
     `config/models/<BACKTEST_VERSION>.yaml` (by hash, not the latest `outcome_labels`), under
-    `WAREHOUSE_DIR`; the classical models' coefficients in `config/models/`; the code commit of
-    a clean working tree, refused otherwise.
+    `WAREHOUSE_DIR`; the label version's timing rules (`config/labels/`, the taxonomy's KRZ launch),
+    which decide the training labels settled by each test year; the classical models'
+    coefficients in `config/models/`; the code commit of a clean working tree, refused otherwise.
     Outputs: the Markdown report at `WAREHOUSE_DIR/reports/backtest/<BACKTEST_VERSION>.md`,
     replaced whole, the same bytes for the same inputs; one MLflow run per model, horizon and
     run (`main`, `no_regime`) in `MLFLOW_TRACKING_URI`, each with the four identifiers.
@@ -45,10 +46,12 @@ def backtest(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
     config = load_backtest_config(settings.backtest_version)
     feature_set = load_feature_set(config.feature_set_version).feature_set
     models = [load_classical_model(m, feature_set) for m in CLASSICAL_MODELS]
+    labels = load_label_set(settings.warehouse_dir, config.label_set_hash)
     result = run_backtest(
         load_feature_store(settings.warehouse_dir, config.feature_set_version),
-        load_label_set(settings.warehouse_dir, config.label_set_hash),
+        labels,
         config,
+        label_timing(labels),
         models,
     )
     snapshot, files = data_snapshot(settings.warehouse_dir)

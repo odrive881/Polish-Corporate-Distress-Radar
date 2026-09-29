@@ -2,8 +2,8 @@
 
 Every table opens with the seed caveat and its event count, generated rather than written once,
 since a harness that looks finished invites reading its numbers. A cell below `min_events` has the
-verdict `n/a (<k events)` and no numbers; a cell whose model could not be fitted says why. The two runs sit on adjacent
-rows. Nothing time-dependent is written, so the same inputs give the same bytes.
+verdict `n/a (<k events)` and no numbers; a cell whose model could not be fitted says why. The
+two runs sit on adjacent rows. Nothing time-dependent is written, so the same inputs give the same bytes.
 """
 
 # polars's signatures reference types pyright cannot resolve; scoped to this module.
@@ -94,6 +94,14 @@ def render_report(result: BacktestResult, code_commit: str) -> str:
                 ["feature set", f"{result.feature_set_version} (`{result.feature_set_hash}`)"],
                 ["label set", f"{result.label_version} (`{result.label_set_hash}`)"],
                 ["backtest config", f"`config/models/{config.backtest}.yaml`"],
+                [
+                    "training labels",
+                    (
+                        "as settled on the eve of the test year: a distress event public by then; "
+                        f"`alive` windows ending on or after {result.timing.krz_launch} settled "
+                        f"{result.timing.alive_lag_months} months later"
+                    ),
+                ],
                 ["runs", "; ".join(f"`{r}`: {_RUN_TITLES[r]}" for r in RUNS)],
             ],
         ),
@@ -181,6 +189,7 @@ def render_report(result: BacktestResult, code_commit: str) -> str:
                 "test year",
                 "run",
                 "train rows",
+                "unsettled, left out",
                 "train events",
                 "test rows",
                 "test events",
@@ -192,6 +201,7 @@ def render_report(result: BacktestResult, code_commit: str) -> str:
                     str(r["test_year"]),
                     str(r["run"]),
                     str(r["train_rows"]),
+                    str(r["train_rows_unsettled"]),
                     str(r["train_events"]),
                     str(r["test_rows"]),
                     str(r["test_events"]),

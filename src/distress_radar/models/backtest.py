@@ -23,7 +23,13 @@ from distress_radar.models.baselines import ClassicalModel, fit_predict_classica
 from distress_radar.models.classical import FoldPredictions, fit_predict_logistic
 from distress_radar.models.dataset import ModellingDataset, modelling_dataset
 from distress_radar.models.evaluation import METRICS, cell, reliability
-from distress_radar.models.splits import BacktestConfig, events, fold_report, purged_folds
+from distress_radar.models.splits import (
+    BacktestConfig,
+    LabelTiming,
+    events,
+    fold_report,
+    purged_folds,
+)
 
 RUNS = ("main", "no_regime")
 POOLED = 0  # the `test_year` of a pooled cell
@@ -32,6 +38,7 @@ POOLED = 0  # the `test_year` of a pooled cell
 @dataclass(frozen=True)
 class BacktestResult:
     config: BacktestConfig
+    timing: LabelTiming  # when a training label counts as settled (`splits.py`)
     feature_set_version: str
     feature_set_hash: str
     label_set_hash: str
@@ -52,10 +59,13 @@ def _for_run(dataset: ModellingDataset, run: str) -> ModellingDataset:
 
 
 def _fold_results(
-    dataset: ModellingDataset, config: BacktestConfig, models: list[ClassicalModel]
+    dataset: ModellingDataset,
+    config: BacktestConfig,
+    timing: LabelTiming,
+    models: list[ClassicalModel],
 ) -> list[FoldPredictions]:
     out: list[FoldPredictions] = []
-    for fold in purged_folds(dataset, config.test_years):
+    for fold in purged_folds(dataset, config.test_years, timing):
         out.append(fit_predict_logistic(fold, config.logistic_regression))
         out.extend(
             fit_predict_classical(fold, model, config.logistic_regression) for model in models
@@ -67,6 +77,7 @@ def run_backtest(
     features: pl.DataFrame,
     labels: pl.DataFrame,
     config: BacktestConfig,
+    timing: LabelTiming,
     models: list[ClassicalModel],
 ) -> BacktestResult:
     cells: list[dict[str, object]] = []
@@ -84,12 +95,12 @@ def run_backtest(
             key = {"run": run, "horizon_months": horizon}
             fold_tables.append(
                 fold_report(
-                    purged_folds(dataset, config.test_years),
+                    purged_folds(dataset, config.test_years, timing),
                     config.distress_classes,
                     config.min_events,
                 ).select(pl.lit(run).alias("run"), pl.all())
             )
-            results = _fold_results(dataset, config, models)
+            results = _fold_results(dataset, config, timing, models)
             for result in results:
                 s = result.summary
                 cells.append(
@@ -164,6 +175,7 @@ def run_backtest(
     label_versions = labels.get_column("label_version").unique().to_list()
     return BacktestResult(
         config=config,
+        timing=timing,
         feature_set_version=identity.feature_set_version,
         feature_set_hash=identity.feature_set_hash,
         label_set_hash=identity.label_set_hash,
