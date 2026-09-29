@@ -21,7 +21,7 @@ from distress_radar.acquisition import manifest as acquisition_manifest
 from distress_radar.acquisition.document_retrieval import load_document_types
 from distress_radar.acquisition.models import QuarantineRecord, QuarantineStage
 from distress_radar.acquisition.raw_store import raw_key
-from distress_radar.parsing import manifest
+from distress_radar.parsing import manifest, statement_introduction
 from distress_radar.parsing.accounting_identities import (
     filed_bodies,
     grade,
@@ -35,9 +35,15 @@ from distress_radar.parsing.contracts import (
     FINANCIAL_STATEMENTS_CANONICAL,
     IDENTITY_CHECK_RESULTS,
     RESTATEMENT_EVENTS,
+    STATEMENT_DISCLOSURES,
 )
 from distress_radar.parsing.mapping_engine import SORT_KEY, MappingError, empty_frame
-from distress_radar.parsing.statements import FileOutcome, classify_download, map_file
+from distress_radar.parsing.statements import (
+    FileOutcome,
+    classify_download,
+    map_disclosures,
+    map_file,
+)
 from distress_radar.parsing.xsd_validation import XsdValidator
 from distress_radar.settings import Settings
 from distress_radar.warehouse import read_dataset, write_dataset
@@ -50,6 +56,7 @@ if TYPE_CHECKING:
 CANONICAL = "financial_statements_canonical"
 RESTATEMENTS = "restatement_events"
 IDENTITY_RESULTS = "identity_check_results"
+DISCLOSURES = statement_introduction.DATASET
 
 
 def _statement_type_codes() -> list[str]:
@@ -151,19 +158,25 @@ def financial_statements_canonical(context: dg.AssetExecutionContext) -> dg.Mate
       result behind those grades, one row per (file, column, check, line item)
       with `status` (`pass`, `fail`, `not_applicable`), the `severity` of each
       failure and the file's lineage — the per-check source for `dq_mart`.
-    Both datasets are rebuilt on each run.
+    - `WAREHOUSE_DIR/statement_disclosures/fiscal_year=YYYY/`: the introduction's
+      going-concern flags, and in wariant 2 average employment and the audit flag,
+      one row per (file, item) with its element path (plan 0013 step B; read with
+      `config/mappings/statement_introduction.yaml`, whose version is on every row).
+    All three datasets are rebuilt on each run.
     Partition scheme: none (unpartitioned).
     """
     postgres = cast("PostgresResource", context.resources.postgres)
     store = cast("RawObjectStoreResource", context.resources.raw_object_store).store()
     settings = Settings()
     config = load_mapping_config()
+    introduction = statement_introduction.load_introduction_config(set(config.specs))
     validator = XsdValidator()
     run_id = context.run_id
     now = datetime.now(UTC)
     statuses: Counter[str] = Counter()
     reasons: Counter[str] = Counter()
     frames: list[pl.DataFrame] = []
+    disclosure_frames: list[pl.DataFrame] = []
 
     with postgres.connect() as conn:
         acquisition_manifest.ensure_schema(conn)
@@ -207,7 +220,8 @@ def financial_statements_canonical(context: dg.AssetExecutionContext) -> dg.Mate
                     statuses[f"{label}:{outcome.status}"] += 1
                     continue
                 try:
-                    frames.append(map_file(outcome, source, config, first_run))
+                    mapped = map_file(outcome, source, config, first_run)
+                    disclosed = map_disclosures(outcome, source, introduction, first_run)
                 except MappingError as exc:
                     _record(
                         conn,
@@ -235,6 +249,8 @@ def financial_statements_canonical(context: dg.AssetExecutionContext) -> dg.Mate
                     statuses[f"{label}:quarantined"] += 1
                     reasons[f"C2:{exc.reason_code}"] += 1
                     continue
+                frames.append(mapped)
+                disclosure_frames.append(disclosed)
                 statuses[f"{label}:valid"] += 1
         conn.commit()
 
@@ -287,6 +303,12 @@ def financial_statements_canonical(context: dg.AssetExecutionContext) -> dg.Mate
 
     write_dataset(graded, settings.warehouse_dir, CANONICAL, "fiscal_year")
     write_dataset(checked, settings.warehouse_dir, IDENTITY_RESULTS, "fiscal_year")
+    disclosures = STATEMENT_DISCLOSURES.validate(
+        pl.concat(disclosure_frames).sort(statement_introduction.SORT_KEY)
+        if disclosure_frames
+        else statement_introduction.empty_frame()
+    )
+    write_dataset(disclosures, settings.warehouse_dir, DISCLOSURES, "fiscal_year")
     grades = graded.select("source_document_hash", "source_member", "quality_grade").unique()
     return dg.MaterializeResult(
         metadata={
@@ -294,6 +316,12 @@ def financial_statements_canonical(context: dg.AssetExecutionContext) -> dg.Mate
             "files_by_version_and_status": dict(sorted(statuses.items())),
             "quarantine_reasons_this_run": dict(sorted(reasons.items())),
             "fact_rows": graded.height,
+            "disclosures_by_item": dict(
+                sorted(Counter(disclosures.get_column("item").to_list()).items())
+            ),
+            "statements_reporting_a_going_concern_threat": disclosures.filter(
+                (pl.col("item") == "going_concern_threat") & pl.col("value_bool")
+            ).height,
             "files_by_quality_grade": dict(
                 sorted(Counter(grades.get_column("quality_grade").to_list()).items())
             ),

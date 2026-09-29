@@ -1,0 +1,84 @@
+# The statement's introduction, read as structured disclosures (plan 0013 step B). Data, not code.
+#
+# Every mapped structure version carries a going-concern block in its introduction
+# (`WprowadzenieDoSprawozdaniaFinansowego...`, or `InformacjeOgolneJednostkaMikro` for micro):
+# prepared on the going-concern basis (P_5A), no circumstances threatening it (P_5B), and a
+# description of the threats (P_5C). Wariant 2 (fiscal years from 2025) adds average employment
+# and whether the statement must be audited.
+#
+# Three traps, each pinned against the vendored XSDs by
+# `tests/parsing/test_statement_introduction.py::test_every_item_matches_its_xsd_documentation`:
+# - Wariant 2 encodes the flags as codes, 1 and 2, where earlier structures use xs:boolean.
+# - P_5B is phrased negatively ("no circumstances"); it is stored as `going_concern_threat`,
+#   its negation, so true always means the warning.
+# - Employment and the audit flag are numbered by the introduction's variant, not by one name:
+#   P_8 and P_9 in the full introduction (after its merger block, P_6), P_7 and P_8 in the small
+#   and micro ones. Before wariant 2, P_7 and P_8 are accounting-policy text, never employment.
+#
+# P_5C is free text and can name people (ADR 0009): only whether it is present is kept here.
+# Its text waits for the masking of plan 0013 step C.
+version: statement_introduction_v1
+
+# The block's local name -> its layout.
+blocks:
+  WprowadzenieDoSprawozdaniaFinansowego: full
+  WprowadzenieDoSprawozdaniaFinansowegoJednostkaInna: full
+  WprowadzenieDoSprawozdaniaFinansowegoJednostkaMala: short
+  InformacjeOgolneJednostkaMikro: short
+
+# How a flag's text reads as true or false.
+encodings:
+  xsd_boolean: {"true": true, "false": false, "1": true, "0": false}
+  choice_1_2: {"1": true, "2": false}
+
+# Every mapped structure version, in exactly one generation (checked against
+# `config/mappings/structures/` at load time).
+generations:
+  boolean:
+    encoding: xsd_boolean
+    structure_versions:
+      - full-2018-v1-0
+      - full-2018-v1-2
+      - full-2018-v1-2-tys
+      - full-2025-v1-3
+      - micro-2018-v1-0
+      - micro-2018-v1-2
+      - micro-2025-v1-3
+      - small-2018-v1-0
+      - small-2018-v1-2
+      - small-2025-v1-3
+  wariant_2:
+    encoding: choice_1_2
+    structure_versions:
+      - full-2025-w2-v1-0
+      - micro-2025-w2-v1-0
+
+# Each item: its kind, the generations that have it, its element path under the block per
+# layout, and a phrase of the XSD documentation that identifies it.
+items:
+  going_concern_basis:
+    kind: flag
+    generations: [boolean, wariant_2]
+    path: {full: P_5/P_5A, short: P_5/P_5A}
+    xsd_phrase: "przy założeniu kontynuowania"
+  going_concern_threat:
+    kind: flag
+    negate: true  # P_5B says "no circumstances threaten it"; true here means they do
+    generations: [boolean, wariant_2]
+    path: {full: P_5/P_5B, short: P_5/P_5B}
+    xsd_phrase: "zagrożenie kontynuowania przez"
+  going_concern_threat_described:
+    kind: text_present
+    generations: [boolean, wariant_2]
+    path: {full: P_5/P_5C, short: P_5/P_5C}
+    xsd_phrase: "Opis okoliczności wskazujących na zagrożenie"
+  average_employment:
+    kind: number
+    generations: [wariant_2]
+    path: {full: P_8, short: P_7}
+    xsd_phrase: "Średnioroczne zatrudnienie"
+  audit_required:
+    kind: flag
+    generations: [wariant_2]
+    path: {full: P_9, short: P_8}
+    xsd_phrase: "obowiązkowi badania przez biegłego rewidenta"

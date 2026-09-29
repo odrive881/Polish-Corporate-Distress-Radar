@@ -22,6 +22,7 @@ from distress_radar.parsing.accounting_identities import (
 from distress_radar.parsing.legal_events import LEGAL_EVENTS_SCHEMA
 from distress_radar.parsing.legal_taxonomy import EVENT_OUTCOME_CLASSES
 from distress_radar.parsing.mapping_engine import CANONICAL_COLUMNS
+from distress_radar.parsing.statement_introduction import DISCLOSURE_COLUMNS
 
 _SHA256 = r"^[0-9a-f]{64}$"
 _KRS = r"^[0-9]{10}$"
@@ -156,4 +157,36 @@ LEGAL_EVENTS = pa.DataFrameSchema(
     ordered=True,
     unique=["source_document_hash", "source_element_path"],
     name="legal_events",
+)
+
+
+# --- statement_disclosures (plan 0013 step B) ----------------------------------------------------
+
+
+def _one_typed_value(data: pa.PolarsData) -> pl.LazyFrame:
+    return data.lazyframe.select(pl.col("value_bool").is_null() != pl.col("value_number").is_null())
+
+
+def _disclosure_column(name: str, dtype: pl.DataType | type[pl.DataType]) -> pa.Column:
+    checks: list[pa.Check] = []
+    if name == "krs":
+        checks.append(pa.Check.str_matches(_KRS))
+    elif name == "source_document_hash":
+        checks.append(pa.Check.str_matches(_SHA256))
+    elif name == "value_number":
+        checks.append(pa.Check.ge(0))
+    return pa.Column(
+        dtype, checks=checks, nullable=name in ("value_bool", "value_number", "raw_value")
+    )
+
+
+# One typed value per row; every lineage column is required (invariant 3). `raw_value` is null
+# only for free text, which is never kept (ADR 0009).
+STATEMENT_DISCLOSURES = pa.DataFrameSchema(
+    {name: _disclosure_column(name, dtype) for name, dtype in DISCLOSURE_COLUMNS.items()},
+    checks=[pa.Check(_one_typed_value, error="a disclosure has exactly one typed value")],
+    strict=True,
+    ordered=True,
+    unique=["source_document_hash", "source_member", "item"],
+    name="statement_disclosures",
 )
