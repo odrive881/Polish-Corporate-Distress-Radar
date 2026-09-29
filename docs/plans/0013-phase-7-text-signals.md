@@ -11,7 +11,46 @@
 **Order:** after plan 0012 (complete). It does not wait for ADR 0013: like Phase 6, it builds and measures
 machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set this plan adds.
 
-## Status: draft (2026-09-29), owner decisions pending; nothing built
+## Status: draft (2026-09-29), owner decisions pending; census taken (step A)
+
+### Progress
+
+- **Step A (2026-09-29), the census** (`notebooks/exploration/text_census.py`, counts only, no text read out):
+  - **Separately filed documents: 316 listed since 2017, none detailed or downloaded.** Approval resolutions
+    (type 3) 115 in 15 entities; loss-coverage resolutions (4) 91 in 15; management reports (20) 58 in 12;
+    auditor reports (19) 52 in 12. Plus the pre-2018 types: 68 statements as PDF parts (1), 15 management reports
+    (5), 8 of type 2. Auditor reports exist for 12 of 17 entities, more than "small companies are rarely audited"
+    suggested.
+  - **The going-concern flags are in all 130 XML statements** (the 131st is the `needs_pdf_tier` PDF). Micro
+    statements keep them in `InformacjeOgolneJednostkaMikro`, the others in `WprowadzenieDoSprawozdania...`.
+    36 statements report a threat, 18 of them that the statements are *not* prepared on a going-concern basis;
+    34 carry a `P_5C` description.
+  - **What the flag separates, on a hand-picked seed:**
+
+    | statements | count | report a threat | entities flagging / filing |
+    |---|---|---|---|
+    | distress entities, filed before their first event | 27 | 6 | 3 / 6 |
+    | distress entities, filed on or after it | 36 | 29 | 9 / 9 |
+    | entities with no event | 67 | 1 | 1 / 8 |
+
+    Most flags follow the event (a company in bankruptcy says so), and point-in-time dating keeps those out.
+    Before it, 6 of 27 statements in 3 entities flag, against 1 of 67 elsewhere: suggestive, and far too few
+    to be evidence. 3 of the 9 distressed entities filed no XML statement before their first event (their
+    events precede 2018).
+  - **Wariant 2 (FY2025+) adds two structured fields the plan did not expect:** average annual employment in
+    full-time equivalents (UoR art. 64 ust. 1 pkt 4) and whether the statement must be audited. They are
+    numbered by the introduction's variant, not by one name: `P_8`/`P_9` in the full introduction (after its
+    merger block `P_6`), `P_7`/`P_8` in the small and micro ones, from the 2025 XSDs' documentation. In
+    earlier structures `P_7`/`P_8` are accounting-policy text, never employment. On the seed: 9 statements
+    (8 full, 1 micro), 5 audit required, 4 not. This is the first structured source of employment
+    (`docs/data_inventory.md` gap 8), from FY2025 on only.
+  - **Embedded notes: 295 attachments in 100 statements of 16 entities**: 280 PDFs, 13 ZIP or office files, 2
+    other. The PDFs have 1,182 pages, 707 with a text layer (200+ characters); 126 PDFs are text throughout,
+    15 mixed, **139 have no text layer at all**. The scans are not where the events are: 131 of the 139 belong to
+    entities with no event, and 267 of the 323 pages from distressed entities have text.
+  - **What changes in the decisions:** 0(a) stands and is the first build; 0(b) is viable without OCR for the
+    distressed entities, but see the new risk on missingness; 0(c) is 316 documents of manual capture for the
+    seed; decision 7 gains employment and the audit flag (below).
 
 ## Why
 
@@ -133,7 +172,10 @@ Recommendations first; each is the owner's to accept, change or reject before th
    notes, the own detail's submission date for a separately filed document (one without a detail is not used,
    and counted). `fiscal_year` is the period the document reports on. The leakage test covers the new family the
    day it is written.
-7. **Features: `feature_set_v4`, v3 plus a text family.** Recommended, first cut, each null when no document:
+7. **Features: `feature_set_v4`, v3 plus a text family.** *From the census:* step B also reads wariant 2's
+   employment and audit flag, which cost nothing extra; employment enters as a raw feature (like balance-sheet
+   total and revenue, plan 0010), and the size-class decision (plan 0010 decision 4) can be revisited with it for
+   FY2025+. Recommended, first cut, each null when no document:
    `going_concern_threat` and `going_concern_basis_abandoned` from the latest filed statement's flags; and, as
    decision 0 allows, `going_concern_in_notes`, `modified_opinion`, `emphasis_of_matter`, `loss_coverage_by_capital`
    from the latest document of their kind, with the count of prior filings flagging each. An auditor-change
@@ -230,7 +272,7 @@ text job and `make eval`; this plan's status.
 ## Definition of done
 
 - [ ] Owner decisions 0–8 made.
-- [ ] Census in the progress section; decisions revisited with it.
+- [x] Census in the progress section; decisions revisited with it (2026-09-29).
 - [ ] ADR 0009's third addendum (masking) accepted before the first masked text is stored.
 - [ ] `text_signals` built from the chosen sources, every row with evidence and lineage, no unmasked name.
 - [ ] Golden set labelled and committed; precision, recall and F1 per `signal_type` with counts; the gate in
@@ -239,6 +281,11 @@ text job and `make eval`; this plan's status.
 - [ ] `make check` and `make test-integration` green; docs from step J updated.
 
 ## Risks
+
+- **Missingness that tracks the outcome.** On the seed, notes without a text layer come almost only from
+  entities with no event (131 of 139 scanned PDFs), because the seed was hand-picked. A "no text signal found"
+  feature would then partly encode "this company files scans", a seed artefact, not a signal. Unreadable is
+  recorded as its own state, never as "no warning", and the backtest reports coverage by group.
 
 - **The masker misses a name**, and a public eval file or a stored span carries it. Measured, gated, and the
   pre-commit scan is the last line; a found leak means a history rewrite (ADR 0009).
