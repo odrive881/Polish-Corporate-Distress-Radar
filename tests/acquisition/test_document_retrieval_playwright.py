@@ -193,7 +193,6 @@ SEEN: list[str] = []  # every request the stand-in server received, in order
 
 
 class _Handler(BaseHTTPRequestHandler):
-
     def _send(self, status: int, content_type: str, body: bytes) -> None:
         self.send_response(status)
         self.send_header("Content-Type", content_type)

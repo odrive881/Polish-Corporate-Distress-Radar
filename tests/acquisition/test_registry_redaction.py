@@ -20,7 +20,9 @@ PESEL = "90010112345"
 def synthetic_extract() -> dict[str, Any]:
     person = {
         "identyfikator": [{"nrWpisuWprow": "3", "pesel": PESEL}],
-        "imiona": [{"imiona": {"imie": "ZENOBIUSZ", "imieDrugie": "KAZIMIERZ"}, "nrWpisuWprow": "3"}],
+        "imiona": [
+            {"imiona": {"imie": "ZENOBIUSZ", "imieDrugie": "KAZIMIERZ"}, "nrWpisuWprow": "3"}
+        ],
         "nazwisko": [{"nazwisko": {"nazwiskoICzlon": "PRZYKŁADOWSKI"}, "nrWpisuWprow": "3"}],
     }
     return {
@@ -30,21 +32,54 @@ def synthetic_extract() -> dict[str, Any]:
                 "numerKRS": "0000000042",
                 "dataCzasOdpisu": "23.09.2026 10:19:13",
                 "wpis": [
-                    {"numerWpisu": 1, "dataWpisu": "01.02.2010", "opis": "REJESTRACJA W KRAJOWYM REJESTRZE SĄDOWYM"},
-                    {"numerWpisu": 3, "dataWpisu": "05.03.2015", "opis": "ZMIANA DANYCH W REJESTRZE"},
-                    {"numerWpisu": 4, "dataWpisu": "10.09.2025", "opis": "WYKREŚLENIE Z KRAJOWEGO REJESTRU SĄDOWEGO"},
+                    {
+                        "numerWpisu": 1,
+                        "dataWpisu": "01.02.2010",
+                        "opis": "REJESTRACJA W KRAJOWYM REJESTRZE SĄDOWYM",
+                    },
+                    {
+                        "numerWpisu": 3,
+                        "dataWpisu": "05.03.2015",
+                        "opis": "ZMIANA DANYCH W REJESTRZE",
+                    },
+                    {
+                        "numerWpisu": 4,
+                        "dataWpisu": "10.09.2025",
+                        "opis": "WYKREŚLENIE Z KRAJOWEGO REJESTRU SĄDOWEGO",
+                    },
                 ],
             },
             "dane": {
                 "dzial1": {
-                    "danePodmiotu": {"nazwa": [{"nazwa": "BUDOWLANKA PRZYKŁADOWA SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ", "nrWpisuWprow": "1"}]},
-                    "umowaStatut": {"pozycja": [{"zawarcieZmianaUmowyStatutu": "12.01.2010 R., NOTARIUSZ ALOJZY WYMYŚLONY, REP. A NR 1/2010", "nrWpisuWprow": "1"}]},
+                    "danePodmiotu": {
+                        "nazwa": [
+                            {
+                                "nazwa": "BUDOWLANKA PRZYKŁADOWA SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ",
+                                "nrWpisuWprow": "1",
+                            }
+                        ]
+                    },
+                    "umowaStatut": {
+                        "pozycja": [
+                            {
+                                "zawarcieZmianaUmowyStatutu": "12.01.2010 R., NOTARIUSZ ALOJZY WYMYŚLONY, REP. A NR 1/2010",
+                                "nrWpisuWprow": "1",
+                            }
+                        ]
+                    },
                 },
                 "dzial2": {"reprezentacja": {"sklad": [person]}},
                 "dzial3": {
                     "przedmiotDzialalnosci": {
                         "przedmiotPrzewazajacejDzialalnosci": [
-                            {"pozycja": [{"opis": "ROBOTY BUDOWLANE ZWIĄZANE ZE WZNOSZENIEM BUDYNKÓW MIESZKALNYCH I NIEMIESZKALNYCH", "kodDzial": "41"}]}
+                            {
+                                "pozycja": [
+                                    {
+                                        "opis": "ROBOTY BUDOWLANE ZWIĄZANE ZE WZNOSZENIEM BUDYNKÓW MIESZKALNYCH I NIEMIESZKALNYCH",
+                                        "kodDzial": "41",
+                                    }
+                                ]
+                            }
                         ]
                     }
                 },
@@ -52,7 +87,12 @@ def synthetic_extract() -> dict[str, Any]:
                     "likwidacja": [
                         {
                             "likwidatorzy": [copy.deepcopy(person)],
-                            "otwarcieLikwidacji": [{"otwarcieLikwidacji": "UCHWAŁA ZGROMADZENIA WSPÓLNIKÓW Z 01.08.2023, AKT NOTARIALNY", "nrWpisuWprow": "3"}],
+                            "otwarcieLikwidacji": [
+                                {
+                                    "otwarcieLikwidacji": "UCHWAŁA ZGROMADZENIA WSPÓLNIKÓW Z 01.08.2023, AKT NOTARIALNY",
+                                    "nrWpisuWprow": "3",
+                                }
+                            ],
                         }
                     ]
                 },
