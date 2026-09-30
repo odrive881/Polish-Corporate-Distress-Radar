@@ -87,7 +87,8 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
   - **Tests:** planted, invented names in inflected forms (*Annie Wiśniewskiej*, *Janem Kowalskim*), a double
     surname and signature lines are all masked; company names and figures stay; an amount written with spaces
     is not a phone number; masking is stable and idempotent. Synthetic PDFs only: real notes stay out of git.
-  - **On the seed** (census section 6, counts only): 702 text pages, 459 scanned (`needs_ocr`), 21 sparse, 15
+  - **On the seed** (census section 6, counts only): 702 text pages (the census's 707 counted characters before
+    whitespace is normalised), 459 scanned (`needs_ocr`), 21 sparse, 15
     unsupported attachments, no unreadable PDF. The masker replaced 697 names on 217 pages, 43 e-mail
     addresses and 43 phone numbers, and no PESEL. These are counts, not quality: the masker's recall and
     over-masking are measured on the golden set (step E). Masked page text is not stored yet; step H decides
@@ -135,7 +136,7 @@ not running when it was written.
   | `loss_coverage_resolution` | resolution (type 4) | no |
   | `continued_existence_vote` | a shareholders' resolution under KSH art. 233; not an RDF type seen so far | unknown |
 
-- **Nothing for G is installed.** `src/distress_radar/extraction/` holds only `__init__.py`; `evals/text_signals/`
+- **Nothing for G is installed** (at drafting; step C has since added spaCy, the model and the masker). `src/distress_radar/extraction/` holds only `__init__.py`; `evals/text_signals/`
   and `prompts/extraction/` are empty; no spaCy, no `pl_core_news_lg`, no LLM SDK or key (`docs/data_inventory.md`:
   "LLM API key: not configured"). PyMuPDF is installed (redaction uses it).
 
@@ -254,7 +255,8 @@ tests.
 
 ### C. Page text and masking
 
-`extraction/page_text.py`: the PyMuPDF text layer of each embedded (and, per decision 0, captured) PDF, page by
+*As built (see Progress):* the model is fetched by `make models`, not locked in `uv.lock`; spaCy itself is
+locked. As drafted: `extraction/page_text.py`: the PyMuPDF text layer of each embedded (and, per decision 0, captured) PDF, page by
 page, deterministic; a page with no text layer is recorded `needs_ocr`, counted, not guessed. `extraction/masking.py`:
 spaCy `pl_core_news_lg` NER plus the PESEL patterns, `[osoba]` in place of each name. spaCy and its Polish model
 are locked with `make lock` (the model is a package pinned by URL and hash). ADR 0009's third addendum is written
@@ -316,7 +318,8 @@ text job and `make eval`; this plan's status.
 
 - [x] Owner decisions 0–8 made (2026-09-29, all as recommended).
 - [x] Census in the progress section; decisions revisited with it (2026-09-29).
-- [ ] ADR 0009's third addendum (masking) accepted before the first masked text is stored.
+- [x] ADR 0009's third addendum (masking) accepted before the first masked text is stored (owner decision 1,
+      2026-09-29; written in step C, no masked text stored yet).
 - [ ] `text_signals` built from the chosen sources, every row with evidence and lineage, no unmasked name.
 - [ ] Golden set labelled and committed; precision, recall and F1 per `signal_type` with counts; the gate in
       `make check`.

@@ -23,8 +23,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 ├── .env.example
 ├── .github/
 │   └── workflows/
-│       ├── ci.yml                     # lint, type-check, tests, leakage test
-│       └── extraction-eval.yml        # gates prompt/model changes against evals/
+│       └── ci.yml                     # lint, type-check, tests, leakage test, the offline extraction-eval gate (plan 0013)
 │
 ├── docs/
 │   ├── PROJECT_OVERVIEW.md            # functional view, numbered stages 1–12
