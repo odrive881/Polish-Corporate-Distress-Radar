@@ -1,0 +1,32 @@
+# Rules v1 (plan 0013 step F, decision 2): signals whose wording is standard enough for lemma rules,
+# so no model reads them. Engineering config, not statute; measured on the golden set like any
+# extractor. Loaded by `distress_radar.extraction.rules.load_rules`; terms are written and checked
+# as in `prefilter_v1.yaml` (every word in one sentence, any order; `|` alternatives; `stem*`), and
+# every example must match its own term.
+#
+# The file name is the `rules_version`. A change is a new file, never an edit.
+#
+# `opinion_type`: the four opinions of the Polish auditing standards (KSB 700/705). A sentence gets
+# the first category in the order below whose term it matches: a disclaimer or an adverse opinion is
+# never also read as qualified, and "bez zastrzeżeń" is unqualified before "zastrzeżenie" can make it
+# qualified. Over a page, the most severe category found wins, with its first sentence as evidence.
+# The auditor's going-concern paragraph ("istotna niepewność dotycząca kontynuacji działalności")
+# waits for auditor reports (plan 0013 decision 0c): notes are free text and go to the model.
+
+rules_version: rules_v1
+
+opinion_type:
+  disclaimer:
+    - words: [odmowa|odmawiać|odmówić, opinia]
+      example: Odmowa wyrażenia opinii. Odmawiamy wyrażenia opinii o sprawozdaniu finansowym.
+    - words: [nie, wyrażać|wyrazić, opinia]
+      example: Nie wyrażamy opinii o załączonym sprawozdaniu finansowym.
+  adverse:
+    - words: [opinia, negatywny]
+      example: Wyrażamy opinię negatywną.
+  unqualified:
+    - words: [opinia, bez, zastrzeżenie]
+      example: Wyrażamy opinię bez zastrzeżeń. Biegły rewident wydał opinię bez zastrzeżeń.
+  qualified:
+    - words: [opinia, zastrzeżenie]
+      example: Opinia z zastrzeżeniem. Wydaliśmy opinię z zastrzeżeniami.

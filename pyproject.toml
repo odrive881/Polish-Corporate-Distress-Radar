@@ -40,6 +40,9 @@ dependencies = [
     # pl_core_news_lg (550 MB), is fetched by `make models`, resumable and hash-checked, not locked
     # here: a new model version is a new masking version (ADR 0009, third addendum).
     "spacy>=3.8,<3.9",
+    # Stage G2 (plan 0013 decision 2): constrained extraction through the Anthropic SDK; every
+    # response is stored and replayed (decision 3), so a rerun makes no call.
+    "anthropic>=1.0",
 ]
 
 [project.optional-dependencies]

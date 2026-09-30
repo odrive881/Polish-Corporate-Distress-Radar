@@ -42,8 +42,8 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │
 ├── prompts/
 │   ├── extraction/
-│   │   ├── going_concern_uncertainty_v3.md
-│   │   └── covenant_breach_v2.md
+│   │   ├── going_concern_uncertainty_v1.md   # one per signal_type a model reads (plan 0013 step F)
+│   │   └── covenant_breach_v1.md
 │   └── CHANGELOG.md                   # what changed between prompt versions and why
 │
 ├── evals/
@@ -86,8 +86,10 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │       └── small-2025-v1-3.yaml   # a spec may bind more than one body (plan 0005 step D)
 │   ├── xsd/                           # official MF/CRWDE XSDs, vendored (catalog.yaml)
 │   ├── extraction/                    # text-signal engineering config (plan 0013)
+│   │   ├── extractor_v1.yaml          # model, effort, and the method (llm + prompt, or rule) per signal_type
 │   │   ├── golden_sample_v1.yaml      # which pages go to the labeller: all selected, a fixed rejected sample
-│   │   └── prefilter_v1.yaml          # lemma terms per signal_type; the file name is the prefilter_version
+│   │   ├── prefilter_v1.yaml          # lemma terms per signal_type; the file name is the prefilter_version
+│   │   └── rules_v1.yaml              # lemma rules for standard wording (opinion_type)
 │   ├── features/                      # feature-set definitions (plan 0010, ADR 0012)
 │   │   ├── feature_set_v1.yaml        # features, families, inputs; the file name is the feature_set_version
 │   │   ├── feature_set_v2.yaml        # v1 + the classical models' ratios (plan 0012)
@@ -244,8 +246,10 @@ src/distress_radar/
 │   ├── preprocessing.py         # G1 — spaCy sentences and lemmas, lemma prefilter (config/extraction/)
 │   ├── golden.py                 # G3 — labelling queue, golden rows, export, masking check of evals/
 │   ├── label_queue.py            # G3 — builds the queue from the stores, exports to evals/ (make label-*)
-│   ├── schemas.py                # G2 — extraction response models
-│   ├── extractor.py              # G2 — constrained LLM call
+│   ├── schemas.py                # G2 — output schemas and response models, kept and discarded answers
+│   ├── rules.py                  # G2 — lemma rules (config/extraction/rules_*.yaml)
+│   ├── response_store.py         # G2 — responses stored by request hash, replayed (decision 3)
+│   ├── extractor.py              # G2 — constrained LLM call, evidence check, sync and batch transports
 │   └── eval_harness.py           # G3 — scores against evals/text_signals/
 │
 ├── features/                     # H, in Python with in-process DuckDB (ADR 0012)

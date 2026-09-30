@@ -89,6 +89,11 @@ class Settings(BaseSettings):
     # The local labelling queue of the golden set (plan 0013 step E): masked page text the owner
     # has not read yet, so never committed. `extraction.label_queue` writes it.
     labelling_dir: Path = Path(".cache/labelling")
+    # Text extraction through the Anthropic API (plan 0013 decision 2). No call is made until the owner
+    # has confirmed the provider's data-retention terms and set EXTRACTION_API_CONFIRMED=true; only
+    # masked text is ever sent (ADR 0009, third addendum).
+    anthropic_api_key: SecretStr | None = None
+    extraction_api_confirmed: bool = False
 
     # MLflow (plan 0012 decision 6): a local SQLite store, no service to run, until the Compose
     # server arrives with serving in Phase 9. Run artifacts go under `mlflow_artifact_dir`, set
