@@ -62,15 +62,25 @@ def model_path(model_dir: Path | None = None) -> Path:
     return root / MODEL / f"{MODEL}-{MODEL_VERSION}"
 
 
-@cache
 def load_model(model_dir: Path | None = None) -> Any:
     """The pinned Polish pipeline, NER and what it needs; any other version is refused."""
+    return load_pinned(("lemmatizer", "morphologizer", "parser", "attribute_ruler"), (), model_dir)
+
+
+@cache
+def load_pinned(
+    exclude: tuple[str, ...], enable: tuple[str, ...], model_dir: Path | None = None
+) -> Any:
+    """`pl_core_news_lg` at `MODEL_VERSION` without the `exclude`d components, with the `enable`d
+    ones the model ships disabled switched on; any other version is refused."""
     import spacy
 
     path = model_path(model_dir)
     if not (path / "meta.json").is_file():
         raise FileNotFoundError(f"{MODEL} {MODEL_VERSION} is not at {path}: run `make models`")
-    nlp = spacy.load(path, exclude=["lemmatizer", "morphologizer", "parser", "attribute_ruler"])
+    nlp = spacy.load(path, exclude=list(exclude))
+    for name in enable:
+        nlp.enable_pipe(name)
     version = str(nlp.meta.get("version"))
     if version != MODEL_VERSION:
         raise RuntimeError(

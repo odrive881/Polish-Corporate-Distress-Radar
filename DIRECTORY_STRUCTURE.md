@@ -83,6 +83,8 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │       ├── small-2018-v1-2.yaml
 │   │       └── small-2025-v1-3.yaml   # a spec may bind more than one body (plan 0005 step D)
 │   ├── xsd/                           # official MF/CRWDE XSDs, vendored (catalog.yaml)
+│   ├── extraction/                    # text-signal engineering config (plan 0013)
+│   │   └── prefilter_v1.yaml          # lemma terms per signal_type; the file name is the prefilter_version
 │   ├── features/                      # feature-set definitions (plan 0010, ADR 0012)
 │   │   ├── feature_set_v1.yaml        # features, families, inputs; the file name is the feature_set_version
 │   │   ├── feature_set_v2.yaml        # v1 + the classical models' ratios (plan 0012)
@@ -234,7 +236,7 @@ src/distress_radar/
 ├── extraction/
 │   ├── page_text.py             # G1 — embedded attachments, PDF text layer per page (plan 0013)
 │   ├── masking.py               # G1 — person names, PESEL, contacts masked (ADR 0009, third addendum)
-│   ├── preprocessing.py         # G1 — spaCy + keyword prefilter
+│   ├── preprocessing.py         # G1 — spaCy sentences and lemmas, lemma prefilter (config/extraction/)
 │   ├── schemas.py                # G2 — extraction response models
 │   ├── extractor.py              # G2 — constrained LLM call
 │   └── eval_harness.py           # G3 — scores against evals/text_signals/

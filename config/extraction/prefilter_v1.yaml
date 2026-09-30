@@ -1,0 +1,112 @@
+# Prefilter v1 (plan 0013 step D, AGENT_SPEC §6 G1): which masked pages are candidates for each
+# `signal_type`, by lemma, before any extractor sees them. Engineering config, not statute.
+# Loaded and checked by `distress_radar.extraction.preprocessing.load_prefilter`.
+#
+# The file name is the `prefilter_version`. Change a term, and it is a new file with a new version,
+# never an edit: the prefilter decides which pages reach an extractor, so it is part of what an
+# extraction result depends on.
+#
+# A term matches a sentence when every one of its words is in that sentence, in any order. A word is
+# one or more alternatives separated by `|`:
+# - `kontynuacja` matches a token whose lemma is `kontynuacja`;
+# - `zwróceni*` matches a token whose lemma or lowercased surface form starts with `zwróceni`.
+# The text is lowercased before it is lemmatised: `pl_core_news_lg` leaves a sentence's capitalised
+# first word unlemmatised. Stems are for the words its lemmatiser gets wrong, found by the examples:
+# some verbal nouns come out as the verb (`naruszenia` → `naruszyć`, `zakończeniu` → `zakończyć`), some as
+# no word at all (`zwrócenie` → `zwrócć`, `dalszego` → `dalszego`).
+#
+# Every term carries an invented example in an inflected form, and the tests check that the pinned
+# model matches it: a term the model cannot match fails the build, not the recall.
+#
+# A prefilter is for recall: a page it rejects is never extracted. Terms are broad on purpose (the
+# going-concern term also selects the accounting-policy boilerplate on the going-concern basis), and
+# its recall is measured on a fixed sample of rejected pages (plan 0013 decision 5).
+#
+# Sources: the embedded notes are the only text in hand. `opinion_type` and `emphasis_of_matter` read
+# auditor reports, `loss_coverage_resolution` and `continued_existence_vote` resolutions; notes can
+# mention them too, and their terms are here so a captured document is filtered by the same rules.
+
+prefilter_version: prefilter_v1
+
+signals:
+  going_concern_uncertainty:
+    - words: [kontynuacja|kontynuować|kontynuowanie, działalność]
+      example: Istnieją okoliczności wskazujące na zagrożenie kontynuacji działalności.
+    - words: [zagrożenie|zagrażać|zagrozić, działalność]
+      example: Sytuacja finansowa zagraża dalszej działalności Spółki.
+    - words: [upadłość|upadłościowy]
+      example: Zarząd złożył wniosek o ogłoszenie upadłości.
+    - words: [restrukturyzacja|restrukturyzacyjny|sanacja|sanacyjny]
+      example: Spółka złożyła wniosek o otwarcie postępowania sanacyjnego.
+    - words: [układ, wierzyciel]  # `układ` alone is also the income statement's layout
+      example: Sąd zatwierdził układ z wierzycielami.
+    - words: [likwidacja, spółka]
+      example: Wspólnicy podjęli uchwałę o otwarciu likwidacji Spółki.
+    - words: [utrata|utracić, płynność]
+      example: Spółka utraciła płynność finansową.
+    - words: [niewypłacalność|niewypłacalny]
+      example: Spółka stała się niewypłacalna.
+
+  opinion_type:
+    - words: [opinia, zastrzeżenie]
+      example: Wydaliśmy opinię z zastrzeżeniem.
+    - words: [opinia, negatywny]
+      example: Wyrażamy opinię negatywną.
+    - words: [odmowa|odmawiać|odmówić, opinia]
+      example: Odmawiamy wyrażenia opinii o sprawozdaniu finansowym.
+
+  emphasis_of_matter:
+    - words: [zwróceni*|zwracać|zwrócić, uwaga]
+      example: Zwrócenie uwagi. Zwracamy uwagę na notę 5.
+
+  covenant_breach:
+    - words: [kowenant|kowenantowy]
+      example: Doszło do naruszenia kowenantów.
+    - words: [naruszeni*|naruszyć|dotrzymać|niedotrzymani*, warun*]  # `warunki` is its own lemma
+      example: Spółka naruszyła warunki umowy kredytowej. Spółka nie dotrzymała warunku umowy.
+    - words: [wypowiedzenie|wypowiedzieć, kredyt|kredytowy|pożyczka]
+      example: Bank wypowiedział umowę kredytową.
+    - words: [natychmiastowy, wymagalność]
+      example: Bank postawił kredyt w stan natychmiastowej wymagalności.
+
+  key_customer_loss:
+    - words: [utrata|utracić, klient|odbiorca|kontrahent|zamawiający|kontrakt|zlecenie]
+      example: Spółka utraciła głównego odbiorcę.
+    - words: [odstąpić|odstąpieni*, umowa|kontrakt]
+      example: Odstąpienie od umowy przez inwestora. Inwestor odstąpił od kontraktu.
+    - words: [rozwiązanie|rozwiązać, umowa|kontrakt, inwestor|zamawiający|klient|odbiorca]
+      example: Zamawiający rozwiązał umowę o roboty budowlane.
+    - words: [główny|kluczowy, odbiorca|klient]
+      example: Kluczowym klientem Spółki jest jeden inwestor.
+
+  litigation:
+    - words: [pozew|powództwo]
+      example: Wniesiono pozew o zapłatę.
+    - words: [postępowanie|sprawa|spór, sądowy]
+      example: Przeciwko Spółce toczy się postępowanie sądowe.
+    - words: [nakaz, zapłata]
+      example: Sąd wydał nakaz zapłaty.
+    - words: [egzekucja|egzekucyjny|komornik|komorniczy]
+      example: Komornik prowadzi egzekucję z rachunku Spółki.
+    - words: [roszczenie]
+      example: Podwykonawca zgłosił roszczenia wobec Spółki.
+    - words: [arbitraż|arbitrażowy]
+      example: Spór rozstrzygnie sąd arbitrażowy.
+
+  post_balance_sheet_event:
+    - words: [po, dzień, bilansowy]
+      example: Zdarzenia po dniu bilansowym.
+    - words: [po, data, bilans]
+      example: Po dacie bilansu nie wystąpiły istotne zdarzenia.
+    - words: [po, zakończyć|zakończeni*, rok]
+      example: Zdarzenia, które nastąpiły po zakończeniu roku obrotowego.
+
+  loss_coverage_resolution:
+    - words: [pokryci*|pokryć, strata]
+      example: Propozycja pokrycia straty. Stratę proponuje się pokryć z zysków lat przyszłych.
+
+  continued_existence_vote:
+    - words: [dalsz*, istnienie|istnieć]
+      example: Uchwała w sprawie dalszego istnienia Spółki.
+    - words: ["233", ksh|kodeks|k.s.h.]
+      example: Strata przekroczyła połowę kapitału zakładowego (art. 233 KSH).

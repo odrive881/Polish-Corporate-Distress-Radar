@@ -11,7 +11,7 @@
 **Order:** after plan 0012 (complete). It does not wait for ADR 0013: like Phase 6, it builds and measures
 machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set this plan adds.
 
-## Status: active (2026-09-29): owner decisions 0–8 accepted; steps A, B and C built
+## Status: active (2026-09-29): owner decisions 0–8 accepted; steps A to D built
 
 ### Progress
 
@@ -93,6 +93,23 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
     addresses and 43 phone numbers, and no PESEL. These are counts, not quality: the masker's recall and
     over-masking are measured on the golden set (step E). Masked page text is not stored yet; step H decides
     where it lives.
+- **Step D (2026-09-30):** `extraction/preprocessing.py` (sentences and lemmas from the pinned model, NER and
+  parser off, its sentence recogniser on) and `config/extraction/prefilter_v1.yaml`: per `signal_type`, terms
+  whose words must all appear in one sentence, in any order; a word is alternative lemmas or a `stem*`.
+  - **The lemmatiser is uneven, and the config says where.** It leaves a sentence's capitalised first word as
+    it is (`Występuje`), so text is lowercased first, one character for one so offsets hold. Some verbal nouns
+    come out as the verb (`naruszenia` → `naruszyć`), some as no word (`zwrócenie` → `zwrócć`), and a plural can
+    be its own lemma (`warunki`): those words are stems. Every term carries an invented example, and a test runs
+    each through the model: three terms failed it while being written, and were fixed before any page was read.
+    Bare `układ` is not a term: it is also the income statement's layout (*układ kalkulacyjny*).
+  - **The enum is pinned to AGENT_SPEC §5** by a test that reads the spec's line.
+  - **On the seed** (census section 7, counts only; no page was read): 190 of 702 masked text pages are selected
+    for some signal, 88 of 262 from entities with a distress event and 102 of 440 from the rest.
+    `going_concern_uncertainty` 55 and 35 (it also selects the going-concern accounting policy, on purpose),
+    `post_balance_sheet_event` 44 and 20, `loss_coverage_resolution` 18 and 56, `litigation` 3 and 5,
+    `key_customer_loss` 0 and 7. Nothing for `covenant_breach` or `continued_existence_vote`, nor for the
+    auditor-report signals, whose documents are not in hand. Whether a zero is an absence or a miss is what the
+    rejected-page sample of step E measures; until then these are selections, not signals.
 
 ## Why
 

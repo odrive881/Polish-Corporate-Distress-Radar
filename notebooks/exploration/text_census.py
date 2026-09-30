@@ -431,6 +431,7 @@ def _(S3ObjectStore, collections, pl, settings, statements, unwrap):
     masked_kinds: collections.Counter[str] = collections.Counter()
     _pages_with_person = 0
     _errors: collections.Counter[str] = collections.Counter()
+    masked_pages: list[tuple[str, str]] = []  # (krs, masked text), for section 7; never printed
     for _doc in statements.iter_rows(named=True):
         _members = {m.source_member: m for m in unwrap(_store.get(_doc["object_key"]))}
         _member = _members.get(_doc["source_member"])
@@ -446,6 +447,7 @@ def _(S3ObjectStore, collections, pl, settings, statements, unwrap):
                     if _page.status != "text":
                         continue
                     _masked = _mask(_page.text, _nlp)
+                    masked_pages.append((_doc["krs"], _masked.text))
                     masked_kinds.update(_masked.counts)
                     _pages_with_person += _masked.counts.get("person", 0) > 0
             except _AttachmentError as _exc:
@@ -461,7 +463,44 @@ def _(S3ObjectStore, collections, pl, settings, statements, unwrap):
             "count": [*page_status.values(), *masked_kinds.values()],
         }
     )
-    return masked_kinds, page_status, step_c
+    return masked_kinds, masked_pages, page_status, step_c
+
+
+@app.cell
+def _(collections, masked_pages, pl, seed_events):
+    # 7. Plan 0013 step D on the seed: text pages the prefilter selects, per signal_type, for
+    # entities with a distress event and the rest. Counts only. Pages of any date: what the
+    # prefilter picks, not what was known before an event.
+    from distress_radar.extraction.preprocessing import SIGNAL_TYPES as _SIGNALS
+    from distress_radar.extraction.preprocessing import analyse as _analyse
+    from distress_radar.extraction.preprocessing import candidates as _candidates
+    from distress_radar.extraction.preprocessing import load_model as _load_model
+    from distress_radar.extraction.preprocessing import load_prefilter as _load_prefilter
+
+    _prefilter = _load_prefilter("prefilter_v1")
+    _nlp = _load_model()
+    _distressed = set(seed_events.get_column("krs").to_list())
+    _selected: collections.Counter[tuple[str, str]] = collections.Counter()
+    _pages: collections.Counter[str] = collections.Counter()
+    for _krs, _text in masked_pages:
+        _group = "distress" if _krs in _distressed else "no event"
+        _pages[_group] += 1
+        _found = _candidates(_analyse(_text, _nlp), _prefilter)
+        _selected[(_group, "any")] += bool(_found)
+        for _signal in _found:
+            _selected[(_group, _signal)] += 1
+    step_d = pl.DataFrame(
+        [
+            {
+                "signal_type": _s,
+                **{_g: _selected[(_g, _s)] for _g in ("distress", "no event")},
+            }
+            for _s in ("any", *_SIGNALS)
+        ]
+    )
+    print("7. text pages selected by prefilter_v1, by group; text pages:", dict(_pages))
+    print(step_d)
+    return (step_d,)
 
 
 if __name__ == "__main__":
