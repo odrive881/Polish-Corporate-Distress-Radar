@@ -23,7 +23,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 ├── .env.example
 ├── .github/
 │   └── workflows/
-│       └── ci.yml                     # lint, type-check, tests, leakage test, the offline extraction-eval gate (plan 0013)
+│       └── ci.yml                     # lint, type-check, tests, leakage test; the offline extraction-eval gate from plan 0013 step G
 │
 ├── docs/
 │   ├── PROJECT_OVERVIEW.md            # functional view, numbered stages 1–12
@@ -354,7 +354,7 @@ Import as `from distress_radar.acquisition import regon_client`, never via relat
 - **XML structure mapping files:** `<form>-<namespace-year>[-w<wariant>]-v<schema-version>[-tys].yaml`, e.g. `full-2018-v1-2.yaml`, `full-2018-v1-2-tys.yaml`, `full-2025-w2-v1-0.yaml`. The filename must be independently sufficient to identify which Ministry structure it maps, so it carries the schema version (`wersjaSchemy`) as well as the namespace year: one namespace can hold several schema versions (plan 0004, ADR 0005). `-w<n>` marks a CRWDE wariant, `-tys` the thousands-of-złoty twin.
 - **ADRs:** `docs/adr/NNNN-short-title.md`, sequential, never renumbered or deleted after merge — superseded ADRs are marked superseded in their own text, not removed.
 - **Build plans:** `docs/plans/NNNN-short-title.md`, sequential, one file per requested stage plan, never overwritten — mirrors the ADR numbering convention.
-- **Eval sets:** `evals/text_signals/<signal_type>.jsonl`, matching the `signal_type` enum in `AGENT_SPEC.md` §5 exactly — `going_concern_uncertainty.jsonl`, not `going_concern.jsonl`.
+- **Eval sets:** `evals/text_signals/<signal_type>.jsonl`, matching the `signal_type` enum in `AGENT_SPEC.md` §5 exactly — `going_concern_uncertainty.jsonl`, not `going_concern.jsonl`. Each holds one label per page; the pages' masked text is in `pages.jsonl` beside them, once (plan 0013 step E).
 - **Prompts:** `prompts/extraction/<signal_type>_v<n>.md`, using the same `signal_type` enum so prompt and eval set pair unambiguously.
 - **Tests:** mirror the `src/` path — `tests/parsing/test_mapping_engine.py` tests `src/distress_radar/parsing/mapping_engine.py`.
 

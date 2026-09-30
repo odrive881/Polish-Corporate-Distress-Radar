@@ -91,8 +91,8 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
     whitespace is normalised), 459 scanned (`needs_ocr`), 21 sparse, 15
     unsupported attachments, no unreadable PDF. The masker replaced 697 names on 217 pages, 43 e-mail
     addresses and 43 phone numbers, and no PESEL. These are counts, not quality: the masker's recall and
-    over-masking are measured on the golden set (step E). Masked page text is not stored yet; step H decides
-    where it lives.
+    over-masking are measured on the golden set (step E). Masked page text is not in the warehouse yet; step H decides
+    where it lives. (Since step E, the local labelling queue and the golden set hold masked pages.)
 - **Step D (2026-09-30):** `extraction/preprocessing.py` (sentences and lemmas from the pinned model, NER and
   parser off, its sentence recogniser on) and `config/extraction/prefilter_v1.yaml`: per `signal_type`, terms
   whose words must all appear in one sentence, in any order; a word is alternative lemmas or a `stem*`.
@@ -310,6 +310,8 @@ is measured on step E's rejected-page sample.
 
 ### E. Golden set (G3)
 
+*As built (see Progress):* the pages' masked text once in `pages.jsonl`, a label per page in each
+`<signal_type>.jsonl`; a local queue and a marimo notebook for labelling. As drafted:
 `evals/text_signals/<signal_type>.jsonl`, one file per `signal_type` (DIRECTORY_STRUCTURE naming): masked excerpts,
 the label, its evidence, the document hash and page, and who labelled it. Committed only after the masking check
 passes on it.
