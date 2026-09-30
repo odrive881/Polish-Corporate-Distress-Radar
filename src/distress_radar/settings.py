@@ -93,6 +93,10 @@ class Settings(BaseSettings):
     # has confirmed the provider's data-retention terms and set EXTRACTION_API_CONFIRMED=true; only
     # masked text is ever sent (ADR 0009, third addendum).
     anthropic_api_key: SecretStr | None = None
+    # Which `config/extraction/<extractor_version>.yaml` is in use: what `make eval` runs and the gate
+    # in `make check` holds to its accepted scores (plan 0013 step G), under `eval_gate_version`.
+    extractor_version: str = "extractor_v1"
+    eval_gate_version: str = "eval_gate_v1"
     extraction_api_confirmed: bool = False
 
     # MLflow (plan 0012 decision 6): a local SQLite store, no service to run, until the Compose

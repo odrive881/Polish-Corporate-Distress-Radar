@@ -79,6 +79,7 @@ class ExtractorConfig(_Frozen):
     effort: Effort
     max_tokens: int
     rules_version: str
+    prefilter_version: str
     signals: dict[SignalType, SignalMethod]
 
     @model_validator(mode="after")

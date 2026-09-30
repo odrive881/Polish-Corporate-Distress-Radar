@@ -11,7 +11,7 @@
 **Order:** after plan 0012 (complete). It does not wait for ADR 0013: like Phase 6, it builds and measures
 machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set this plan adds.
 
-## Status: active (2026-09-29): owner decisions 0–8 accepted; steps A to D and F built, step E's tooling built; labelling and the first model call wait on the owner
+## Status: active (2026-09-29): owner decisions 0–8 accepted; steps A to D, F and G built, step E's tooling built; labelling and the first model call wait on the owner
 
 ### Progress
 
@@ -170,6 +170,33 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
     8, `key_customer_loss` 7), about 930,000 characters of input with the prompts. At Opus 5.5's list price
     that is a few dollars of input, plus the thinking and answer tokens, which are not known before a run:
     an estimate of well under $10 in all, half that through batches. Not measured.
+- **Step G (2026-09-30), built; nothing to score until the first labels.**
+  - **What:** `extraction/eval_harness.py` (scores and the gate, no I/O), `extraction/eval_run.py` (`make eval`,
+    `make eval-accept`), `config/extraction/eval_gate_v1.yaml` (tolerances, 0: hold or improve), and
+    `prefilter_version` and the extractor in use (`EXTRACTOR_VERSION`) named in config and settings.
+  - **A result** per signal and method (`results/<signal_type>/<prompt>__<model>.json`, or
+    `<rules_version>__rule.json` for a rule): every golden page's outcome, the SHA-256 of what it depends on
+    (golden files, prompt or rules, schema, prefilter, model, effort), and three scores with their counts: the
+    prefilter's recall on labelled positives (and the positives it misses in the rejected sample, which stand
+    for several in the whole pool), the extractor alone on the pages the prefilter selected, and end to end,
+    a page not selected counting as absent. A discarded extraction counts as absent, with its reason counted;
+    for `opinion_type` the wrong opinion is both a false positive and a false negative. The masker's recall
+    goes to `results/masking/`.
+  - **The gate** (a test in `make check`, offline): for a signal with any result, the method in use needs a
+    result on the current files, its stored scores must be what its examples score, and its end-to-end
+    precision and recall may not fall below the owner's last accepted result on the same golden file, beyond
+    the tolerance. The committed results are checked on every run.
+  - **Settled while building, for the owner to see:**
+    - the gate holds end-to-end scores, not the extractor's alone: that is what reaches the features, and a
+      prefilter change is gated with the rest;
+    - **the gate starts per signal with its first result**, not with its golden file: labels can be committed
+      before the provider's terms are confirmed without failing `make check` (decision 4 as written would fail
+      it until the first model run);
+    - acceptance is the owner's act (`make eval-accept SIGNAL=... BY=...`), and a new golden file needs a newly
+      accepted result: scores on different labels are not comparable. A rerun that reproduces a result keeps
+      its acceptance; a changed one loses it;
+    - `make eval` uses the Batches API by default (`--sync` for single calls), and skips model signals, saying
+      so, until `EXTRACTION_API_CONFIRMED`. `opinion_type` is scored offline.
 
 ## Why
 
@@ -367,6 +394,9 @@ lemma rules of decision 2), `extraction/extractor.py` (the constrained call, the
 of decision 3), `prompts/extraction/<signal_type>_v1.md` with `prompts/CHANGELOG.md`.
 
 ### G. Eval harness and gate
+
+*As built (see Progress):* plus `extraction/eval_run.py` and `config/extraction/eval_gate_v1.yaml`; the gate
+holds end-to-end scores and starts per signal with its first result. As drafted:
 
 `extraction/eval_harness.py`: precision, recall and F1 per `signal_type`, with counts, and the masker's recall;
 `make eval` (live) and the offline gate in `make check` (decision 4).
