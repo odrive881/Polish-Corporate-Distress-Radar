@@ -162,6 +162,16 @@ def _params(params: dict[str, Any]) -> MessageCreateParamsNonStreaming:
     return MessageCreateParamsNonStreaming(**params)  # pyright: ignore[reportArgumentType]
 
 
+class NoCalls:
+    """The transport before the owner's confirmation (decision 2): never asked, and refuses if
+    it is. Callers pass only rule signals and stored responses with it."""
+
+    def run(self, requests: Mapping[str, dict[str, Any]]) -> tuple[dict[str, bytes], set[str]]:
+        if requests:
+            raise PermissionError("no model call before EXTRACTION_API_CONFIRMED (decision 2)")
+        return {}, set()
+
+
 class SyncTransport:
     """One call per request, for development. Transient failures are left for the next run."""
 

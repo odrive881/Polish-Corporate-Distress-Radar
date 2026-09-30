@@ -15,6 +15,7 @@ from typing import Any
 import polars as pl
 import yaml
 
+from distress_radar.extraction.text_signals import COVERAGE_COLUMNS
 from distress_radar.parsing.accounting_identities import (
     IDENTITY_CHECK_RESULTS_SCHEMA,
     RESTATEMENT_SCHEMA,
@@ -28,6 +29,7 @@ PARQUET_SCHEMAS: dict[str, dict[str, pl.DataType | type[pl.DataType]]] = {
     "restatement_events": RESTATEMENT_SCHEMA,
     "identity_check_results": IDENTITY_CHECK_RESULTS_SCHEMA,
     "legal_events": LEGAL_EVENTS_SCHEMA,
+    "text_coverage": COVERAGE_COLUMNS,
 }
 
 

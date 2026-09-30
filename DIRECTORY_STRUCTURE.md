@@ -143,7 +143,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │   ├── labels.py                  # plan 0008: SQLMesh label models, audits, frozen label set
 │   │   ├── parsing.py
 │   │   ├── dq.py                      # E3/F: SQLMesh DQ models, audits as asset checks
-│   │   ├── extraction.py
+│   │   ├── extraction.py              # plan 0013: notes → text_signals, text_coverage; its own job
 │   │   ├── features.py
 │   │   └── models.py                  # plan 0012: the backtest asset, its own job, run by hand
 │   ├── checks/                        # asset checks — accounting identities, leakage guard
@@ -251,6 +251,9 @@ src/distress_radar/
 │   ├── rules.py                  # G2 — lemma rules (config/extraction/rules_*.yaml)
 │   ├── response_store.py         # G2 — responses stored by request hash, replayed (decision 3)
 │   ├── extractor.py              # G2 — constrained LLM call, evidence check, sync and batch transports
+│   ├── text_signals.py           # G — the text_signals and text_coverage datasets, the masking check
+│   ├── contracts.py              # Pandera contracts for both
+│   ├── manifest.py               # text_extractions (Postgres): first run per file and pipeline
 │   ├── eval_harness.py           # G3 — scores against evals/text_signals/, the gate in make check
 │   └── eval_run.py               # G3 — make eval (runs the extractors on the golden set), make eval-accept
 │

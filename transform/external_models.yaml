@@ -84,6 +84,34 @@
     source_element_path: TEXT
     ingestion_run_id: TEXT
     event_year: INT
+- name: ext.text_coverage
+  description: "What the text stage read, per statement file and signal_type (plan 0013 step H), Parquet under WAREHOUSE_DIR."
+  columns:
+    krs: TEXT
+    fiscal_year: INT
+    signal_type: TEXT
+    status: TEXT
+    known_from: DATE
+    period_end: DATE
+    document_ref: TEXT
+    source_document_hash: TEXT
+    source_member: TEXT
+    attachments: INT
+    attachments_unsupported: INT
+    attachment_errors: TEXT[]
+    pages: INT
+    pages_text: INT
+    pages_needs_ocr: INT
+    pages_sparse: INT
+    pages_selected: INT
+    kept_present: INT
+    kept_absent: INT
+    discarded: INT
+    discard_reasons: TEXT[]
+    unanswered: INT
+    extractor_version: TEXT
+    masking_version: TEXT
+    ingestion_run_id: TEXT
 - name: ext.quarantine_events
   description: "Append-only quarantine detection log (Postgres, ADR 0006; plan 0007 decision 3)."
   columns:

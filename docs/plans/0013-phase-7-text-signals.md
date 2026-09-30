@@ -11,7 +11,7 @@
 **Order:** after plan 0012 (complete). It does not wait for ADR 0013: like Phase 6, it builds and measures
 machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set this plan adds.
 
-## Status: active (2026-09-29): owner decisions 0–8 accepted; steps A to D, F and G built, step E's tooling built; labelling and the first model call wait on the owner
+## Status: active (2026-09-29): owner decisions 0–8 accepted; steps A to D and F to H built, step E's tooling built; labelling and the first model call wait on the owner
 
 ### Progress
 
@@ -197,6 +197,35 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
       its acceptance; a changed one loses it;
     - `make eval` uses the Batches API by default (`--sync` for single calls), and skips model signals, saying
       so, until `EXTRACTION_API_CONFIRMED`. `opinion_type` is scored offline.
+- **Step H (2026-09-30), built and run on the seed.**
+  - **What:** `extraction/text_signals.py` (reads the notes of every stored XML statement, masks, prefilters,
+    extracts, and builds the datasets), `extraction/contracts.py` (Pandera), `extraction/manifest.py`
+    (`text_extractions`: the first run per statement file and pipeline hash, so reruns reproduce the bytes),
+    the asset `text_signals` in `dagster_defs/assets/extraction.py` with its blocking check `evidence_masked`,
+    and the `text` job. Quarantine stages `G1` (an unreadable attachment) and `G2` (a discarded extraction, per
+    signal) go to `quarantine_events`, and the `quarantine` model takes their current set from `text_coverage`.
+  - **Changed from the step as drafted, for the owner to see:**
+    - **a second dataset, `text_coverage`** (AGENT_SPEC §5, and CLAUDE.md's list of names): one row per
+      (statement file, signal_type) saying what was read, with a status `read`, `partial`, `not_run` or
+      `no_text`. `text_signals` alone cannot tell "read, and nothing found" from "never read", and until the
+      owner confirms the provider's terms the eight model signals are never read: without it, step I would
+      turn "not run" into "no warning" (invariant 4; constraint 2). A page the prefilter does not select is read
+      for that signal, with the answer "absent";
+    - **masked page text is not stored** (step C left this to step H): it is re-derived from the raw bytes on
+      every run, deterministically, and only the evidence spans a signal quotes are kept. A run takes about
+      three and a half minutes on the seed, most of it the masker;
+    - the quarantine's current set for G1/G2 comes from `text_coverage`, not from the log, so a discard a new
+      prompt no longer makes leaves the set, as a regraded statement does; `api_error` (no response yet) is
+      not quarantined but counted as `unanswered`, and the statement is `partial` until a later run answers it;
+    - the Dagster module is `assets/extraction.py`, as the tree reserved, with the group and job `text`.
+  - **On the seed, twice, rules only (no model call):** 130 statements; 702 text pages, 459 scanned, 21 sparse,
+    15 unsupported attachments, no unreadable PDF, as in step C. `text_signals` has **no row yet**: the one
+    signal allowed to run, `opinion_type`, has no page the prefilter selects on the seed (step D). `text_coverage`
+    has 1,170 rows: 59 statements with no readable notes (`no_text` for every signal), and 163 (statement,
+    signal) pairs `not_run`, waiting on the model: `going_concern_uncertainty` 57, `post_balance_sheet_event` 51,
+    `loss_coverage_resolution` 40, `litigation` 8, `key_customer_loss` 7. Both datasets byte for byte the same on
+    the second run, every file keeping its first run id; no G1 or G2 detection; `evidence_masked` passed; the
+    `quarantine` model rebuilt with all six audits passing.
 
 ## Why
 
@@ -402,6 +431,9 @@ holds end-to-end scores and starts per signal with its first result. As drafted:
 `make eval` (live) and the offline gate in `make check` (decision 4).
 
 ### H. `text_signals` and wiring
+
+*As built (see Progress):* plus the `text_coverage` dataset and the `text_extractions` manifest; masked page
+text not stored; the module is `dagster_defs/assets/extraction.py`. As drafted:
 
 The dataset with its Pandera contract (AGENT_SPEC §5 columns, plus `document_ref`, `source_element_path` and
 `ingestion_run_id` for lineage, invariant 3); unreadable documents and discarded extractions to `quarantine_events`

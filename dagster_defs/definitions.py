@@ -146,6 +146,7 @@ class MsigApiResource(dg.ConfigurableResource):
 
 from dagster_defs.assets.acquisition import acquisition_assets
 from dagster_defs.assets.dq import dq_assets
+from dagster_defs.assets.extraction import text_assets
 from dagster_defs.assets.features import features_assets
 from dagster_defs.assets.labels import label_assets
 from dagster_defs.assets.legal import legal_assets
@@ -179,6 +180,15 @@ backtest = dg.define_asset_job(
     description="The out-of-time backtest: report under WAREHOUSE_DIR, one MLflow run per cell set.",
 )
 
+# Plan 0013 step H: the notes of every stored statement read into `text_signals` and
+# `text_coverage`. By hand: model signals cost money once confirmed, and responses are stored,
+# so a rerun replays them.
+text = dg.define_asset_job(
+    "text",
+    selection=dg.AssetSelection.groups("text"),
+    description="Notes embedded in stored statements → text_signals, text_coverage.",
+)
+
 defs = dg.Definitions(
     assets=[
         *acquisition_assets,
@@ -188,8 +198,9 @@ defs = dg.Definitions(
         *label_assets,
         *features_assets,
         *models_assets,
+        *text_assets,
     ],
-    jobs=[legal_to_labels, features, backtest],
+    jobs=[legal_to_labels, features, backtest, text],
     asset_checks=accounting_identity_checks,
     resources={
         "postgres": PostgresResource(),
