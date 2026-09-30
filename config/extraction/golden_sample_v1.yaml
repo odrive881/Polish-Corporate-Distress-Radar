@@ -1,0 +1,15 @@
+# Golden sample v1 (plan 0013 step E, decision 5): which pages of the seed's embedded notes go to
+# the owner for labelling. Engineering config, not statute.
+# Loaded by `distress_radar.extraction.golden.load_golden_sample`.
+#
+# Every masked text page `prefilter_version` selects for any signal_type is queued, and a fixed
+# random sample of `rejected_sample_size` pages it selects for none, so the prefilter's recall is
+# measured rather than assumed. The sample is fixed by hashing each page's id with the file name:
+# rebuilding the queue draws the same pages, and a new sample is a new file.
+#
+# Every queued page is labelled for every signal_type, so a page selected for one signal is also a
+# rejected page, with a known label, for the others.
+
+golden_sample_version: golden_sample_v1
+prefilter_version: prefilter_v1
+rejected_sample_size: 50

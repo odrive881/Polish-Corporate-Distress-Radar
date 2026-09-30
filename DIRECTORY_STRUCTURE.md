@@ -48,7 +48,9 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │
 ├── evals/
 │   └── text_signals/
-│       ├── going_concern_uncertainty.jsonl   # hand-labelled golden set
+│       ├── labelling_guide.md         # what each signal_type means to the labeller (plan 0013 step E)
+│       ├── pages.jsonl                # the labelled pages' masked text, once (`make label-export`)
+│       ├── going_concern_uncertainty.jsonl   # hand-labelled golden set, one label per page
 │       ├── covenant_breach.jsonl
 │       └── results/                   # score history per eval run, timestamped
 │
@@ -84,6 +86,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │       └── small-2025-v1-3.yaml   # a spec may bind more than one body (plan 0005 step D)
 │   ├── xsd/                           # official MF/CRWDE XSDs, vendored (catalog.yaml)
 │   ├── extraction/                    # text-signal engineering config (plan 0013)
+│   │   ├── golden_sample_v1.yaml      # which pages go to the labeller: all selected, a fixed rejected sample
 │   │   └── prefilter_v1.yaml          # lemma terms per signal_type; the file name is the prefilter_version
 │   ├── features/                      # feature-set definitions (plan 0010, ADR 0012)
 │   │   ├── feature_set_v1.yaml        # features, families, inputs; the file name is the feature_set_version
@@ -147,7 +150,9 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   └── definitions.py                 # Dagster Definitions entry point
 │
 ├── notebooks/                         # marimo, .py format only
-│   └── exploration/
+│   ├── exploration/
+│   └── labelling/
+│       └── golden_set.py              # the owner labels the local queue (plan 0013 step E)
 │
 ├── app/                                # Streamlit internal explorer
 │   ├── Home.py
@@ -237,6 +242,8 @@ src/distress_radar/
 │   ├── page_text.py             # G1 — embedded attachments, PDF text layer per page (plan 0013)
 │   ├── masking.py               # G1 — person names, PESEL, contacts masked (ADR 0009, third addendum)
 │   ├── preprocessing.py         # G1 — spaCy sentences and lemmas, lemma prefilter (config/extraction/)
+│   ├── golden.py                 # G3 — labelling queue, golden rows, export, masking check of evals/
+│   ├── label_queue.py            # G3 — builds the queue from the stores, exports to evals/ (make label-*)
 │   ├── schemas.py                # G2 — extraction response models
 │   ├── extractor.py              # G2 — constrained LLM call
 │   └── eval_harness.py           # G3 — scores against evals/text_signals/

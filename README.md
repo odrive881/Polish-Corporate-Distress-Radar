@@ -88,6 +88,18 @@ Use Chrome or Edge on Windows, at a normal pace (about 3 downloads a minute, the
 
 Recordings are gitignored (`*.har`, `.cache/`). They contain session data and the documents *as filed*, including signatories' names and PESEL numbers, so delete them once imported. The import stores only redacted copies: no signatures, no PDF metadata, and every file name replaced by a token of its document's id (ADR 0009 and its second addendum). Only the company must already be in `entity_master` (A2); other KRS numbers are skipped with a warning. `RDF_MANUAL_INBOX` moves the inbox elsewhere.
 
+## Labelling the golden set
+
+Text extractors are scored against pages the owner has labelled (plan 0013 step E, `evals/text_signals/labelling_guide.md`). The queue is local and never committed: until a page has been read, a name the masker missed can still be in it.
+
+```bash
+make label-queue    # after make dev-up and make models: masked pages to label, under LABELLING_DIR
+uv run marimo edit notebooks/labelling/golden_set.py   # mask what the masker missed, label every signal
+make label-export   # labelled pages to evals/text_signals/, refused if the masker would still change one
+```
+
+The pre-commit hook re-runs the masker over every eval file staged under `evals/`, so it needs `make models` too.
+
 ## What not to build
 
 | Tempting | Why it is wrong here |

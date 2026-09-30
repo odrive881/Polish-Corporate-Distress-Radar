@@ -90,7 +90,7 @@ def load_pinned(
     return nlp
 
 
-def _spans(text: str, nlp: Any) -> list[tuple[int, int, str]]:
+def spans(text: str, nlp: Any) -> list[tuple[int, int, str]]:
     """Every span to replace, as (start, end, kind); overlaps resolved to the earliest, longest."""
     spans: list[tuple[int, int, str]] = []
     spans += [(m.start(), m.end(), "email") for m in _EMAIL.finditer(text)]
@@ -113,7 +113,7 @@ def mask(text: str, nlp: Any | None = None) -> Masked:
     out: list[str] = []
     counts: Counter[str] = Counter()
     position = 0
-    for start, end, kind in _spans(text, nlp):
+    for start, end, kind in spans(text, nlp):
         out.append(text[position:start])
         out.append(TOKENS[kind])
         counts[kind] += 1
