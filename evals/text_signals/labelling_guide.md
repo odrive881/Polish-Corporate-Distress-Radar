@@ -1,7 +1,7 @@
 # Labelling guide — text signals (plan 0013 step E)
 
-**Status: draft, for the owner to confirm or change before the first page is labelled.** A change after labelling
-has begun means relabelling what was done under the old wording, so the definitions are settled first.
+**Status: accepted by the owner, 2026-09-30, as drafted.** A change after labelling has begun means relabelling
+what was done under the old wording: it is a new version of this guide, recorded here with its date.
 
 Labels in this directory are the owner's (plan 0013 decision 5). A model may propose; the owner confirms or
 corrects every proposal, and the row records who proposed (`proposed_by`) and who labelled (`labelled_by`).
