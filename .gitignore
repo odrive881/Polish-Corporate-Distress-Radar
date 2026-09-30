@@ -39,3 +39,6 @@ logs/
 
 # Outgoing correspondence drafts (ADR 0013 option a): personal contact details, never committed
 docs/rdf_api_inquiry_email.md
+
+# marimo session caches: they hold rendered cell outputs, which can be document text
+__marimo__/

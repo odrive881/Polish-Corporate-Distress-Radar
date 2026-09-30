@@ -11,7 +11,7 @@
 **Order:** after plan 0012 (complete). It does not wait for ADR 0013: like Phase 6, it builds and measures
 machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set this plan adds.
 
-## Status: active (2026-09-29): owner decisions 0–8 accepted; steps A to D built
+## Status: active (2026-09-29): owner decisions 0–8 accepted; steps A to D built, step E's tooling built, labelling waits on the owner
 
 ### Progress
 
@@ -110,6 +110,29 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
     `key_customer_loss` 0 and 7. Nothing for `covenant_breach` or `continued_existence_vote`, nor for the
     auditor-report signals, whose documents are not in hand. Whether a zero is an absence or a miss is what the
     rejected-page sample of step E measures; until then these are selections, not signals.
+- **Step E, tooling (2026-09-30); the labels themselves are the owner's.**
+  - **The queue** (`extraction/golden.py`, `extraction/label_queue.py`, `make label-queue`): every masked text
+    page `prefilter_v1` selects, and a fixed random sample of those it rejects, from
+    `config/extraction/golden_sample_v1.yaml` (50, drawn by hashing each page id with the file name). On the seed:
+    **240 pages to label**, 190 selected and 50 of the 512 rejected. Local (`LABELLING_DIR`, gitignored), rebuilt
+    byte for byte, and a rebuild keeps every row already there; a labelled page missing from a rebuild is an error.
+  - **Labelling** (`notebooks/labelling/golden_set.py`): each page for all nine signals, so a page selected for
+    one signal is a labelled rejection for the others; evidence must be a verbatim span of the masked page;
+    `opinion_type` takes one of four values, the other signals only present or absent. A name the masker missed is
+    masked by hand, counted, and those counts against the masker's are its recall. Over-masking cannot be judged
+    from masked text and is not measured. Definitions: `evals/text_signals/labelling_guide.md`, **a draft for the
+    owner to confirm before the first label.**
+  - **Changed from the step as drafted, for the owner to see:** the committed set is `pages.jsonl` (each page's
+    masked text, once) plus one `<signal_type>.jsonl` per signal with a label for every page, not one file per
+    signal each carrying the text: every page is labelled for every signal, and the text nine times over would be
+    the same bytes nine times.
+  - **The masking check** (`golden.masking_findings`): the masker re-run over every text field of an eval file;
+    anything it would still replace is a finding, reported by line and kind, never quoted. The export refuses a
+    page that fails it; `make check` runs it over `evals/`; the pre-commit scan runs it over staged eval files
+    instead of the raw-download markers (a notes page may well contain the word "PESEL"), and without the model it
+    refuses rather than passes. The masker is not idempotent everywhere: on 6 of the seed's 702 text pages a
+    second pass masks one more person, and one of them is in the queue (a rejected-sample page); the notebook
+    shows the span in red, for the owner to mask.
 
 ## Why
 

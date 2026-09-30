@@ -86,6 +86,9 @@ class Settings(BaseSettings):
 
     # The Polish spaCy model, unpacked by `make models` (plan 0013; ADR 0009, third addendum).
     spacy_model_dir: Path = Path(".cache/models")
+    # The local labelling queue of the golden set (plan 0013 step E): masked page text the owner
+    # has not read yet, so never committed. `extraction.label_queue` writes it.
+    labelling_dir: Path = Path(".cache/labelling")
 
     # MLflow (plan 0012 decision 6): a local SQLite store, no service to run, until the Compose
     # server arrives with serving in Phase 9. Run artifacts go under `mlflow_artifact_dir`, set

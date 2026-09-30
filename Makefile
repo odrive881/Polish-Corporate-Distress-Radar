@@ -2,7 +2,8 @@ UV ?= uv
 export UV_LINK_MODE := copy
 
 .PHONY: install lock lint typecheck test test-integration check dev-up dev-down \
-	transform-setup transform-plan transform-run transform-test docs-check hooks models
+	transform-setup transform-plan transform-run transform-test docs-check hooks models \
+	label-queue label-export
 
 install:    ## create/sync .venv exactly from uv.lock (fails if lock is stale)
 	$(UV) sync --locked --extra dev
@@ -38,6 +39,14 @@ models:     ## fetch and unpack the pinned Polish spaCy model (resumable; checks
 	@test -f $(MODEL_DIR)/$(MODEL_NAME)/$(MODEL_NAME)-$(MODEL_VERSION)/meta.json || \
 		$(UV) run --locked python -m zipfile -e $(MODEL_WHEEL) $(MODEL_DIR)
 	@echo "$(MODEL_NAME) $(MODEL_VERSION) in $(MODEL_DIR)"
+
+# The golden set of text signals (plan 0013 step E). The queue is local (LABELLING_DIR); labelling is
+# `uv run marimo edit notebooks/labelling/golden_set.py`; the export writes evals/text_signals/.
+label-queue:  ## build or refresh the local labelling queue, keeping labels (needs make dev-up, make models)
+	$(UV) run --locked python -m distress_radar.extraction.label_queue build
+
+label-export: ## write the labelled pages to evals/text_signals/, after the masking check
+	$(UV) run --locked python -m distress_radar.extraction.label_queue export
 
 docs-check: ## mechanical doc drift: missing paths, the tree, plan and ADR statuses (in `check` too)
 	$(UV) run --locked pytest -q tests/test_docs.py

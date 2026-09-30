@@ -64,3 +64,44 @@ def test_the_hook_reads_what_is_staged_not_the_working_tree(tmp_path: Path) -> N
 def test_explicit_paths_are_scanned_from_disk(tmp_path: Path) -> None:
     (tmp_path / "x.xml").write_bytes(SIGNED)
     assert main(["x.xml"], cwd=tmp_path) == 1
+
+
+# --- eval files: the masking check (plan 0013 step E) ---------------------------------------------
+
+
+class _Masker:
+    """Finds one invented name, so the scan is tested without loading the model."""
+
+    def __call__(self, text: str) -> object:
+        ents = []
+        if (start := text.find("Jan Testowy")) >= 0:
+            ents.append(
+                type("E", (), {"start_char": start, "end_char": start + 11, "label_": "persName"})()
+            )
+        return type("Doc", (), {"ents": ents})()
+
+
+def test_eval_files_get_the_masking_check_and_nothing_else_loads_the_model() -> None:
+    files = {
+        "evals/text_signals/litigation.jsonl": b'{"text": "Pozew podpisa\\u0142 Jan Testowy."}\n',
+        "evals/text_signals/pages.jsonl": b'{"text": "[osoba] podpisa\\u0142 pozew."}\n',
+        "evals/text_signals/labelling_guide.md": b"Jan Testowy",
+    }
+    found = scan(files, files.__getitem__, lambda: _Masker())
+    assert list(found) == ["evals/text_signals/litigation.jsonl"]
+    assert not any("Testowy" in m for m in found["evals/text_signals/litigation.jsonl"])
+
+    def _no_model() -> object:
+        raise AssertionError("the model is loaded only for eval files")
+
+    assert scan({"clean.xml": CLEAN}, {"clean.xml": CLEAN}.__getitem__, _no_model) == {}
+
+
+def test_an_eval_file_without_the_model_is_refused() -> None:
+    files = {"evals/text_signals/pages.jsonl": b'{"text": "x"}\n'}
+
+    def _missing() -> object:
+        raise FileNotFoundError("pl_core_news_lg 3.8.0 is not at .cache/models: run `make models`")
+
+    [finding] = scan(files, files.__getitem__, _missing)["evals/text_signals/pages.jsonl"]
+    assert finding.startswith("masking check cannot run")
