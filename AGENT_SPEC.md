@@ -186,9 +186,17 @@ These names are canonical. `PROJECT_OVERVIEW.md` refers to the same datasets and
 
 ### `text_signals`
 
-`krs`, `fiscal_year`, `signal_type`, `value`, `evidence_span`, `source_document_hash`, `page`, `extraction_method`, `confidence`, `known_from`.
+`krs`, `fiscal_year`, `signal_type`, `value`, `evidence_span`, `source_document_hash`, `page`, `extraction_method`, `confidence`, `known_from`, and for lineage and versions (invariant 3) `period_end`, `document_ref`, `source_member`, `source_element_path` (the attachment's element), `attachment`, `extractor_version`, `masking_version`, `response_key` (the stored model response; null for a rule), `ingestion_run_id`.
+
+One row per kept extraction (plan 0013 step H): `value` is `present` or `absent`, or for `opinion_type` the opinion (`unqualified`, `qualified`, `adverse`, `disclaimer`) or `absent`; `evidence_span` is masked (ADR 0009, third addendum) and null exactly when absent; `extraction_method` `llm` or `rule`; `confidence` `high`, `medium` or `low`. Dated by the filing: `known_from` is its submission date, `fiscal_year` its period end's year. Only pages the prefilter selects are extracted, so a signal's absence from this table means nothing on its own: `text_coverage` says what was read. Built by `extraction/text_signals.py`, contract `TEXT_SIGNALS`.
 
 `signal_type` enum: `going_concern_uncertainty`, `opinion_type`, `emphasis_of_matter`, `covenant_breach`, `key_customer_loss`, `litigation`, `post_balance_sheet_event`, `loss_coverage_resolution`, `continued_existence_vote`.
+
+### `text_coverage`
+
+`krs`, `fiscal_year`, `signal_type`, `status`, `known_from`, `period_end`, `document_ref`, `source_document_hash`, `source_member`, `attachments`, `attachments_unsupported`, `attachment_errors` (list), `pages`, `pages_text`, `pages_needs_ocr`, `pages_sparse`, `pages_selected`, `kept_present`, `kept_absent`, `discarded`, `discard_reasons` (list), `unanswered`, `extractor_version`, `masking_version`, `ingestion_run_id`.
+
+One row per (statement file, `signal_type`): what the text stage read (plan 0013 step H), so a missing signal is never read as "no warning" (invariant 4). `status`: `no_text` (no page of the notes has a text layer), `not_run` (the prefilter selected pages for a model signal before the owner confirmed the provider's terms), `partial` (read, but a page was scanned, an attachment unreadable, or an extraction discarded or unanswered), `read` (every page read, every selected page answered; a page not selected counts as absent). Written with `text_signals`, contract `TEXT_COVERAGE`.
 
 ### `statement_disclosures`
 
@@ -221,7 +229,8 @@ One row per evaluated identity (§4.3) per statement file, amount column and lin
 The **current** quarantined set: SQLMesh model `quarantine.quarantine`, recomputed from scratch on every run (plan 0007 decision 4). Each stage's answer comes from the source that knows it now:
 - E2: `quality_grade = 'quarantined'` on the canonical table, with the checks that failed materially as reasons;
 - C1/C2: `parsed_documents` on the latest parsing run;
-- A1–A3: the latest event per key in the log.
+- A1–A4 and C4: the latest event per key in the log;
+- G1 (an attachment of the notes that cannot be read, per file) and G2 (a discarded text extraction, per file and `signal_type`): `text_coverage` (plan 0013 step H).
 
 The log itself is the Postgres table **`quarantine_events`**: append-only, one row per first detection, never updated or deleted. A log row describing a file the current rules no longer quarantine is simply not selected. Never answer "is this quarantined now?" from the log (ADR 0006 addendum, ADR 0010).
 

@@ -44,3 +44,39 @@ def test_a_manifest_row_is_written_once_and_never_overwritten(conn: psycopg.Conn
         "SELECT request_key, object_key, stop_reason FROM extraction_responses"
     ).fetchall()
     assert rows == [(key, response_store.object_key(key), "end_turn")]
+
+
+def test_a_file_keeps_its_first_run_under_one_pipeline_and_gets_a_new_one_under_another(
+    conn: psycopg.Connection,
+) -> None:
+    from datetime import date
+
+    from distress_radar.acquisition import manifest as acquisition_manifest
+    from distress_radar.acquisition.models import RawFetchRecord
+    from distress_radar.acquisition.raw_store import RawDocumentMeta
+    from distress_radar.extraction import manifest
+
+    acquisition_manifest.ensure_schema(conn)
+    manifest.ensure_schema(conn)
+    sha = "ab" * 32
+    acquisition_manifest.insert_raw_fetch(
+        conn,
+        RawFetchRecord(
+            sha256=sha,
+            byte_size=1,
+            meta=RawDocumentMeta(
+                source="rdf",
+                source_url="https://rdf.test",
+                content_type="application/zip",
+                fetched_at=NOW,
+                http_headers={},
+                ingestion_run_id="fetch",
+            ),
+        ),
+    )
+    source = manifest.TextSource(
+        sha, "zip:1.xml", "raw/x", "0000000001", "ref1", date(2023, 12, 31), date(2024, 6, 30)
+    )
+    assert manifest.record_text_extraction(conn, source, "p1", "run-1", NOW) == "run-1"
+    assert manifest.record_text_extraction(conn, source, "p1", "run-2", NOW) == "run-1"
+    assert manifest.record_text_extraction(conn, source, "p2", "run-3", NOW) == "run-3"

@@ -14,6 +14,10 @@ every run, asking whichever source knows the current answer for each stage:
   most recent C1/C2 detection in the log.
 - A1–A4, and C4 (legal-event normalisation): nothing downstream records these, so
   the log is the only source: the most recent detection per (stage, entity_key).
+- G1, G2 (text signals, plan 0013 step H): `text_coverage`, rebuilt on every run of the text
+  stage. G1 is a statement file with an attachment that cannot be read, one row per file; G2 a
+  (file, signal_type) with a discarded extraction, keyed `krs:document_ref:signal_type`. A
+  discard a new prompt or model no longer makes is gone from the set, as a regraded file is.
 
 A log row describing a file the current rules no longer quarantine is simply
 not selected; it stays in the log, which is the point. `first_detected_at` is
@@ -112,12 +116,41 @@ WITH e2_files AS (
   FROM a_events
   WHERE created_at = latest_at
   GROUP BY stage, entity_key
+), g1 AS (
+  SELECT
+    'G1' AS stage,
+    krs || ':' || document_ref AS entity_key,
+    krs,
+    document_ref,
+    source_document_hash,
+    source_member,
+    ANY_VALUE(attachment_errors) AS reason_codes,
+    known_from
+  FROM ext.text_coverage
+  WHERE LEN(attachment_errors) > 0
+  GROUP BY krs, document_ref, source_document_hash, source_member, known_from
+), g2 AS (
+  SELECT
+    'G2' AS stage,
+    krs || ':' || document_ref || ':' || signal_type AS entity_key,
+    krs,
+    document_ref,
+    source_document_hash,
+    source_member,
+    discard_reasons AS reason_codes,
+    known_from
+  FROM ext.text_coverage
+  WHERE discarded > 0
 ), current_set AS (
   SELECT * FROM e2
   UNION ALL
   SELECT * FROM c
   UNION ALL
   SELECT * FROM a
+  UNION ALL
+  SELECT * FROM g1
+  UNION ALL
+  SELECT * FROM g2
 ), first_detected AS (
   /* Parsing-stage keys are files (entity_key + hash); acquisition keys are the entity_key alone. */
   SELECT

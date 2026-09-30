@@ -96,7 +96,7 @@ def run(settings: Settings, sync: bool = False, golden_dir: Path = GOLDEN_DIR) -
         client = ex.anthropic_client(settings)
         transport = ex.SyncTransport(client) if sync else ex.BatchTransport(client)
     else:
-        transport = _NoCalls()
+        transport = ex.NoCalls()
     pages = [
         ex.PageInput(
             pid, texts[pid], sentences[pid], tuple(s for s in selected[pid] if s in runnable)
@@ -150,15 +150,6 @@ def run(settings: Settings, sync: bool = False, golden_dir: Path = GOLDEN_DIR) -
     )
     status["calls"] = f"{stats.called} sent, {stats.replayed} replayed from the store"
     return status
-
-
-class _NoCalls:
-    """The transport before the owner's confirmation: it is never asked, and refuses if it is."""
-
-    def run(self, requests: Any) -> tuple[dict[str, bytes], set[str]]:
-        if requests:
-            raise PermissionError("no model call before EXTRACTION_API_CONFIRMED (decision 2)")
-        return {}, set()
 
 
 def accept(settings: Settings, signal: SignalType, by: str, golden_dir: Path = GOLDEN_DIR) -> Path:

@@ -27,6 +27,8 @@ test_quarantine_is_the_current_set_not_the_log:
         - {sha256: h2, source_member: "zip:2.xml", krs: "0000000002", document_ref: ref2, status: valid, known_from: 2023-07-01}
         - {sha256: h3, source_member: "zip:3.xml", krs: "0000000003", document_ref: ref3, status: quarantined, known_from: 2023-08-01}
         - {sha256: h4, source_member: "zip:4.xml", krs: "0000000004", document_ref: ref4, status: valid, known_from: 2023-09-01}
+    ext.text_coverage:
+      rows: []
     ext.quarantine_events:
       rows:
         - {stage: E2, entity_key: "0000000001:ref1", reason_code: subtotals_consistent, source_document_hash: h1, created_at: "2026-09-10 08:00:00+00", krs: "0000000001", document_ref: ref1}
@@ -59,6 +61,8 @@ test_a_c1_file_without_a_filing_is_keyed_by_its_member:
     staging.parsed_documents_current:
       rows:
         - {sha256: h5, source_member: "zip:stray.xml", krs: "0000000005", document_ref: null, status: quarantined, known_from: null}
+    ext.text_coverage:
+      rows: []
     ext.quarantine_events:
       rows:
         - {stage: C1, entity_key: "0000000005:zip:stray.xml", reason_code: member_not_in_filing_index, source_document_hash: h5, created_at: "2026-09-11 08:00:00+00", krs: "0000000005", document_ref: null}
@@ -66,3 +70,31 @@ test_a_c1_file_without_a_filing_is_keyed_by_its_member:
     query:
       rows:
         - {stage: C1, entity_key: "0000000005:zip:stray.xml", krs: "0000000005", document_ref: null, source_document_hash: h5, source_member: "zip:stray.xml", reason_codes: [member_not_in_filing_index], known_from: null, first_detected_at: "2026-09-11 08:00:00+00"}
+
+# G1/G2 come from `text_coverage`, the text stage's current answer: T1 has an unreadable
+# attachment (one G1 row, though coverage has a row per signal) and a discard for one signal;
+# T2 was discarded once (its log row stays) but reads cleanly now, so it is gone.
+test_text_quarantine_is_what_text_coverage_says_now:
+  model: quarantine.quarantine
+  inputs:
+    ext.financial_statements_canonical:
+      rows: []
+    ext.identity_check_results:
+      rows: []
+    staging.parsed_documents_current:
+      rows: []
+    ext.text_coverage:
+      rows:
+        - {krs: "0000000007", document_ref: ref7, source_document_hash: h7, source_member: "zip:7.xml", signal_type: litigation, known_from: 2024-06-30, attachment_errors: [pdf_encrypted], discarded: 1, discard_reasons: [evidence_not_on_page]}
+        - {krs: "0000000007", document_ref: ref7, source_document_hash: h7, source_member: "zip:7.xml", signal_type: covenant_breach, known_from: 2024-06-30, attachment_errors: [pdf_encrypted], discarded: 0, discard_reasons: []}
+        - {krs: "0000000008", document_ref: ref8, source_document_hash: h8, source_member: "zip:8.xml", signal_type: litigation, known_from: 2024-07-31, attachment_errors: [], discarded: 0, discard_reasons: []}
+    ext.quarantine_events:
+      rows:
+        - {stage: G1, entity_key: "0000000007:ref7", reason_code: pdf_encrypted, source_document_hash: h7, created_at: "2026-09-30 08:00:00+00", krs: "0000000007", document_ref: ref7}
+        - {stage: G2, entity_key: "0000000007:ref7:litigation", reason_code: evidence_not_on_page, source_document_hash: h7, created_at: "2026-09-30 08:00:00+00", krs: "0000000007", document_ref: ref7}
+        - {stage: G2, entity_key: "0000000008:ref8:litigation", reason_code: invalid_output, source_document_hash: h8, created_at: "2026-09-29 08:00:00+00", krs: "0000000008", document_ref: ref8}
+  outputs:
+    query:
+      rows:
+        - {stage: G1, entity_key: "0000000007:ref7", krs: "0000000007", document_ref: ref7, source_document_hash: h7, source_member: "zip:7.xml", reason_codes: [pdf_encrypted], known_from: 2024-06-30, first_detected_at: "2026-09-30 08:00:00+00"}
+        - {stage: G2, entity_key: "0000000007:ref7:litigation", krs: "0000000007", document_ref: ref7, source_document_hash: h7, source_member: "zip:7.xml", reason_codes: [evidence_not_on_page], known_from: 2024-06-30, first_detected_at: "2026-09-30 08:00:00+00"}
