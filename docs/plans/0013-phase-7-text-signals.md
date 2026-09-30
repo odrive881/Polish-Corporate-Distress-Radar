@@ -120,8 +120,8 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
     one signal is a labelled rejection for the others; evidence must be a verbatim span of the masked page;
     `opinion_type` takes one of four values, the other signals only present or absent. A name the masker missed is
     masked by hand, counted, and those counts against the masker's are its recall. Over-masking cannot be judged
-    from masked text and is not measured. Definitions: `evals/text_signals/labelling_guide.md`, **a draft for the
-    owner to confirm before the first label.**
+    from masked text and is not measured. Definitions: `evals/text_signals/labelling_guide.md`, accepted by the owner
+    as drafted (2026-09-30).
   - **Changed from the step as drafted, for the owner to see:** the committed set is `pages.jsonl` (each page's
     masked text, once) plus one `<signal_type>.jsonl` per signal with a label for every page, not one file per
     signal each carrying the text: every page is labelled for every signal, and the text nine times over would be
