@@ -2,7 +2,7 @@
 
 A batch data platform that estimates the probability a Polish company enters bankruptcy, restructuring, or liquidation within 12 and 24 months, built from statutory financial filings, registry history, and insolvency registers.
 
-**Status:** Phase 7 (text signals) in progress (`docs/plans/0013-phase-7-text-signals.md`): every statement's going-concern disclosure, and from FY2025 average employment and the audit flag, are read into `statement_disclosures`; the notes' text layer is read page by page, masked of person names (`make models` first) and prefiltered by lemma; the golden set's tooling is built and its 240 pages wait for the owner's labels (§ Labelling the golden set); the extractors (lemma rules, and Claude with every response stored and replayed) are built and make no call until the owner confirms the provider's terms; the eval harness comes next.
+**Status:** Phase 7 (text signals) in progress (`docs/plans/0013-phase-7-text-signals.md`): every statement's going-concern disclosure, and from FY2025 average employment and the audit flag, are read into `statement_disclosures`; the notes' text layer is read page by page, masked of person names (`make models` first) and prefiltered by lemma; the golden set's tooling is built and its 240 pages wait for the owner's labels (§ Labelling the golden set); the extractors (lemma rules, and Claude with every response stored and replayed) are built and make no call until the owner confirms the provider's terms; the eval harness and its gate in `make check` are built, and wait for the first labels (§ Labelling the golden set); `text_signals` comes next.
 
 Phase 6 complete (`docs/plans/0012-phase-6-baselines-out-of-time-backtest.md`, 2026-09-27): a purged out-of-time backtest of Altman's Z'', the Poznań model and a regularised logistic regression, a generated Markdown report with the seed caveat on every table, MLflow runs carrying the four identifiers, and the hand-run `backtest` job. Every result on the 17-entity seed is machinery, not evidence: 11 events, and once each fold trains only on labels already public by its test year (corrected 2026-09-29), no cell of 84 reaches the 3-event floor. Scale is the critical path, and it waits on the owner's decision in ADR 0013 (proposed).
 
@@ -99,6 +99,15 @@ make label-export   # labelled pages to evals/text_signals/, refused if the mask
 ```
 
 The pre-commit hook re-runs the masker over every eval file staged under `evals/`, so it needs `make models` too.
+
+Once pages are labelled, the extractors are scored on them:
+
+```bash
+make eval           # results to evals/text_signals/results/; model signals only after EXTRACTION_API_CONFIRMED=true
+make eval-accept SIGNAL=litigation BY=owner   # after reading a result's scores: the baseline the gate holds
+```
+
+`make check` then fails when the prompt, model, rules or prefilter in use has no current result, or scores below the last accepted one on the same golden file (`config/extraction/eval_gate_v1.yaml`). A signal with no result yet is not gated.
 
 ## What not to build
 

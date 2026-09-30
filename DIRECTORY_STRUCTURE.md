@@ -23,7 +23,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 ├── .env.example
 ├── .github/
 │   └── workflows/
-│       └── ci.yml                     # lint, type-check, tests, leakage test; the offline extraction-eval gate from plan 0013 step G
+│       └── ci.yml                     # lint, type-check, tests, leakage test, the offline extraction-eval gate (plan 0013)
 │
 ├── docs/
 │   ├── PROJECT_OVERVIEW.md            # functional view, numbered stages 1–12
@@ -52,7 +52,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │       ├── pages.jsonl                # the labelled pages' masked text, once (`make label-export`)
 │       ├── going_concern_uncertainty.jsonl   # hand-labelled golden set, one label per page
 │       ├── covenant_breach.jsonl
-│       └── results/                   # each accepted eval run: <signal_type>/<prompt version>__<model>.json (plan 0013 decision 4)
+│       └── results/                   # per signal: <prompt>__<model>.json or <rules>__rule.json; masking/ (plan 0013 step G)
 │
 ├── config/
 │   ├── segments/
@@ -86,7 +86,8 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │       └── small-2025-v1-3.yaml   # a spec may bind more than one body (plan 0005 step D)
 │   ├── xsd/                           # official MF/CRWDE XSDs, vendored (catalog.yaml)
 │   ├── extraction/                    # text-signal engineering config (plan 0013)
-│   │   ├── extractor_v1.yaml          # model, effort, and the method (llm + prompt, or rule) per signal_type
+│   │   ├── eval_gate_v1.yaml          # how far a change may fall below the accepted scores (owner's tolerance)
+│   │   ├── extractor_v1.yaml          # model, effort, prefilter, and the method (llm + prompt, or rule) per signal_type
 │   │   ├── golden_sample_v1.yaml      # which pages go to the labeller: all selected, a fixed rejected sample
 │   │   ├── prefilter_v1.yaml          # lemma terms per signal_type; the file name is the prefilter_version
 │   │   └── rules_v1.yaml              # lemma rules for standard wording (opinion_type)
@@ -250,7 +251,8 @@ src/distress_radar/
 │   ├── rules.py                  # G2 — lemma rules (config/extraction/rules_*.yaml)
 │   ├── response_store.py         # G2 — responses stored by request hash, replayed (decision 3)
 │   ├── extractor.py              # G2 — constrained LLM call, evidence check, sync and batch transports
-│   └── eval_harness.py           # G3 — scores against evals/text_signals/
+│   ├── eval_harness.py           # G3 — scores against evals/text_signals/, the gate in make check
+│   └── eval_run.py               # G3 — make eval (runs the extractors on the golden set), make eval-accept
 │
 ├── features/                     # H, in Python with in-process DuckDB (ADR 0012)
 │   ├── config.py                 # typed config/features/ (feature set, line-item map), cross-checked

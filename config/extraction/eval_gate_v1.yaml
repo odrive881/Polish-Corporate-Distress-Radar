@@ -1,0 +1,12 @@
+# Eval gate v1 (plan 0013 step G, decision 4): how far an extraction change may fall below the last
+# accepted result before `make check` fails. Engineering config, not statute; the tolerances are the
+# owner's (plan 0013, risks: a small golden set makes the gate noisy). Loaded by
+# `distress_radar.extraction.eval_harness.load_gate`; `EVAL_GATE_VERSION` names the file in use.
+#
+# 0 means hold or improve: end-to-end precision and recall (prefilter and extractor together, what
+# reaches the features) may not fall at all. A tolerance is in points of the score (0.05 = 5 points).
+
+eval_gate_version: eval_gate_v1
+tolerance:
+  precision: 0.0
+  recall: 0.0
