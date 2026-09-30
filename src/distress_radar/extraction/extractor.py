@@ -217,7 +217,7 @@ class PageInput:
 
 @dataclass
 class ExtractionStats:
-    requests: int = 0  # llm (page, signal) pairs
+    requests: int = 0  # distinct llm requests (pages with the same text share one)
     called: int = 0  # of them, sent to the transport this run
     replayed: int = 0  # read from the store without a call
     kept: int = 0

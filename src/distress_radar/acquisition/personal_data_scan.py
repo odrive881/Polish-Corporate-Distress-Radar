@@ -72,7 +72,7 @@ def scan(
         suffix = PurePosixPath(path).suffix.lower()
         if suffix in REFUSED_SUFFIXES:
             found[path] = ["a browser recording holds the documents as filed; never commit one"]
-        elif path.startswith(EVAL_DIR) and suffix in EVAL_SUFFIXES:
+        elif PurePosixPath(path).as_posix().startswith(EVAL_DIR) and suffix in EVAL_SUFFIXES:
             try:
                 masker = masker or [load_masker()]
             except (FileNotFoundError, RuntimeError) as exc:

@@ -52,7 +52,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │       ├── pages.jsonl                # the labelled pages' masked text, once (`make label-export`)
 │       ├── going_concern_uncertainty.jsonl   # hand-labelled golden set, one label per page
 │       ├── covenant_breach.jsonl
-│       └── results/                   # score history per eval run, timestamped
+│       └── results/                   # each accepted eval run: <signal_type>/<prompt version>__<model>.json (plan 0013 decision 4)
 │
 ├── config/
 │   ├── segments/
