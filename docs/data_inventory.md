@@ -165,7 +165,7 @@ The spec forbids bulk enumeration of any source. Acquisition is per entity, seed
 | NBP API | — | A5 | required | public, no key |
 | GUS BDL API (optional client key raises rate limits) | none yet; add one if a key is used | A5 | optional | not requested |
 | Registry aggregator account / ToS acceptance | none yet | A1 | required for scaled discovery | aggregator not chosen; a vendor quote may cover it with A3 (ADR 0013, proposed) |
-| LLM API key (vision tier and text extraction) | none yet; must be added to `.env.example` | C3, G2 | required from Phase 3 / 7 | not configured |
+| LLM API key (vision tier and text extraction) | `ANTHROPIC_API_KEY`, `EXTRACTION_API_CONFIRMED` | C3, G2 | required from Phase 3 / 7 | not configured; in `.env.example` since plan 0013 step F. No call is made until the owner confirms the provider's data-retention terms and sets `EXTRACTION_API_CONFIRMED=true` (decision 2) |
 | Postgres | `POSTGRES_HOST/PORT/DB/USER/PASSWORD` | B, J | required | local Docker Compose |
 | MinIO | `MINIO_ENDPOINT/ACCESS_KEY/SECRET_KEY/BUCKET` | B | required | local Docker Compose |
 | MLflow tracking store | `MLFLOW_TRACKING_URI`, `MLFLOW_ARTIFACT_DIR` | I, J | required from Phase 6 | local SQLite store under `.data/mlflow/` by default (plan 0012); the server comes in Phase 9 |
@@ -182,7 +182,7 @@ The spec forbids bulk enumeration of any source. Acquisition is per entity, seed
 1. **RDF access rests on an informal confirmation** (ADR 0007). KRS support allowed 3 requests/minute verbally, and could not promise how the WAF reacts. Re-run the probe notebook before any backfill.
 2. ~~**No source named for average employment.**~~ Answered by C2 in plan 0004: no MF structure carries it as a field. Superseded by item 8, which records the candidate sources and what is still undecided.
 3. ~~**No pre-2025-generation XML fixture.**~~ Resolved in plan 0004: golden fixtures for schemas 1-0 and 1-2. ~~Small and micro forms still have none.~~ Ten short-form fixtures added in plan 0005 step E, covering every body-choice case; a committed fixture carrying signer data is now a test failure, not a manual check (`test_no_fixture_contains_personal_data`).
-4. **No LLM provider or key** in `.env.example`, yet C3 and G2 both need one.
+4. ~~**No LLM provider or key** in `.env.example`, yet C3 and G2 both need one.~~ Anthropic, `ANTHROPIC_API_KEY` in `.env.example` (plan 0013 step F); no key configured, and calls wait on the owner's confirmation of the provider's terms.
 5. ~~**Terms of use unconfirmed** for KRS, KRZ, MSiG~~ Recorded in ADR 0011 (accepted 2026-09-23); KRZ is WAF-blocked. Any aggregator's terms remain unconfirmed (SPEC §11.3).
 6. ~~**Full list of MF structure versions not enumerated.**~~ Enumerated in plan 0004 and completed in plan 0005 step B: 22 (form × unit × schema 1-0/1-2/1-3, plus CRWDE templates 13817, 13818, 13819 and 13821; 13820 is `JednostkaOp`, outside v1 scope), listed in `config/mappings/structures/` (12 mapped) and `structure_catalog.yaml` (10 recognised, not mapped).
 7. ~~**Stale wording** about structures applying "from 2026".~~ Fixed in plan 0004.

@@ -11,7 +11,7 @@
 **Order:** after plan 0012 (complete). It does not wait for ADR 0013: like Phase 6, it builds and measures
 machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set this plan adds.
 
-## Status: active (2026-09-29): owner decisions 0–8 accepted; steps A to D built, step E's tooling built, labelling waits on the owner
+## Status: active (2026-09-29): owner decisions 0–8 accepted; steps A to D and F built, step E's tooling built; labelling and the first model call wait on the owner
 
 ### Progress
 
@@ -133,6 +133,43 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
     refuses rather than passes. The masker is not idempotent everywhere: on 6 of the seed's 702 text pages a
     second pass masks one more person, and one of them is in the queue (a rejected-sample page); the notebook
     shows the span in red, for the owner to mask.
+- **Step F (2026-09-30), built and tested without a single call.**
+  - **What:** `extraction/schemas.py` (a strict JSON schema per signal, sent as structured output, and the
+    Pydantic model that validates every answer, first call and replay alike; a test keeps them in step),
+    `extraction/rules.py` with `config/extraction/rules_v1.yaml` (`opinion_type` by lemma rules, most severe
+    opinion on the page wins, each term's example checked through the model), `extraction/response_store.py`
+    (decision 3: responses in MinIO under `extraction/responses/`, keyed by the SHA-256 of the full request body,
+    write-once; Postgres manifest `extraction_responses`), `extraction/extractor.py` (the request, the evidence
+    check, a sync transport for development and a Message Batches transport for backfills), and
+    `config/extraction/extractor_v1.yaml` naming each signal's method and prompt; eight prompts in
+    `prompts/extraction/`, each carrying its definition from the accepted labelling guide, and the
+    `prompts/CHANGELOG.md` entry. `anthropic` 1.9.0 is locked.
+  - **Kept or discarded:** an answer is kept only if it validates and, when present, its evidence is a verbatim
+    substring of the masked page; otherwise it is discarded with a reason code (`no_evidence`,
+    `evidence_not_on_page`, `invalid_output`, `refusal`, `max_tokens`, and `api_error` for no response, which is
+    not stored and is retried on the next run). A second run over the same pages makes no call and gives the
+    same answers; pages with identical masked text share one request.
+  - **Changed from decision 2, for the owner to see:**
+    - the model is `claude-opus-5-5`, not `claude-opus-5`: the decision named "the SDK's current default", and
+      the current default Opus is now 5.5, at a lower price ($4 / $20 per million tokens against $5 / $25). It
+      is one line of `extractor_v1.yaml`;
+    - `effort: medium` is set explicitly (this model's default; thinking cannot be switched off on it);
+    - **no refusal fallback**, though the SDK guidance recommends one by default: it re-runs a refused request
+      on another model, whose answer would be stored under a key naming this one, against decision 5's rule
+      that no model replaces another without a golden-set comparison; the Batches API rejects it anyway. A
+      refusal is discarded and counted;
+    - not `messages.parse`: the schema is sent as `output_config.format` and the answer validated by the same
+      Pydantic model, so one fixed request body serves a single call and a batch and is what the key hashes.
+      Nothing is parsed from free text either way;
+    - the auditor's going-concern rule waits for auditor reports (decision 0c): on the notes that signal is
+      free text, and goes to the model.
+  - **The gate on live calls:** `anthropic_client` refuses unless `EXTRACTION_API_CONFIRMED=true` and
+    `ANTHROPIC_API_KEY` are set (both in `.env.example`); nothing sets them.
+  - **On the seed, counted without a call:** the prefilter selects 233 model requests over the 240 queued pages
+    (`going_concern_uncertainty` 90, `loss_coverage_resolution` 74, `post_balance_sheet_event` 64, `litigation`
+    8, `key_customer_loss` 7), about 930,000 characters of input with the prompts. At Opus 5.5's list price
+    that is a few dollars of input, plus the thinking and answer tokens, which are not known before a run:
+    an estimate of well under $10 in all, half that through batches. Not measured.
 
 ## Why
 
@@ -317,6 +354,9 @@ the label, its evidence, the document hash and page, and who labelled it. Commit
 passes on it.
 
 ### F. Extractors (G2)
+
+*As built (see Progress):* plus `extraction/response_store.py` and `config/extraction/extractor_v1.yaml`,
+`rules_v1.yaml`; no prompt for `opinion_type`, which a rule reads. As drafted:
 
 `extraction/schemas.py` (Pydantic: value, evidence span, page, confidence, per signal), `extraction/rules.py` (the
 lemma rules of decision 2), `extraction/extractor.py` (the constrained call, the evidence check, the response store
