@@ -177,6 +177,21 @@ def test_only_opinion_type_takes_a_value_and_from_its_list(queue: list[QueuePage
         golden.label(row, labels, "owner")
 
 
+def test_hand_masking_keeps_the_prefilter_highlights_on_their_sentences(
+    queue: list[QueuePage],
+) -> None:
+    row = QueuePage.model_validate(
+        {
+            **_row(queue, 2).model_dump(),
+            "text": f"Jan Nowak podpisał. {LITIGATION} Jan Nowak.",
+            "candidates": {"litigation": [(20, 20 + len(LITIGATION))]},
+        }
+    )
+    masked = golden.hand_mask(row, "Jan Nowak")
+    [(start, end)] = masked.candidates["litigation"]
+    assert masked.text[start:end] == LITIGATION
+
+
 def test_hand_masking_replaces_counts_and_follows_the_evidence(queue: list[QueuePage]) -> None:
     row = _labelled(_row(queue, 2), litigation="toczy się postępowanie sądowe")
     masked = golden.hand_mask(row, "sądowe")

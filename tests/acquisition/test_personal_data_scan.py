@@ -89,6 +89,8 @@ def test_eval_files_get_the_masking_check_and_nothing_else_loads_the_model() -> 
     }
     found = scan(files, files.__getitem__, lambda: _Masker())
     assert list(found) == ["evals/text_signals/litigation.jsonl"]
+    dotted = {"./evals/text_signals/x.jsonl": files["evals/text_signals/litigation.jsonl"]}
+    assert list(scan(dotted, dotted.__getitem__, lambda: _Masker())) == list(dotted)
     assert not any("Testowy" in m for m in found["evals/text_signals/litigation.jsonl"])
 
     def _no_model() -> object:

@@ -272,9 +272,31 @@ def hand_mask(row: QueuePage, target: str, kind: str = "person") -> QueuePage:
     }
     counts = Counter(row.hand_masked)
     counts[kind] += occurrences
+    starts: list[int] = []
+    at = row.text.find(target)
+    while at >= 0:  # the occurrences `str.replace` replaces: left to right, not overlapping
+        starts.append(at)
+        at = row.text.find(target, at + len(target))
+
+    def shift(offset: int, is_end: bool) -> int:
+        """An offset in the old text as an offset in the new one; one inside a replaced span
+        moves to the token's start (or, for an end, its end)."""
+        delta = len(token) - len(target)
+        moved = 0
+        for n, start in enumerate(starts):
+            if offset >= start + len(target):
+                moved = (n + 1) * delta
+            elif offset > start or (is_end and offset == start + len(target)):
+                return start + n * delta + (len(token) if is_end else 0)
+        return offset + moved
+
     return QueuePage.model_validate(
         {
             **row.model_dump(),
+            "candidates": {
+                signal: [(shift(a, False), shift(b, True)) for a, b in spans]
+                for signal, spans in row.candidates.items()
+            },
             "text": row.text.replace(target, token),
             "labels": {s: label.model_dump() for s, label in labels.items()},
             "hand_masked": dict(sorted(counts.items())),

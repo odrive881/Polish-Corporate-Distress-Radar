@@ -155,7 +155,7 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
       is one line of `extractor_v1.yaml`;
     - `effort: medium` is set explicitly (this model's default; thinking cannot be switched off on it);
     - **no refusal fallback**, though the SDK guidance recommends one by default: it re-runs a refused request
-      on another model, whose answer would be stored under a key naming this one, against decision 5's rule
+      on another model, whose answer would be stored under a key naming this one, against decision 2's own rule
       that no model replaces another without a golden-set comparison; the Batches API rejects it anyway. A
       refusal is discarded and counted;
     - not `messages.parse`: the schema is sent as `output_config.format` and the answer validated by the same
@@ -271,6 +271,10 @@ Recommendations first; each is the owner's to accept, change or reject before th
      bez zastrzeżeń*, *z zastrzeżeniem*, *negatywna*, *odmowa wyrażenia opinii*; *istotna niepewność dotycząca
      kontynuacji działalności*), so `opinion_type` and the auditor's going-concern paragraph are lemma rules,
      measured like any extractor; the LLM takes the free-text signals.
+   - *As built (step F):* `claude-opus-5-5`, the current default Opus (the current Sonnet is
+     `claude-sonnet-5-5`); the schema sent as `output_config.format` and validated by the same Pydantic model
+     rather than through `messages.parse`; no refusal fallback; the auditor's going-concern rule waits for
+     auditor reports. Reasons in the progress section.
 3. **Invariant 5: a response store, not re-generation.** Recommended: every response is stored content-addressed,
    keyed by the SHA-256 of (masked page text, prompt file, model id, schema), in MinIO beside the raw store, with
    a Postgres manifest row. A run calls the API only for keys it lacks; `text_signals` is rebuilt from the store
