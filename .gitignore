@@ -42,3 +42,8 @@ docs/rdf_api_inquiry_email.md
 
 # marimo session caches: they hold rendered cell outputs, which can be document text
 __marimo__/
+
+# Hand-captured RDF documents (auditor reports, plan 0013 decision 0c): unredacted originals that
+# name people. They live under .cache/rdf_auditor_reports/ (ignored above); this catches a copy
+# dropped at the root by mistake.
+/auditor_reports/
