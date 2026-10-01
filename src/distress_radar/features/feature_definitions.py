@@ -20,6 +20,14 @@ from the source is known yet.
 **Events are counted by a key that no later fact can change**: the event type and its date (the
 decision date, or `known_from` when there is none). `dedup_group_id` is not used: it is computed
 over every row, so a notice published later could merge two groups an observer saw as two.
+
+**Disclosures and text (plan 0013 decision 7) speak through statement files.** Each value comes
+from the latest statement file known at `as_of_date` (latest period, then latest filing, so a
+correction replaces the original from its own filing), dated by that filing, and a file stops
+speaking on the day its filing is deleted. A text value is null unless the notes were read for
+its signal (`text_coverage`): notes that were scanned, never sent to the model or not wholly
+answered say nothing, which is not "no warning" (invariant 4). A count of periods takes each
+period's latest filing whose notes were read.
 """
 
 # polars's and duckdb's signatures reference types pyright cannot resolve; scoped to this module.
@@ -30,7 +38,7 @@ from __future__ import annotations
 import statistics
 from bisect import bisect_right
 from collections.abc import Callable, Iterable, Iterator, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
 from fractions import Fraction
@@ -40,6 +48,8 @@ import polars as pl
 
 from distress_radar.features.config import (
     BelowZeroFeature,
+    DisclosureFlagFeature,
+    DisclosureNumberFeature,
     EventCountFeature,
     Family,
     Feature,
@@ -47,6 +57,8 @@ from distress_radar.features.config import (
     FilingFeature,
     GrowthFeature,
     RatioFeature,
+    TextFlagFeature,
+    TextYearsFeature,
     TripwireFeature,
     VolatilityFeature,
     length_sensitive,
@@ -94,6 +106,39 @@ FILING_INDEX_COLUMNS = [
 ]
 PARSE_STATUS_COLUMNS = ["krs", "document_ref", "status"]
 
+# A statement file, as the disclosure and text families read it: its filing's dates, with the
+# deletion of the filing from `filing_index`.
+_FILE_COLUMNS: dict[str, pl.DataType | type[pl.DataType]] = {
+    "krs": pl.String,
+    "document_ref": pl.String,
+    "source_member": pl.String,
+    "period_end": pl.Date,
+    "known_from": pl.Date,
+    "deleted_on": pl.Date,
+}
+# One row per (statement file, item) of `statement_disclosures`.
+DISCLOSURE_INPUT_SCHEMA: dict[str, pl.DataType | type[pl.DataType]] = {
+    **_FILE_COLUMNS,
+    "item": pl.String,
+    "value_bool": pl.Boolean,
+    "value_number": pl.Float64,
+}
+# One row per (statement file, signal_type) of `text_coverage`.
+TEXT_INPUT_SCHEMA: dict[str, pl.DataType | type[pl.DataType]] = {
+    **_FILE_COLUMNS,
+    "signal_type": pl.String,
+    "status": pl.String,
+    "kept_present": pl.Int32,
+}
+
+
+def _empty_disclosures() -> pl.DataFrame:
+    return pl.DataFrame(schema=DISCLOSURE_INPUT_SCHEMA)
+
+
+def _empty_text() -> pl.DataFrame:
+    return pl.DataFrame(schema=TEXT_INPUT_SCHEMA)
+
 
 @dataclass(frozen=True)
 class FeatureInputs:
@@ -101,6 +146,8 @@ class FeatureInputs:
     filings: pl.DataFrame  # STATEMENT_FILINGS_SCHEMA
     restatements: pl.DataFrame  # parsing.accounting_identities.RESTATEMENT_SCHEMA
     legal_events: pl.DataFrame  # parsing.legal_events.LEGAL_EVENTS_SCHEMA
+    disclosures: pl.DataFrame = field(default_factory=_empty_disclosures)  # DISCLOSURE_INPUT_SCHEMA
+    text: pl.DataFrame = field(default_factory=_empty_text)  # TEXT_INPUT_SCHEMA
 
 
 Row = tuple[str, date, str, float, date]
@@ -635,6 +682,143 @@ def legal_history(grid: pl.DataFrame, inputs: FeatureInputs, config: FeatureConf
     return _event_family("legal_history", grid, inputs.legal_events, config)
 
 
+# --- disclosures and text (plan 0013 decision 7) -------------------------------------------------
+
+
+def statement_files(
+    rows: pl.DataFrame,
+    filing_index: pl.DataFrame,
+    schema: Mapping[str, pl.DataType | type[pl.DataType]],
+) -> pl.DataFrame:
+    """Rows of a per-file dataset with their filing's deletion, in `schema`."""
+    deleted = filing_index.select("krs", "document_ref", "deleted_on").unique(
+        ["krs", "document_ref"], keep="first", maintain_order=True
+    )
+    return (
+        rows.drop("deleted_on", strict=False)
+        .join(deleted, on=["krs", "document_ref"], how="left")
+        .select(schema.keys())
+        .cast(dict(schema))  # pyright: ignore[reportArgumentType]
+        .sort(["krs", "period_end", "known_from", "document_ref", "source_member"])
+    )
+
+
+@dataclass(frozen=True)
+class _File:
+    period_end: date
+    known_from: date
+    deleted_on: date | None
+    document_ref: str
+    source_member: str
+
+    def known_on(self, day: date) -> bool:
+        return self.known_from <= day and (self.deleted_on is None or day < self.deleted_on)
+
+    def order(self) -> tuple[date, date, str, str]:
+        """Latest period first, then the latest filing of it: a correction replaces."""
+        return (self.period_end, self.known_from, self.document_ref, self.source_member)
+
+
+def _file(row: Mapping[str, object]) -> _File:
+    return _File(
+        period_end=row["period_end"],  # type: ignore[arg-type]
+        known_from=row["known_from"],  # type: ignore[arg-type]
+        deleted_on=row["deleted_on"],  # type: ignore[arg-type]
+        document_ref=row["document_ref"],  # type: ignore[arg-type]
+        source_member=row["source_member"],  # type: ignore[arg-type]
+    )
+
+
+def _latest_by_period(files: Iterable[_File], day: date) -> dict[date, _File]:
+    """Each period's latest file known on `day`."""
+    out: dict[date, _File] = {}
+    for f in files:
+        if f.known_on(day) and (f.period_end not in out or f.order() > out[f.period_end].order()):
+            out[f.period_end] = f
+    return out
+
+
+def disclosure(grid: pl.DataFrame, inputs: FeatureInputs, config: FeatureConfig) -> pl.DataFrame:
+    """The latest statement's introduction: going-concern flags and employment."""
+    features = [
+        f
+        for f in _features(config, "disclosure")
+        if isinstance(f, DisclosureFlagFeature | DisclosureNumberFeature)
+    ]
+    files: dict[str, dict[_File, dict[str, tuple[bool | None, float | None]]]] = {}
+    for row in inputs.disclosures.iter_rows(named=True):
+        items = files.setdefault(row["krs"], {}).setdefault(_file(row), {})
+        items[row["item"]] = (row["value_bool"], row["value_number"])
+
+    def rows() -> Iterator[Row]:
+        for krs, days in _grid_by_entity(grid).items():
+            by_file = files.get(krs, {})
+            for day in days:
+                periods = _latest_by_period(by_file, day)
+                if not periods:
+                    continue
+                latest = periods[max(periods)]
+                items = by_file[latest]
+                for f in features:
+                    flag, number = items.get(f.item, (None, None))
+                    if isinstance(f, DisclosureFlagFeature):
+                        value = None if flag is None else float(flag != f.negate)
+                    else:
+                        value = number
+                    if value is not None:
+                        yield (krs, day, f.name, value, latest.known_from)
+
+    return _frame(rows())
+
+
+_READ = frozenset({"read", "partial"})
+
+
+def text(grid: pl.DataFrame, inputs: FeatureInputs, config: FeatureConfig) -> pl.DataFrame:
+    """Signals in the notes of the latest statement, and the periods whose notes carried them."""
+    features = [
+        f for f in _features(config, "text") if isinstance(f, TextFlagFeature | TextYearsFeature)
+    ]
+    signals = {f.signal_type for f in features}
+    # krs -> signal_type -> file -> (status, kept present)
+    files: dict[str, dict[str, dict[_File, tuple[str, int]]]] = {}
+    for row in inputs.text.filter(pl.col("signal_type").is_in(list(signals))).iter_rows(named=True):
+        by_signal = files.setdefault(row["krs"], {}).setdefault(row["signal_type"], {})
+        by_signal[_file(row)] = (row["status"], row["kept_present"])
+
+    def rows() -> Iterator[Row]:
+        for krs, days in _grid_by_entity(grid).items():
+            by_signal = files.get(krs, {})
+            for day in days:
+                for f in features:
+                    read = by_signal.get(f.signal_type, {})
+                    periods = _latest_by_period(read, day)
+                    if not periods:
+                        continue
+                    if isinstance(f, TextFlagFeature):
+                        latest = periods[max(periods)]
+                        status, present = read[latest]
+                        if present > 0:
+                            yield (krs, day, f.name, 1.0, latest.known_from)
+                        elif status == "read":
+                            yield (krs, day, f.name, 0.0, latest.known_from)
+                        continue
+                    # Per period, its latest filing whose notes were read: a correction whose
+                    # notes were not does not erase what its original's said.
+                    seen = list(
+                        _latest_by_period(
+                            (p for p, (status, n) in read.items() if n > 0 or status in _READ), day
+                        ).values()
+                    )
+                    if not seen:
+                        continue
+                    flagged = [p for p in seen if read[p][1] > 0]
+                    known = max(p.known_from for p in (flagged or seen))
+                    yield (krs, day, f.name, float(len(flagged)), known)
+
+    return _frame(rows())
+
+
 FAMILIES: dict[Family, Callable[[pl.DataFrame, FeatureInputs, FeatureConfig], pl.DataFrame]] = {
     "financial": financial,
     "construction": construction,
@@ -642,6 +826,8 @@ FAMILIES: dict[Family, Callable[[pl.DataFrame, FeatureInputs, FeatureConfig], pl
     "filing": filing,
     "registry": registry,
     "legal_history": legal_history,
+    "disclosure": disclosure,
+    "text": text,
 }
 
 

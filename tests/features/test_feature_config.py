@@ -16,6 +16,7 @@ from distress_radar.features.config import (
     FeatureConfig,
     FeatureSet,
     LineItems,
+    feature_dtype,
     load_feature_set,
 )
 from distress_radar.parsing.canonical_schema import CONFIG_DIR, load_mapping_config
@@ -144,7 +145,7 @@ def _check(mutate: Any, match: str, config: FeatureConfig) -> None:
     mutate(raw)
     fs = FeatureSet.model_validate(raw)
     with pytest.raises(ValueError, match=match):
-        fs.check_against(config.line_items, config.tripwires, config.taxonomy)
+        fs.check_against(config.line_items, config.tripwires, config.taxonomy, config.introduction)
 
 
 def test_rejects_inputs_the_config_cannot_supply(config: FeatureConfig) -> None:
@@ -299,3 +300,77 @@ def test_no_2025_override_leaves_a_ratio_input_behind() -> None:
 
 def _load_yaml(path: Path) -> dict[str, Any]:
     return yaml.safe_load(path.read_text("utf-8"))
+
+
+def test_v4_is_v3_with_the_disclosure_and_text_families() -> None:
+    """Plan 0013 decision 7: v3 unchanged, then the statement's flags, employment, the notes."""
+    v3 = load_feature_set("feature_set_v3")
+    v4 = load_feature_set("feature_set_v4")
+    old = len(v3.feature_set.features)
+    assert v4.feature_set.features[:old] == v3.feature_set.features
+    assert v4.line_items == v3.line_items
+    added = {f.name: (f.family, feature_dtype(f)) for f in v4.feature_set.features[old:]}
+    assert added == {
+        "going_concern_threat": ("disclosure", "boolean"),
+        "going_concern_basis_abandoned": ("disclosure", "boolean"),
+        "average_employment": ("disclosure", "float"),
+        "going_concern_in_notes": ("text", "boolean"),
+        "going_concern_in_notes_years": ("text", "count"),
+        "loss_coverage_in_notes": ("text", "boolean"),
+        "loss_coverage_in_notes_years": ("text", "count"),
+    }
+
+
+@pytest.mark.parametrize(
+    ("feature", "message"),
+    [
+        # Not an item of the introduction config.
+        (
+            {"name": "probe", "family": "disclosure", "kind": "disclosure_flag", "item": "p_5d"},
+            "p_5d is not a flag item",
+        ),
+        # An item of the wrong kind: employment is a number.
+        (
+            {
+                "name": "probe",
+                "family": "disclosure",
+                "kind": "disclosure_flag",
+                "item": "average_employment",
+            },
+            "average_employment is not a flag item",
+        ),
+    ],
+)
+def test_a_disclosure_feature_must_name_an_item_of_its_kind(
+    tmp_path: Path, feature: dict[str, Any], message: str
+) -> None:
+    config_dir = tmp_path / "config"
+    shutil.copytree(CONFIG_DIR, config_dir)
+    raw = _raw("feature_set_v4")
+    raw["features"].append(feature)
+    (config_dir / "features" / "feature_set_v4.yaml").write_text(yaml.safe_dump(raw), "utf-8")
+    with pytest.raises(ValueError, match=message):
+        load_feature_set("feature_set_v4", config_dir)
+
+
+def test_a_text_feature_must_name_a_signal_type() -> None:
+    raw = _raw("feature_set_v4")
+    raw["features"].append(
+        {"name": "probe", "family": "text", "kind": "text_flag", "signal_type": "fraud"}
+    )
+    with pytest.raises(ValidationError, match="signal_type"):
+        FeatureSet.model_validate(raw)
+
+
+def test_a_text_feature_cannot_sit_in_another_family() -> None:
+    raw = _raw("feature_set_v4")
+    raw["features"].append(
+        {
+            "name": "probe",
+            "family": "filing",
+            "kind": "text_flag",
+            "signal_type": "litigation",
+        }
+    )
+    with pytest.raises(ValidationError, match="a filing feature cannot be a text_flag"):
+        FeatureSet.model_validate(raw)

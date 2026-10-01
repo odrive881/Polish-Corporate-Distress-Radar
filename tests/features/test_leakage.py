@@ -3,7 +3,8 @@
 A synthetic warehouse with the classic traps, built in the test and run through the real
 assembly code: a statement filed the day after a month-end, a registry change decided before a
 month-end but entered after it, a correction filed later, a statement deleted after it was
-filed, and a restatement. Both checks of `features.leakage` must find nothing, and deliberately
+filed, and a restatement. The statements' disclosures and notes (feature set v4) ride on the same
+filings, so the correction and the deletion are traps for them too. Both checks of `features.leakage` must find nothing, and deliberately
 leaky families must fail them: a check that cannot fail proves nothing.
 """
 
@@ -24,6 +25,7 @@ from distress_radar.features import feature_definitions as fd
 from distress_radar.features.asof_assembly import (
     FILING_INDEX_SCHEMA,
     PARSE_STATUS_SCHEMA,
+    TEXT_COVERAGE_SCHEMA,
     FeatureSources,
     assemble,
     feature_inputs,
@@ -39,6 +41,7 @@ from distress_radar.features.leakage import (
 from distress_radar.parsing.accounting_identities import RESTATEMENT_SCHEMA
 from distress_radar.parsing.legal_events import LEGAL_EVENTS_SCHEMA
 from distress_radar.parsing.mapping_engine import CANONICAL_COLUMNS
+from distress_radar.parsing.statement_introduction import DISCLOSURE_COLUMNS
 
 A, B = "0000000001", "0000000002"  # A files the full form, B the micro form
 
@@ -110,6 +113,86 @@ EVENTS: list[Event] = [
     (B, "bankruptcy_petition", "petition", date(2023, 1, 12), date(2023, 10, 2), None),
     (B, "bankruptcy_petition_dismissed", "closing", date(2023, 11, 20), date(2024, 1, 8), None),
 ]
+
+
+# The introduction's items per statement: (going_concern_threat, going_concern_basis, employment).
+# Traps: the correction a21c reports a threat its original did not, and a22, deleted later, has
+# abandoned the going-concern basis. Only a23 is wariant 2, with employment.
+DISCLOSED: dict[str, tuple[bool, bool, Decimal | None]] = {
+    "a20": (False, True, None),
+    "a21": (False, True, None),
+    "a21c": (True, True, None),
+    "a22": (True, False, None),
+    "a23": (True, True, Decimal("14.50")),
+    "b21": (False, True, None),
+    "b22": (False, True, None),
+}
+
+# The notes' text coverage per statement and signal_type: (status, kept present).
+# Traps: the correction's notes were never sent to the model, so from its filing the latest notes
+# say nothing; a22's warning ends with its deletion; a23's partial read still found one.
+GC, LOSS = "going_concern_uncertainty", "loss_coverage_resolution"
+NOTES: dict[tuple[str, str], tuple[str, int]] = {
+    ("a20", GC): ("read", 0),
+    ("a21", GC): ("read", 1),
+    ("a21c", GC): ("not_run", 0),
+    ("a22", GC): ("read", 1),
+    ("a23", GC): ("partial", 1),
+    ("a20", LOSS): ("read", 1),
+    ("a21", LOSS): ("read", 0),
+    ("a21c", LOSS): ("read", 0),
+    ("a22", LOSS): ("no_text", 0),
+    ("a23", LOSS): ("partial", 0),
+    ("b21", LOSS): ("read", 0),
+    ("b22", LOSS): ("no_text", 0),
+}
+
+
+def _statement(ref: str) -> Statement:
+    return next(s for s in STATEMENTS if s[1] == ref)
+
+
+def _disclosures() -> pl.DataFrame:
+    rows: list[dict[str, object]] = []
+    for ref, (threat, basis, employment) in DISCLOSED.items():
+        krs, _, year, filed, *_ = _statement(ref)
+        items: list[tuple[str, bool | None, Decimal | None]] = [
+            ("going_concern_basis", basis, None),
+            ("going_concern_threat", threat, None),
+        ]
+        if employment is not None:
+            items.append(("average_employment", None, employment))
+        rows.extend(
+            {
+                "krs": krs,
+                "fiscal_year": year,
+                "period_start": date(year, 1, 1),
+                "period_end": date(year, 12, 31),
+                "item": item,
+                "value_bool": flag,
+                "value_number": number,
+                "structure_version": "full-2025-w2-v1-0" if employment else "full-2018-v1-2",
+                "config_version": "statement_introduction_v1",
+                "source_document_hash": ref.ljust(64, "0"),
+                "source_member": f"zip:{ref}.xml",
+                "source_element_path": item,
+                "document_ref": ref,
+                "known_from": filed,
+                "ingestion_run_id": "run-1",
+            }
+            for item, flag, number in items
+        )
+    return pl.DataFrame(rows, schema=DISCLOSURE_COLUMNS, orient="row")
+
+
+def _text_coverage() -> pl.DataFrame:
+    rows: list[tuple[object, ...]] = []
+    for (ref, signal), (status, present) in NOTES.items():
+        krs, _, year, filed, *_ = _statement(ref)
+        rows.append(
+            (krs, ref, f"zip:{ref}.xml", date(year, 12, 31), filed, signal, status, present)
+        )
+    return pl.DataFrame(rows, schema=TEXT_COVERAGE_SCHEMA, orient="row")
 
 
 def _canonical(config: FeatureConfig) -> pl.DataFrame:
@@ -228,7 +311,9 @@ def _month_ends(first: date, last: date) -> list[date]:
 
 
 # Every feature set, so a set's new features are under the checks the day they are written.
-@pytest.fixture(scope="module", params=["feature_set_v1", "feature_set_v2", "feature_set_v3"])
+@pytest.fixture(
+    scope="module", params=["feature_set_v1", "feature_set_v2", "feature_set_v3", "feature_set_v4"]
+)
 def config(request: pytest.FixtureRequest) -> FeatureConfig:
     return load_feature_set(request.param)
 
@@ -241,6 +326,8 @@ def sources(config: FeatureConfig) -> FeatureSources:
         legal_events=_legal_events(),
         filing_index=_filing_index(),
         parse_status=_parse_status(),
+        disclosures=_disclosures(),
+        text_coverage=_text_coverage(),
     )
 
 
@@ -285,9 +372,11 @@ def test_no_family_reads_a_fact_published_after_its_row(
 def test_the_checks_are_not_vacuous(
     grid: pl.DataFrame, inputs: fd.FeatureInputs, config: FeatureConfig
 ) -> None:
-    """Every family computes something on this warehouse, so the checks above see it."""
+    """Every family the set uses computes something on this warehouse, so the checks see it."""
+    used = {f.family for f in config.feature_set.features}
     for name, compute in fd.FAMILIES.items():
-        assert compute(grid, inputs, config).height > 0, name
+        if name in used:
+            assert compute(grid, inputs, config).height > 0, name
 
 
 def test_every_ratio_is_computed_somewhere(store: pl.DataFrame, config: FeatureConfig) -> None:
@@ -451,3 +540,109 @@ def test_an_unbounded_leak_fails_the_companion_check(
     values = _financial_unbounded(grid, inputs, config)
     violations = known_from_violations(widen(grid, values, config), config)
     assert set(violations.get_column("reason").to_list()) == {"known_after_as_of"}
+
+
+# --- feature set v4: the statements' disclosures and notes ---------------------------------------
+
+
+@pytest.fixture(scope="module")
+def v4() -> FeatureConfig:
+    return load_feature_set("feature_set_v4")
+
+
+@pytest.fixture(scope="module")
+def v4_sources(v4: FeatureConfig) -> FeatureSources:
+    return FeatureSources(
+        canonical=_canonical(v4),
+        restatements=_restatements(),
+        legal_events=_legal_events(),
+        filing_index=_filing_index(),
+        parse_status=_parse_status(),
+        disclosures=_disclosures(),
+        text_coverage=_text_coverage(),
+    )
+
+
+@pytest.fixture(scope="module")
+def v4_store(grid: pl.DataFrame, v4_sources: FeatureSources, v4: FeatureConfig) -> pl.DataFrame:
+    inputs, _ = feature_inputs(v4_sources, v4)
+    return assemble(grid, fd.compute_features(grid, inputs, v4), v4)
+
+
+def _values(store: pl.DataFrame, krs: str, day: date, *names: str) -> list[object]:
+    row = _row(store, krs, day)
+    return [row[n] for n in names]
+
+
+def test_disclosures_follow_the_latest_statement_from_its_filing(v4_store: pl.DataFrame) -> None:
+    flags = ("going_concern_threat", "going_concern_basis_abandoned", "average_employment")
+    assert _values(v4_store, A, date(2021, 6, 30), *flags) == [None, None, None]
+    assert _values(v4_store, A, date(2021, 7, 31), *flags) == [False, False, None]
+    # The correction reports a threat its original did not: from its own filing only.
+    assert _values(v4_store, A, date(2022, 10, 31), *flags) == [False, False, None]
+    assert _values(v4_store, A, date(2022, 11, 30), *flags) == [True, False, None]
+    assert _row(v4_store, A, date(2022, 11, 30))["going_concern_threat__known_from"] == date(
+        2022, 11, 3
+    )
+    # a22 abandons the going-concern basis until its deletion; then the correction speaks again.
+    assert _values(v4_store, A, date(2023, 8, 31), *flags) == [True, True, None]
+    assert _values(v4_store, A, date(2023, 9, 30), *flags) == [True, False, None]
+    # Employment is filed from wariant 2 only.
+    assert _values(v4_store, A, date(2024, 10, 31), *flags) == [True, False, 14.5]
+
+
+def test_unread_notes_are_null_never_a_missing_warning(v4_store: pl.DataFrame) -> None:
+    gc = ("going_concern_in_notes", "going_concern_in_notes_years")
+    loss = ("loss_coverage_in_notes", "loss_coverage_in_notes_years")
+    assert _values(v4_store, A, date(2021, 6, 30), *gc, *loss) == [None, None, None, None]
+    assert _values(v4_store, A, date(2021, 7, 31), *gc, *loss) == [False, 0, True, 1]
+    assert _values(v4_store, A, date(2022, 6, 30), *gc, *loss) == [True, 1, False, 1]
+    # The correction's notes were not read: its own flag is unknown, and the original's warning
+    # still counts for its year.
+    november = _row(v4_store, A, date(2022, 11, 30))
+    assert [november[n] for n in gc] == [None, 1]
+    assert november["going_concern_in_notes_years__known_from"] == date(2022, 6, 30)
+    assert _values(v4_store, A, date(2023, 8, 31), *gc, *loss) == [True, 2, None, 1]
+    # a22's warning ends with its deletion.
+    assert _values(v4_store, A, date(2023, 9, 30), *gc) == [None, 1]
+    # A partial read that found the signal is a warning; one that did not says nothing.
+    assert _values(v4_store, A, date(2024, 10, 31), *gc, *loss) == [True, 2, None, 1]
+    # B's notes: read once and found nothing, then a statement with no text layer.
+    assert _values(v4_store, B, date(2022, 3, 31), *loss) == [False, 0]
+    assert _values(v4_store, B, date(2023, 12, 31), *loss) == [None, 0]
+    assert _values(v4_store, B, date(2023, 12, 31), *gc) == [None, None]
+
+
+def _disclosure_by_period_end(
+    grid: pl.DataFrame, inputs: fd.FeatureInputs, config: FeatureConfig
+) -> pl.DataFrame:
+    """Disclosures treated as known at the balance-sheet date, not the filing date."""
+    disclosures = inputs.disclosures.with_columns(pl.col("period_end").alias("known_from"))
+    return fd.disclosure(grid, replace(inputs, disclosures=disclosures), config)
+
+
+def _text_by_period_end(
+    grid: pl.DataFrame, inputs: fd.FeatureInputs, config: FeatureConfig
+) -> pl.DataFrame:
+    """Notes treated as known at the balance-sheet date, not the filing date."""
+    text = inputs.text.with_columns(pl.col("period_end").alias("known_from"))
+    return fd.text(grid, replace(inputs, text=text), config)
+
+
+@pytest.mark.parametrize(
+    ("family", "leaky"),
+    [
+        ("disclosure", _disclosure_by_period_end),
+        ("text", _text_by_period_end),
+    ],
+)
+def test_a_leaky_v4_family_fails_the_truncation_check(
+    grid: pl.DataFrame,
+    v4_sources: FeatureSources,
+    v4: FeatureConfig,
+    family: Family,
+    leaky: FamilyFn,
+) -> None:
+    traps = grid.filter(pl.col("as_of_date").is_in(TRAP_DAYS))
+    differences = truncation_differences(traps, v4_sources, v4, {family: leaky})
+    assert not differences.is_empty()

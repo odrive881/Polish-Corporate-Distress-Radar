@@ -175,7 +175,23 @@ def test_the_repository_backtest_config_loads() -> None:
     assert (lr.penalty, lr.c, lr.class_weight) == ("l2", 1.0, "none")
 
 
-def test_the_regression_may_only_read_ratio_features(tmp_path: Path) -> None:
+def test_backtest_v2_adds_only_the_going_concern_flag() -> None:
+    """Plan 0013 decision 8, recorded before any run: v1 on feature set v4, plus one flag."""
+    v1 = load_backtest_config("backtest_v1")
+    v2 = load_backtest_config("backtest_v2")
+    assert v2.feature_set_version == "feature_set_v4"
+    assert v2.logistic_regression.features == (
+        *v1.logistic_regression.features,
+        "going_concern_threat",
+    )
+    unchanged = {"backtest", "feature_set_version", "logistic_regression"}
+    assert v2.model_dump(exclude=unchanged) == v1.model_dump(exclude=unchanged)
+    assert v2.logistic_regression.model_dump(exclude={"features"}) == (
+        v1.logistic_regression.model_dump(exclude={"features"})
+    )
+
+
+def test_the_regression_may_only_read_ratio_features_and_flags(tmp_path: Path) -> None:
     config_dir = tmp_path / "config"
     shutil.copytree(CONFIG_DIR, config_dir)
     path = config_dir / "models" / "backtest_v1.yaml"

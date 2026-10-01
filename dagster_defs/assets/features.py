@@ -3,7 +3,8 @@
 Thin wrappers: the build is `distress_radar.features.asof_assembly`, the checks
 `distress_radar.features.leakage` and `distress_radar.features.coverage`. Nothing here fetches:
 the `features` job rebuilds the stored datasets it reads and then the store (owner decision 4
-for steps F–H).
+for steps F–H). `text_coverage` is the exception: the `text` job writes it, by hand (plan 0013),
+and the `features` job reads it as stored.
 """
 
 from datetime import date
@@ -12,6 +13,7 @@ from typing import TYPE_CHECKING, cast
 import dagster as dg
 import polars as pl
 
+from dagster_defs.assets.extraction import text_signals
 from dagster_defs.assets.legal import legal_events
 from dagster_defs.assets.parsing import financial_statements_canonical, restatement_events
 from distress_radar.features.asof_assembly import build_feature_store
@@ -45,7 +47,7 @@ def _md_table(frame: pl.DataFrame, limit: int = 50) -> dg.MetadataValue:
 
 @dg.asset(
     group_name="features",
-    deps=[financial_statements_canonical, restatement_events, legal_events],
+    deps=[financial_statements_canonical, restatement_events, legal_events, text_signals],
     required_resource_keys={"postgres"},
     check_specs=[
         dg.AssetCheckSpec(
@@ -68,7 +70,8 @@ def feature_store(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
     """H — `feature_store` (AGENT_SPEC §5): every feature as of each month-end, with its date.
 
     Inputs: `financial_statements_canonical`, `restatement_events` and `legal_events` Parquet
-    under `WAREHOUSE_DIR`; Postgres `filing_index`, `parsed_documents`, `entity_master` and
+    under `WAREHOUSE_DIR`, and, for a feature set with those families, `statement_disclosures`
+    (written with the canonical facts) and `text_coverage` (written by the `text` job); Postgres `filing_index`, `parsed_documents`, `entity_master` and
     `legal_source_fetches`; `config/features/<FEATURE_SET_VERSION>.yaml` with its line-item
     map, `config/statutory/` (tripwires, filing deadlines, taxonomy); the grid's start from
     `config/labels/<LABEL_VERSION>.yaml`.

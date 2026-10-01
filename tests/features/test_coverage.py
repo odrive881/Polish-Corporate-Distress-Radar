@@ -88,4 +88,6 @@ def test_coverage_counts_non_null_values_per_family_and_form(config: FeatureConf
     financial = shares.filter((pl.col("family") == "financial") & (pl.col("form") == "full"))
     n = sum(f.family == "financial" for f in config.feature_set.features)
     assert financial.row(0, named=True)["share"] == pytest.approx(1 / n)
-    assert set(shares.get_column("family").to_list()) == set(fd.FAMILIES)
+    assert set(shares.get_column("family").to_list()) == {
+        f.family for f in config.feature_set.features
+    }
