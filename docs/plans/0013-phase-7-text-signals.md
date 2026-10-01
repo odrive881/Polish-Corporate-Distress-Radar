@@ -11,7 +11,51 @@
 **Order:** after plan 0012 (complete). It does not wait for ADR 0013: like Phase 6, it builds and measures
 machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set this plan adds.
 
-## Status: active (2026-09-29): owner decisions 0–8 accepted; steps A to D and F to I built, step E's tooling built and 50 of 240 pages labelled; the rest of the labelling and the first model call wait on the owner
+## Status: active (2026-09-29): owner decisions 0–8 accepted; steps A to D and F to I built, step E's tooling built and 50 of 240 pages labelled; the rest of the labelling and the first model call wait on the owner; the auditor reports of decision 0(c) are captured but undated (see "Where this stands")
+
+### Where this stands (2026-10-01): what waits on the owner, in order
+
+1. **Label the rest of the golden set:** pages 51–240 of the queue (`uv run marimo run
+   notebooks/labelling/golden_set.py` from a WSL terminal, not through Claude Code, whose background tasks stop
+   after 30 minutes). Save each page before moving on; `make label-export` writes a checkpoint to
+   `evals/text_signals/` for review and commit.
+2. **Confirm the provider's data-retention terms** (decision 2), then set `ANTHROPIC_API_KEY` and
+   `EXTRACTION_API_CONFIRMED=true` in `.env`. Until then the eight model signals are `not_run`, and the notes'
+   features are null wherever the prefilter selected a page.
+3. **Accept each signal's first result** after `make eval`: `make eval-accept SIGNAL=... BY=...`.
+4. **Then rerun** the `text` job and the `features` job: the notes' features fill in, with no new version.
+5. **Decision 0(c), auditor reports: captured, not usable yet** (below). Owner's choice: capture their dates
+   (recommended), or use them for labelling only for now.
+6. **Approve or change** step I's four departures from decision 7 (progress, step I).
+
+### Decision 0(c): the auditor reports (2026-10-01)
+
+- **Captured by the owner** with Power Automate Desktop, at a human pace, without HAR files (PAD does not
+  record DevTools). Kept unredacted and local in `.cache/rdf_auditor_reports/<krs>/` (gitignored; a copy dropped
+  at the root, `/auditor_reports/`, is ignored too). Nothing from them is committed, and nothing reads them yet.
+- **What is there:** 57 files in 13 entities: all 52 type-19 rows of `filing_index` (12 entities) and 5 pre-2018
+  reports (0000209396, 0000225506, 0000386777, 0000440028, 0000498679), which have no type-19 row. Four
+  entities have no auditor report on RDF: 0000041651, 0000070294, 0000188883, 0000397658. Of 56 PDFs, 48 have a
+  text layer and 8 are scans (`needs_ocr`; OCR is its own decision). One file is not a report: 0000507997's
+  "2019-12-31" is a statement XML (`JednostkaMala`), to be checked on RDF.
+- **What they hold** (keyword counts over the 48 text PDFs, no labels): wording of 6 qualified opinions and 1
+  disclaimer; "draws attention" wording in 38. Modern Polish opinions rarely say "bez zastrzeżeń", so
+  `rules_v1`'s opinion rule will need the opinion section's heading. 13 reports, in 5 of the distressed
+  entities, are on periods ending at least six months before the entity's first petition or opening; 44 belong
+  to entities with no event.
+- **The blocker: no submission date.** A row's submission date comes from its expanded detail, which the HAR
+  carries; none of the 52 type-19 rows has one. By decision 6 a document without its own detail is not used:
+  the report's signing date is only a lower bound on its filing, and the statement's filing date can precede
+  the report's, so any proxy could leak (invariant 1), most of all for late-filing distressed entities. As they
+  stand the reports can feed the golden set (`opinion_type`, `emphasis_of_matter`), not a feature.
+- **Before anything reads them:** they go through `acquisition/redaction.py` into the raw store, as statements
+  do (ADR 0009: 49 PDFs carry document metadata, the ZIPs filers' file names, and the reports name the key
+  auditor). Each of the 52 matches its `filing_index` row by (krs, period end, type 19): one per period.
+- **Recommended:** one short HAR session per entity (12), no downloads: search the entity, expand each
+  *Sprawozdanie z badania* row so its detail loads, save the HAR to `RDF_MANUAL_INBOX`; `rdf_manual_import`
+  already reads details. Then a redacting importer for the captured reports (dated by their own detail), and
+  `modified_opinion`, `emphasis_of_matter` and an audit-firm change feature as a new feature set (decision 7).
+
 
 ### Progress
 
