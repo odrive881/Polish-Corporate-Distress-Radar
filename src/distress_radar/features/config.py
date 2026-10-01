@@ -7,6 +7,8 @@ them, so a bad edit fails at load time rather than as a wrong or silently null f
 - every feature's inputs are ones its family can supply: line items for ratios, a KSH rule that
   applies to the feature set's legal form, event types the procedure taxonomy defines;
 - names are unique, and a volatility names a ratio feature;
+- a disclosure feature names an item `config/mappings/statement_introduction.yaml` reads, of its
+  kind, and a text feature a `signal_type` of AGENT_SPEC §5 (plan 0013 decision 7);
 - `include_quarantined_statements` is stated, never defaulted (plan 0010 owner decision 3).
 
 `feature_set_hash` hashes the files that shape the output, like a structure spec hash.
@@ -22,6 +24,7 @@ from typing import Annotated, Literal
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from distress_radar.extraction.preprocessing import SignalType
 from distress_radar.features.statutory import (
     FilingDeadlines,
     KshTripwires,
@@ -37,8 +40,21 @@ from distress_radar.parsing.legal_taxonomy import (
     load_procedure_taxonomy,
 )
 from distress_radar.parsing.mapping_engine import VARIANT_SECTIONS
+from distress_radar.parsing.statement_introduction import (
+    IntroductionConfig,
+    load_introduction_config,
+)
 
-Family = Literal["financial", "construction", "tripwire", "filing", "registry", "legal_history"]
+Family = Literal[
+    "financial",
+    "construction",
+    "tripwire",
+    "filing",
+    "registry",
+    "legal_history",
+    "disclosure",
+    "text",
+]
 FilingMetric = Literal[
     "days_to_file_latest",
     "missing_years",
@@ -63,6 +79,10 @@ KIND_FAMILIES: dict[str, tuple[Family, ...]] = {
     "below_zero": ("tripwire",),
     "filing": ("filing",),
     "event_count": ("registry", "legal_history"),
+    "disclosure_flag": ("disclosure",),
+    "disclosure_number": ("disclosure",),
+    "text_flag": ("text",),
+    "text_years": ("text",),
 }
 
 
@@ -246,6 +266,48 @@ class EventCountFeature(_Feature):
         }
 
 
+class DisclosureFlagFeature(_Feature):
+    """A flag of the latest statement's introduction (`statement_disclosures`), as filed or
+    negated, so that true always reads as the warning."""
+
+    kind: Literal["disclosure_flag"]
+    item: str
+    negate: bool = False
+
+    def inputs(self) -> set[str]:
+        return set()
+
+
+class DisclosureNumberFeature(_Feature):
+    """A number of the latest statement's introduction, as filed (average employment)."""
+
+    kind: Literal["disclosure_number"]
+    item: str
+
+    def inputs(self) -> set[str]:
+        return set()
+
+
+class TextFlagFeature(_Feature):
+    """Whether the latest statement's notes carry a signal: null unless they were read for it."""
+
+    kind: Literal["text_flag"]
+    signal_type: SignalType
+
+    def inputs(self) -> set[str]:
+        return set()
+
+
+class TextYearsFeature(_Feature):
+    """The statement periods whose notes carry a signal: null until notes were read for it."""
+
+    kind: Literal["text_years"]
+    signal_type: SignalType
+
+    def inputs(self) -> set[str]:
+        return set()
+
+
 Feature = Annotated[
     RatioFeature
     | GrowthFeature
@@ -253,7 +315,11 @@ Feature = Annotated[
     | TripwireFeature
     | BelowZeroFeature
     | FilingFeature
-    | EventCountFeature,
+    | EventCountFeature
+    | DisclosureFlagFeature
+    | DisclosureNumberFeature
+    | TextFlagFeature
+    | TextYearsFeature,
     Field(discriminator="kind"),
 ]
 
@@ -303,6 +369,7 @@ class FeatureSet(_Frozen):
         line_items: LineItems,
         tripwires: KshTripwires,
         taxonomy: ProcedureTaxonomy,
+        introduction: IntroductionConfig,
     ) -> None:
         """Every input a feature names can be supplied by the config its family reads."""
         if line_items.version != self.line_items:
@@ -336,6 +403,13 @@ class FeatureSet(_Frozen):
                     raise ValueError(f"{f.name}: unknown event types {sorted(unknown)}")
                 if not f.matches(taxonomy):
                     raise ValueError(f"{f.name}: the filter matches no event type")
+            if isinstance(f, DisclosureFlagFeature | DisclosureNumberFeature):
+                item = introduction.items.get(f.item)
+                wanted = "flag" if isinstance(f, DisclosureFlagFeature) else "number"
+                if item is None or item.kind != wanted:
+                    raise ValueError(
+                        f"{f.name}: {f.item} is not a {wanted} item of {introduction.version}"
+                    )
 
 
 class FeatureConfig(_Frozen):
@@ -346,6 +420,7 @@ class FeatureConfig(_Frozen):
     tripwires: KshTripwires
     deadlines: FilingDeadlines
     taxonomy: ProcedureTaxonomy
+    introduction: IntroductionConfig
     feature_set_hash: str
 
 
@@ -381,13 +456,15 @@ def load_feature_set(version: str, config_dir: Path = CONFIG_DIR) -> FeatureConf
     line_items.check_against(load_mapping_config(config_dir))
     tripwires = load_ksh_tripwires(config_dir)
     taxonomy = load_procedure_taxonomy(config_dir)
-    feature_set.check_against(line_items, tripwires, taxonomy)
+    introduction = load_introduction_config(config_dir=config_dir)
+    feature_set.check_against(line_items, tripwires, taxonomy, introduction)
     return FeatureConfig(
         feature_set=feature_set,
         line_items=line_items,
         tripwires=tripwires,
         deadlines=load_filing_deadlines(config_dir),
         taxonomy=taxonomy,
+        introduction=introduction,
         feature_set_hash=feature_set_hash(feature_set, config_dir),
     )
 
@@ -409,8 +486,12 @@ _COUNT_METRICS: frozenset[str] = frozenset(
 
 def feature_dtype(feature: Feature) -> Literal["boolean", "count", "float"]:
     """How a feature's value is stored in `feature_store`."""
-    if isinstance(feature, TripwireFeature | BelowZeroFeature):
+    if isinstance(
+        feature, TripwireFeature | BelowZeroFeature | DisclosureFlagFeature | TextFlagFeature
+    ):
         return "boolean"
+    if isinstance(feature, TextYearsFeature):
+        return "count"
     if isinstance(feature, FilingFeature):
         if feature.metric in _BOOLEAN_METRICS:
             return "boolean"

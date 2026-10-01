@@ -32,7 +32,7 @@ import polars as pl
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from distress_radar.features.config import RatioFeature, load_feature_set
+from distress_radar.features.config import DisclosureFlagFeature, RatioFeature, load_feature_set
 from distress_radar.labels import load_label_config
 from distress_radar.models.dataset import TARGET, ModellingDataset, event_day
 from distress_radar.parsing.canonical_schema import CONFIG_DIR
@@ -88,16 +88,22 @@ class BacktestConfig(BaseModel):
 
 
 def load_backtest_config(version: str, config_dir: Path = CONFIG_DIR) -> BacktestConfig:
-    """The backtest, checked against its feature set: the regression reads ratio features only."""
+    """The backtest, checked against its feature set: the regression reads ratio features and the
+    statement's own going-concern flags (plan 0013 decision 8), nothing else."""
     path = config_dir / "models" / f"{version}.yaml"
     config = BacktestConfig.model_validate(yaml.safe_load(path.read_text(encoding="utf-8")))
     if config.backtest != path.stem:
         raise ValueError(f"{path}: `backtest: {config.backtest}` must match the file name")
     feature_set = load_feature_set(config.feature_set_version, config_dir).feature_set
-    ratios = {f.name for f in feature_set.features if isinstance(f, RatioFeature)}
-    missing = sorted(set(config.logistic_regression.features) - ratios)
+    readable = {
+        f.name for f in feature_set.features if isinstance(f, RatioFeature | DisclosureFlagFeature)
+    }
+    missing = sorted(set(config.logistic_regression.features) - readable)
     if missing:
-        raise ValueError(f"{path}: not ratio features of {config.feature_set_version}: {missing}")
+        raise ValueError(
+            f"{path}: not ratio or disclosure-flag features of {config.feature_set_version}: "
+            f"{missing}"
+        )
     return config
 
 

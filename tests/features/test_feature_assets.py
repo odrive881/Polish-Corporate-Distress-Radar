@@ -39,4 +39,11 @@ def test_the_features_job_rebuilds_its_inputs_then_the_store_offline() -> None:
 def test_the_store_is_downstream_of_what_it_reads() -> None:
     node = defs.resolve_asset_graph().get(dg.AssetKey("feature_store"))
     parents = {key.to_user_string() for key in node.parent_keys}
-    assert parents == {"financial_statements_canonical", "restatement_events", "legal_events"}
+    # `text_signals` writes `text_coverage` (plan 0013), read as stored: the `features` job does
+    # not run it.
+    assert parents == {
+        "financial_statements_canonical",
+        "restatement_events",
+        "legal_events",
+        "text_signals",
+    }

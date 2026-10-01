@@ -77,12 +77,12 @@ class Settings(BaseSettings):
     # Which `config/labels/<label_version>.yaml` the label models build (plan 0009). A frozen set
     # records its version, so switching back rebuilds the older version's labels.
     label_version: str = "outcome_labels_v2"
-    # Which `config/features/<feature_set_version>.yaml` builds `feature_store` (plan 0010). v3 is
-    # v1 plus the classical models' ratios, which the backtest reads, and the 2025 revenue line
-    # (plan 0012).
-    feature_set_version: str = "feature_set_v3"
-    # Which `config/models/<backtest_version>.yaml` the `backtest` job runs (plan 0012).
-    backtest_version: str = "backtest_v1"
+    # Which `config/features/<feature_set_version>.yaml` builds `feature_store` (plan 0010). v4 is
+    # v3 (v1, the classical models' ratios and the 2025 revenue line, plan 0012) plus the
+    # statement's going-concern flags, employment and the notes' signals (plan 0013).
+    feature_set_version: str = "feature_set_v4"
+    # Which `config/models/<backtest_version>.yaml` the `backtest` job runs (plans 0012, 0013).
+    backtest_version: str = "backtest_v2"
 
     # The Polish spaCy model, unpacked by `make models` (plan 0013; ADR 0009, third addendum).
     spacy_model_dir: Path = Path(".cache/models")

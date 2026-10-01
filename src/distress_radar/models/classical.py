@@ -1,7 +1,7 @@
 """Regularised logistic regression on a fixed set of ratios (plan 0012 step D, owner decision 5).
 
-Complete cases only: a row missing any of the configured ratios is left out and counted, never
-imputed (invariant 4). Each ratio is rank-transformed with the training fold's values alone, so
+Complete cases only: a row missing any of the configured inputs is left out and counted, never
+imputed (invariant 4). A flag enters as 0 or 1, and its rank transform is then two mid-ranks. Each ratio is rank-transformed with the training fold's values alone, so
 the test period never shapes the transform. The penalty and its strength come from the config
 and are never tuned. The same fold-fitted rank transform and one-variable fit map a classical
 model's score to a probability (`baselines.py`).
@@ -128,6 +128,11 @@ def empty_predictions() -> pl.DataFrame:
     return pl.DataFrame(schema=PREDICTION_SCHEMA)
 
 
+def _matrix(rows: pl.DataFrame, columns: list[str]) -> Array:
+    """The inputs as floats: a boolean flag is 0 or 1."""
+    return rows.select(pl.col(columns).cast(pl.Float64)).to_numpy()
+
+
 def fit_predict_logistic(fold: Fold, config: LogisticConfig) -> FoldPredictions:
     columns = list(config.features)
     train = fold.train.drop_nulls(columns)
@@ -149,7 +154,7 @@ def fit_predict_logistic(fold: Fold, config: LogisticConfig) -> FoldPredictions:
     )
     if note:
         return FoldPredictions(summary, empty_predictions())
-    ranks, model = fit_rank_logistic(train.select(columns).to_numpy(), y, config)
+    ranks, model = fit_rank_logistic(_matrix(train, columns), y, config)
     coefficients, intercept = parameters(model)
     summary = replace(
         summary,
@@ -158,7 +163,7 @@ def fit_predict_logistic(fold: Fold, config: LogisticConfig) -> FoldPredictions:
     )
     if test.is_empty():
         return FoldPredictions(summary, empty_predictions())
-    probability = distress_probability(model, ranks, test.select(columns).to_numpy())
+    probability = distress_probability(model, ranks, _matrix(test, columns))
     return FoldPredictions(summary, with_probability(test, probability))
 
 

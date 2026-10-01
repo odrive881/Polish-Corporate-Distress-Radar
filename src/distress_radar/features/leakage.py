@@ -75,6 +75,8 @@ def known_on(sources: FeatureSources, day: date) -> FeatureSources:
             on=["krs", "document_ref"],
             how="semi",
         ),
+        disclosures=sources.disclosures.filter(pl.col("known_from") <= day),
+        text_coverage=sources.text_coverage.filter(pl.col("known_from") <= day),
     )
 
 

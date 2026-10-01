@@ -7,7 +7,8 @@
   (in a proceeding, deregistered) still get features; Phase 6 filters.
 - `assemble`: the families' long rows, pivoted onto the grid (`widen`), one column per feature and one
   `__known_from` companion each, validated against the contract.
-- `feature_inputs`: the families' inputs from the sources, pure; the leakage checks
+- `feature_inputs`: the families' inputs from the sources, pure (a statement file's deletion joined
+  from `filing_index` for the disclosure and text families); the leakage checks
   (`features.leakage`) rebuild them from sources cut at each `as_of_date`.
 - `build_feature_store`: loads the sources (warehouse Parquet, the Postgres manifest), assembles,
   and writes `WAREHOUSE_DIR/feature_store/` by `as_of_year`, replacing the whole dataset
@@ -23,7 +24,7 @@ from __future__ import annotations
 
 import calendar
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from pathlib import Path
 
@@ -42,6 +43,7 @@ from distress_radar.features.contracts import (
 )
 from distress_radar.features.panel import FILINGS_SCHEMA, build_panel
 from distress_radar.labels import LABEL_SOURCES
+from distress_radar.parsing.statement_introduction import DISCLOSURE_COLUMNS
 from distress_radar.warehouse import read_dataset, write_dataset
 
 DATASET = "feature_store"
@@ -169,6 +171,31 @@ def assemble(grid: pl.DataFrame, values: pl.DataFrame, config: FeatureConfig) ->
     return feature_store_contract(config).validate(widen(grid, values, config))
 
 
+# The `text_coverage` columns the text family reads (the dataset: `extraction.text_signals`).
+TEXT_COVERAGE_SCHEMA: dict[str, pl.DataType | type[pl.DataType]] = {
+    "krs": pl.String,
+    "document_ref": pl.String,
+    "source_member": pl.String,
+    "period_end": pl.Date,
+    "known_from": pl.Date,
+    "signal_type": pl.String,
+    "status": pl.String,
+    "kept_present": pl.Int32,
+}
+
+# The datasets only some families read, so a feature set without them needs none of them stored.
+DISCLOSURES_DATASET = "statement_disclosures"
+TEXT_COVERAGE_DATASET = "text_coverage"
+
+
+def _empty_disclosures() -> pl.DataFrame:
+    return pl.DataFrame(schema=DISCLOSURE_COLUMNS)
+
+
+def _empty_text_coverage() -> pl.DataFrame:
+    return pl.DataFrame(schema=TEXT_COVERAGE_SCHEMA)
+
+
 @dataclass(frozen=True)
 class FeatureSources:
     """Everything the families read, as stored; `feature_inputs` derives their inputs."""
@@ -178,6 +205,8 @@ class FeatureSources:
     legal_events: pl.DataFrame  # legal_events
     filing_index: pl.DataFrame  # FILING_INDEX_SCHEMA
     parse_status: pl.DataFrame  # PARSE_STATUS_SCHEMA
+    disclosures: pl.DataFrame = field(default_factory=_empty_disclosures)  # statement_disclosures
+    text_coverage: pl.DataFrame = field(default_factory=_empty_text_coverage)  # its columns
 
 
 @dataclass(frozen=True)
@@ -193,9 +222,14 @@ class FeatureStoreBuild:
 
 
 def load_sources(
-    conn: Connection, warehouse_dir: Path
+    conn: Connection, warehouse_dir: Path, config: FeatureConfig
 ) -> tuple[FeatureSources, list[str], pl.DataFrame]:
-    """The sources, the entities and their fetches, from the warehouse and the manifest."""
+    """The sources, the entities and their fetches, from the warehouse and the manifest.
+
+    `statement_disclosures` and `text_coverage` are read only when the feature set has a
+    family that reads them.
+    """
+    families = {f.family for f in config.feature_set.features}
     filing_index = pl.DataFrame(
         conn.execute(
             "SELECT krs, document_ref, rdf_type_code, period_start, period_end, submission_date,"
@@ -217,6 +251,14 @@ def load_sources(
         legal_events=read_dataset(warehouse_dir, "legal_events"),
         filing_index=filing_index,
         parse_status=parse_status,
+        disclosures=read_dataset(warehouse_dir, DISCLOSURES_DATASET)
+        if "disclosure" in families
+        else _empty_disclosures(),
+        text_coverage=read_dataset(warehouse_dir, TEXT_COVERAGE_DATASET)
+        .select(TEXT_COVERAGE_SCHEMA.keys())
+        .cast(TEXT_COVERAGE_SCHEMA)  # pyright: ignore[reportArgumentType]
+        if "text" in families
+        else _empty_text_coverage(),
     )
     entities = sorted(
         str(krs).strip() for (krs,) in conn.execute("SELECT krs FROM entity_master").fetchall()
@@ -250,11 +292,16 @@ def feature_inputs(
     filings = fd.statement_filings(
         sources.filing_index, sources.parse_status, sources.canonical, statement_codes
     )
+    disclosures = sources.disclosures.with_columns(pl.col("value_number").cast(pl.Float64))
     inputs = fd.FeatureInputs(
         panel=panel.frame,
         filings=filings,
         restatements=sources.restatements,
         legal_events=sources.legal_events,
+        disclosures=fd.statement_files(
+            disclosures, sources.filing_index, fd.DISCLOSURE_INPUT_SCHEMA
+        ),
+        text=fd.statement_files(sources.text_coverage, sources.filing_index, fd.TEXT_INPUT_SCHEMA),
     )
     return inputs, panel.excluded
 
@@ -263,7 +310,7 @@ def build_feature_store(
     conn: Connection, warehouse_dir: Path, config: FeatureConfig, *, grid_start: date
 ) -> FeatureStoreBuild:
     """Build and write `feature_store` from the warehouse and the manifest."""
-    sources, entities, fetches = load_sources(conn, warehouse_dir)
+    sources, entities, fetches = load_sources(conn, warehouse_dir, config)
     inputs, excluded = feature_inputs(sources, config)
     grid = build_grid(entities, fetches, inputs.legal_events, start=_month_end(grid_start))
     frame = assemble(grid, fd.compute_features(grid, inputs, config), config)
