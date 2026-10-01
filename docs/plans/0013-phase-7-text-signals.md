@@ -11,7 +11,7 @@
 **Order:** after plan 0012 (complete). It does not wait for ADR 0013: like Phase 6, it builds and measures
 machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set this plan adds.
 
-## Status: active (2026-09-29): owner decisions 0–8 accepted; steps A to D and F to H built, step E's tooling built; labelling and the first model call wait on the owner
+## Status: active (2026-09-29): owner decisions 0–8 accepted; steps A to D and F to I built, step E's tooling built and 50 of 240 pages labelled; the rest of the labelling and the first model call wait on the owner
 
 ### Progress
 
@@ -226,6 +226,42 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
     `loss_coverage_resolution` 40, `litigation` 8, `key_customer_loss` 7. Both datasets byte for byte the same on
     the second run, every file keeping its first run id; no G1 or G2 detection; `evidence_masked` passed; the
     `quarantine` model rebuilt with all six audits passing.
+- **Step E, labels (2026-10-01):** the owner labelled the first 50 queued pages (32 selected, 18 rejected), exported
+  and committed: 3 `going_concern_uncertainty` and 1 `post_balance_sheet_event` present, nothing else; the
+  masker hid 21 persons on them and the owner 1 more. 190 pages remain.
+- **Step I (2026-10-01), built and run on the seed.**
+  - **What:** `feature_set_v4` (`config/features/`), v3 unchanged plus two families in
+    `features/feature_definitions.py`: `disclosure` (`going_concern_threat`, `going_concern_basis_abandoned`,
+    `average_employment`, from `statement_disclosures`) and `text` (`going_concern_in_notes`,
+    `loss_coverage_in_notes`, and `..._years` for each, from `text_coverage`). Each value speaks for the latest
+    statement known at `as_of_date`, dated by its filing, and stops when the filing is deleted. The leakage
+    test runs on v4: the correction and the deletion of its synthetic warehouse carry disclosures and notes,
+    and two leaky variants (dated by the balance-sheet date) fail the truncation check. `backtest_v2`
+    (`config/models/`), recorded before its first run. Both are the new defaults.
+  - **Changed from decision 7, for the owner to see:**
+    - **a text feature is null unless the notes were read for its signal** (`text_coverage` `read`, or a kept
+      `present` on a `partial` read), so notes that were scanned, never sent to the model or not wholly
+      answered never read as "no warning";
+    - **the counts are of periods, not filings** (`..._years`): a correction refiles the same year, and
+      counting it again would double a warning. Each period takes its latest filing whose notes were read, so
+      a correction whose notes were not read does not erase its original's warning;
+    - **`modified_opinion` and `emphasis_of_matter` are not built.** Decision 7 listed them "as decision 0
+      allows", and only decision 0c (auditor reports) allows them: the notes are not where an opinion is
+      given, and notes without one are not an unmodified opinion (§ Tests: "null is not false"). They come
+      with 0c, as a new feature set;
+    - **`loss_coverage_in_notes`, not `loss_coverage_by_capital`:** the signal says that a loss is to be
+      covered, not from what, so the name the decision gave would claim more than the data holds;
+    - the regression may now read the statement's flags as well as ratios (`models/splits.py`), a flag
+      entering as 0 or 1.
+  - **On the seed:** `features` job twice, 2,929 rows and 56 features, `leakage` passed both times, the
+    `feature_store` files the same bytes. `going_concern_threat` is known on 1,429 rows of all 17 entities
+    (true on 461); employment on 28 rows of 9 (FY2025 only). The notes' features are known only where the
+    notes were wholly read, which before the first model call means where the prefilter selected nothing, so
+    every value is false or 0 (`going_concern_in_notes` on 117 rows, `loss_coverage_in_notes` on 233). They
+    fill in when the model signals run; the feature set does not change. `backtest_v2` twice, the same report
+    bytes: 84 cells, none scored, as plan 0012 found. The flag costs the regression no row: its complete cases
+    are v1's (625 rows and 6 events at 12 months, 550 and 6 at 24); among them the flag is true on 55, of
+    which 21 at 12 months are distress rows. Too few to say anything.
 
 ## Why
 
@@ -471,7 +507,8 @@ text job and `make eval`; this plan's status.
 - [ ] `text_signals` built from the chosen sources, every row with evidence and lineage, no unmasked name.
 - [ ] Golden set labelled and committed; precision, recall and F1 per `signal_type` with counts; the gate in
       `make check`.
-- [ ] `feature_set_v4` leak-free and byte-reproducible; `backtest_v2` run twice, identical.
+- [x] `feature_set_v4` leak-free and byte-reproducible; `backtest_v2` run twice, identical (2026-10-01; the
+      notes' features fill in when the model signals run, by a rebuild, not a new version).
 - [ ] `make check` and `make test-integration` green; docs from step J updated.
 
 ## Risks
