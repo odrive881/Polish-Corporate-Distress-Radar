@@ -311,3 +311,15 @@ def test_a_marker_spelt_by_chance_in_base64_is_not_a_finding() -> None:
     xml = b"<root><Other>" + payload + b"</Other></root>"
     assert personal_data_markers(xml) == []
     assert personal_data_markers(b"<root><Other>PESEL 00000000000</Other></root>")
+
+
+def test_a_metadata_entry_that_is_not_a_stream_is_removed_too() -> None:
+    """Seen in an auditor report (2026-10-02): reading it as XMP raised instead of redacting."""
+    doc = pymupdf.open()
+    doc.new_page().insert_text((72, 72), "Sprawozdanie z badania")
+    doc.xref_set_key(doc.pdf_catalog(), "Metadata", "(Jan Testowy)")
+    pdf = doc.tobytes()
+    assert any("xmp" in m for m in personal_data_markers(pdf))
+    result = redact_file(pdf, "report.pdf")
+    assert result is not None and b"Jan Testowy" not in result.data
+    assert personal_data_markers(result.data) == []

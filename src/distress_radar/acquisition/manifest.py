@@ -194,6 +194,13 @@ SCHEMA_DDL: tuple[LiteralString, ...] = (
     """
     ALTER TABLE filing_index ADD COLUMN IF NOT EXISTS correction_of text
     """,
+    # A submission date read from a hand-collected list rather than the row's own detail (plan
+    # 0013, decision 6 amended 2026-10-02): the raw object it was read from. A detail, when one
+    # is imported later, replaces the date and clears this.
+    """
+    ALTER TABLE filing_index
+        ADD COLUMN IF NOT EXISTS submission_date_sha256 text REFERENCES raw_documents (sha256)
+    """,
     # Backfill `krs` / `document_ref` on log rows written before plan 0007, from
     # the stage-specific `entity_key` they were packed into: the KRS alone for
     # A2/A3 (and a well-formed A1 key), `krs:document_ref` for C1/C2/E2 — where
@@ -506,7 +513,8 @@ _UPDATE_DETAIL: LiteralString = """
         rdf_type_id = %(type_id)s, rdf_type_name = %(type_name)s,
         submission_date = %(submitted)s, prepared_date = %(prepared)s,
         is_correction = %(is_correction)s, is_ifrs = %(is_ifrs)s, file_name = %(file_name)s,
-        correction_refs = %(correction_refs)s, detail_sha256 = %(detail_sha256)s
+        correction_refs = %(correction_refs)s, detail_sha256 = %(detail_sha256)s,
+        submission_date_sha256 = NULL
     WHERE krs = %(krs)s AND document_ref = %(ref)s AND detail_sha256 IS NULL
 """
 

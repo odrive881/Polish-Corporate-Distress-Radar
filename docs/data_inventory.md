@@ -91,7 +91,7 @@ Every XML statement must yield these components:
 | Resolution on the company's continued existence (Art. 233 KSH) | uchwała o dalszym istnieniu spółki | `continued_existence_vote` | required where it exists | SPEC §4.5, §5 |
 | Corrections of any of the above | korekty | restatement / corrections features | required | OVERVIEW stage 3 |
 
-**Status (plan 0013, 2026-09-30):** of these, only the notes embedded in the statements are read, as masked text (702 text pages on the seed; 459 scanned pages not read). Auditor reports, management reports and resolutions are indexed in `filing_index` but not downloaded (owner decision 0c waits until after step I). The going-concern flags, and from FY2025 employment and the audit flag, come from the statement's own XML (`statement_disclosures`).
+**Status (plan 0013, 2026-09-30):** of these, only the notes embedded in the statements are read, as masked text (702 text pages on the seed; 459 scanned pages not read). Management reports and resolutions are indexed in `filing_index` but not downloaded. Auditor reports were downloaded by hand and are stored and dated (decision 0c, 2026-10-02: 51 of 52, 49 dated), not yet read. The going-concern flags, and from FY2025 employment and the audit flag, come from the statement's own XML (`statement_disclosures`).
 
 ---
 
@@ -160,7 +160,7 @@ The spec forbids bulk enumeration of any source. Acquisition is per entity, seed
 | Credential / access | Env var | Stage | Req. | Status |
 |---|---|---|---|---|
 | GUS BIR1 **production** API key (issued by GUS on request) | `GUS_BIR1_API_KEY`, `GUS_BIR1_ENDPOINT=prod`, `BIR1_REQUESTS_PER_MINUTE` | A2 | required for real data | obtained 2026-09-16; set in the local `.env` (gitignored), verified with one production lookup |
-| RDF portal access | `RDF_REQUESTS_PER_MINUTE`, `RDF_MANUAL_INBOX` | A3 | required | no login; WAF blocks plain HTTP, and automated browsers get a CAPTCHA (ADR 0007), so captured by hand for now; scaled access: ADR 0013, proposed |
+| RDF portal access | `RDF_REQUESTS_PER_MINUTE`, `RDF_MANUAL_INBOX`, `RDF_REPORT_INBOX` | A3 | required | no login; WAF blocks plain HTTP, and automated browsers get a CAPTCHA (ADR 0007), so captured by hand for now; scaled access: ADR 0013, proposed |
 | KRS extract access | `KRS_API_REQUESTS_PER_MINUTE` | A2, A4 | required | open KRS API, no key; open-data act basis, no published limit, 15/min here (ADR 0011) |
 | KRZ access | — | A4 | required | Imperva WAF; no automated access (ADR 0011); a sanctioned channel is the owner's to pursue |
 | MSiG search access | `MSIG_REQUESTS_PER_MINUTE` | A4 | required | public JSON API, no key, no terms page; per entity, 15/min (ADR 0011) |

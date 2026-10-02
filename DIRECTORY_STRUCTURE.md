@@ -214,6 +214,7 @@ src/distress_radar/
 │   ├── regon_client.py          # A2 — zeep SOAP wrapper, session/token handling
 │   ├── document_retrieval.py    # A3
 │   ├── har_import.py            # A3, manual tier (HAR captures)
+│   ├── report_import.py         # A3, manual files tier: hand-downloaded auditor reports, listed dates
 │   ├── redaction.py             # invariant 6: signer data, file names, PDF metadata out before storing (ADR 0009)
 │   ├── redaction_migration.py   # re-store objects under the current redaction; the store-wide scan
 │   ├── personal_data_scan.py    # pre-commit scan of staged files (`make hooks`)
