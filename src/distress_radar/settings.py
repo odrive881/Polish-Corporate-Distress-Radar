@@ -43,6 +43,9 @@ class Settings(BaseSettings):
     http_cache_dir: Path = Path(".cache/http")
     # Where HAR files of manual RDF sessions are dropped for import (gitignored).
     rdf_manual_inbox: Path = Path(".cache/rdf_inbox")
+    # Auditor reports downloaded by hand, with their hand-collected filing dates (gitignored;
+    # `acquisition/report_import.py`).
+    rdf_report_inbox: Path = Path(".cache/rdf_auditor_reports")
     # Derived data (C2 output onward): Parquet written by the pipeline (ADR 0008).
     warehouse_dir: Path = Path(".data/warehouse")
 

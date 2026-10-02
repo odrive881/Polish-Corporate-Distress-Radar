@@ -11,7 +11,7 @@
 **Order:** after plan 0012 (complete). It does not wait for ADR 0013: like Phase 6, it builds and measures
 machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set this plan adds.
 
-## Status: active (2026-09-29): owner decisions 0–8 accepted; steps A to D and F to I built, step E's tooling built and 50 of 240 pages labelled; the rest of the labelling and the first model call wait on the owner; the auditor reports of decision 0(c) are captured but undated (see "Where this stands")
+## Status: active (2026-09-29): owner decisions 0–8 accepted; steps A to D and F to I built, step E's tooling built and 50 of 240 pages labelled; the rest of the labelling and the first model call wait on the owner; the auditor reports of decision 0(c) are stored and dated from the owner's list (decision 6 amended 2026-10-02), not yet read
 
 ### Where this stands (2026-10-01): what waits on the owner, in order
 
@@ -24,8 +24,9 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
    features are null wherever the prefilter selected a page.
 3. **Accept each signal's first result** after `make eval`: `make eval-accept SIGNAL=... BY=...`.
 4. **Then rerun** the `text` job and the `features` job: the notes' features fill in, with no new version.
-5. **Decision 0(c), auditor reports: captured, not usable yet** (below). Owner's choice: capture their dates
-   (recommended), or use them for labelling only for now.
+5. **Decision 0(c), auditor reports: stored and dated (2026-10-02, below).** Left for the owner: the three
+   reports with no date in the list and 0000507997's "2019" file (below); then the reports' text step, the opinion
+   rule, labelling and the feature set (decision 7).
 6. **Approve or change** step I's four departures from decision 7 (progress, step I).
 
 ### Decision 0(c): the auditor reports (2026-10-01)
@@ -55,6 +56,24 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
   *Sprawozdanie z badania* row so its detail loads, save the HAR to `RDF_MANUAL_INBOX`; `rdf_manual_import`
   already reads details. Then a redacting importer for the captured reports (dated by their own detail), and
   `modified_opinion`, `emphasis_of_matter` and an audit-firm change feature as a new feature set (decision 7).
+- **Update, 2026-10-02: dated from a list, decision 6 amended (owner).** The owner collected each report's
+  "Data dodania" (the detail's `dataDodania`, what `known_from` is everywhere else) with a script into
+  `filing_dates.csv` (`krs`, period, date, RDF's numeric `idDokumentu`), checked against the detail on screen
+  (0000123720, 2025: 2026-07-06). **Decision 6 now reads:** a separately filed document's `known_from` is its own
+  detail's submission date, or, without a detail, that date as listed by hand, provided the list is stored raw and
+  every date points back to it. `rdf_auditor_report_import` (`acquisition/report_import.py`) builds this: each
+  ZIP as RDF delivered it is redacted (ADR 0009) and stored on its type-19 row; the list is stored raw, and each
+  date fills `submission_date` with `filing_index.submission_date_sha256` naming the list. A detail captured later
+  replaces the date and clears that column. Imported twice to the same rows; `personal_data` check passed.
+  - **Result:** 51 of 52 type-19 rows stored, 49 dated. Against the statements of the same period: 31 the same
+    day, 11 later (up to 511 days, mostly the late filers 0000153402 and 0000181328), 7 one to 14 days earlier.
+  - **Not used, and why:** 0000507997's "2019" file is a statement XML, not stored (its row is dated: the list's
+    2020-07-14 is not the statement's 2020-07-18); 0000181328 2019 is `unknown` in the list; 0000291203 2024
+    and 2025 are not in it. The five pre-2018 reports have no type-19 row: their period has one type-2 row each,
+    a code `rdf_document_types.yaml` does not name yet. Confirming type 2's name on RDF and adding it as
+    `canonical: auditor_report` (a new config version) lets the same import take them.
+  - Found on the way: `redaction.py` raised on a PDF whose `/Metadata` entry is not a stream; it now reads the
+    catalog entry and removes it (regression test added). The stored objects re-scan clean.
 
 
 ### Progress
@@ -429,7 +448,8 @@ Recommendations first; each is the owner's to accept, change or reject before th
    backtest does.
 6. **Point in time.** A signal's `known_from` is the document's: the statement filing's for flags and embedded
    notes, the own detail's submission date for a separately filed document (one without a detail is not used,
-   and counted). `fiscal_year` is the period the document reports on. The leakage test covers the new family the
+   and counted). *Amended 2026-10-02 (owner):* or, without a detail, that date as listed by hand, stored raw
+   with every date pointing back to the list (§ "Decision 0(c)", update). `fiscal_year` is the period the document reports on. The leakage test covers the new family the
    day it is written.
 7. **Features: `feature_set_v4`, v3 plus a text family.** *From the census:* step B also reads wariant 2's
    employment and audit flag, which cost nothing extra; employment enters as a raw feature (like balance-sheet

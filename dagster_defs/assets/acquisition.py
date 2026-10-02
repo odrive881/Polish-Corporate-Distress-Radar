@@ -31,6 +31,7 @@ from distress_radar.acquisition.har_import import import_har
 from distress_radar.acquisition.raw_store import S3ObjectStore
 from distress_radar.acquisition.redaction_migration import stored_markers
 from distress_radar.acquisition.regon_client import resolve_entity
+from distress_radar.acquisition.report_import import import_reports
 from distress_radar.acquisition.universe_discovery import load_seed, load_segment
 from distress_radar.settings import Settings
 
@@ -484,10 +485,82 @@ def rdf_manual_import(
     )
 
 
+class RdfReportImportConfig(dg.Config):
+    inbox: str | None = None  # default RDF_REPORT_INBOX
+
+
+@dg.asset(
+    group_name="acquisition",
+    deps=[rdf_manual_import],
+    required_resource_keys={"postgres", "raw_object_store"},
+    check_specs=[_personal_data_spec("rdf_auditor_report_import")],
+)
+def rdf_auditor_report_import(
+    context: dg.AssetExecutionContext, config: RdfReportImportConfig
+) -> dg.MaterializeResult:
+    """A3, manual files tier — auditor reports downloaded by hand, dated from a list.
+
+    Inputs: the inbox (`RDF_REPORT_INBOX`, default `.cache/rdf_auditor_reports`, gitignored):
+    `<krs>/**/<krs>_<period>.zip` as RDF delivered them and `filing_dates.csv` (plan 0013,
+    decision 6 as amended 2026-10-02); `filing_index` rows of the types
+    `config/mappings/rdf_document_types.yaml` marks `canonical: auditor_report`.
+    Outputs: each report ZIP redacted (ADR 0009) and stored in MinIO under `raw/sha256/...`
+    (sidecar `fetch_tier: manual_files`), its row's `sha256`; the dates list stored raw, and
+    each listed date as its row's `submission_date` with `submission_date_sha256` pointing at
+    the list. Only rows with nothing recorded are written, so re-materializing adds nothing.
+    Files and dates with no single matching row, ZIPs that are not one PDF, and stored reports
+    still undated are listed in the metadata; an unreadable file or list fails the asset.
+    Check: `personal_data`, blocking — no stored object holds natural persons' data (a store-wide
+    scan, plan 0011 step F).
+    Partition scheme: none (unpartitioned).
+    """
+    postgres = cast("PostgresResource", context.resources.postgres)
+    object_store = cast("RawObjectStoreResource", context.resources.raw_object_store)
+    inbox = Path(config.inbox) if config.inbox else Settings().rdf_report_inbox
+    store = object_store.store()
+    with postgres.connect() as conn:
+        manifest.ensure_schema(conn)
+        conn.commit()
+        report = import_reports(
+            inbox,
+            conn=conn,
+            store=store,
+            ingestion_run_id=context.run_id,
+            document_types=load_document_types(),
+        )
+        counts = manifest.table_counts(conn)
+        personal_data = _personal_data_check(conn, store)
+
+    for line in (*report.unmatched, *report.not_a_report):
+        context.log.warning(line)
+    for problem in report.problems:
+        context.log.error(problem)
+    listed = {
+        "unmatched": report.unmatched,
+        "not_a_report": report.not_a_report,
+        "stored_undated": report.undated,
+    }
+    if report.problems:
+        raise dg.Failure(
+            description=f"{len(report.problems)} problems importing auditor reports",
+            metadata={"problems": report.problems, **listed},
+        )
+    return dg.MaterializeResult(
+        metadata={
+            "downloads_this_run": report.downloads,
+            "dated_this_run": report.dated,
+            **listed,
+            **{f"{table}_rows": n for table, n in counts.items()},
+        },
+        check_results=[personal_data],
+    )
+
+
 acquisition_assets = [
     universe_candidates,
     entity_master,
     filing_index,
     raw_filing_documents,
     rdf_manual_import,
+    rdf_auditor_report_import,
 ]

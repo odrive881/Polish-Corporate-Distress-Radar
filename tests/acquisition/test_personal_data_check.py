@@ -1,7 +1,7 @@
 """The standing personal-data check (plan 0011 step F; invariant 6, ADR 0009).
 
-Every committed fixture passes the same scan the pipeline runs on stored objects, and both A3
-assets carry the scan as a blocking asset check.
+Every committed fixture passes the same scan the pipeline runs on stored objects, and every A3
+asset that stores objects carries the scan as a blocking asset check.
 """
 
 from pathlib import Path
@@ -30,12 +30,12 @@ def test_no_fixture_holds_personal_data(path: Path) -> None:
     assert personal_data_markers(path.read_bytes()) == []
 
 
-def test_both_a3_assets_block_on_the_scan() -> None:
+def test_every_a3_storing_asset_blocks_on_the_scan() -> None:
     graph = defs.resolve_asset_graph()
     checks = {
         key.asset_key.to_user_string(): graph.get_check_spec(key)
         for key in graph.asset_check_keys
         if key.name == PERSONAL_DATA_CHECK
     }
-    assert set(checks) == {"raw_filing_documents", "rdf_manual_import"}
+    assert set(checks) == {"raw_filing_documents", "rdf_manual_import", "rdf_auditor_report_import"}
     assert all(spec.blocking for spec in checks.values())

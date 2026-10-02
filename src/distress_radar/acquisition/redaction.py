@@ -258,7 +258,9 @@ def _pdf_metadata(doc: pymupdf.Document) -> list[str]:
     """The document-metadata fields a PDF carries: information dictionary entries and XMP."""
     info = doc.metadata or {}
     found = [key for key in _PDF_METADATA_KEYS if info.get(key)]
-    if doc.get_xml_metadata():
+    # The catalog's entry, not `get_xml_metadata()`: that raises when the entry is not a stream
+    # (seen in an auditor report, 2026-10-02), and a broken entry is removed all the same.
+    if doc.xref_get_key(doc.pdf_catalog(), "Metadata")[0] != "null":
         found.append("xmp")
     return found
 
@@ -298,7 +300,7 @@ def _redact_pdf(data: bytes, where: str) -> Redaction:
             # Blank first: once `doc.metadata` has been read, saving writes it back out unless
             # it was replaced, whatever the trailer says (seen on PDFs with object streams).
             doc.set_metadata({})
-            doc.del_xml_metadata()
+            doc.xref_set_key(catalog, "Metadata", "null")
             doc.xref_set_key(-1, "Info", "null")
         if not removed and not cleared and not metadata:
             return Redaction(data)
