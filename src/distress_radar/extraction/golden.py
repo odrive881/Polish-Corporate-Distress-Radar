@@ -2,11 +2,15 @@
 (plan 0013 step E, decisions 1 and 5; AGENT_SPEC §6 G3). No I/O: `extraction.label_queue` reads the
 stores and writes the files.
 
-- **The queue** holds one row per masked text page of the seed's embedded notes: every page
-  `prefilter_version` selects for some signal, and a fixed random sample of pages it selects for
-  none (`config/extraction/golden_sample_<version>.yaml`). The owner labels every page for every
-  `signal_type`. It is local and never committed: until the owner has read a page, the masker's
-  misses are still in it.
+- **A queue** per sample version (`config/extraction/golden_sample_<version>.yaml`) holds one row
+  per masked text page, drawn from one kind of document:
+  - the notes embedded in the statements (v1): every page `prefilter_version` selects for some
+    signal, and a fixed random sample of pages it selects for none;
+  - the auditor reports (v2, plan 0013 decision 0c): every text page of a sample of whole
+    reports, those `rules_version` reads as a modified opinion and a fixed random draw of the
+    rest, so the prefilter is measured on every page of a report and the rare opinions are in.
+  The owner labels every page for every `signal_type`. A queue is local and never committed:
+  until the owner has read a page, the masker's misses are still in it.
 - **Hand masking.** A name the masker missed is replaced by the owner with its token, and counted:
   those counts against the masker's own are its recall (decision 1). Over-masking cannot be
   judged from masked text, and is accepted (ADR 0009, third addendum).
@@ -32,10 +36,12 @@ from typing import Any, Literal, cast
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from distress_radar.extraction import masking, page_text
+from distress_radar.extraction import masking, page_text, rules
 from distress_radar.extraction.preprocessing import (
     SIGNAL_TYPES,
+    DocumentKind,
     Prefilter,
+    Sentence,
     SignalType,
     analyse,
     candidates,
@@ -59,10 +65,32 @@ class _Frozen(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
 
+class ReportSample(_Frozen):
+    """Whole auditor reports: every one `rules_version` reads as a modified opinion, and
+    `random_reports` of the rest, drawn by hashing each report's hash with the version."""
+
+    rules_version: str
+    random_reports: int = Field(ge=0)
+
+
 class GoldenSample(_Frozen):
     golden_sample_version: str
     prefilter_version: str
-    rejected_sample_size: int = Field(ge=0)
+    document_kind: DocumentKind = "statement_notes"
+    rejected_sample_size: int | None = Field(default=None, ge=0)  # the notes' design
+    report_sample: ReportSample | None = None  # the reports' design
+
+    @model_validator(mode="after")
+    def _one_design_per_kind(self) -> GoldenSample:
+        notes = self.document_kind == "statement_notes"
+        if notes != (self.rejected_sample_size is not None) or notes == (
+            self.report_sample is not None
+        ):
+            raise ValueError(
+                "the notes are sampled by `rejected_sample_size`, auditor reports by "
+                "`report_sample`, and each only by its own"
+            )
+        return self
 
 
 def load_golden_sample(version: str, config_dir: Path = CONFIG_DIR) -> GoldenSample:
@@ -104,6 +132,7 @@ class QueuePage(_Frozen):
     masking_version: str
     prefilter_version: str
     golden_sample_version: str
+    document_kind: DocumentKind = "statement_notes"
     sample: Sample
     candidates: dict[SignalType, tuple[tuple[int, int], ...]]  # matched sentences' offsets
     text: str  # masked
@@ -152,6 +181,9 @@ class QueueStats:
     selected: int = 0
     rejected_pool: int = 0
     rejected_sampled: int = 0
+    reports: int = 0  # auditor reports with a text page
+    reports_modified: int = 0  # read as a modified opinion by the sample's rules
+    reports_sampled: int = 0
     attachment_errors: Counter[str] = field(default_factory=Counter[str])
     not_idempotent: int = 0  # pages the masker changes again: they fail the masking check
 
@@ -175,8 +207,119 @@ def text_pages(
                 )
 
 
+def pdf_text_pages(
+    document_hash: str, source_member: str, pdf: bytes, stats: QueueStats
+) -> list[TextPage]:
+    """The pages with a text layer of a separately filed PDF (an auditor report), as attachment
+    1; an unreadable PDF is counted and gives none."""
+    try:
+        pages = list(page_text.pages(pdf))
+    except page_text.AttachmentError as exc:
+        stats.attachment_errors[exc.reason_code] += 1
+        return []
+    return [
+        TextPage(document_hash, source_member, 1, page.number, page.text)
+        for page in pages
+        if page.status == "text"
+    ]
+
+
 def _sample_key(version: str, pid: str) -> str:
     return hashlib.sha256(f"{version}:{pid}".encode()).hexdigest()
+
+
+def _check_prefilter(prefilter: Prefilter, sample: GoldenSample) -> None:
+    if prefilter.prefilter_version != sample.prefilter_version:
+        raise ValueError(
+            f"{sample.golden_sample_version} samples {sample.prefilter_version}, "
+            f"not {prefilter.prefilter_version}"
+        )
+
+
+def _row(
+    page: TextPage,
+    prefilter: Prefilter,
+    sample: GoldenSample,
+    mask_nlp: Any,
+    lemma_nlp: Any,
+    stats: QueueStats,
+) -> tuple[QueuePage, list[Sentence]]:
+    """One page masked, analysed and prefiltered, as a queue row."""
+    stats.text_pages += 1
+    masked = masking.mask(page.text, mask_nlp)
+    if masking.mask(masked.text, mask_nlp).text != masked.text:
+        stats.not_idempotent += 1
+    sentences = analyse(masked.text, lemma_nlp)
+    found = candidates(sentences, prefilter)
+    row = QueuePage(
+        page_id=page_id(page.document_hash, page.source_member, page.attachment, page.page),
+        document_hash=page.document_hash,
+        source_member=page.source_member,
+        attachment=page.attachment,
+        page=page.page,
+        masking_version=masking.MASKING_VERSION,
+        prefilter_version=prefilter.prefilter_version,
+        golden_sample_version=sample.golden_sample_version,
+        document_kind=sample.document_kind,
+        sample="selected" if found else "rejected",
+        candidates={
+            signal: tuple(
+                (sentences[s].start, sentences[s].end)
+                for s in sorted({hit.sentence for hit in hits})
+            )
+            for signal, hits in found.items()
+        },
+        text=masked.text,
+        masked=masked.counts,
+    )
+    return row, sentences
+
+
+def build_report_queue(
+    reports: Iterable[list[TextPage]],
+    prefilter: Prefilter,
+    opinion_rules: rules.Rules,
+    sample: GoldenSample,
+    mask_nlp: Any,
+    lemma_nlp: Any,
+    stats: QueueStats,
+) -> list[QueuePage]:
+    """Every text page of the sampled auditor reports (one list of pages per report), masked,
+    sorted by page id: each report the rules read as a modified opinion on some page, and a fixed
+    random draw of the others."""
+    _check_prefilter(prefilter, sample)
+    design = sample.report_sample
+    if design is None or sample.document_kind != "auditor_report":
+        raise ValueError(f"{sample.golden_sample_version} is not a sample of auditor reports")
+    if opinion_rules.rules_version != design.rules_version:
+        raise ValueError(
+            f"{sample.golden_sample_version} draws by {design.rules_version}, "
+            f"not {opinion_rules.rules_version}"
+        )
+    modified: list[list[QueuePage]] = []
+    others: list[tuple[str, list[QueuePage]]] = []
+    for pages in reports:
+        if not pages:
+            continue
+        stats.reports += 1
+        rows: list[QueuePage] = []
+        is_modified = False
+        for page in pages:
+            row, sentences = _row(page, prefilter, sample, mask_nlp, lemma_nlp, stats)
+            opinion = rules.opinion_type(row.text, sentences, opinion_rules)
+            is_modified |= opinion.value in ("qualified", "adverse", "disclaimer")
+            rows.append(row)
+        if is_modified:
+            modified.append(rows)
+        else:
+            others.append((_sample_key(sample.golden_sample_version, pages[0].document_hash), rows))
+    others.sort(key=lambda item: item[0])
+    chosen = [*modified, *(rows for _key, rows in others[: design.random_reports])]
+    stats.reports_modified = len(modified)
+    stats.reports_sampled = len(chosen)
+    queued = [row for rows in chosen for row in rows]
+    stats.selected = sum(row.sample == "selected" for row in queued)
+    return sorted(queued, key=lambda row: row.page_id)
 
 
 def build_queue(
@@ -187,42 +330,16 @@ def build_queue(
     lemma_nlp: Any,
     stats: QueueStats,
 ) -> list[QueuePage]:
-    """Every selected page and the fixed sample of rejected ones, masked, sorted by page id."""
-    if prefilter.prefilter_version != sample.prefilter_version:
-        raise ValueError(
-            f"{sample.golden_sample_version} samples {sample.prefilter_version}, "
-            f"not {prefilter.prefilter_version}"
-        )
+    """Every selected page of the notes and the fixed sample of rejected ones, masked, sorted by
+    page id."""
+    _check_prefilter(prefilter, sample)
+    if sample.rejected_sample_size is None or sample.document_kind != "statement_notes":
+        raise ValueError(f"{sample.golden_sample_version} is not a sample of the notes")
     selected: list[QueuePage] = []
     rejected: list[QueuePage] = []
     for page in pages:
-        stats.text_pages += 1
-        masked = masking.mask(page.text, mask_nlp)
-        if masking.mask(masked.text, mask_nlp).text != masked.text:
-            stats.not_idempotent += 1
-        sentences = analyse(masked.text, lemma_nlp)
-        found = candidates(sentences, prefilter)
-        row = QueuePage(
-            page_id=page_id(page.document_hash, page.source_member, page.attachment, page.page),
-            document_hash=page.document_hash,
-            source_member=page.source_member,
-            attachment=page.attachment,
-            page=page.page,
-            masking_version=masking.MASKING_VERSION,
-            prefilter_version=prefilter.prefilter_version,
-            golden_sample_version=sample.golden_sample_version,
-            sample="selected" if found else "rejected",
-            candidates={
-                signal: tuple(
-                    (sentences[s].start, sentences[s].end)
-                    for s in sorted({hit.sentence for hit in hits})
-                )
-                for signal, hits in found.items()
-            },
-            text=masked.text,
-            masked=masked.counts,
-        )
-        (selected if found else rejected).append(row)
+        row, _sentences = _row(page, prefilter, sample, mask_nlp, lemma_nlp, stats)
+        (selected if row.sample == "selected" else rejected).append(row)
     stats.selected = len(selected)
     stats.rejected_pool = len(rejected)
     version = sample.golden_sample_version
@@ -365,6 +482,7 @@ def export(rows: Iterable[QueuePage], nlp: Any) -> dict[str, bytes]:
         "masking_version",
         "prefilter_version",
         "golden_sample_version",
+        "document_kind",
         "masked",
         "hand_masked",
         "labelled_by",

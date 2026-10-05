@@ -94,12 +94,12 @@ The text signals (Phase 7) run as one job, offline until the owner confirms the 
 
 ## Labelling the golden set
 
-Text extractors are scored against pages the owner has labelled (plan 0013 step E, `evals/text_signals/labelling_guide.md`). The queue is local and never committed: until a page has been read, a name the masker missed can still be in it.
+Text extractors are scored against pages the owner has labelled (plan 0013 step E, `evals/text_signals/labelling_guide.md`). There is one queue per golden sample: the statements' notes (`golden_sample_v1`) and the auditor reports (`golden_sample_v2`: every page of 20 whole reports), picked at the top of the notebook; the export writes both. The queues are local and never committed: until a page has been read, a name the masker missed can still be in it.
 
 ```bash
-make label-queue    # after make dev-up and make models: masked pages to label, under LABELLING_DIR
+make label-queue    # after make dev-up and make models: every sample's masked pages to label, under LABELLING_DIR
 uv run marimo edit notebooks/labelling/golden_set.py   # mask what the masker missed, label every signal
-make label-export   # labelled pages to evals/text_signals/, refused if the masker would still change one
+make label-export   # every queue's labelled pages to evals/text_signals/; refused if the masker would still change one, or a page already there would be dropped
 ```
 
 The pre-commit hook re-runs the masker over every eval file staged under `evals/`, so it needs `make models` too.

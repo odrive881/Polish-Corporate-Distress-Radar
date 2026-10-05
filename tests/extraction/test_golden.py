@@ -16,8 +16,9 @@ import pymupdf
 import pytest
 from pydantic import ValidationError
 
-from distress_radar.extraction import golden, masking, preprocessing
+from distress_radar.extraction import golden, label_queue, masking, preprocessing, rules
 from distress_radar.extraction.golden import GoldenSample, Label, QueuePage, QueueStats, TextPage
+from distress_radar.settings import Settings
 
 REPO = Path(__file__).resolve().parents[2]
 SAMPLE = GoldenSample(
@@ -273,3 +274,132 @@ def test_the_golden_sample_version_must_be_the_file_name(tmp_path: Path) -> None
     (tmp_path / "extraction" / "golden_sample_v2.yaml").write_bytes(source.read_bytes())
     with pytest.raises(ValueError, match="must match the file name"):
         golden.load_golden_sample("golden_sample_v2", tmp_path)
+
+
+# --- golden sample v2: whole auditor reports ------------------------------------------------------
+
+REPORT_SAMPLE = GoldenSample(
+    golden_sample_version="golden_sample_r",
+    prefilter_version="prefilter_v2",
+    document_kind="auditor_report",
+    report_sample=golden.ReportSample(rules_version="rules_v2", random_reports=1),
+)
+OPINION = "Opinia\nNaszym zdaniem sprawozdanie przedstawia rzetelny obraz."
+QUALIFIED = "Opinia z zastrzeżeniem\nNaszym zdaniem, z wyjątkiem kwestii opisanej niżej."
+
+
+def _report(n: int, first: str) -> list[TextPage]:
+    texts = [first, f"{FIGURES} Pozycja {n}.", "Podstawa opinii\nBadanie przeprowadziliśmy."]
+    return [TextPage(f"{n:x}" * 64, f"zip:{n}.pdf", 1, p, t) for p, t in enumerate(texts, 1)]
+
+
+def _reports() -> list[list[TextPage]]:
+    return [_report(1, OPINION), _report(2, QUALIFIED), _report(3, OPINION), _report(4, OPINION)]
+
+
+def _report_queue(mask_nlp: Any, lemma_nlp: Any, stats: QueueStats) -> list[QueuePage]:
+    return golden.build_report_queue(
+        _reports(),
+        preprocessing.load_prefilter("prefilter_v2"),
+        rules.load_rules("rules_v2"),
+        REPORT_SAMPLE,
+        mask_nlp,
+        lemma_nlp,
+        stats,
+    )
+
+
+def test_the_report_sample_takes_every_modified_opinion_and_a_fixed_draw_of_whole_reports(
+    mask_nlp: Any, lemma_nlp: Any
+) -> None:
+    stats = QueueStats()
+    queue = _report_queue(mask_nlp, lemma_nlp, stats)
+    assert queue == _report_queue(mask_nlp, lemma_nlp, QueueStats())
+    assert (stats.reports, stats.reports_modified, stats.reports_sampled) == (4, 1, 2)
+    by_report: dict[str, list[int]] = {}
+    for row in queue:
+        by_report.setdefault(row.document_hash, []).append(row.page)
+    # the qualified report, and one other, each with every page, rejected pages included
+    assert "2" * 64 in by_report and len(by_report) == 2
+    assert all(sorted(pages) == [1, 2, 3] for pages in by_report.values())
+    assert {row.sample for row in queue} == {"selected", "rejected"}
+    assert {(row.document_kind, row.golden_sample_version) for row in queue} == {
+        ("auditor_report", "golden_sample_r")
+    }
+
+
+def test_each_design_takes_only_its_own_kind_of_document(
+    mask_nlp: Any, lemma_nlp: Any, prefilter: preprocessing.Prefilter
+) -> None:
+    with pytest.raises(ValidationError, match="each only by its own"):
+        GoldenSample(
+            golden_sample_version="x",
+            prefilter_version="prefilter_v2",
+            document_kind="auditor_report",
+            rejected_sample_size=5,
+        )
+    with pytest.raises(ValidationError, match="each only by its own"):
+        GoldenSample(golden_sample_version="x", prefilter_version="prefilter_v1")
+    with pytest.raises(ValueError, match="not a sample of the notes"):
+        golden.build_queue(
+            [],
+            preprocessing.load_prefilter("prefilter_v2"),
+            REPORT_SAMPLE,
+            mask_nlp,
+            lemma_nlp,
+            QueueStats(),
+        )
+    with pytest.raises(ValueError, match="draws by rules_v2, not rules_v1"):
+        golden.build_report_queue(
+            _reports(),
+            preprocessing.load_prefilter("prefilter_v2"),
+            rules.load_rules("rules_v1"),
+            REPORT_SAMPLE,
+            mask_nlp,
+            lemma_nlp,
+            QueueStats(),
+        )
+
+
+def test_a_report_page_is_exported_with_its_kind(mask_nlp: Any, lemma_nlp: Any) -> None:
+    queue = _report_queue(mask_nlp, lemma_nlp, QueueStats())
+    row = next(r for r in queue if r.text == QUALIFIED)
+    labels = _all_absent()
+    labels["opinion_type"] = Label(
+        present=True, value="qualified", evidence="Opinia z zastrzeżeniem"
+    )
+    files = golden.export([golden.label(row, labels, "owner")], mask_nlp)
+    [page] = [json.loads(line) for line in files["pages.jsonl"].splitlines()]
+    assert (page["document_kind"], page["golden_sample_version"]) == (
+        "auditor_report",
+        "golden_sample_r",
+    )
+
+
+def test_the_committed_samples_are_the_notes_and_the_reports() -> None:
+    assert label_queue.versions() == ["golden_sample_v1", "golden_sample_v2"]
+    v2 = golden.load_golden_sample("golden_sample_v2")
+    assert (v2.document_kind, v2.prefilter_version, v2.report_sample) == (
+        "auditor_report",
+        "prefilter_v2",
+        golden.ReportSample(rules_version="rules_v2", random_reports=16),
+    )
+
+
+def test_an_export_never_drops_a_page_already_exported(
+    tmp_path: Path, queue: list[QueuePage], mask_nlp: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    labelling, out = tmp_path / "queues", tmp_path / "evals"
+    labelling.mkdir()
+    out.mkdir()
+    settings = Settings(labelling_dir=labelling)
+    monkeypatch.setattr(label_queue, "versions", lambda: ["golden_sample_t"])
+    (labelling / "golden_sample_t.jsonl").write_bytes(
+        golden.dump_queue([_labelled(_row(queue, 1)), *(r for r in queue if r.page != 1)])
+    )
+    counts = label_queue.export(settings, out)
+    assert counts["pages.jsonl"] == 1
+    with (out / "pages.jsonl").open("a", encoding="utf-8") as f:
+        f.write(json.dumps({"page_id": "labelled-elsewhere"}) + "\n")
+    with pytest.raises(ValueError, match="in no labelled local queue"):
+        label_queue.export(settings, out)
