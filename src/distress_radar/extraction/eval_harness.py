@@ -13,8 +13,9 @@ the golden pages, with their counts beside them:
   what reaches the features, and what the gate holds.
 A discarded extraction counts as absent, and its reason is counted. For `opinion_type`, a present
 answer with the wrong opinion is both a false positive and a false negative. The rejected pages in
-the golden set are a sample (`golden_sample_*.yaml`), so a positive the prefilter misses there
-stands for several in the whole rejected pool: counts, not rates, are the honest reading.
+the golden set are a sample (`golden_sample_*.yaml`): of the notes, a random sample of the pool, so a
+positive the prefilter misses there stands for several in the whole rejected pool; of the auditor
+reports, every rejected page of a sample of whole reports. Counts, not rates, are the honest reading.
 
 **The gate** (`make check`, offline): once a signal has any result, the method in use must have a
 result for the current files, that result must re-score to its own stored scores, and its end-to-end

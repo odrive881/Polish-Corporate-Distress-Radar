@@ -11,7 +11,7 @@
 **Order:** after plan 0012 (complete). It does not wait for ADR 0013: like Phase 6, it builds and measures
 machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set this plan adds.
 
-## Status: active (2026-09-29): owner decisions 0–8 accepted; steps A to D and F to I built, step E's tooling built and 50 of 240 pages labelled; the rest of the labelling and the first model call wait on the owner; the auditor reports of decision 0(c) are stored and dated from the owner's list (decision 6 amended 2026-10-02), and the text job reads them (2026-10-05; only the opinion rule has run on them)
+## Status: active (2026-10-05): owner decisions 0–8 accepted; steps A to D and F to I built, step E's tooling built, with the notes' queue (50 of 240 pages labelled and committed) and the auditor reports' (`golden_sample_v2`, 102 pages); the rest of the labelling and the first model call wait on the owner; the auditor reports of decision 0(c) are stored, dated from the owner's list (decision 6 amended 2026-10-02) and read by the text job, the opinion by the report's headings (`rules_v2`, 2026-10-05); their features (decision 7) are next
 
 ### Where this stands (2026-10-05): what waits on the owner, in order
 
@@ -31,13 +31,16 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
    and run on the seed (2026-10-05, progress), and the opinion rule reads the report's headings (`rules_v2`,
    2026-10-05); the report pages are queued for labelling (`golden_sample_v2`, 102 pages); left: labelling
    them and the feature set (decision 7).
-6. **Approve or change** step I's four departures from decision 7 (progress, step I).
+6. **Approve or change** step I's four departures from decision 7 (progress, step I), and the choices recorded
+   "for the owner to see" in the 2026-10-05 progress entries (reports in the same datasets with `document_kind`,
+   every signal read from a report, the notes' features reading the notes only).
 
 ### Decision 0(c): the auditor reports (2026-10-01)
 
 - **Captured by the owner** with Power Automate Desktop, at a human pace, without HAR files (PAD does not
   record DevTools). Kept unredacted and local in `.cache/rdf_auditor_reports/<krs>/` (gitignored; a copy dropped
-  at the root, `/auditor_reports/`, is ignored too). Nothing from them is committed, and nothing reads them yet.
+  at the root, `/auditor_reports/`, is ignored too). Nothing from them is committed; on 2026-10-01 nothing read them
+  (since: imported and dated on 2026-10-02, read by the text step on 2026-10-05, below and in the progress section).
 - **What is there:** 57 files in 13 entities: all 52 type-19 rows of `filing_index` (12 entities) and 5 pre-2018
   reports (0000209396, 0000225506, 0000386777, 0000440028, 0000498679), which have no type-19 row. Four
   entities have no auditor report on RDF: 0000041651, 0000070294, 0000188883, 0000397658. Of 56 PDFs, 48 have a

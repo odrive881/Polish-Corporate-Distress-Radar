@@ -197,3 +197,12 @@ committed to a public repository. The stored raw documents do not change: this a
 **Consequences.** Some company names that contain a surname may be masked with it; over-masking is accepted,
 under-masking is what the checks look for. A signal whose evidence falls in a masked span still carries its
 evidence, masked.
+
+**Update, 2026-10-05 (plan 0013 decision 0c): auditor reports.** The hand-downloaded auditor reports are stored
+redacted like any download (document metadata and the filer's file name removed, the second addendum), and their
+text is read under this addendum's rule, unchanged: masked at the page, the masked page the only text anything
+else sees. Reports name the key auditor and the signatories, and the masker misses more of them than of the
+notes' names: of the 102 report pages queued for labelling, 15 hold a span a second masking pass would still
+replace (the notes: 6 of 702 pages). Those pages are shown to the owner to mask by hand, and the export refuses
+them until then; the measured recall covers report pages once they are labelled. The audit firm, a legal entity,
+is not masked.
