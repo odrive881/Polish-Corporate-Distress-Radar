@@ -454,6 +454,8 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
   - **On the seed:** `features` twice, 2,929 rows and 63 features, `leakage` passed both times, the same bytes.
     The age is known on 915 rows of 12 entities: median 1.5 years, up to 7.9; on 326 rows the latest report is
     over two years old, so the stale values v5 alone would have shown are common, not an edge case.
+    `backtest_v4` twice from the clean tree (commit `7154c02`), the same report bytes, differing from v3's only in
+    its header: no cell of 84 is scored.
 
 ## Why
 
