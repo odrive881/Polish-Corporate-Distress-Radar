@@ -122,7 +122,7 @@ Full glossary: `docs/glossary.md`.
 
 ## Canonical names
 
-Dataset names are defined once, in `AGENT_SPEC.md` §5. Use those exactly: `financial_statements_canonical`, `entity_size_class_history`, `restatement_events`, `identity_check_results`, `statement_disclosures`, `legal_events`, `text_signals`, `text_coverage`, `outcome_labels`, `feature_store`, `dq_mart`, `quarantine`, `scores_history`, `alerts`. There is no `financial_statements_validated` or `dq_results` — validation status is the `quality_grade` column on the canonical table. `quarantine` is the SQLMesh model of the *current* quarantined set; the Postgres append-only detection log is `quarantine_events` (renamed from `quarantine` in plan 0007). Never answer "quarantined now?" from the log.
+Dataset names are defined once, in `AGENT_SPEC.md` §5. Use those exactly: `financial_statements_canonical`, `entity_size_class_history`, `restatement_events`, `identity_check_results`, `statement_disclosures`, `legal_events`, `text_signals`, `text_coverage`, `auditor_reports`, `outcome_labels`, `feature_store`, `dq_mart`, `quarantine`, `scores_history`, `alerts`. There is no `financial_statements_validated` or `dq_results` — validation status is the `quality_grade` column on the canonical table. `quarantine` is the SQLMesh model of the *current* quarantined set; the Postgres append-only detection log is `quarantine_events` (renamed from `quarantine` in plan 0007). Never answer "quarantined now?" from the log.
 
 `model_registry` refers to MLflow, the tool, never to a table in this project.
 

@@ -47,6 +47,8 @@ import duckdb
 import polars as pl
 
 from distress_radar.features.config import (
+    AuditFlagFeature,
+    AuditYearsFeature,
     BelowZeroFeature,
     DisclosureFlagFeature,
     DisclosureNumberFeature,
@@ -133,8 +135,20 @@ TEXT_INPUT_SCHEMA: dict[str, pl.DataType | type[pl.DataType]] = {
 }
 
 
+# One row per auditor report of `auditor_reports`.
+AUDIT_INPUT_SCHEMA: dict[str, pl.DataType | type[pl.DataType]] = {
+    **_FILE_COLUMNS,
+    "modified_opinion": pl.Boolean,
+    "auditor_changed": pl.Boolean,
+}
+
+
 def _empty_disclosures() -> pl.DataFrame:
     return pl.DataFrame(schema=DISCLOSURE_INPUT_SCHEMA)
+
+
+def _empty_audit() -> pl.DataFrame:
+    return pl.DataFrame(schema=AUDIT_INPUT_SCHEMA)
 
 
 def _empty_text() -> pl.DataFrame:
@@ -149,6 +163,7 @@ class FeatureInputs:
     legal_events: pl.DataFrame  # parsing.legal_events.LEGAL_EVENTS_SCHEMA
     disclosures: pl.DataFrame = field(default_factory=_empty_disclosures)  # DISCLOSURE_INPUT_SCHEMA
     text: pl.DataFrame = field(default_factory=_empty_text)  # TEXT_INPUT_SCHEMA
+    audit: pl.DataFrame = field(default_factory=_empty_audit)  # AUDIT_INPUT_SCHEMA
 
 
 Row = tuple[str, date, str, float, date]
@@ -825,6 +840,50 @@ def text(grid: pl.DataFrame, inputs: FeatureInputs, config: FeatureConfig) -> pl
     return _frame(rows())
 
 
+def audit(grid: pl.DataFrame, inputs: FeatureInputs, config: FeatureConfig) -> pl.DataFrame:
+    """Facts of the latest auditor report, and the periods whose report showed them (plan 0013
+    decision 0c). A report speaks from its own filing, as a statement's notes do; a fact it does
+    not establish (no opinion stated, no single firm, no earlier report) is null, never false."""
+    features = [
+        f for f in _features(config, "audit") if isinstance(f, AuditFlagFeature | AuditYearsFeature)
+    ]
+    # krs -> report file -> item -> value
+    files: dict[str, dict[_File, dict[str, bool | None]]] = {}
+    for row in inputs.audit.iter_rows(named=True):
+        files.setdefault(row["krs"], {})[_file(row)] = {
+            "modified_opinion": row["modified_opinion"],
+            "auditor_changed": row["auditor_changed"],
+        }
+
+    def rows() -> Iterator[Row]:
+        for krs, days in _grid_by_entity(grid).items():
+            by_file = files.get(krs, {})
+            for day in days:
+                for f in features:
+                    if isinstance(f, AuditFlagFeature):
+                        periods = _latest_by_period(by_file, day)
+                        if not periods:
+                            continue
+                        latest = periods[max(periods)]
+                        value = by_file[latest][f.item]
+                        if value is not None:
+                            yield (krs, day, f.name, float(value), latest.known_from)
+                        continue
+                    # Per period, its latest report that establishes the fact.
+                    seen = list(
+                        _latest_by_period(
+                            (p for p, items in by_file.items() if items[f.item] is not None), day
+                        ).values()
+                    )
+                    if not seen:
+                        continue
+                    flagged = [p for p in seen if by_file[p][f.item]]
+                    known = max(p.known_from for p in (flagged or seen))
+                    yield (krs, day, f.name, float(len(flagged)), known)
+
+    return _frame(rows())
+
+
 FAMILIES: dict[Family, Callable[[pl.DataFrame, FeatureInputs, FeatureConfig], pl.DataFrame]] = {
     "financial": financial,
     "construction": construction,
@@ -834,6 +893,7 @@ FAMILIES: dict[Family, Callable[[pl.DataFrame, FeatureInputs, FeatureConfig], pl
     "legal_history": legal_history,
     "disclosure": disclosure,
     "text": text,
+    "audit": audit,
 }
 
 

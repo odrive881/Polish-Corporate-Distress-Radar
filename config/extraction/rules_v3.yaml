@@ -1,0 +1,57 @@
+# Rules v3 (plan 0013 decision 0c): v2's `opinion_type` by headings, unchanged, plus `audit_firm`.
+#
+# v2: `opinion_type` read from an auditor's report's section headings, not from sentences. Engineering config, not statute; measured on the golden set like any extractor.
+# Loaded by `distress_radar.extraction.rules.load_rules`.
+#
+# The file name is the `rules_version`. A change is a new file, never an edit.
+#
+# Why headings: the Polish auditing standards (KSB 700 and 705, the national adoption of ISA 700/705)
+# fix the headings of the opinion section and of the section giving its basis, one pair per opinion.
+# A sentence-level rule (`rules_v1`) also reads sentences that only mention an opinion: on the seed's
+# 44 text reports it read two reports headed "Opinia" as qualified and found nothing in four
+# (counted, not read: plan 0013 progress, 2026-10-05). By headings, every report with both an
+# opinion and a basis heading had the two agree (31 of 31), and the other 13 carry the basis heading.
+#
+# How it reads a page: a line that is, whole, one of these headings (after `rules.heading_key`:
+# numbering, trailing colons and full stops removed, lowercased) states the opinion. The first
+# opinion heading on the page wins (`high`); with none, the first basis heading (`medium`). The line
+# is the evidence. "Opinia o sprawozdaniu z działalności" (the opinion on the management report) is
+# not the heading "Opinia", so it is never read as one. A page with neither is `absent`: no opinion
+# stated there, which is not an unqualified opinion.
+#
+# Headings are written as their keys: lowercase, no trailing punctuation.
+
+rules_version: rules_v3
+
+opinion_headings:
+  disclaimer:
+    opinion: [odmowa wyrażenia opinii]
+    basis: [podstawa odmowy wyrażenia opinii]
+  adverse:
+    opinion: [opinia negatywna]
+    basis: [podstawa opinii negatywnej]
+  qualified:
+    opinion: [opinia z zastrzeżeniem, opinia z zastrzeżeniami]
+    basis: [podstawa opinii z zastrzeżeniem, podstawa opinii z zastrzeżeniami]
+  unqualified:
+    opinion: [opinia]
+    basis: [podstawa opinii]
+
+# `audit_firm`: the audit firm's number on the list of audit firms (lista firm audytorskich), read
+# from a report's masked pages only to tell whether the firm changed between reports
+# (`auditor_reports.auditor_changed`). The number is never stored: a firm can be a sole
+# practitioner, a natural person (owner, 2026-10-05). A report stating no number or more than one
+# has no firm, and its change is null.
+#
+# The pattern is the list's phrase, then up to 60 characters with no digit and no "rewident", then
+# "numer"/"nr" and a number of at most four digits. Each guard is there for a reason found on the
+# seed by counts (plan 0013 progress, 2026-10-05): without them, a pattern ran past the firm to the
+# key auditor's own registration number (five digits, after "biegły rewident ... nr"), which names a
+# person; and "z dnia 11 maja" is a date, not a number. On the seed's 44 text reports this finds one
+# number in 39, three or four digits, none with "rewident" or "dnia" before it.
+audit_firm:
+  - pattern: '(?:list[aęy]\s+firm\s+audytorskich|podmiot[óo]w\s+uprawnionych\s+do\s+badania)(?:(?!rewident)[^0-9]){0,60}?\b(?:numerem|numer|nr\.?)\s*(?:ewidencyjn\w*\s*)?(\d{1,4})\b'
+    example: >-
+      Firma audytorska wpisana na listę firm audytorskich pod numerem 1234. Kluczowy biegły
+      rewident: [osoba], nr w rejestrze 12345.
+    number: "1234"

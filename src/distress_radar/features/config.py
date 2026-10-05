@@ -54,7 +54,10 @@ Family = Literal[
     "legal_history",
     "disclosure",
     "text",
+    "audit",
 ]
+# The facts of an auditor report the `audit` family reads (`auditor_reports`, plan 0013 decision 0c).
+AuditItem = Literal["modified_opinion", "auditor_changed"]
 FilingMetric = Literal[
     "days_to_file_latest",
     "missing_years",
@@ -83,6 +86,8 @@ KIND_FAMILIES: dict[str, tuple[Family, ...]] = {
     "disclosure_number": ("disclosure",),
     "text_flag": ("text",),
     "text_years": ("text",),
+    "audit_flag": ("audit",),
+    "audit_years": ("audit",),
 }
 
 
@@ -311,6 +316,28 @@ class TextYearsFeature(_Feature):
         return set()
 
 
+class AuditFlagFeature(_Feature):
+    """A fact of the latest auditor report known (`auditor_reports`): null when that report does
+    not establish it (no opinion stated, no single firm, no earlier report)."""
+
+    kind: Literal["audit_flag"]
+    item: AuditItem
+
+    def inputs(self) -> set[str]:
+        return set()
+
+
+class AuditYearsFeature(_Feature):
+    """The periods, among those whose report establishes the fact, whose latest report shows it;
+    null until one report establishes it."""
+
+    kind: Literal["audit_years"]
+    item: AuditItem
+
+    def inputs(self) -> set[str]:
+        return set()
+
+
 Feature = Annotated[
     RatioFeature
     | GrowthFeature
@@ -322,7 +349,9 @@ Feature = Annotated[
     | DisclosureFlagFeature
     | DisclosureNumberFeature
     | TextFlagFeature
-    | TextYearsFeature,
+    | TextYearsFeature
+    | AuditFlagFeature
+    | AuditYearsFeature,
     Field(discriminator="kind"),
 ]
 
@@ -490,10 +519,15 @@ _COUNT_METRICS: frozenset[str] = frozenset(
 def feature_dtype(feature: Feature) -> Literal["boolean", "count", "float"]:
     """How a feature's value is stored in `feature_store`."""
     if isinstance(
-        feature, TripwireFeature | BelowZeroFeature | DisclosureFlagFeature | TextFlagFeature
+        feature,
+        TripwireFeature
+        | BelowZeroFeature
+        | DisclosureFlagFeature
+        | TextFlagFeature
+        | AuditFlagFeature,
     ):
         return "boolean"
-    if isinstance(feature, TextYearsFeature):
+    if isinstance(feature, TextYearsFeature | AuditYearsFeature):
         return "count"
     if isinstance(feature, FilingFeature):
         if feature.metric in _BOOLEAN_METRICS:

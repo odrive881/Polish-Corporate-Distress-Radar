@@ -9,6 +9,11 @@
   zastrzeżeniem") does, at `medium` confidence. The first such line on the page wins, with the
   line as evidence. A sentence that only mentions an opinion is never read as one.
 A rule answers like an extractor, present or absent, so the eval harness scores it the same way.
+
+`audit_firm` (`rules_v3`, plan 0013 decision 0c): patterns that find the audit firm's number on
+the list of audit firms in a report's text, only to tell whether the firm changed. The number is
+never stored, returned beyond its caller or printed: a firm can be a sole practitioner, a natural
+person (owner, 2026-10-05). A pattern must not reach the key auditor's own registration number.
 Deterministic: no model, no stored response.
 """
 
@@ -16,6 +21,8 @@ from __future__ import annotations
 
 import re
 import unicodedata
+from collections.abc import Iterable
+from functools import cached_property
 from pathlib import Path
 
 import yaml
@@ -62,6 +69,29 @@ class OpinionHeadings(BaseModel):
         return headings
 
 
+class FirmPattern(BaseModel):
+    """A regular expression whose one group is the firm's number, with an invented example."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    pattern: str
+    example: str
+    number: str  # what the pattern must find in the example, and nothing else
+
+    @cached_property
+    def compiled(self) -> re.Pattern[str]:
+        return re.compile(self.pattern, re.IGNORECASE)
+
+    @model_validator(mode="after")
+    def _finds_its_example(self) -> FirmPattern:
+        if self.compiled.groups != 1:
+            raise ValueError(f"{self.pattern!r}: exactly one group, the number")
+        found = self.compiled.findall(self.example)
+        if found != [self.number]:
+            raise ValueError(f"{self.pattern!r} finds {found} in its example, not [{self.number}]")
+        return self
+
+
 class Rules(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -69,6 +99,7 @@ class Rules(BaseModel):
     # Exactly one of the two forms (module docstring).
     opinion_type: dict[OpinionValue, tuple[Term, ...]] | None = None
     opinion_headings: dict[OpinionValue, OpinionHeadings] | None = None
+    audit_firm: tuple[FirmPattern, ...] = ()
 
     @model_validator(mode="after")
     def _one_form_covering_every_opinion(self) -> Rules:
@@ -169,3 +200,10 @@ def _by_sentence(text: str, sentences: list[Sentence], rules: Rules) -> Extracti
                 response_key=None,
             )
     return _ABSENT
+
+
+def audit_firm_number(pages: Iterable[str], rules: Rules) -> str | None:
+    """The one audit-firm number a report's masked pages state, or None when they state none or
+    more than one. Kept in memory by the caller, never stored (module docstring)."""
+    found = {n for text in pages for p in rules.audit_firm for n in p.compiled.findall(text)}
+    return next(iter(found)) if len(found) == 1 else None

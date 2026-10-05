@@ -11,7 +11,7 @@
 **Order:** after plan 0012 (complete). It does not wait for ADR 0013: like Phase 6, it builds and measures
 machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set this plan adds.
 
-## Status: active (2026-10-05): owner decisions 0–8 accepted; steps A to D and F to I built, step E's tooling built, with the notes' queue (50 of 240 pages labelled and committed) and the auditor reports' (`golden_sample_v2`, 102 pages); the rest of the labelling and the first model call wait on the owner; the auditor reports of decision 0(c) are stored, dated from the owner's list (decision 6 amended 2026-10-02) and read by the text job, the opinion by the report's headings (`rules_v2`, 2026-10-05); their features (decision 7) are next
+## Status: active (2026-10-05): owner decisions 0–8 accepted; steps A to D and F to I built, step E's tooling built, with the notes' queue (50 of 240 pages labelled and committed) and the auditor reports' (`golden_sample_v2`, 102 pages); the rest of the labelling and the first model call wait on the owner; the auditor reports of decision 0(c) are stored, dated from the owner's list (decision 6 amended 2026-10-02) and read by the text job, the opinion by the report's headings (`rules_v2`), their features in `feature_set_v5` with the auditor change (2026-10-05)
 
 ### Where this stands (2026-10-05): what waits on the owner, in order
 
@@ -29,11 +29,12 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
 5. **Decision 0(c), auditor reports: stored and dated (2026-10-02, below).** Left for the owner: the three
    reports with no date in the list and 0000507997's "2019" file (below). The reports' text step is built
    and run on the seed (2026-10-05, progress), and the opinion rule reads the report's headings (`rules_v2`,
-   2026-10-05); the report pages are queued for labelling (`golden_sample_v2`, 102 pages); left: labelling
-   them and the feature set (decision 7).
+   2026-10-05); the report pages are queued for labelling (`golden_sample_v2`, 102 pages), and their features
+   are built (`feature_set_v5`, 2026-10-05); left: labelling them.
 6. **Approve or change** step I's four departures from decision 7 (progress, step I), and the choices recorded
    "for the owner to see" in the 2026-10-05 progress entries (reports in the same datasets with `document_kind`,
-   every signal read from a report, the notes' features reading the notes only).
+   every signal read from a report, the notes' features reading the notes only), and whether `feature_set_v5`
+   should carry a report-age feature.
 
 ### Decision 0(c): the auditor reports (2026-10-01)
 
@@ -409,6 +410,38 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
     replace on a second pass, shown in red for the owner to mask (more than the notes' 6 of 702: reports name
     the auditor and signatories). The v1 queue was rebuilt with it: its 240 rows and the owner's 77 labels are
     unchanged, each row gaining `document_kind`.
+- **Decision 0(c) and decision 7, the report features (2026-10-05): `auditor_reports`, `feature_set_v5`,
+  `backtest_v3`.**
+  - **Owner decision (2026-10-05): the audit firm's identity is never stored.** A firm on the list of audit firms
+    can be a sole practitioner, a natural person, which decision 7 ("the audit firm, a legal entity") had not
+    allowed for. The text stage reads the firm's number in memory and keeps only whether it changed.
+  - **Found first, by counts only:** of the 44 text reports, 39 state one firm number after the list's phrase. A
+    looser pattern ran past the firm to the key auditor's own registration number (five digits, after "biegły
+    rewident ... nr") in 7 places: the rule (`rules_v3`, `audit_firm`) forbids digits and "rewident" between the
+    phrase and "numer"/"nr", and takes at most four digits. A test plants both numbers in an invented report.
+  - **What:** `extraction/auditor_reports.py` writes `auditor_reports` (AGENT_SPEC §5, a new canonical name) with
+    the text datasets: per report, its opinion (the first page stating one) and `auditor_changed`, compared with
+    the entity's latest earlier report of an earlier period known at this report's filing, so a late-filed
+    earlier report or a correction filed afterwards is never compared with. Null, never false, when either
+    report states no single firm or there is none earlier. `extractor_v3` (v2 with `rules_v3`) is the default.
+    The features: an `audit` family (`audit_flag`, `audit_years`) and `emphasis_of_matter` as a text feature on
+    `document_kind: auditor_report`, in `feature_set_v5` (v4 unchanged plus six: `modified_opinion`,
+    `auditor_changed`, `emphasis_of_matter`, each with its `_years` count); `backtest_v3` is v2 on v5, the
+    regression's inputs unchanged (recorded before its first run). Both are the new defaults.
+  - **The leakage test** runs on v5 with four reports of a synthetic entity: one filed months after its
+    statement with a modified opinion and a new firm, one deleted later (the earlier report speaks again), one
+    stating neither fact (null, never false), and an unaudited entity (null, never clean); a variant dated by
+    the balance-sheet date fails the truncation check.
+  - **On the seed:** 48 reports; 38 state a single firm (the guards dropped one the count above took); auditor
+    changed in 3, not in 24, unknown in 21 (12 first reports). The `text` job twice, the same bytes;
+    `features` twice, 2,929 rows and 62 features, `leakage` passed both times, the same bytes.
+    `modified_opinion` is known on 843 rows of 12 entities (true on 53), `auditor_changed` on 374 rows of 7
+    (true on 35); `emphasis_of_matter` on 105 rows of 3, all false: reports where the prefilter selected no
+    page, read as absent; the rest waits on the model.
+  - **For the owner:** a report speaks until a later one is filed, however old: an entity that stops being
+    audited keeps its last report's values. A report-age feature would tell the model so; it is not in v5.
+    The auditor's own going-concern paragraph (`going_concern_uncertainty` on a report) is not a v5 feature
+    either: decision 7 did not list it, and it waits on the model like the notes'.
 
 ## Why
 

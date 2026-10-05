@@ -1,4 +1,5 @@
-"""Pandera contracts for `text_signals` and `text_coverage` (plan 0013 step H; AGENT_SPEC §5).
+"""Pandera contracts for `text_signals`, `text_coverage` (plan 0013 step H) and `auditor_reports`
+(decision 0c; AGENT_SPEC §5).
 
 As in `parsing.contracts`: a failure means a bug in this package, not bad input (bad input is
 quarantined before it gets here), so callers let it fail the run.
@@ -14,6 +15,7 @@ from typing import get_args
 import pandera.polars as pa
 import polars as pl
 
+from distress_radar.extraction import auditor_reports as ar
 from distress_radar.extraction.preprocessing import DOCUMENT_KINDS, SIGNAL_TYPES
 from distress_radar.extraction.schemas import Confidence, OpinionValue
 from distress_radar.extraction.text_signals import COVERAGE_COLUMNS, SIGNAL_COLUMNS, CoverageStatus
@@ -107,4 +109,53 @@ TEXT_COVERAGE = pa.DataFrameSchema(
     ordered=True,
     unique=["source_document_hash", "source_member", "signal_type"],
     name="text_coverage",
+)
+
+
+def _modified_with_opinion(data: pa.PolarsData) -> pl.LazyFrame:
+    return data.lazyframe.select(
+        (pl.col("opinion").is_null() == pl.col("modified_opinion").is_null())
+        & (pl.col("opinion").is_null() == pl.col("opinion_page").is_null())
+    )
+
+
+def _change_needs_a_firm(data: pa.PolarsData) -> pl.LazyFrame:
+    return data.lazyframe.select(
+        pl.col("auditor_changed").is_null()
+        | (pl.col("firm_stated") & pl.col("compared_with").is_not_null())
+    )
+
+
+# One row per auditor report read; no text, no firm identifier (owner, 2026-10-05).
+AUDITOR_REPORTS = pa.DataFrameSchema(
+    {
+        name: (
+            pa.Column(dtype, checks=[pa.Check.isin(list(get_args(OpinionValue)))], nullable=True)
+            if name == "opinion"
+            else _column(
+                name,
+                dtype,
+                frozenset(
+                    {
+                        "opinion_page",
+                        "opinion_confidence",
+                        "modified_opinion",
+                        "auditor_changed",
+                        "compared_with",
+                    }
+                ),
+            )
+        )
+        for name, dtype in ar.COLUMNS.items()
+    },
+    checks=[
+        pa.Check(
+            _modified_with_opinion, error="a modified flag and a page exactly with an opinion"
+        ),
+        pa.Check(_change_needs_a_firm, error="a change only between reports that state a firm"),
+    ],
+    strict=True,
+    ordered=True,
+    unique=["source_document_hash", "source_member"],
+    name="auditor_reports",
 )

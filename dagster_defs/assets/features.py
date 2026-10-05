@@ -71,7 +71,8 @@ def feature_store(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
 
     Inputs: `financial_statements_canonical`, `restatement_events` and `legal_events` Parquet
     under `WAREHOUSE_DIR`, and, for a feature set with those families, `statement_disclosures`
-    (written with the canonical facts) and `text_coverage` (written by the `text` job); Postgres `filing_index`, `parsed_documents`, `entity_master` and
+    (written with the canonical facts), `text_coverage` and `auditor_reports` (both written by the
+    `text` job); Postgres `filing_index`, `parsed_documents`, `entity_master` and
     `legal_source_fetches`; `config/features/<FEATURE_SET_VERSION>.yaml` with its line-item
     map, `config/statutory/` (tripwires, filing deadlines, taxonomy); the grid's start from
     `config/labels/<LABEL_VERSION>.yaml`.

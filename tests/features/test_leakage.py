@@ -23,6 +23,7 @@ import pytest
 
 from distress_radar.features import feature_definitions as fd
 from distress_radar.features.asof_assembly import (
+    AUDITOR_REPORTS_SCHEMA,
     FILING_INDEX_SCHEMA,
     PARSE_STATUS_SCHEMA,
     TEXT_COVERAGE_SCHEMA,
@@ -150,6 +151,18 @@ NOTES: dict[tuple[str, str], tuple[str, int]] = {
 # notes only, so B's going-concern features stay null: its notes were never read for it.
 REPORTS: list[tuple[str, str, date, date, str, str, int]] = [
     (B, "b21r", date(2021, 12, 31), date(2022, 7, 4), GC, "read", 1),
+    # A's 2021 report draws attention to a matter (feature set v5's emphasis_of_matter).
+    (A, "ra21", date(2021, 12, 31), date(2022, 9, 20), "emphasis_of_matter", "read", 1),
+]
+
+# A's auditor reports (feature set v5): (ref, fiscal year, filed, deleted, modified, changed).
+# Traps: ra21 is filed months after its statement, with a modified opinion and a new firm; ra22 is
+# deleted later, so ra21 speaks again; ra23 states no opinion and no single firm: null, never false.
+AUDITED: list[tuple[str, int, date, date | None, bool | None, bool | None]] = [
+    ("ra20", 2020, date(2021, 8, 10), None, False, None),
+    ("ra21", 2021, date(2022, 9, 20), None, True, True),
+    ("ra22", 2022, date(2023, 7, 10), date(2024, 2, 1), False, False),
+    ("ra23", 2023, date(2024, 11, 15), None, None, None),
 ]
 
 
@@ -277,7 +290,17 @@ def _filing_index() -> pl.DataFrame:
     # An auditor's report (not a statement), and a statement row never expanded (no date).
     rows.append((A, "a21-audit", "20", None, None, date(2022, 6, 30), None, False, "r.pdf"))
     rows.append((B, "b23", "18", date(2023, 1, 1), date(2023, 12, 31), None, None, None, None))
+    for ref, y, filed, deleted, *_ in AUDITED:
+        rows.append((A, ref, "19", date(y, 1, 1), date(y, 12, 31), filed, deleted, False, None))
     return pl.DataFrame(rows, schema=FILING_INDEX_SCHEMA, orient="row")
+
+
+def _auditor_reports() -> pl.DataFrame:
+    rows = [
+        (A, ref, f"zip:{ref}.pdf", date(y, 12, 31), filed, modified, changed)
+        for ref, y, filed, _deleted, modified, changed in AUDITED
+    ]
+    return pl.DataFrame(rows, schema=AUDITOR_REPORTS_SCHEMA, orient="row")
 
 
 def _parse_status() -> pl.DataFrame:
@@ -341,7 +364,14 @@ def _month_ends(first: date, last: date) -> list[date]:
 
 # Every feature set, so a set's new features are under the checks the day they are written.
 @pytest.fixture(
-    scope="module", params=["feature_set_v1", "feature_set_v2", "feature_set_v3", "feature_set_v4"]
+    scope="module",
+    params=[
+        "feature_set_v1",
+        "feature_set_v2",
+        "feature_set_v3",
+        "feature_set_v4",
+        "feature_set_v5",
+    ],
 )
 def config(request: pytest.FixtureRequest) -> FeatureConfig:
     return load_feature_set(request.param)
@@ -357,6 +387,7 @@ def sources(config: FeatureConfig) -> FeatureSources:
         parse_status=_parse_status(),
         disclosures=_disclosures(),
         text_coverage=_text_coverage(),
+        auditor_reports=_auditor_reports(),
     )
 
 
@@ -675,4 +706,82 @@ def test_a_leaky_v4_family_fails_the_truncation_check(
 ) -> None:
     traps = grid.filter(pl.col("as_of_date").is_in(TRAP_DAYS))
     differences = truncation_differences(traps, v4_sources, v4, {family: leaky})
+    assert not differences.is_empty()
+
+
+# --- feature set v5: the auditor reports ----------------------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def v5() -> FeatureConfig:
+    return load_feature_set("feature_set_v5")
+
+
+@pytest.fixture(scope="module")
+def v5_sources(v5: FeatureConfig) -> FeatureSources:
+    return FeatureSources(
+        canonical=_canonical(v5),
+        restatements=_restatements(),
+        legal_events=_legal_events(),
+        filing_index=_filing_index(),
+        parse_status=_parse_status(),
+        disclosures=_disclosures(),
+        text_coverage=_text_coverage(),
+        auditor_reports=_auditor_reports(),
+    )
+
+
+@pytest.fixture(scope="module")
+def v5_store(grid: pl.DataFrame, v5_sources: FeatureSources, v5: FeatureConfig) -> pl.DataFrame:
+    inputs, _ = feature_inputs(v5_sources, v5)
+    return assemble(grid, fd.compute_features(grid, inputs, v5), v5)
+
+
+def test_the_report_features_follow_the_latest_report_from_its_own_filing(
+    v5_store: pl.DataFrame,
+) -> None:
+    audit = (
+        "modified_opinion",
+        "modified_opinion_years",
+        "auditor_changed",
+        "auditor_changed_years",
+    )
+    assert _values(v5_store, A, date(2021, 7, 31), *audit) == [None, None, None, None]
+    # The first report: an opinion, but no earlier report to compare the firm with.
+    assert _values(v5_store, A, date(2021, 8, 31), *audit) == [False, 0, None, None]
+    # ra21 is not known until its own filing, months after the 2021 statement.
+    assert _values(v5_store, A, date(2022, 8, 31), *audit) == [False, 0, None, None]
+    assert _values(v5_store, A, date(2022, 9, 30), *audit) == [True, 1, True, 1]
+    assert _row(v5_store, A, date(2022, 9, 30))["modified_opinion__known_from"] == date(2022, 9, 20)
+    assert _values(v5_store, A, date(2023, 7, 31), *audit) == [False, 1, False, 1]
+    # ra22's deletion: ra21 speaks again.
+    assert _values(v5_store, A, date(2024, 2, 29), *audit) == [True, 1, True, 1]
+    # ra23 establishes neither fact: the flags are null, the counts keep the periods that did.
+    assert _values(v5_store, A, date(2024, 11, 30), *audit) == [None, 1, None, 1]
+    # B is not audited: nothing, never "clean".
+    assert _values(v5_store, B, date(2024, 11, 30), *audit) == [None, None, None, None]
+
+
+def test_emphasis_of_matter_reads_the_reports_not_the_notes(v5_store: pl.DataFrame) -> None:
+    emphasis = ("emphasis_of_matter", "emphasis_of_matter_years")
+    assert _values(v5_store, A, date(2022, 8, 31), *emphasis) == [None, None]
+    assert _values(v5_store, A, date(2022, 9, 30), *emphasis) == [True, 1]
+    # v4's notes features are v5's too, unchanged by the reports.
+    gc = ("going_concern_in_notes", "going_concern_in_notes_years")
+    assert _values(v5_store, B, date(2023, 12, 31), *gc) == [None, None]
+
+
+def _audit_by_period_end(
+    grid: pl.DataFrame, inputs: fd.FeatureInputs, config: FeatureConfig
+) -> pl.DataFrame:
+    """Reports treated as known at the balance-sheet date, not their own filing."""
+    audit = inputs.audit.with_columns(pl.col("period_end").alias("known_from"))
+    return fd.audit(grid, replace(inputs, audit=audit), config)
+
+
+def test_a_leaky_audit_family_fails_the_truncation_check(
+    grid: pl.DataFrame, v5_sources: FeatureSources, v5: FeatureConfig
+) -> None:
+    traps = grid.filter(pl.col("as_of_date").is_in(TRAP_DAYS))
+    differences = truncation_differences(traps, v5_sources, v5, {"audit": _audit_by_period_end})
     assert not differences.is_empty()

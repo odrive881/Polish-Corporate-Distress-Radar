@@ -191,6 +191,15 @@ def test_backtest_v2_adds_only_the_going_concern_flag() -> None:
     )
 
 
+def test_backtest_v3_is_v2_on_feature_set_v5() -> None:
+    """Plan 0013 decision 0c, recorded before any run: v2 unchanged, on v5's feature store."""
+    v2 = load_backtest_config("backtest_v2")
+    v3 = load_backtest_config("backtest_v3")
+    assert v3.feature_set_version == "feature_set_v5"
+    unchanged = {"backtest", "feature_set_version"}
+    assert v3.model_dump(exclude=unchanged) == v2.model_dump(exclude=unchanged)
+
+
 def test_the_regression_may_only_read_ratio_features_and_flags(tmp_path: Path) -> None:
     config_dir = tmp_path / "config"
     shutil.copytree(CONFIG_DIR, config_dir)

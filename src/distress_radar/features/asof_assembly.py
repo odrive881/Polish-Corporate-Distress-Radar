@@ -184,9 +184,21 @@ TEXT_COVERAGE_SCHEMA: dict[str, pl.DataType | type[pl.DataType]] = {
     "kept_present": pl.Int32,
 }
 
+# The `auditor_reports` columns the audit family reads (the dataset: `extraction.auditor_reports`).
+AUDITOR_REPORTS_SCHEMA: dict[str, pl.DataType | type[pl.DataType]] = {
+    "krs": pl.String,
+    "document_ref": pl.String,
+    "source_member": pl.String,
+    "period_end": pl.Date,
+    "known_from": pl.Date,
+    "modified_opinion": pl.Boolean,
+    "auditor_changed": pl.Boolean,
+}
+
 # The datasets only some families read, so a feature set without them needs none of them stored.
 DISCLOSURES_DATASET = "statement_disclosures"
 TEXT_COVERAGE_DATASET = "text_coverage"
+AUDITOR_REPORTS_DATASET = "auditor_reports"
 
 
 def _empty_disclosures() -> pl.DataFrame:
@@ -195,6 +207,10 @@ def _empty_disclosures() -> pl.DataFrame:
 
 def _empty_text_coverage() -> pl.DataFrame:
     return pl.DataFrame(schema=TEXT_COVERAGE_SCHEMA)
+
+
+def _empty_auditor_reports() -> pl.DataFrame:
+    return pl.DataFrame(schema=AUDITOR_REPORTS_SCHEMA)
 
 
 @dataclass(frozen=True)
@@ -208,6 +224,7 @@ class FeatureSources:
     parse_status: pl.DataFrame  # PARSE_STATUS_SCHEMA
     disclosures: pl.DataFrame = field(default_factory=_empty_disclosures)  # statement_disclosures
     text_coverage: pl.DataFrame = field(default_factory=_empty_text_coverage)  # its columns
+    auditor_reports: pl.DataFrame = field(default_factory=_empty_auditor_reports)  # its columns
 
 
 @dataclass(frozen=True)
@@ -227,8 +244,8 @@ def load_sources(
 ) -> tuple[FeatureSources, list[str], pl.DataFrame]:
     """The sources, the entities and their fetches, from the warehouse and the manifest.
 
-    `statement_disclosures` and `text_coverage` are read only when the feature set has a
-    family that reads them.
+    `statement_disclosures`, `text_coverage` and `auditor_reports` are read only when the
+    feature set has a family that reads them.
     """
     families = {f.family for f in config.feature_set.features}
     filing_index = pl.DataFrame(
@@ -260,6 +277,11 @@ def load_sources(
         .cast(TEXT_COVERAGE_SCHEMA)  # pyright: ignore[reportArgumentType]
         if "text" in families
         else _empty_text_coverage(),
+        auditor_reports=read_dataset(warehouse_dir, AUDITOR_REPORTS_DATASET)
+        .select(AUDITOR_REPORTS_SCHEMA.keys())
+        .cast(AUDITOR_REPORTS_SCHEMA)  # pyright: ignore[reportArgumentType]
+        if "audit" in families
+        else _empty_auditor_reports(),
     )
     entities = sorted(
         str(krs).strip() for (krs,) in conn.execute("SELECT krs FROM entity_master").fetchall()
@@ -303,6 +325,9 @@ def feature_inputs(
             disclosures, sources.filing_index, fd.DISCLOSURE_INPUT_SCHEMA
         ),
         text=fd.statement_files(sources.text_coverage, sources.filing_index, fd.TEXT_INPUT_SCHEMA),
+        audit=fd.statement_files(
+            sources.auditor_reports, sources.filing_index, fd.AUDIT_INPUT_SCHEMA
+        ),
     )
     return inputs, panel.excluded
 

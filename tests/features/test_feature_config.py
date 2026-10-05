@@ -321,6 +321,26 @@ def test_v4_is_v3_with_the_disclosure_and_text_families() -> None:
     }
 
 
+def test_v5_is_v4_with_the_auditor_reports() -> None:
+    """Plan 0013 decision 0c: v4 unchanged, then the reports' opinion, auditor change, emphasis."""
+    v4 = load_feature_set("feature_set_v4")
+    v5 = load_feature_set("feature_set_v5")
+    old = len(v4.feature_set.features)
+    assert v5.feature_set.features[:old] == v4.feature_set.features
+    assert v5.line_items == v4.line_items
+    added = {f.name: (f.family, feature_dtype(f)) for f in v5.feature_set.features[old:]}
+    assert added == {
+        "modified_opinion": ("audit", "boolean"),
+        "modified_opinion_years": ("audit", "count"),
+        "auditor_changed": ("audit", "boolean"),
+        "auditor_changed_years": ("audit", "count"),
+        "emphasis_of_matter": ("text", "boolean"),
+        "emphasis_of_matter_years": ("text", "count"),
+    }
+    emphasis = [f for f in v5.feature_set.features if f.name.startswith("emphasis_of_matter")]
+    assert {getattr(f, "document_kind", None) for f in emphasis} == {"auditor_report"}
+
+
 @pytest.mark.parametrize(
     ("feature", "message"),
     [
