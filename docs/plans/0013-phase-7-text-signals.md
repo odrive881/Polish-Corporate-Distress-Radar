@@ -437,7 +437,9 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
     `features` twice, 2,929 rows and 62 features, `leakage` passed both times, the same bytes.
     `modified_opinion` is known on 843 rows of 12 entities (true on 53), `auditor_changed` on 374 rows of 7
     (true on 35); `emphasis_of_matter` on 105 rows of 3, all false: reports where the prefilter selected no
-    page, read as absent; the rest waits on the model.
+    page, read as absent; the rest waits on the model. `backtest_v3` twice from the clean tree (commit `d168010`),
+    the same report bytes; it differs from `backtest_v2`'s only in its header (version, commit, feature-set hash):
+    the regression's inputs and rows are v2's, and no cell of 84 is scored, as before.
   - **For the owner:** a report speaks until a later one is filed, however old: an entity that stops being
     audited keeps its last report's values. A report-age feature would tell the model so; it is not in v5.
     The auditor's own going-concern paragraph (`going_concern_uncertainty` on a report) is not a v5 feature
