@@ -11,7 +11,7 @@
 **Order:** after plan 0012 (complete). It does not wait for ADR 0013: like Phase 6, it builds and measures
 machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set this plan adds.
 
-## Status: active (2026-09-29): owner decisions 0–8 accepted; steps A to D and F to I built, step E's tooling built and 50 of 240 pages labelled; the rest of the labelling and the first model call wait on the owner; the auditor reports of decision 0(c) are stored and dated from the owner's list (decision 6 amended 2026-10-02), not yet read
+## Status: active (2026-09-29): owner decisions 0–8 accepted; steps A to D and F to I built, step E's tooling built and 50 of 240 pages labelled; the rest of the labelling and the first model call wait on the owner; the auditor reports of decision 0(c) are stored and dated from the owner's list (decision 6 amended 2026-10-02), and the text job reads them (2026-10-05, not yet run on the seed)
 
 ### Where this stands (2026-10-01): what waits on the owner, in order
 
@@ -25,8 +25,9 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
 3. **Accept each signal's first result** after `make eval`: `make eval-accept SIGNAL=... BY=...`.
 4. **Then rerun** the `text` job and the `features` job: the notes' features fill in, with no new version.
 5. **Decision 0(c), auditor reports: stored and dated (2026-10-02, below).** Left for the owner: the three
-   reports with no date in the list and 0000507997's "2019" file (below); then the reports' text step, the opinion
-   rule, labelling and the feature set (decision 7).
+   reports with no date in the list and 0000507997's "2019" file (below). The reports' text step is built
+   (2026-10-05, progress); left: its first run on the seed (needs `make dev-up`), the opinion rule, labelling and
+   the feature set (decision 7).
 6. **Approve or change** step I's four departures from decision 7 (progress, step I).
 
 ### Decision 0(c): the auditor reports (2026-10-01)
@@ -325,6 +326,31 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
     bytes: 84 cells, none scored, as plan 0012 found. The flag costs the regression no row: its complete cases
     are v1's (625 rows and 6 events at 12 months, 550 and 6 at 24); among them the flag is true on 55, of
     which 21 at 12 months are distress rows. Too few to say anything.
+- **Decision 0(c), the reports' text step (2026-10-05), built; not yet run on the seed** (the dev stack was down).
+  - **What:** the `text_signals` asset reads every stored, not deleted auditor report (`filing_index` rows of the
+    types marked `canonical: auditor_report`) through the same page text, masking, prefilter and extractors as
+    the notes (`text_signals.read_report`): the report's one PDF is read as attachment 1 with no element path.
+    Dated by its own `submission_date` (decision 6, amended); a stored report with none is not read and is
+    counted under `skipped: report_undated`, one whose object does not hold exactly one PDF under
+    `report_not_one_pdf`. An unreadable report is G1, as an unreadable attachment is.
+  - **Changed from the step as drafted, for the owner to see:**
+    - **one dataset, a new column:** reports go into `text_signals` and `text_coverage` (AGENT_SPEC §5 names one
+      `text_signals`), told apart by `document_kind` (`statement_notes` | `auditor_report`), not into a dataset of
+      their own;
+    - **every signal is read from a report**, not only `opinion_type` and `emphasis_of_matter`: a report's
+      going-concern paragraph is the auditor's `going_concern_uncertainty`, and its emphasis paragraphs can
+      name a lawsuit. Until the owner confirms the provider's terms only the rule runs, so the rest are
+      `not_run` where the prefilter selects a page;
+    - **the notes' features read the notes only:** a text feature now names its `document_kind`, by default
+      `statement_notes`, so `feature_set_v4` is unchanged and needs no new version. Without it a report,
+      often filed after its statement, would have become "the latest statement's notes". The leakage test's
+      synthetic warehouse has a report finding a going-concern uncertainty that no notes feature may show,
+      and the test fails when the filter is removed;
+    - the pipeline hash is unchanged: the configs and prompts that shape a row are the same, so the notes keep
+      their first run ids; the new column changes both datasets' bytes once.
+  - **Not done here:** the report pages are not in the labelling queue (`golden_sample_v1` samples rejected
+    pages from the notes; adding reports is a new sample version, with labelling); `rules_v1`'s opinion rule
+    still lacks the opinion section's heading (the next step).
 
 ## Why
 

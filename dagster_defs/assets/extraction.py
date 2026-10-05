@@ -1,8 +1,8 @@
 """Dagster assets for stage G (text signals). See AGENT_SPEC.md §6G, plan 0013 step H.
 
 Thin wrapper: the logic lives in `distress_radar.extraction`. `ingestion_run_id` on every row is
-the run that first read the statement file under the current pipeline (`text_extractions`), so
-unchanged input re-materializes to identical Parquet.
+the run that first read the statement file or auditor report under the current pipeline
+(`text_extractions`), so unchanged input re-materializes to identical Parquet.
 
 No `from __future__ import annotations` here, as in the other asset modules.
 """
@@ -15,12 +15,14 @@ import dagster as dg
 
 from dagster_defs.assets.parsing import financial_statements_canonical
 from distress_radar.acquisition import manifest as acquisition_manifest
+from distress_radar.acquisition.document_retrieval import load_document_types
 from distress_radar.acquisition.models import QuarantineRecord
+from distress_radar.acquisition.report_import import auditor_codes
 from distress_radar.extraction import extractor as ex
 from distress_radar.extraction import manifest, masking, preprocessing, response_store
 from distress_radar.extraction import text_signals as ts
 from distress_radar.extraction.contracts import TEXT_COVERAGE, TEXT_SIGNALS
-from distress_radar.parsing.containers import unwrap
+from distress_radar.parsing.containers import ContainerError, unwrap
 from distress_radar.settings import Settings
 from distress_radar.warehouse import write_dataset
 
@@ -49,10 +51,15 @@ def _masking_spec() -> dg.AssetCheckSpec:
     check_specs=[_masking_spec()],
 )
 def text_signals(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
-    """G1 + G2: the notes embedded in every stored statement, read into text signals.
+    """G1 + G2: the notes embedded in every stored statement, and every stored auditor report,
+    read into text signals.
 
-    Inputs: the XML statement files `parsed_documents` holds whose filing is dated and not deleted,
-    their stored bytes in MinIO, the Polish spaCy model (`make models`), and
+    Inputs: the XML statement files `parsed_documents` holds whose filing is dated and not deleted;
+    the auditor reports `filing_index` holds stored and not deleted (the types marked
+    `canonical: auditor_report` in `config/mappings/rdf_document_types.yaml`), read only when
+    dated, by their own detail or the owner's list (plan 0013 decision 6, amended; an undated one
+    is counted under `skipped`); their stored bytes in MinIO, the Polish spaCy model
+    (`make models`), and
     `config/extraction/` (the extractor in use, `EXTRACTOR_VERSION`, with its prefilter and
     rules) and `prompts/extraction/`. Model signals are extracted only once the owner has
     confirmed the provider's terms (`EXTRACTION_API_CONFIRMED`, plan 0013 decision 2), through the
@@ -60,8 +67,9 @@ def text_signals(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
     Outputs:
     - `WAREHOUSE_DIR/text_signals/fiscal_year=YYYY/`: one row per kept extraction, with its masked
       evidence and lineage (AGENT_SPEC §5);
-    - `WAREHOUSE_DIR/text_coverage/fiscal_year=YYYY/`: one row per (statement file, signal_type):
-      what was read, and a status (`read`, `partial`, `not_run`, `no_text`);
+    - `WAREHOUSE_DIR/text_coverage/fiscal_year=YYYY/`: one row per (statement file or auditor
+      report, signal_type): what was read, and a status (`read`, `partial`, `not_run`,
+      `no_text`); both datasets say which with `document_kind`;
     - `text_extractions` (Postgres), the first run per (file, pipeline hash); new model responses
       in MinIO under `extraction/responses/` with their `extraction_responses` rows;
     - `quarantine_events` rows, stage `G1` (an unreadable attachment) and `G2` (a discarded
@@ -106,6 +114,38 @@ def text_signals(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
                 ingestion_run_id=first_run,
             )
             notes.append(ts.read_notes(statement, member.data, prefilter, mask_nlp, lemma_nlp))
+        for report in manifest.report_sources(conn, auditor_codes(load_document_types())):
+            if report.submission_date is None:
+                skipped["report_undated"] += 1
+                continue
+            try:
+                pdfs = [m for m in unwrap(store.get(report.object_key)) if m.kind == "pdf"]
+            except ContainerError:
+                pdfs = []
+            if len(pdfs) != 1:
+                skipped["report_not_one_pdf"] += 1
+                continue
+            source = manifest.TextSource(
+                sha256=report.sha256,
+                source_member=pdfs[0].source_member,
+                object_key=report.object_key,
+                krs=report.krs,
+                document_ref=report.document_ref,
+                period_end=report.period_end,
+                submission_date=report.submission_date,
+            )
+            first_run = manifest.record_text_extraction(conn, source, pipeline, run_id, now)
+            document = ts.StatementFile(
+                krs=source.krs,
+                document_ref=source.document_ref,
+                period_end=source.period_end,
+                known_from=source.submission_date,
+                source_document_hash=source.sha256,
+                source_member=source.source_member,
+                ingestion_run_id=first_run,
+                document_kind="auditor_report",
+            )
+            notes.append(ts.read_report(document, pdfs[0].data, prefilter, mask_nlp, lemma_nlp))
         conn.commit()
 
         responses = response_store.ResponseStore(store)
@@ -146,6 +186,9 @@ def text_signals(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
             "extractor_version": extractor.config.extractor_version,
             "signals_run": sorted(runnable),
             "statements": stats.statements,
+            "documents_by_kind": dict(
+                sorted(Counter(n.statement.document_kind for n in notes).items())
+            ),
             "skipped": dict(skipped),
             "pages_by_status": dict(sorted(stats.pages.items())),
             "signal_rows": signals.height,

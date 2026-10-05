@@ -85,7 +85,7 @@
     ingestion_run_id: TEXT
     event_year: INT
 - name: ext.text_coverage
-  description: "What the text stage read, per statement file and signal_type (plan 0013 step H), Parquet under WAREHOUSE_DIR."
+  description: "What the text stage read, per statement file or auditor report and signal_type (plan 0013 step H), Parquet under WAREHOUSE_DIR."
   columns:
     krs: TEXT
     fiscal_year: INT
@@ -96,6 +96,7 @@
     document_ref: TEXT
     source_document_hash: TEXT
     source_member: TEXT
+    document_kind: TEXT
     attachments: INT
     attachments_unsupported: INT
     attachment_errors: TEXT[]

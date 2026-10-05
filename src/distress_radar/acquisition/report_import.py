@@ -122,7 +122,7 @@ def read_dates(data: bytes) -> list[ListedDate]:
     return rows
 
 
-def _auditor_codes(document_types: RdfDocumentTypes) -> list[str]:
+def auditor_codes(document_types: RdfDocumentTypes) -> list[str]:
     return sorted(c for c, t in document_types.types.items() if t.canonical == AUDITOR_REPORT)
 
 
@@ -193,7 +193,7 @@ def import_reports(
 ) -> ReportImportReport:
     """Store the inbox's auditor reports and dates against `filing_index`; commits per step."""
     report = ReportImportReport()
-    codes = _auditor_codes(document_types)
+    codes = auditor_codes(document_types)
     rows = _report_rows(conn, codes)
 
     def single(krs: str, period_end: date, what: str) -> tuple[str, str | None, date | None]:

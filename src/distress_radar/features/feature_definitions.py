@@ -126,6 +126,7 @@ DISCLOSURE_INPUT_SCHEMA: dict[str, pl.DataType | type[pl.DataType]] = {
 # One row per (statement file, signal_type) of `text_coverage`.
 TEXT_INPUT_SCHEMA: dict[str, pl.DataType | type[pl.DataType]] = {
     **_FILE_COLUMNS,
+    "document_kind": pl.String,
     "signal_type": pl.String,
     "status": pl.String,
     "kept_present": pl.Int32,
@@ -779,11 +780,16 @@ def text(grid: pl.DataFrame, inputs: FeatureInputs, config: FeatureConfig) -> pl
     features = [
         f for f in _features(config, "text") if isinstance(f, TextFlagFeature | TextYearsFeature)
     ]
-    signals = {f.signal_type for f in features}
-    # krs -> signal_type -> file -> (status, kept present)
-    files: dict[str, dict[str, dict[_File, tuple[str, int]]]] = {}
-    for row in inputs.text.filter(pl.col("signal_type").is_in(list(signals))).iter_rows(named=True):
-        by_signal = files.setdefault(row["krs"], {}).setdefault(row["signal_type"], {})
+    # Each feature reads one kind of document: an auditor report's file is never the latest
+    # statement's notes.
+    keys = {(f.document_kind, f.signal_type) for f in features}
+    # krs -> (document_kind, signal_type) -> file -> (status, kept present)
+    files: dict[str, dict[tuple[str, str], dict[_File, tuple[str, int]]]] = {}
+    for row in inputs.text.iter_rows(named=True):
+        key = (row["document_kind"], row["signal_type"])
+        if key not in keys:
+            continue
+        by_signal = files.setdefault(row["krs"], {}).setdefault(key, {})
         by_signal[_file(row)] = (row["status"], row["kept_present"])
 
     def rows() -> Iterator[Row]:
@@ -791,7 +797,7 @@ def text(grid: pl.DataFrame, inputs: FeatureInputs, config: FeatureConfig) -> pl
             by_signal = files.get(krs, {})
             for day in days:
                 for f in features:
-                    read = by_signal.get(f.signal_type, {})
+                    read = by_signal.get((f.document_kind, f.signal_type), {})
                     periods = _latest_by_period(read, day)
                     if not periods:
                         continue

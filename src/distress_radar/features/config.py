@@ -24,7 +24,7 @@ from typing import Annotated, Literal
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from distress_radar.extraction.preprocessing import SignalType
+from distress_radar.extraction.preprocessing import DocumentKind, SignalType
 from distress_radar.features.statutory import (
     FilingDeadlines,
     KshTripwires,
@@ -289,10 +289,12 @@ class DisclosureNumberFeature(_Feature):
 
 
 class TextFlagFeature(_Feature):
-    """Whether the latest statement's notes carry a signal: null unless they were read for it."""
+    """Whether the latest statement's notes carry a signal: null unless they were read for it.
+    `document_kind` names what is read: the notes by default, or the auditor reports."""
 
     kind: Literal["text_flag"]
     signal_type: SignalType
+    document_kind: DocumentKind = "statement_notes"
 
     def inputs(self) -> set[str]:
         return set()
@@ -303,6 +305,7 @@ class TextYearsFeature(_Feature):
 
     kind: Literal["text_years"]
     signal_type: SignalType
+    document_kind: DocumentKind = "statement_notes"
 
     def inputs(self) -> set[str]:
         return set()

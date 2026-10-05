@@ -40,6 +40,10 @@ SignalType = Literal[
     "continued_existence_vote",
 ]
 SIGNAL_TYPES: tuple[SignalType, ...] = get_args(SignalType)
+# What a text signal was read from (AGENT_SPEC §5, `document_kind`): the notes embedded in a
+# statement, or a separately filed auditor report (plan 0013 decision 0c).
+DocumentKind = Literal["statement_notes", "auditor_report"]
+DOCUMENT_KINDS: tuple[DocumentKind, ...] = get_args(DocumentKind)
 
 
 def load_model(model_dir: Path | None = None) -> Any:

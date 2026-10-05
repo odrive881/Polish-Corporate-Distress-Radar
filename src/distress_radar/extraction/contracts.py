@@ -14,7 +14,7 @@ from typing import get_args
 import pandera.polars as pa
 import polars as pl
 
-from distress_radar.extraction.preprocessing import SIGNAL_TYPES
+from distress_radar.extraction.preprocessing import DOCUMENT_KINDS, SIGNAL_TYPES
 from distress_radar.extraction.schemas import Confidence, OpinionValue
 from distress_radar.extraction.text_signals import COVERAGE_COLUMNS, SIGNAL_COLUMNS, CoverageStatus
 
@@ -33,6 +33,8 @@ def _column(
         checks.append(pa.Check.str_matches(_SHA256))
     elif name == "signal_type":
         checks.append(pa.Check.isin(list(SIGNAL_TYPES)))
+    elif name == "document_kind":
+        checks.append(pa.Check.isin(list(DOCUMENT_KINDS)))
     elif name == "value":
         checks.append(pa.Check.isin(_VALUES))
     elif name == "extraction_method":
