@@ -47,6 +47,7 @@ import duckdb
 import polars as pl
 
 from distress_radar.features.config import (
+    AuditAgeFeature,
     AuditFlagFeature,
     AuditYearsFeature,
     BelowZeroFeature,
@@ -167,6 +168,8 @@ class FeatureInputs:
 
 
 Row = tuple[str, date, str, float, date]
+# A Julian year, for ages in years (`audit_age`).
+DAYS_PER_YEAR = 365.25
 
 
 def _frame(rows: Iterable[Row]) -> pl.DataFrame:
@@ -841,11 +844,14 @@ def text(grid: pl.DataFrame, inputs: FeatureInputs, config: FeatureConfig) -> pl
 
 
 def audit(grid: pl.DataFrame, inputs: FeatureInputs, config: FeatureConfig) -> pl.DataFrame:
-    """Facts of the latest auditor report, and the periods whose report showed them (plan 0013
-    decision 0c). A report speaks from its own filing, as a statement's notes do; a fact it does
-    not establish (no opinion stated, no single firm, no earlier report) is null, never false."""
+    """Facts of the latest auditor report, the periods whose report showed them, and how old that
+    report is (plan 0013 decision 0c). A report speaks from its own filing, as a statement's notes
+    do; a fact it does not establish (no opinion stated, no single firm, no earlier report) is
+    null, never false."""
     features = [
-        f for f in _features(config, "audit") if isinstance(f, AuditFlagFeature | AuditYearsFeature)
+        f
+        for f in _features(config, "audit")
+        if isinstance(f, AuditFlagFeature | AuditYearsFeature | AuditAgeFeature)
     ]
     # krs -> report file -> item -> value
     files: dict[str, dict[_File, dict[str, bool | None]]] = {}
@@ -860,6 +866,13 @@ def audit(grid: pl.DataFrame, inputs: FeatureInputs, config: FeatureConfig) -> p
             by_file = files.get(krs, {})
             for day in days:
                 for f in features:
+                    if isinstance(f, AuditAgeFeature):
+                        periods = _latest_by_period(by_file, day)
+                        if periods:
+                            latest = periods[max(periods)]
+                            age = (day - latest.period_end).days / DAYS_PER_YEAR
+                            yield (krs, day, f.name, age, latest.known_from)
+                        continue
                     if isinstance(f, AuditFlagFeature):
                         periods = _latest_by_period(by_file, day)
                         if not periods:

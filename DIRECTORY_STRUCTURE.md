@@ -103,6 +103,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │   ├── feature_set_v3.yaml        # v2 over line_items_v3
 │   │   ├── feature_set_v4.yaml        # v3 + the statement's disclosures and the notes' signals (plan 0013)
 │   │   ├── feature_set_v5.yaml        # v4 + the auditor reports: opinion, auditor change, emphasis (plan 0013)
+│   │   ├── feature_set_v6.yaml        # v5 + the latest auditor report's age (plan 0013)
 │   │   ├── line_items_v1.yaml         # ratio inputs → chart code, per form and income-statement variant
 │   │   ├── line_items_v2.yaml         # v1 + the result on sales
 │   │   └── line_items_v3.yaml         # v2 + the 2025 calculation-variant revenue line
@@ -111,6 +112,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │   ├── backtest_v1.yaml           # inputs pinned by hash, horizons, test years, minimum events
 │   │   ├── backtest_v2.yaml           # v1 on feature_set_v4, plus the going-concern flag (plan 0013)
 │   │   ├── backtest_v3.yaml           # v2 on feature_set_v5, the regression unchanged (plan 0013)
+│   │   ├── backtest_v4.yaml           # v3 on feature_set_v6 (plan 0013)
 │   │   └── poznan_2004.yaml           # the Poznań model, Hamrol, Czajka, Piechocki (2004)
 │   ├── labels/
 │   │   ├── outcome_labels_v1.yaml     # label parameters; the file name is the label_version

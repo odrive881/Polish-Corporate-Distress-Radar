@@ -200,6 +200,15 @@ def test_backtest_v3_is_v2_on_feature_set_v5() -> None:
     assert v3.model_dump(exclude=unchanged) == v2.model_dump(exclude=unchanged)
 
 
+def test_backtest_v4_is_v3_on_feature_set_v6() -> None:
+    """Recorded before any run: v3 unchanged, on v6's feature store."""
+    v3 = load_backtest_config("backtest_v3")
+    v4 = load_backtest_config("backtest_v4")
+    assert v4.feature_set_version == "feature_set_v6"
+    unchanged = {"backtest", "feature_set_version"}
+    assert v4.model_dump(exclude=unchanged) == v3.model_dump(exclude=unchanged)
+
+
 def test_the_regression_may_only_read_ratio_features_and_flags(tmp_path: Path) -> None:
     config_dir = tmp_path / "config"
     shutil.copytree(CONFIG_DIR, config_dir)

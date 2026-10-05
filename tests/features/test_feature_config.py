@@ -341,6 +341,16 @@ def test_v5_is_v4_with_the_auditor_reports() -> None:
     assert {getattr(f, "document_kind", None) for f in emphasis} == {"auditor_report"}
 
 
+def test_v6_is_v5_with_the_report_age() -> None:
+    """Plan 0013 decision 0c (owner, 2026-10-05): v5 unchanged, then the auditor report's age."""
+    v5 = load_feature_set("feature_set_v5")
+    v6 = load_feature_set("feature_set_v6")
+    old = len(v5.feature_set.features)
+    assert v6.feature_set.features[:old] == v5.feature_set.features
+    added = {f.name: (f.family, feature_dtype(f)) for f in v6.feature_set.features[old:]}
+    assert added == {"auditor_report_age_years": ("audit", "float")}
+
+
 @pytest.mark.parametrize(
     ("feature", "message"),
     [

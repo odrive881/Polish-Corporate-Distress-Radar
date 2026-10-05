@@ -88,6 +88,7 @@ KIND_FAMILIES: dict[str, tuple[Family, ...]] = {
     "text_years": ("text",),
     "audit_flag": ("audit",),
     "audit_years": ("audit",),
+    "audit_age": ("audit",),
 }
 
 
@@ -338,6 +339,17 @@ class AuditYearsFeature(_Feature):
         return set()
 
 
+class AuditAgeFeature(_Feature):
+    """Years from the latest auditor report's balance-sheet date to `as_of_date`: how old the
+    audit the other `audit` features speak for is. Null until a report is known; known for a
+    report whose opinion is not (a scan)."""
+
+    kind: Literal["audit_age"]
+
+    def inputs(self) -> set[str]:
+        return set()
+
+
 Feature = Annotated[
     RatioFeature
     | GrowthFeature
@@ -351,7 +363,8 @@ Feature = Annotated[
     | TextFlagFeature
     | TextYearsFeature
     | AuditFlagFeature
-    | AuditYearsFeature,
+    | AuditYearsFeature
+    | AuditAgeFeature,
     Field(discriminator="kind"),
 ]
 

@@ -1,0 +1,41 @@
+# The out-of-time backtest, v4 (plan 0013 decision 0c): backtest_v3, unchanged, on `feature_set_v6`
+# (v5 plus the auditor report's age). The regression's inputs are v2's, for v3's reasons. Recorded
+# before any run, as plan 0012 owner decision 5 requires.
+#
+# v3 was backtest_v2, unchanged, on `feature_set_v5` (v4 plus the auditor reports' features). The
+# regression's inputs stayed v2's: the report features are null for every entity that is not
+# audited, and on the seed a modified opinion is too rare to enter a model (3 qualified reports, 1
+# disclaimer). They wait for Phase 8's models, which take nulls natively.
+#
+# v2 (plan 0013 owner decision 8) was backtest_v1 with `feature_set_v4` and one input more for the
+# regression, the statement's own going-concern flag. Engineering choices, not statute.
+# Loaded by `distress_radar.models.splits.load_backtest_config`. The file name is the version:
+# change a value after seeing results, and it is a new file, never an edit.
+
+backtest: backtest_v4
+# The inputs, pinned: one feature set and one frozen label set (plan 0009), by hash.
+feature_set_version: feature_set_v6
+label_set_hash: 066d18bbd4cde37fdd9d239ce687fd601f7075570b1a1593540cd009f75389a1
+horizons: [12, 24]
+# Plan 0012 decision 1: distress against `alive`; censored rows are left out of the binary models.
+distress_classes: [bankruptcy, restructuring, liquidation, silent_exit]
+# Plan 0012 decision 2: expanding window by calendar year, as in v1.
+test_years: [2020, 2021, 2022, 2023, 2024, 2025]
+min_events: 3
+
+# Plan 0012 decision 5's four ratios, unchanged, plus `going_concern_threat` (plan 0013 decision 8):
+# the latest statement reports circumstances threatening its going concern (P_5B). Complete cases,
+# so a row whose latest statement has no XML introduction is left out and counted. A flag ranks to
+# two values. Not tuned.
+logistic_regression:
+  features: [equity_to_assets, working_capital_to_assets, roa, asset_turnover, going_concern_threat]
+  penalty: l2
+  C: 1.0
+  class_weight: none  # weighting would distort the probabilities the Brier score judges
+
+# Plan 0012 decision 8, as in v1.
+bootstrap:
+  replicates: 1000
+  seed: 20260927
+  level: 0.95
+reliability_bins: 10

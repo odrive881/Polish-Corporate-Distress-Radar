@@ -33,8 +33,7 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
    are built (`feature_set_v5`, 2026-10-05); left: labelling them.
 6. **Approve or change** step I's four departures from decision 7 (progress, step I), and the choices recorded
    "for the owner to see" in the 2026-10-05 progress entries (reports in the same datasets with `document_kind`,
-   every signal read from a report, the notes' features reading the notes only), and whether `feature_set_v5`
-   should carry a report-age feature.
+   every signal read from a report, the notes' features reading the notes only).
 
 ### Decision 0(c): the auditor reports (2026-10-01)
 
@@ -441,9 +440,20 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
     the same report bytes; it differs from `backtest_v2`'s only in its header (version, commit, feature-set hash):
     the regression's inputs and rows are v2's, and no cell of 84 is scored, as before.
   - **For the owner:** a report speaks until a later one is filed, however old: an entity that stops being
-    audited keeps its last report's values. A report-age feature would tell the model so; it is not in v5.
+    audited keeps its last report's values. A report-age feature would tell the model so; it is not in v5
+    (added in v6, below).
     The auditor's own going-concern paragraph (`going_concern_uncertainty` on a report) is not a v5 feature
     either: decision 7 did not list it, and it waits on the model like the notes'.
+- **The report's age (2026-10-05, owner): `feature_set_v6`, `backtest_v4`.** v5 is pushed, so the feature is a
+  new version, not an edit: v6 is v5 unchanged plus `auditor_report_age_years` (kind `audit_age`), the years of
+  365.25 days from the latest known report's balance-sheet date to `as_of_date`, dated by that report's filing,
+  null until a report is known, and known for a report whose opinion is not (a scan). `backtest_v4` is v3 on v6,
+  recorded before its first run. Both are the new defaults. The leakage test runs on v6, and its synthetic
+  entity's age is checked month by month: the 2020 report growing older while the late 2021 report is unfiled,
+  and again after the 2022 report's deletion.
+  - **On the seed:** `features` twice, 2,929 rows and 63 features, `leakage` passed both times, the same bytes.
+    The age is known on 915 rows of 12 entities: median 1.5 years, up to 7.9; on 326 rows the latest report is
+    over two years old, so the stale values v5 alone would have shown are common, not an edge case.
 
 ## Why
 
