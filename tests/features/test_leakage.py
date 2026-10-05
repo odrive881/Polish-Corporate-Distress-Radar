@@ -371,6 +371,7 @@ def _month_ends(first: date, last: date) -> list[date]:
         "feature_set_v3",
         "feature_set_v4",
         "feature_set_v5",
+        "feature_set_v6",
     ],
 )
 def config(request: pytest.FixtureRequest) -> FeatureConfig:
@@ -785,3 +786,39 @@ def test_a_leaky_audit_family_fails_the_truncation_check(
     traps = grid.filter(pl.col("as_of_date").is_in(TRAP_DAYS))
     differences = truncation_differences(traps, v5_sources, v5, {"audit": _audit_by_period_end})
     assert not differences.is_empty()
+
+
+# --- feature set v6: the auditor report's age -----------------------------------------------------
+
+
+def test_the_report_age_grows_until_a_later_report_is_filed(grid: pl.DataFrame) -> None:
+    v6 = load_feature_set("feature_set_v6")
+    sources = FeatureSources(
+        canonical=_canonical(v6),
+        restatements=_restatements(),
+        legal_events=_legal_events(),
+        filing_index=_filing_index(),
+        parse_status=_parse_status(),
+        disclosures=_disclosures(),
+        text_coverage=_text_coverage(),
+        auditor_reports=_auditor_reports(),
+    )
+    inputs, _ = feature_inputs(sources, v6)
+    store = assemble(grid, fd.compute_features(grid, inputs, v6), v6)
+
+    def age(krs: str, day: date) -> object:
+        return _row(store, krs, day)["auditor_report_age_years"]
+
+    assert age(A, date(2021, 7, 31)) is None
+    # ra20, on 2020's balance sheet, from its filing on 2021-08-10
+    assert age(A, date(2021, 8, 31)) == pytest.approx(243 / 365.25)
+    # ra21 is filed late: until then the 2020 report keeps growing older
+    assert age(A, date(2022, 8, 31)) == pytest.approx(608 / 365.25)
+    assert age(A, date(2022, 9, 30)) == pytest.approx(273 / 365.25)
+    known = _row(store, A, date(2022, 9, 30))["auditor_report_age_years__known_from"]
+    assert known == date(2022, 9, 20)
+    # ra22's deletion: ra21 speaks again, older
+    assert age(A, date(2024, 2, 29)) == pytest.approx(790 / 365.25)
+    # ra23 states no opinion, but how old it is is known
+    assert age(A, date(2024, 11, 30)) == pytest.approx(335 / 365.25)
+    assert age(B, date(2024, 11, 30)) is None
