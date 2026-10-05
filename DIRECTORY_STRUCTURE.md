@@ -149,7 +149,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │   ├── labels.py                  # plan 0008: SQLMesh label models, audits, frozen label set
 │   │   ├── parsing.py
 │   │   ├── dq.py                      # E3/F: SQLMesh DQ models, audits as asset checks
-│   │   ├── extraction.py              # plan 0013: notes → text_signals, text_coverage; its own job
+│   │   ├── extraction.py              # plan 0013: notes and auditor reports → text_signals, text_coverage; its own job
 │   │   ├── features.py
 │   │   └── models.py                  # plan 0012: the backtest asset, its own job, run by hand
 │   ├── checks/                        # asset checks — accounting identities, leakage guard
@@ -161,7 +161,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 ├── notebooks/                         # marimo, .py format only
 │   ├── exploration/
 │   └── labelling/
-│       └── golden_set.py              # the owner labels the local queue (plan 0013 step E)
+│       └── golden_set.py              # the owner labels the local queues, one per golden sample (plan 0013 step E)
 │
 ├── app/                                # Streamlit internal explorer
 │   ├── Home.py
@@ -252,10 +252,10 @@ src/distress_radar/
 │   ├── page_text.py             # G1 — embedded attachments, PDF text layer per page (plan 0013)
 │   ├── masking.py               # G1 — person names, PESEL, contacts masked (ADR 0009, third addendum)
 │   ├── preprocessing.py         # G1 — spaCy sentences and lemmas, lemma prefilter (config/extraction/)
-│   ├── golden.py                 # G3 — labelling queue, golden rows, export, masking check of evals/
-│   ├── label_queue.py            # G3 — builds the queue from the stores, exports to evals/ (make label-*)
+│   ├── golden.py                 # G3 — labelling queues (notes; whole auditor reports), golden rows, export, masking check of evals/
+│   ├── label_queue.py            # G3 — builds every sample's queue from the stores, exports them to evals/ (make label-*)
 │   ├── schemas.py                # G2 — output schemas and response models, kept and discarded answers
-│   ├── rules.py                  # G2 — lemma rules (config/extraction/rules_*.yaml)
+│   ├── rules.py                  # G2 — lemma or heading rules (config/extraction/rules_*.yaml)
 │   ├── response_store.py         # G2 — responses stored by request hash, replayed (decision 3)
 │   ├── extractor.py              # G2 — constrained LLM call, evidence check, sync and batch transports
 │   ├── text_signals.py           # G — the text_signals and text_coverage datasets, the masking check

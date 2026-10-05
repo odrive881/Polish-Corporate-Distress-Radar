@@ -230,7 +230,7 @@ The **current** quarantined set: SQLMesh model `quarantine.quarantine`, recomput
 - E2: `quality_grade = 'quarantined'` on the canonical table, with the checks that failed materially as reasons;
 - C1/C2: `parsed_documents` on the latest parsing run;
 - A1–A4 and C4: the latest event per key in the log;
-- G1 (an attachment of the notes that cannot be read, per file) and G2 (a discarded text extraction, per file and `signal_type`): `text_coverage` (plan 0013 step H).
+- G1 (an attachment of the notes, or an auditor report, that cannot be read, per file) and G2 (a discarded text extraction, per file and `signal_type`): `text_coverage` (plan 0013 step H).
 
 The log itself is the Postgres table **`quarantine_events`**: append-only, one row per first detection, never updated or deleted. A log row describing a file the current rules no longer quarantine is simply not selected. Never answer "is this quarantined now?" from the log (ADR 0006 addendum, ADR 0010).
 
@@ -405,7 +405,7 @@ Feature families as built (feature set v1, 44 features):
 
 Feature sets v2 and v3 (plan 0012) keep v1's 44 features unchanged and add five ratios the classical models read: retained earnings (prior years' result plus the year's) to assets, operating result to assets (standing in for EBIT), equity to liabilities, long-term capital (equity plus long-term liabilities) to assets, and the result on sales to revenue. v3, the default, also counts the 2025 calculation-variant revenue line (`IS.CALC.A.R2025`, products and goods, no longer materials) as revenue; without it, revenue was null for those statements. The leakage test runs on every feature set.
 
-Deferred, each with its reason in plan 0010: auditor change and loss-coverage history (text, Phase 7); text signals (§G, Phase 7); macro and sector context (A5 has no adapter, and sector aggregates over the seed would leak its own outcomes); size class (§4.4 needs average employment, which no structured source carries, `docs/data_inventory.md` gap 8).
+Deferred, each with its reason in plan 0010: auditor change and loss-coverage history (text, Phase 7); text signals (§G, Phase 7); macro and sector context (A5 has no adapter, and sector aggregates over the seed would leak its own outcomes); size class (§4.4 needs average employment, which no structured source carried before FY2025, `docs/data_inventory.md` gap 8). Since then, `feature_set_v4` (plan 0013) adds the disclosure family (the going-concern flags, and employment from FY2025's wariant 2) and the notes' text family (going-concern and loss-coverage signals); the auditor's opinion and auditor change, from the reports, are still to come, and the size class still waits on employment before FY2025.
 
 **H2** Leakage tests — see §9.1. `features/leakage.py` holds both checks: §9.1 as written, and the per-family variant, which recomputes each family from the sources cut to what was public on each `as_of_date` and requires identical output. `tests/features/test_leakage.py` runs them on a synthetic warehouse with traps and shows leaky families fail; the Dagster `feature_store` asset runs them on the live store as a blocking asset check.
 
