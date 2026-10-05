@@ -98,7 +98,7 @@ class Settings(BaseSettings):
     anthropic_api_key: SecretStr | None = None
     # Which `config/extraction/<extractor_version>.yaml` is in use: what `make eval` runs and the gate
     # in `make check` holds to its accepted scores (plan 0013 step G), under `eval_gate_version`.
-    extractor_version: str = "extractor_v1"
+    extractor_version: str = "extractor_v2"
     eval_gate_version: str = "eval_gate_v1"
     extraction_api_confirmed: bool = False
 

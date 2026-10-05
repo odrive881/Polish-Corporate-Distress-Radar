@@ -363,3 +363,120 @@ def test_the_sync_transport_leaves_failed_calls_for_the_next_run() -> None:
     transport = ex.SyncTransport(_Obj(messages=_Obj(create=create)))  # type: ignore[arg-type]
     responses, failed = transport.run({"a" * 64: {"model": "up"}, "b" * 64: {"model": "down"}})
     assert set(responses) == {"a" * 64} and failed == {"b" * 64}
+
+
+# --- rules_v2: the opinion by the report's headings ------------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def headings() -> rules.Rules:
+    return rules.load_rules("rules_v2")
+
+
+@pytest.mark.parametrize(
+    ("text", "value", "confidence", "evidence"),
+    [
+        # invented reports, in the KSB 700/705 layout
+        (
+            (
+                "Opinia\nNaszym zdaniem sprawozdanie przedstawia rzetelny obraz.\nPodstawa opinii\n"
+                "Badanie przeprowadziliśmy zgodnie z KSB."
+            ),
+            "unqualified",
+            "high",
+            "Opinia",
+        ),
+        (
+            (
+                "1. Opinia z zastrzeżeniem:\nNaszym zdaniem, z wyjątkiem kwestii opisanej niżej...\n"
+                "2. Podstawa opinii z zastrzeżeniem"
+            ),
+            "qualified",
+            "high",
+            "1. Opinia z zastrzeżeniem:",
+        ),
+        (
+            "ODMOWA WYRAŻENIA OPINII\nNie wyrażamy opinii.",
+            "disclaimer",
+            "high",
+            "ODMOWA WYRAŻENIA OPINII",
+        ),
+        # no opinion heading on the page: its basis heading says which opinion it is
+        (
+            (
+                "Naszym zdaniem sprawozdanie nie przedstawia rzetelnego obrazu.\n"
+                "  Podstawa opinii negatywnej  \nSpółka nie ujęła rezerwy."
+            ),
+            "adverse",
+            "medium",
+            "Podstawa opinii negatywnej",
+        ),
+        # the opinion on the management report, and a sentence mentioning a qualification: no
+        # heading of the opinion on the statements
+        (
+            (
+                "Opinia o sprawozdaniu z działalności\nW poprzednim roku wydaliśmy opinię z "
+                "zastrzeżeniem."
+            ),
+            None,
+            "high",
+            None,
+        ),
+    ],
+)
+def test_the_heading_rule_reads_the_opinion_section_s_heading(
+    text: str,
+    value: str | None,
+    confidence: str,
+    evidence: str | None,
+    headings: rules.Rules,
+) -> None:
+    got = rules.opinion_type(text, [], headings)
+    assert (got.value, got.present, got.confidence, got.evidence) == (
+        value,
+        value is not None,
+        confidence,
+        evidence,
+    )
+    if got.evidence is not None:
+        assert got.evidence_start is not None
+        assert text[got.evidence_start :].startswith(got.evidence)
+
+
+def test_the_first_opinion_heading_wins_over_a_basis_heading_before_it(
+    headings: rules.Rules,
+) -> None:
+    text = "Podstawa opinii\nOpinia z zastrzeżeniem\nOpinia"
+    got = rules.opinion_type(text, [], headings)
+    assert (got.value, got.confidence) == ("qualified", "high")
+
+
+def test_every_heading_is_written_as_its_key(headings: rules.Rules) -> None:
+    assert headings.opinion_headings is not None
+    assert {v for v in headings.opinion_headings} == set(rules.SEVERITY)
+    with pytest.raises(ValidationError, match="not written as its key"):
+        rules.OpinionHeadings(opinion=("Opinia",), basis=("podstawa opinii",))
+
+
+def test_rules_give_exactly_one_form(headings: rules.Rules) -> None:
+    terms = rules.load_rules("rules_v1").opinion_type
+    with pytest.raises(ValidationError, match="exactly one"):
+        rules.Rules(
+            rules_version="x", opinion_type=terms, opinion_headings=headings.opinion_headings
+        )
+    with pytest.raises(ValidationError, match="exactly one"):
+        rules.Rules(rules_version="x")
+    assert headings.opinion_headings is not None
+    twice = {**headings.opinion_headings}
+    twice["adverse"] = twice["unqualified"]
+    with pytest.raises(ValidationError, match="more than once"):
+        rules.Rules(rules_version="x", opinion_headings=twice)
+
+
+def test_extractor_v2_reads_the_opinion_by_headings_and_keeps_v1_s_requests() -> None:
+    v1, v2 = ex.load_extractor("extractor_v1"), ex.load_extractor("extractor_v2")
+    assert v2.rules.opinion_headings is not None
+    assert v2.config.prefilter_version == "prefilter_v2"
+    for signal, method in v2.config.signals.items():
+        if method.method == "llm":
+            assert ex.request_params(v1, signal, "x") == ex.request_params(v2, signal, "x")

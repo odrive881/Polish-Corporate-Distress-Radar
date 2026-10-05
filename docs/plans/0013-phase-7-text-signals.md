@@ -26,7 +26,8 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
 4. **Then rerun** the `text` job and the `features` job: the notes' features fill in, with no new version.
 5. **Decision 0(c), auditor reports: stored and dated (2026-10-02, below).** Left for the owner: the three
    reports with no date in the list and 0000507997's "2019" file (below). The reports' text step is built
-   and run on the seed (2026-10-05, progress); left: the opinion rule, labelling and the feature set (decision 7).
+   and run on the seed (2026-10-05, progress), and the opinion rule reads the report's headings (`rules_v2`,
+   2026-10-05); left: labelling the report pages and the feature set (decision 7).
 6. **Approve or change** step I's four departures from decision 7 (progress, step I).
 
 ### Decision 0(c): the auditor reports (2026-10-01)
@@ -360,6 +361,31 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
   - **Not done here:** the report pages are not in the labelling queue (`golden_sample_v1` samples rejected
     pages from the notes; adding reports is a new sample version, with labelling); `rules_v1`'s opinion rule
     still lacks the opinion section's heading (the next step).
+- **Decision 0(c), the opinion rule (2026-10-05): `rules_v2`, by headings, in `extractor_v2` (the new default).**
+  - **Found first, by counts only** (no report text was read into a session: decision 2's confirmation is
+    pending): KSB 700/705 fix one pair of headings per opinion, the opinion's own ("Opinia", "Opinia z
+    zastrzeżeniem", "Opinia negatywna", "Odmowa wyrażenia opinii") and its basis's ("Podstawa opinii", "...z
+    zastrzeżeniem", "...negatywnej", "Podstawa odmowy wyrażenia opinii"). Of the 44 text reports, 31 carry both
+    and they agree in all 31; the other 13 carry only a plain "Podstawa opinii" (their opinion heading is not a
+    line of its own). The short lines that begin "Opinia..." but are not a heading are the opinion on the
+    management report ("Opinia o sprawozdaniu z działalności", 35 reports) and one firm's running title.
+    Against that, `rules_v1` had read two reports headed "Opinia" as qualified (a sentence mentioning a
+    qualification) and nothing in four.
+  - **What:** `rules.py` takes a second form of rule, `opinion_headings`: a line that is, whole, an opinion
+    heading gives the opinion (`high`), failing one a basis heading (`medium`), the first on the page, the
+    line as evidence; a sentence never does. `rules_v2.yaml` lists the KSB headings; `prefilter_v2` selects
+    every page with the lemma `opinia` for `opinion_type` (v1's terms selected only a modified opinion's
+    wording, so "Opinia" never reached the rule); `extractor_v2` pins both and keeps v1's model, effort and
+    prompts, so a model signal's request and stored response are unchanged (tested).
+  - **On the seed, twice, the same bytes:** an opinion in all 44 text reports, by heading in 31, by basis alone
+    in 13: 40 unqualified, 3 qualified, 1 disclaimer, exactly the heading counts; no report's pages disagree.
+    The 4 scanned reports stay `no_text`. Of the notes, 6 pages are now selected for `opinion_type`, and none
+    is read as an opinion. `evidence_masked` passed. Every file has a new run id (a new pipeline hash).
+  - **For the owner:** the census's keyword count (6 qualified, 1 disclaimer) counted wording, not opinions;
+    by headings there are 3 qualified opinions. An `absent` opinion on a page means no heading there, never an
+    unqualified opinion. The evidence is the heading, so when labelling a report page the guide's
+    `opinion_type` evidence may be the heading or the "Naszym zdaniem" sentence: the eval scores the value, and
+    counts evidence overlap only as a statistic.
 
 ## Why
 
