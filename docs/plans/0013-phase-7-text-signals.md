@@ -11,7 +11,7 @@
 **Order:** after plan 0012 (complete). It does not wait for ADR 0013: like Phase 6, it builds and measures
 machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set this plan adds.
 
-## Status: active (2026-09-29): owner decisions 0–8 accepted; steps A to D and F to I built, step E's tooling built and 50 of 240 pages labelled; the rest of the labelling and the first model call wait on the owner; the auditor reports of decision 0(c) are stored and dated from the owner's list (decision 6 amended 2026-10-02), and the text job reads them (2026-10-05, not yet run on the seed)
+## Status: active (2026-09-29): owner decisions 0–8 accepted; steps A to D and F to I built, step E's tooling built and 50 of 240 pages labelled; the rest of the labelling and the first model call wait on the owner; the auditor reports of decision 0(c) are stored and dated from the owner's list (decision 6 amended 2026-10-02), and the text job reads them (2026-10-05; only the opinion rule has run on them)
 
 ### Where this stands (2026-10-01): what waits on the owner, in order
 
@@ -26,8 +26,7 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
 4. **Then rerun** the `text` job and the `features` job: the notes' features fill in, with no new version.
 5. **Decision 0(c), auditor reports: stored and dated (2026-10-02, below).** Left for the owner: the three
    reports with no date in the list and 0000507997's "2019" file (below). The reports' text step is built
-   (2026-10-05, progress); left: its first run on the seed (needs `make dev-up`), the opinion rule, labelling and
-   the feature set (decision 7).
+   and run on the seed (2026-10-05, progress); left: the opinion rule, labelling and the feature set (decision 7).
 6. **Approve or change** step I's four departures from decision 7 (progress, step I).
 
 ### Decision 0(c): the auditor reports (2026-10-01)
@@ -326,7 +325,7 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
     bytes: 84 cells, none scored, as plan 0012 found. The flag costs the regression no row: its complete cases
     are v1's (625 rows and 6 events at 12 months, 550 and 6 at 24); among them the flag is true on 55, of
     which 21 at 12 months are distress rows. Too few to say anything.
-- **Decision 0(c), the reports' text step (2026-10-05), built; not yet run on the seed** (the dev stack was down).
+- **Decision 0(c), the reports' text step (2026-10-05), built and run on the seed.**
   - **What:** the `text_signals` asset reads every stored, not deleted auditor report (`filing_index` rows of the
     types marked `canonical: auditor_report`) through the same page text, masking, prefilter and extractors as
     the notes (`text_signals.read_report`): the report's one PDF is read as attachment 1 with no element path.
@@ -348,6 +347,16 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
       and the test fails when the filter is removed;
     - the pipeline hash is unchanged: the configs and prompts that shape a row are the same, so the notes keep
       their first run ids; the new column changes both datasets' bytes once.
+  - **On the seed, twice, rules only:** 48 reports of 12 entities read (51 stored; the 3 undated are the gaps
+    above: 0000181328 2019, 0000291203 2024 and 2025); 259 pages, 229 with text, 30 scanned (4 reports
+    scans throughout, `no_text`), none unreadable. `opinion_type`: the prefilter selects 23 pages in 17
+    reports, and `rules_v1` reads 11 as unqualified, 10 qualified, 2 disclaimer. These are not measured
+    and not yet trusted: the census's keyword count found 6 qualified opinions and 1 disclaimer, and a page
+    that mentions a qualified opinion is not one that gives it, which is the opinion rule's next step. Waiting
+    on the model (`not_run`): `going_concern_uncertainty` in 44 reports (89 pages), `emphasis_of_matter` 35
+    (38), `litigation` 4, `post_balance_sheet_event` 3. Both runs byte for byte the same; `evidence_masked`
+    passed. The notes' 1,170 coverage rows are as before; `feature_store` is the same bytes, `leakage`
+    passed; the `quarantine` model rebuilt, no G1 or G2.
   - **Not done here:** the report pages are not in the labelling queue (`golden_sample_v1` samples rejected
     pages from the notes; adding reports is a new sample version, with labelling); `rules_v1`'s opinion rule
     still lacks the opinion section's heading (the next step).
