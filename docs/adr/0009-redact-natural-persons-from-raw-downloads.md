@@ -204,5 +204,7 @@ text is read under this addendum's rule, unchanged: masked at the page, the mask
 else sees. Reports name the key auditor and the signatories, and the masker misses more of them than of the
 notes' names: of the 102 report pages queued for labelling, 15 hold a span a second masking pass would still
 replace (the notes: 6 of 702 pages). Those pages are shown to the owner to mask by hand, and the export refuses
-them until then; the measured recall covers report pages once they are labelled. The audit firm, a legal entity,
-is not masked.
+them until then; the measured recall covers report pages once they are labelled. The audit firm's name is masked
+only where the masker takes it for a person (a sole practitioner's firm often is), and its number on the list of audit firms is never stored (owner, 2026-10-05): a firm can be a sole
+practitioner, a natural person, so the text stage keeps only whether the firm changed between reports
+(`auditor_reports.auditor_changed`), and the rule that reads the number must not reach the key auditor's own.

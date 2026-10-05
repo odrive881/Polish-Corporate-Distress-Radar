@@ -77,6 +77,7 @@ def known_on(sources: FeatureSources, day: date) -> FeatureSources:
         ),
         disclosures=sources.disclosures.filter(pl.col("known_from") <= day),
         text_coverage=sources.text_coverage.filter(pl.col("known_from") <= day),
+        auditor_reports=sources.auditor_reports.filter(pl.col("known_from") <= day),
     )
 
 

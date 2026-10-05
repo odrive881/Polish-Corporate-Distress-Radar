@@ -18,10 +18,16 @@ from distress_radar.acquisition import manifest as acquisition_manifest
 from distress_radar.acquisition.document_retrieval import load_document_types
 from distress_radar.acquisition.models import QuarantineRecord
 from distress_radar.acquisition.report_import import auditor_codes
+from distress_radar.extraction import (
+    auditor_reports,
+    manifest,
+    masking,
+    preprocessing,
+    response_store,
+)
 from distress_radar.extraction import extractor as ex
-from distress_radar.extraction import manifest, masking, preprocessing, response_store
 from distress_radar.extraction import text_signals as ts
-from distress_radar.extraction.contracts import TEXT_COVERAGE, TEXT_SIGNALS
+from distress_radar.extraction.contracts import AUDITOR_REPORTS, TEXT_COVERAGE, TEXT_SIGNALS
 from distress_radar.parsing.containers import ContainerError, unwrap
 from distress_radar.settings import Settings
 from distress_radar.warehouse import write_dataset
@@ -70,6 +76,9 @@ def text_signals(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
     - `WAREHOUSE_DIR/text_coverage/fiscal_year=YYYY/`: one row per (statement file or auditor
       report, signal_type): what was read, and a status (`read`, `partial`, `not_run`,
       `no_text`); both datasets say which with `document_kind`;
+    - `WAREHOUSE_DIR/auditor_reports/fiscal_year=YYYY/`: one row per auditor report read: its
+      opinion (the first page stating one) and whether its audit firm differs from the entity's
+      latest earlier report known at its filing; the firm itself is never stored;
     - `text_extractions` (Postgres), the first run per (file, pipeline hash); new model responses
       in MinIO under `extraction/responses/` with their `extraction_responses` rows;
     - `quarantine_events` rows, stage `G1` (an unreadable attachment) and `G2` (a discarded
@@ -178,8 +187,12 @@ def text_signals(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
 
     signals = TEXT_SIGNALS.validate(signals)
     coverage = TEXT_COVERAGE.validate(coverage)
+    reports = AUDITOR_REPORTS.validate(
+        auditor_reports.build(notes, signals, extractor.rules, extractor.config.extractor_version)
+    )
     write_dataset(signals, settings.warehouse_dir, ts.DATASET, "fiscal_year")
     write_dataset(coverage, settings.warehouse_dir, ts.COVERAGE, "fiscal_year")
+    write_dataset(reports, settings.warehouse_dir, auditor_reports.DATASET, "fiscal_year")
     unmasked = ts.masking_findings(signals, mask_nlp)
     return dg.MaterializeResult(
         metadata={
@@ -202,6 +215,19 @@ def text_signals(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
                 )
             ),
             "coverage": dict(sorted(stats.coverage.items())),
+            "auditor_reports": {
+                "opinion": dict(
+                    sorted(Counter(str(v) for v in reports.get_column("opinion").to_list()).items())
+                ),
+                "firm_stated": int(reports.get_column("firm_stated").sum()),
+                "auditor_changed": dict(
+                    sorted(
+                        Counter(
+                            str(v) for v in reports.get_column("auditor_changed").to_list()
+                        ).items()
+                    )
+                ),
+            },
             "model_calls": stats.extraction.called,
             "replayed_from_store": stats.extraction.replayed,
             "discarded": dict(sorted(stats.extraction.discarded.items())),

@@ -88,18 +88,21 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   ├── extraction/                    # text-signal engineering config (plan 0013)
 │   │   ├── eval_gate_v1.yaml          # how far a change may fall below the accepted scores (owner's tolerance)
 │   │   ├── extractor_v1.yaml          # model, effort, prefilter, and the method (llm + prompt, or rule) per signal_type
-│   │   ├── extractor_v2.yaml          # v1 with rules_v2 and prefilter_v2 (the default, EXTRACTOR_VERSION)
+│   │   ├── extractor_v2.yaml          # v1 with rules_v2 and prefilter_v2
+│   │   ├── extractor_v3.yaml          # v2 with rules_v3 (the default, EXTRACTOR_VERSION)
 │   │   ├── golden_sample_v1.yaml      # which pages go to the labeller: all selected, a fixed rejected sample
 │   │   ├── golden_sample_v2.yaml      # the auditor reports' pages: whole reports, every modified opinion and a fixed draw
 │   │   ├── prefilter_v1.yaml          # lemma terms per signal_type; the file name is the prefilter_version
 │   │   ├── prefilter_v2.yaml          # v1 with every page naming an opinion selected for opinion_type
 │   │   ├── rules_v1.yaml              # lemma rules for standard wording (opinion_type)
-│   │   └── rules_v2.yaml              # opinion_type from the auditor's report's section headings (KSB 700/705)
+│   │   ├── rules_v2.yaml              # opinion_type from the auditor's report's section headings (KSB 700/705)
+│   │   └── rules_v3.yaml              # v2 + the audit firm's list number, for auditor change (never stored)
 │   ├── features/                      # feature-set definitions (plan 0010, ADR 0012)
 │   │   ├── feature_set_v1.yaml        # features, families, inputs; the file name is the feature_set_version
 │   │   ├── feature_set_v2.yaml        # v1 + the classical models' ratios (plan 0012)
 │   │   ├── feature_set_v3.yaml        # v2 over line_items_v3
 │   │   ├── feature_set_v4.yaml        # v3 + the statement's disclosures and the notes' signals (plan 0013)
+│   │   ├── feature_set_v5.yaml        # v4 + the auditor reports: opinion, auditor change, emphasis (plan 0013)
 │   │   ├── line_items_v1.yaml         # ratio inputs → chart code, per form and income-statement variant
 │   │   ├── line_items_v2.yaml         # v1 + the result on sales
 │   │   └── line_items_v3.yaml         # v2 + the 2025 calculation-variant revenue line
@@ -107,6 +110,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │   ├── altman_z2_2000.yaml        # Altman Z'', from Altman (2000)
 │   │   ├── backtest_v1.yaml           # inputs pinned by hash, horizons, test years, minimum events
 │   │   ├── backtest_v2.yaml           # v1 on feature_set_v4, plus the going-concern flag (plan 0013)
+│   │   ├── backtest_v3.yaml           # v2 on feature_set_v5, the regression unchanged (plan 0013)
 │   │   └── poznan_2004.yaml           # the Poznań model, Hamrol, Czajka, Piechocki (2004)
 │   ├── labels/
 │   │   ├── outcome_labels_v1.yaml     # label parameters; the file name is the label_version
@@ -259,7 +263,8 @@ src/distress_radar/
 │   ├── response_store.py         # G2 — responses stored by request hash, replayed (decision 3)
 │   ├── extractor.py              # G2 — constrained LLM call, evidence check, sync and batch transports
 │   ├── text_signals.py           # G — the text_signals and text_coverage datasets, the masking check
-│   ├── contracts.py              # Pandera contracts for both
+│   ├── auditor_reports.py        # G — auditor_reports: each report's opinion, and whether its firm changed
+│   ├── contracts.py              # Pandera contracts for all three
 │   ├── manifest.py               # text_extractions (Postgres): first run per file and pipeline
 │   ├── eval_harness.py           # G3 — scores against evals/text_signals/, the gate in make check
 │   └── eval_run.py               # G3 — make eval (runs the extractors on the golden set), make eval-accept
