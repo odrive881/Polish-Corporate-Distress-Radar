@@ -42,7 +42,7 @@ models:     ## fetch and unpack the pinned Polish spaCy model (resumable; checks
 
 # The golden set of text signals (plan 0013 step E). The queue is local (LABELLING_DIR); labelling is
 # `uv run marimo edit notebooks/labelling/golden_set.py`; the export writes evals/text_signals/.
-label-queue:  ## build or refresh the local labelling queue, keeping labels (needs make dev-up, make models)
+label-queue:  ## build or refresh the local labelling queues, keeping labels (needs make dev-up, make models)
 	$(UV) run --locked python -m distress_radar.extraction.label_queue build
 
 label-export: ## write the labelled pages to evals/text_signals/, after the masking check

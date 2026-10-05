@@ -13,9 +13,11 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
 
 ## Status: active (2026-09-29): owner decisions 0–8 accepted; steps A to D and F to I built, step E's tooling built and 50 of 240 pages labelled; the rest of the labelling and the first model call wait on the owner; the auditor reports of decision 0(c) are stored and dated from the owner's list (decision 6 amended 2026-10-02), and the text job reads them (2026-10-05; only the opinion rule has run on them)
 
-### Where this stands (2026-10-01): what waits on the owner, in order
+### Where this stands (2026-10-05): what waits on the owner, in order
 
-1. **Label the rest of the golden set:** pages 51–240 of the queue (`uv run marimo run
+1. **Label the rest of the golden set:** the notes' queue (`golden_sample_v1`, 240 pages, 77 labelled on
+   2026-10-05) and the auditor reports' (`golden_sample_v2`, 102 pages of 20 reports, 15 with a span to mask by
+   hand), picked at the top of the notebook (`uv run marimo run
    notebooks/labelling/golden_set.py` from a WSL terminal, not through Claude Code, whose background tasks stop
    after 30 minutes). Save each page before moving on; `make label-export` writes a checkpoint to
    `evals/text_signals/` for review and commit.
@@ -27,7 +29,8 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
 5. **Decision 0(c), auditor reports: stored and dated (2026-10-02, below).** Left for the owner: the three
    reports with no date in the list and 0000507997's "2019" file (below). The reports' text step is built
    and run on the seed (2026-10-05, progress), and the opinion rule reads the report's headings (`rules_v2`,
-   2026-10-05); left: labelling the report pages and the feature set (decision 7).
+   2026-10-05); the report pages are queued for labelling (`golden_sample_v2`, 102 pages); left: labelling
+   them and the feature set (decision 7).
 6. **Approve or change** step I's four departures from decision 7 (progress, step I).
 
 ### Decision 0(c): the auditor reports (2026-10-01)
@@ -386,6 +389,23 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
     unqualified opinion. The evidence is the heading, so when labelling a report page the guide's
     `opinion_type` evidence may be the heading or the "Naszym zdaniem" sentence: the eval scores the value, and
     counts evidence overlap only as a statistic.
+- **Decision 0(c), the report pages' labelling sample (2026-10-05): `golden_sample_v2`.**
+  - **The design, chosen by the owner** from four with their page counts: every text page of 20 whole
+    reports, those `rules_v2` reads as a modified opinion on some page (4) and 16 drawn by hashing each
+    report's hash with the version. v1's design (every selected page and a rejected sample) would have queued
+    about 205 of the 229 report pages, since `prefilter_v2` selects nearly every page that mentions an opinion.
+    The modified stratum is chosen by the rule the eval scores: the rule's precision on modified opinions is
+    measured on all of them, its recall only through the random draw. A report page is still marked
+    `selected` or `rejected` by `prefilter_v2`; for a report, `rejected` is every page of a sampled report the
+    prefilter passed over, not a random sample of a pool (the harness counts them, it does not weight them).
+  - **What:** `golden.build_report_queue` and `GoldenSample.report_sample` (a sample is the notes' design or
+    the reports', never both); `QueuePage.document_kind`, exported in `pages.jsonl`; `label_queue build` builds
+    every sample's queue (or the one named), and `export` writes every local queue's labelled pages and refuses
+    to drop a page already in `evals/` (a queue missing on this machine). The notebook picks the queue.
+  - **On the seed:** 102 pages of 20 reports (85 selected); 15 of them hold a span the masker would still
+    replace on a second pass, shown in red for the owner to mask (more than the notes' 6 of 702: reports name
+    the auditor and signatories). The v1 queue was rebuilt with it: its 240 rows and the owner's 77 labels are
+    unchanged, each row gaining `document_kind`.
 
 ## Why
 

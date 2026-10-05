@@ -1,0 +1,25 @@
+# Golden sample v2 (plan 0013 decision 0c, decision 5): which auditor-report pages go to the owner
+# for labelling. Engineering config, not statute.
+# Loaded by `distress_radar.extraction.golden.load_golden_sample`.
+#
+# Whole reports, not pages: under `prefilter_v2` almost every report page is selected (184 of the
+# seed's 229 text pages mention an opinion), so v1's design (every selected page and a rejected
+# sample) would queue nearly all of them. Instead, every text page of 20 reports, chosen by the
+# owner (2026-10-05):
+# - every report `rules_version` reads as a modified opinion (qualified, adverse or disclaimer) on
+#   some page: on the seed 4 (3 qualified, 1 disclaimer), so the rare opinions are certain to be
+#   labelled. This stratum is chosen by the rule the eval then scores: it measures the rule's
+#   precision on modified opinions fully, and its recall only through the random draw below;
+# - `random_reports` of the others, drawn by hashing each report's hash with the file name:
+#   rebuilding the queue draws the same reports, and a new sample is a new file.
+# A page is still marked `selected` or `rejected` by `prefilter_version`, so the prefilter's recall
+# is measured on every page of a sampled report.
+#
+# The notes' sample (v1) is unchanged and labelled on its own queue; the export writes both.
+
+golden_sample_version: golden_sample_v2
+prefilter_version: prefilter_v2
+document_kind: auditor_report
+report_sample:
+  rules_version: rules_v2
+  random_reports: 16

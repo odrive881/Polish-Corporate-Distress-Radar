@@ -1,7 +1,8 @@
 """Label the golden set — plan 0013 step E (decision 5: the owner labels).
 
-Reads and writes the local queue `<LABELLING_DIR>/<version>.jsonl` that
-`python -m distress_radar.extraction.label_queue build` makes. For each page: read the masked
+Reads and writes a local queue `<LABELLING_DIR>/<version>.jsonl` that
+`python -m distress_radar.extraction.label_queue build` makes, one per golden sample: the notes
+(`golden_sample_v1`) or the auditor reports (`golden_sample_v2`), chosen at the top. For each page: read the masked
 text, mask by hand any name the masker missed (highlighted in red when the masker itself would
 still replace it), then label every signal_type as present or absent, with a verbatim evidence
 span for each present one. Definitions: `evals/text_signals/labelling_guide.md`. Candidate
@@ -25,11 +26,21 @@ def _():
     import marimo as mo
 
     from distress_radar.extraction import golden, masking
-    from distress_radar.extraction.label_queue import DEFAULT_VERSION, queue_path, update_queue
+    from distress_radar.extraction.label_queue import (
+        DEFAULT_VERSION,
+        queue_path,
+        update_queue,
+        versions,
+    )
     from distress_radar.extraction.preprocessing import SIGNAL_TYPES
     from distress_radar.settings import Settings
 
-    path = queue_path(Settings(), DEFAULT_VERSION)
+    _queues = {v: queue_path(Settings(), v) for v in versions()}
+    sample_picker = mo.ui.dropdown(
+        options={v: str(q) for v, q in _queues.items() if q.exists()},
+        value=DEFAULT_VERSION if _queues[DEFAULT_VERSION].exists() else None,
+        label="golden sample",
+    )
     nlp = masking.load_model()
     get_rev, set_rev = mo.state(0)
     return (
@@ -40,10 +51,20 @@ def _():
         masking,
         mo,
         nlp,
-        path,
+        sample_picker,
         set_rev,
         update_queue,
     )
+
+
+@app.cell
+def _(mo, sample_picker):
+    from pathlib import Path as _Path
+
+    mo.output.replace(sample_picker)
+    mo.stop(sample_picker.value is None, mo.md("No queue yet: run `make label-queue`."))
+    path = _Path(sample_picker.value)
+    return (path,)
 
 
 @app.cell
