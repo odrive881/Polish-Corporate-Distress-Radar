@@ -239,7 +239,8 @@ def test_make_eval_scores_a_rule_offline_and_skips_model_signals(tmp_path: Path)
             "litigation": LIT_LABELS,
         },
     )
-    settings = Settings(extraction_api_confirmed=False)
+    # The harness, on v1's sentence rule: the golden pages state the opinion in a sentence.
+    settings = Settings(extraction_api_confirmed=False, extractor_version="extractor_v1")
     status = eval_run.run(settings, golden_dir=golden)
     assert status["litigation"].startswith("skipped")
     assert "P 1.0 R 1.0" in status["opinion_type"] and "0 sent" in status["calls"]

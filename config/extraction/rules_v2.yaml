@@ -1,0 +1,37 @@
+# Rules v2 (plan 0013 decision 0c): `opinion_type` read from an auditor's report's section headings,
+# not from sentences. Engineering config, not statute; measured on the golden set like any extractor.
+# Loaded by `distress_radar.extraction.rules.load_rules`.
+#
+# The file name is the `rules_version`. A change is a new file, never an edit.
+#
+# Why headings: the Polish auditing standards (KSB 700 and 705, the national adoption of ISA 700/705)
+# fix the headings of the opinion section and of the section giving its basis, one pair per opinion.
+# A sentence-level rule (`rules_v1`) also reads sentences that only mention an opinion: on the seed's
+# 44 text reports it read two reports headed "Opinia" as qualified and found nothing in four
+# (counted, not read: plan 0013 progress, 2026-10-05). By headings, every report with both an
+# opinion and a basis heading had the two agree (31 of 31), and the other 13 carry the basis heading.
+#
+# How it reads a page: a line that is, whole, one of these headings (after `rules.heading_key`:
+# numbering, trailing colons and full stops removed, lowercased) states the opinion. The first
+# opinion heading on the page wins (`high`); with none, the first basis heading (`medium`). The line
+# is the evidence. "Opinia o sprawozdaniu z działalności" (the opinion on the management report) is
+# not the heading "Opinia", so it is never read as one. A page with neither is `absent`: no opinion
+# stated there, which is not an unqualified opinion.
+#
+# Headings are written as their keys: lowercase, no trailing punctuation.
+
+rules_version: rules_v2
+
+opinion_headings:
+  disclaimer:
+    opinion: [odmowa wyrażenia opinii]
+    basis: [podstawa odmowy wyrażenia opinii]
+  adverse:
+    opinion: [opinia negatywna]
+    basis: [podstawa opinii negatywnej]
+  qualified:
+    opinion: [opinia z zastrzeżeniem, opinia z zastrzeżeniami]
+    basis: [podstawa opinii z zastrzeżeniem, podstawa opinii z zastrzeżeniami]
+  unqualified:
+    opinion: [opinia]
+    basis: [podstawa opinii]

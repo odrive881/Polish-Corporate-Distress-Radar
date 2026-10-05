@@ -88,9 +88,12 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   ├── extraction/                    # text-signal engineering config (plan 0013)
 │   │   ├── eval_gate_v1.yaml          # how far a change may fall below the accepted scores (owner's tolerance)
 │   │   ├── extractor_v1.yaml          # model, effort, prefilter, and the method (llm + prompt, or rule) per signal_type
+│   │   ├── extractor_v2.yaml          # v1 with rules_v2 and prefilter_v2 (the default, EXTRACTOR_VERSION)
 │   │   ├── golden_sample_v1.yaml      # which pages go to the labeller: all selected, a fixed rejected sample
 │   │   ├── prefilter_v1.yaml          # lemma terms per signal_type; the file name is the prefilter_version
-│   │   └── rules_v1.yaml              # lemma rules for standard wording (opinion_type)
+│   │   ├── prefilter_v2.yaml          # v1 with every page naming an opinion selected for opinion_type
+│   │   ├── rules_v1.yaml              # lemma rules for standard wording (opinion_type)
+│   │   └── rules_v2.yaml              # opinion_type from the auditor's report's section headings (KSB 700/705)
 │   ├── features/                      # feature-set definitions (plan 0010, ADR 0012)
 │   │   ├── feature_set_v1.yaml        # features, families, inputs; the file name is the feature_set_version
 │   │   ├── feature_set_v2.yaml        # v1 + the classical models' ratios (plan 0012)

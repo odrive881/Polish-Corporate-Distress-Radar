@@ -1,0 +1,42 @@
+# Extractor v2 (plan 0013 decision 0c; v1 from step F, decisions 2 and 3): which model or rule reads
+# each signal_type, and how the model is called. Engineering config, not statute.
+# Loaded and checked by `distress_radar.extraction.extractor.load_extractor`.
+#
+# The file name is the `extractor_version`. Change the model, the effort or a prompt, and it is a new
+# file: every response is stored under a hash of its full request, so a new setting is a new key and
+# a new call, never an overwrite of what an earlier setting answered.
+#
+# Model: the current Opus (decision 2 named `claude-opus-5`, "the SDK's current default"; the default
+# Opus is now `claude-opus-5-5`, at a lower price). A cheaper model is compared on the golden set in
+# a new file before it replaces this one. Thinking is always on for this model and is left to it;
+# `effort` is set explicitly, since this model's default (`medium`) differs from its predecessor's.
+# No refusal fallback to another model: an answer from a model the key does not name would break the
+# response store and decision 2's comparison rule. A refusal is discarded and counted.
+#
+# `prefilter_version` is the prefilter in front of the extractor: a page is read for a signal only
+# when it selects the page for it, so it is part of what the eval scores (step G).
+#
+# Every signal_type is listed: `llm` names its prompt in `prompts/extraction/`, `rule` is read by
+# `rules_version`. Only pages the prefilter selects for a signal are read for it.
+#
+# Changed from v1: `rules_v2` (the auditor's opinion by its report's headings) and `prefilter_v2`
+# (which selects those pages). Model, effort and prompts are v1's, so a model signal's request, and
+# its stored response, are the same.
+
+extractor_version: extractor_v2
+model: claude-opus-5-5
+effort: medium
+max_tokens: 16000
+rules_version: rules_v2
+prefilter_version: prefilter_v2
+
+signals:
+  going_concern_uncertainty: {method: llm, prompt: going_concern_uncertainty_v1}
+  opinion_type: {method: rule}
+  emphasis_of_matter: {method: llm, prompt: emphasis_of_matter_v1}
+  covenant_breach: {method: llm, prompt: covenant_breach_v1}
+  key_customer_loss: {method: llm, prompt: key_customer_loss_v1}
+  litigation: {method: llm, prompt: litigation_v1}
+  post_balance_sheet_event: {method: llm, prompt: post_balance_sheet_event_v1}
+  loss_coverage_resolution: {method: llm, prompt: loss_coverage_resolution_v1}
+  continued_existence_vote: {method: llm, prompt: continued_existence_vote_v1}

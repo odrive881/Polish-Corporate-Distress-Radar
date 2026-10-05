@@ -48,9 +48,9 @@ def test_the_signal_types_are_agent_spec_s_enum() -> None:
     assert tuple(re.findall(r"`([a-z_]+)`", line.split(":", 1)[1])) == SIGNAL_TYPES
 
 
-def test_every_example_is_matched_by_its_term_in_every_sentence(
-    prefilter: Prefilter, nlp: Any
-) -> None:
+@pytest.mark.parametrize("version", ["prefilter_v1", "prefilter_v2"])
+def test_every_example_is_matched_by_its_term_in_every_sentence(version: str, nlp: Any) -> None:
+    prefilter = load_prefilter(version)
     missed = [
         (signal, term.words, text[sentence.start : sentence.end])
         for signal, terms in prefilter.signals.items()
