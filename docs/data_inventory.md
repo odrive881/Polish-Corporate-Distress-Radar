@@ -91,7 +91,7 @@ Every XML statement must yield these components:
 | Resolution on the company's continued existence (Art. 233 KSH) | uchwała o dalszym istnieniu spółki | `continued_existence_vote` | required where it exists | SPEC §4.5, §5 |
 | Corrections of any of the above | korekty | restatement / corrections features | required | OVERVIEW stage 3 |
 
-**Status (plan 0013, 2026-09-30):** of these, only the notes embedded in the statements are read, as masked text (702 text pages on the seed; 459 scanned pages not read). Management reports and resolutions are indexed in `filing_index` but not downloaded. Auditor reports were downloaded by hand and are stored and dated (decision 0c, 2026-10-02: 51 of 52, 49 dated), not yet read. The going-concern flags, and from FY2025 employment and the audit flag, come from the statement's own XML (`statement_disclosures`).
+**Status (plan 0013, 2026-10-02):** of these, only the notes embedded in the statements are read, as masked text (702 text pages on the seed; 459 scanned pages not read). Management reports and resolutions are indexed in `filing_index` but not downloaded. Auditor reports were downloaded by hand and are stored and dated (decision 0c, 2026-10-02: 51 of 52, 49 dated), not yet read. The going-concern flags, and from FY2025 employment and the audit flag, come from the statement's own XML (`statement_disclosures`).
 
 ---
 
@@ -149,7 +149,7 @@ The spec forbids bulk enumeration of any source. Acquisition is per entity, seed
 | One comparative and one calculation income-statement filing | `tests/fixtures/` | required | SPEC §9.2 | present: `*_por_*` and `*_kalk_*` in `tests/fixtures/statements/`, every form |
 | Statement pair with a restated prior-year column | `tests/fixtures/` | required | SPEC §4.3 | present: `full_2018_v1_2_por_2022` / `_2023` (`test_real_consecutive_years_restatements`) |
 | Golden PDFs: text layer, table-heavy, scanned | `tests/fixtures/` | required | SPEC §6C3 | missing |
-| Hand-labelled text-signal eval sets, one per `signal_type` (9 files), with the pages' masked text once in `pages.jsonl` | `evals/text_signals/<signal_type>.jsonl` | required | SPEC §6G3; DIR §5 | missing: tooling built and the labelling guide accepted (plan 0013 step E, 2026-09-30); 240 seed pages queued, none labelled yet |
+| Hand-labelled text-signal eval sets, one per `signal_type` (9 files), with the pages' masked text once in `pages.jsonl` | `evals/text_signals/<signal_type>.jsonl` | required | SPEC §6G3; DIR §5 | partial: tooling built and the labelling guide accepted (plan 0013 step E, 2026-09-30); 50 of 240 seed pages labelled and committed (2026-10-01), 190 left for the owner |
 | KRS / MSiG fixtures for each outcome class, including a cross-source duplicate and a consumer bankruptcy to filter out | `tests/fixtures/legal/` | required | SPEC §9.2 | present (plan 0008): 4 redacted KRS extracts, 13 MSiG notice records and a search page; cross-source duplicates in `test_legal_events.py`. Search is by KRS, so no consumer record can arrive; a notice for another KRS is quarantined unstored (`test_msig_client.py`). KRZ none (not built) |
 | BIR1 responses | `tests/fixtures/bir1/` | required | — | present |
 
