@@ -178,6 +178,7 @@ TEXT_COVERAGE_SCHEMA: dict[str, pl.DataType | type[pl.DataType]] = {
     "source_member": pl.String,
     "period_end": pl.Date,
     "known_from": pl.Date,
+    "document_kind": pl.String,
     "signal_type": pl.String,
     "status": pl.String,
     "kept_present": pl.Int32,

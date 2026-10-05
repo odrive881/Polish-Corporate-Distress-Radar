@@ -1,16 +1,20 @@
 """The `text_signals` and `text_coverage` datasets (plan 0013 step H; AGENT_SPEC §5, §6G). No I/O:
-the `text_signals` asset (`dagster_defs/assets/text.py`) reads the stores and writes the Parquet.
+the `text_signals` asset (`dagster_defs/assets/extraction.py`) reads the stores and writes the
+Parquet.
 
-For every stored statement file, the notes embedded in it are read page by page
-(`extraction.page_text`), each text page masked (`extraction.masking`, ADR 0009 third addendum),
-split into sentences and lemmas, prefiltered, and every (page, signal) the prefilter selects is
-extracted (`extraction.extractor`). Masked page text is not stored: it is re-derived from the raw
-bytes, deterministically, on every run, and only the evidence spans a signal quotes are kept.
+Two kinds of document are read (`document_kind`): the notes embedded in every stored statement
+file (`statement_notes`), and every stored auditor report (`auditor_report`, plan 0013 decision
+0c), a separately filed PDF. Each is read page by page (`extraction.page_text`), each text page
+masked (`extraction.masking`, ADR 0009 third addendum), split into sentences and lemmas,
+prefiltered, and every (page, signal) the prefilter selects is extracted
+(`extraction.extractor`). Masked page text is not stored: it is re-derived from the raw bytes,
+deterministically, on every run, and only the evidence spans a signal quotes are kept. Below, a
+"statement file" is either: the file a document was read from.
 
 - **`text_signals`**: one row per kept extraction, present or absent, with its evidence (masked)
   and its lineage: the stored file, the statement in it, the attachment's element path and page,
-  the ingestion run. Dated by the filing: `known_from` is its submission date (§4.7), `fiscal_year`
-  its period end's year.
+  the ingestion run. Dated by the filing: `known_from` is its submission date (§4.7; for an
+  auditor report its own, decision 6), `fiscal_year` its period end's year.
 - **`text_coverage`**: one row per (statement file, signal_type), saying what was read, so a missing
   signal is never read as "no warning" (invariant 4; plan 0013 constraint 2): text pages, scanned
   pages, attachment errors, pages the prefilter selected, extractions kept and discarded, and a
@@ -41,7 +45,12 @@ import polars as pl
 
 from distress_radar.extraction import extractor as ex
 from distress_radar.extraction import masking, page_text, preprocessing
-from distress_radar.extraction.preprocessing import SIGNAL_TYPES, Sentence, SignalType
+from distress_radar.extraction.preprocessing import (
+    SIGNAL_TYPES,
+    DocumentKind,
+    Sentence,
+    SignalType,
+)
 from distress_radar.extraction.response_store import ResponseStore
 from distress_radar.extraction.schemas import SCHEMA_VERSION, Discarded, Extraction
 from distress_radar.parsing.canonical_schema import CONFIG_DIR
@@ -66,7 +75,8 @@ SIGNAL_COLUMNS: dict[str, pl.DataType | type[pl.DataType]] = {
     "period_end": pl.Date,
     "document_ref": pl.String,
     "source_member": pl.String,
-    "source_element_path": pl.String,  # the attachment's element in the statement
+    "document_kind": pl.String,  # "statement_notes" | "auditor_report"
+    "source_element_path": pl.String,  # the attachment's element in the statement; "" for a report
     "attachment": pl.Int32,
     "extractor_version": pl.String,
     "masking_version": pl.String,
@@ -93,7 +103,8 @@ COVERAGE_COLUMNS: dict[str, pl.DataType | type[pl.DataType]] = {
     "document_ref": pl.String,
     "source_document_hash": pl.String,
     "source_member": pl.String,
-    "attachments": pl.Int32,  # embedded documents with content
+    "document_kind": pl.String,
+    "attachments": pl.Int32,  # embedded documents with content; 1 for an auditor report
     "attachments_unsupported": pl.Int32,  # not PDF: counted, not opened
     "attachment_errors": pl.List(pl.String),  # reason codes of PDFs that could not be read
     "pages": pl.Int32,
@@ -162,6 +173,7 @@ class StatementFile:
     source_document_hash: str
     source_member: str
     ingestion_run_id: str
+    document_kind: DocumentKind = "statement_notes"
 
 
 @dataclass(frozen=True)
@@ -195,8 +207,32 @@ def read_notes(
     lemma_nlp: Any,
 ) -> StatementNotes:
     """Every page of the notes embedded in one statement: masked, analysed, prefiltered."""
+    return _read(statement, page_text.attachments(xml), prefilter, mask_nlp, lemma_nlp)
+
+
+def read_report(
+    report: StatementFile,
+    pdf: bytes,
+    prefilter: preprocessing.Prefilter,
+    mask_nlp: Any,
+    lemma_nlp: Any,
+) -> StatementNotes:
+    """Every page of a separately filed auditor report, read as one attachment with no element
+    path: the same masking, prefilter and coverage as a statement's notes."""
+    if report.document_kind != "auditor_report":
+        raise ValueError(f"{report.document_ref} is {report.document_kind}, not an auditor report")
+    return _read(report, [page_text.Attachment(1, "", "pdf", pdf)], prefilter, mask_nlp, lemma_nlp)
+
+
+def _read(
+    statement: StatementFile,
+    attachments: Iterable[page_text.Attachment],
+    prefilter: preprocessing.Prefilter,
+    mask_nlp: Any,
+    lemma_nlp: Any,
+) -> StatementNotes:
     notes = StatementNotes(statement)
-    for attachment in page_text.attachments(xml):
+    for attachment in attachments:
         notes.attachments += 1
         if attachment.kind != "pdf":
             notes.attachments_unsupported += 1
@@ -279,7 +315,8 @@ def build(
         stats.statements += 1
         stats.pages.update(notes.page_status)
         for reason, path in notes.attachment_errors:
-            detections.append(Detection("G1", st, reason, f"attachment at {path}"))
+            where = f"attachment at {path}" if path else "the document"
+            detections.append(Detection("G1", st, reason, where))
         common = {
             "krs": st.krs,
             "fiscal_year": st.period_end.year,
@@ -288,6 +325,7 @@ def build(
             "document_ref": st.document_ref,
             "source_document_hash": st.source_document_hash,
             "source_member": st.source_member,
+            "document_kind": st.document_kind,
             "extractor_version": version,
             "masking_version": masking.MASKING_VERSION,
             "ingestion_run_id": st.ingestion_run_id,

@@ -146,6 +146,11 @@ NOTES: dict[tuple[str, str], tuple[str, int]] = {
     ("b21", LOSS): ("read", 0),
     ("b22", LOSS): ("no_text", 0),
 }
+# Trap: B's auditor report on 2021 finds a going-concern uncertainty. The notes' features read the
+# notes only, so B's going-concern features stay null: its notes were never read for it.
+REPORTS: list[tuple[str, str, date, date, str, str, int]] = [
+    (B, "b21r", date(2021, 12, 31), date(2022, 7, 4), GC, "read", 1),
+]
 
 
 def _statement(ref: str) -> Statement:
@@ -190,7 +195,31 @@ def _text_coverage() -> pl.DataFrame:
     for (ref, signal), (status, present) in NOTES.items():
         krs, _, year, filed, *_ = _statement(ref)
         rows.append(
-            (krs, ref, f"zip:{ref}.xml", date(year, 12, 31), filed, signal, status, present)
+            (
+                krs,
+                ref,
+                f"zip:{ref}.xml",
+                date(year, 12, 31),
+                filed,
+                "statement_notes",
+                signal,
+                status,
+                present,
+            )
+        )
+    for krs, ref, period_end, filed, signal, status, present in REPORTS:
+        rows.append(
+            (
+                krs,
+                ref,
+                f"zip:{ref}.pdf",
+                period_end,
+                filed,
+                "auditor_report",
+                signal,
+                status,
+                present,
+            )
         )
     return pl.DataFrame(rows, schema=TEXT_COVERAGE_SCHEMA, orient="row")
 
@@ -610,6 +639,7 @@ def test_unread_notes_are_null_never_a_missing_warning(v4_store: pl.DataFrame) -
     # B's notes: read once and found nothing, then a statement with no text layer.
     assert _values(v4_store, B, date(2022, 3, 31), *loss) == [False, 0]
     assert _values(v4_store, B, date(2023, 12, 31), *loss) == [None, 0]
+    # B's auditor report found a going-concern uncertainty, but it is not the notes.
     assert _values(v4_store, B, date(2023, 12, 31), *gc) == [None, None]
 
 

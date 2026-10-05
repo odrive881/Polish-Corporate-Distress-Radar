@@ -11,6 +11,7 @@ from __future__ import annotations
 import base64
 import json
 from collections.abc import Mapping
+from dataclasses import replace
 from datetime import date
 from typing import Any
 
@@ -146,6 +147,7 @@ def test_before_the_owner_confirms_only_rules_run_and_coverage_says_so(
     assert OPINION in row["evidence_span"] and row["response_key"] is None
     assert (row["known_from"], row["fiscal_year"], row["page"]) == (date(2024, 6, 30), 2023, 1)
     assert row["source_element_path"].endswith("/Plik") and row["ingestion_run_id"] == "run-1"
+    assert row["document_kind"] == "statement_notes"
     assert coverage.height == 4 * len(preprocessing.SIGNAL_TYPES)
     # statement 1: the lawsuit was selected but not read; the opinion was read, a page was scanned
     assert _coverage(coverage, 1, "litigation")["status"] == "not_run"
@@ -197,6 +199,64 @@ def test_model_signals_run_once_confirmed_and_discards_are_quarantined(
     assert ("G2", "evidence_not_on_page", "litigation") in {
         (d.stage, d.reason_code, d.signal_type) for d in detections
     }
+
+
+def _report(n: int) -> ts.StatementFile:
+    return replace(
+        _file(n),
+        document_ref=f"report{n}",
+        source_member=f"zip:{n}.pdf",
+        known_from=date(2024, 7, 15),
+        document_kind="auditor_report",
+    )
+
+
+def test_an_auditor_report_is_read_as_its_own_document(
+    models: tuple[Any, Any], extractor: ex.Extractor
+) -> None:
+    mask_nlp, lemma_nlp = models
+    prefilter = preprocessing.load_prefilter("prefilter_v1")
+    reports = [
+        ts.read_report(_report(5), _pdf(f"{OPINION}{FILLER}"), prefilter, mask_nlp, lemma_nlp),
+        ts.read_report(_report(6), _pdf(None, None), prefilter, mask_nlp, lemma_nlp),
+    ]
+    signals, coverage, detections = _build(reports, extractor, {"opinion_type"}, ex.NoCalls())
+    TEXT_SIGNALS.validate(signals)
+    TEXT_COVERAGE.validate(coverage)
+    [row] = signals.to_dicts()
+    assert (row["document_kind"], row["value"], row["document_ref"]) == (
+        "auditor_report",
+        "adverse",
+        "report5",
+    )
+    # dated by the report's own filing, and the page is the report's own: no element path
+    assert (row["known_from"], row["attachment"], row["page"]) == (date(2024, 7, 15), 1, 1)
+    assert row["source_element_path"] == ""
+    assert set(coverage.get_column("document_kind").to_list()) == {"auditor_report"}
+    assert _coverage(coverage, 5, "opinion_type")["status"] == "read"
+    # a scanned report is no text, never "no warning"
+    six = _coverage(coverage, 6, "opinion_type")
+    assert (six["status"], six["pages_needs_ocr"]) == ("no_text", 2)
+    assert detections == []
+
+
+def test_an_unreadable_report_is_quarantined(
+    models: tuple[Any, Any], extractor: ex.Extractor
+) -> None:
+    mask_nlp, lemma_nlp = models
+    prefilter = preprocessing.load_prefilter("prefilter_v1")
+    report = ts.read_report(_report(7), b"%PDF-1.4 broken", prefilter, mask_nlp, lemma_nlp)
+    _s, coverage, detections = _build([report], extractor, {"opinion_type"}, ex.NoCalls())
+    assert _coverage(coverage, 7, "opinion_type")["status"] == "no_text"
+    assert [(d.stage, d.reason_code, d.detail) for d in detections] == [
+        ("G1", "pdf_unreadable", "the document")
+    ]
+
+
+def test_only_an_auditor_report_is_read_as_one(models: tuple[Any, Any]) -> None:
+    prefilter = preprocessing.load_prefilter("prefilter_v1")
+    with pytest.raises(ValueError, match="not an auditor report"):
+        ts.read_report(_file(8), _pdf(FILLER.strip()), prefilter, *models)
 
 
 def test_the_same_input_gives_the_same_frames(

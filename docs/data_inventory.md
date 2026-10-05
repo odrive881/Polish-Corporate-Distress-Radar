@@ -91,7 +91,7 @@ Every XML statement must yield these components:
 | Resolution on the company's continued existence (Art. 233 KSH) | uchwała o dalszym istnieniu spółki | `continued_existence_vote` | required where it exists | SPEC §4.5, §5 |
 | Corrections of any of the above | korekty | restatement / corrections features | required | OVERVIEW stage 3 |
 
-**Status (plan 0013, 2026-10-02):** of these, only the notes embedded in the statements are read, as masked text (702 text pages on the seed; 459 scanned pages not read). Management reports and resolutions are indexed in `filing_index` but not downloaded. Auditor reports were downloaded by hand and are stored and dated (decision 0c, 2026-10-02: 51 of 52, 49 dated), not yet read. The going-concern flags, and from FY2025 employment and the audit flag, come from the statement's own XML (`statement_disclosures`).
+**Status (plan 0013, 2026-10-02):** of these, only the notes embedded in the statements are read, as masked text (702 text pages on the seed; 459 scanned pages not read). Management reports and resolutions are indexed in `filing_index` but not downloaded. Auditor reports were downloaded by hand and are stored and dated (decision 0c, 2026-10-02: 51 of 52, 49 dated); the `text` job reads the dated ones into `text_signals` with `document_kind` `auditor_report` (built 2026-10-05, not yet run on the seed), and no feature reads them yet. The going-concern flags, and from FY2025 employment and the audit flag, come from the statement's own XML (`statement_disclosures`).
 
 ---
 
