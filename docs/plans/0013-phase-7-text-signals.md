@@ -33,7 +33,8 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
    "First model run", the table). The owner re-checks them in the labelling notebook. Then `make eval` rescores
    from the stored responses at no cost, and the owner accepts. The results stay uncommitted until then: the
    gate in `make check` fails on a result with no acceptance.
-4. **Then rerun** the `text` job and the `features` job: the notes' features fill in, with no new version.
+4. ~~**Then rerun** the `text` job and the `features` job~~ **Done (2026-10-06)**, ahead of the acceptance, which
+   it does not need: the notes' features filled in, with no new version (progress, "The model on the whole seed").
 5. **Decision 0(c), auditor reports: stored and dated (2026-10-02, below).** Left for the owner: the three
    reports with no date in the list and 0000507997's "2019" file (below). The reports' text step is built
    and run on the seed (2026-10-05, progress), and the opinion rule reads the report's headings (`rules_v2`,
@@ -339,6 +340,22 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
     and the harness does not measure it (masked text does not show what was masked), but it is a known flaw.
     The prefilter's miss on `2c4d7e30c1579a17` for `continued_existence_vote` ("o prowadzeniu dalszej
     działalności") is a candidate term for a next prefilter version, once the label is settled.
+- **The model on the whole seed (2026-10-06): the `text` job, then `features`.** One batch
+  (`msgbatch_01WHKLNSsKVMEZjKQLGfwtmM`): 292 new requests, all answered (the 66 of `make eval` replayed); none
+  discarded; `evidence_masked` passed.
+  - **`text_coverage`:** notes 549 rows `read`, 90 `partial` (scanned pages in 10 statements), 531 `no_text`; auditor
+    reports 396 `read`, 36 `no_text`; no `not_run` and nothing unanswered.
+  - **`text_signals`, present:** notes `going_concern_uncertainty` 34, `loss_coverage_resolution` 15,
+    `post_balance_sheet_event` 13, `litigation` 4; reports `emphasis_of_matter` 3, `litigation` 1, and
+    `opinion_type` (the rule, page rows) 63 unqualified, 5 qualified, 1 disclaimer. The auditor's
+    `going_concern_uncertainty` was absent on all 89 report pages read; `covenant_breach`, `key_customer_loss` and
+    `continued_existence_vote` found nothing. These counts carry the first run's label questions: before the
+    owner's review, `post_balance_sheet_event` may be over-counted.
+  - **`features` (`feature_set_v6`):** 2,929 rows, every check passed, `leakage` included. Against the rules-only
+    run (step I): `going_concern_in_notes` known on 723 rows of 15 entities, true on 311 (was 117 rows, all false);
+    `loss_coverage_in_notes` 671 rows, true on 113 (was 233, all false); `emphasis_of_matter` 843 rows of 12
+    entities, true on 76 (was 105, all false). `modified_opinion` and `auditor_changed` unchanged. Run once, not
+    twice: byte reproducibility rests on the stored responses, which a rerun replays.
 - **Step I (2026-10-01), built and run on the seed.**
   - **What:** `feature_set_v4` (`config/features/`), v3 unchanged plus two families in
     `features/feature_definitions.py`: `disclosure` (`going_concern_threat`, `going_concern_basis_abandoned`,
