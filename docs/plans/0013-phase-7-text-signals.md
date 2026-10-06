@@ -27,7 +27,8 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
    `anthropic-workspace-id` header. The client now sends one from `ANTHROPIC_WORKSPACE_ID` (2026-10-06); the
    owner sets it to a named workspace's id. Set and checked 2026-10-06; the first model run followed (progress,
    "First model run").
-3. **Accept each signal's result** (`make eval-accept SIGNAL=... BY=...`). The seven disputed results are
+3. ~~**Accept each signal's result**~~ **Done (owner, 2026-10-06):** all nine accepted on the 83-page golden set and
+   committed (`e675c21`); `make check` holds them. The seven disputed results are
    **resolved (owner, 2026-10-06; progress, "First model run", resolution)**; the rescored results wait for
    acceptance. *As first recorded:* on 6 pages the model found a signal the owner labelled
    absent, and most look like label slips or edge cases of the guide rather than model errors (progress,
