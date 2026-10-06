@@ -10,7 +10,7 @@
 **Order:** after plans 0010 and 0011, which are complete. Phase 7 (text signals) and Phase 8 (LightGBM,
 survival, SHAP) build on the harness this plan makes.
 
-## Status: complete (2026-09-27; folds corrected 2026-09-29); scale waits on the owner's decision in ADR 0013 (proposed)
+## Status: complete (2026-09-27; folds corrected 2026-09-29); scale: ADR 0013, accepted 2026-10-06 (scripted downloads through RDF's public UI)
 
 ### Progress
 

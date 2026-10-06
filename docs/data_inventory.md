@@ -35,7 +35,7 @@ These are the "credentials" of a company: they decide whether it belongs in the 
 
 All documents in this section come from the Repozytorium Dokumentów Finansowych, looked up one KRS number at a time (A3 / stage 3). Raw bytes go to MinIO before any parsing (SPEC §2.2, §6B).
 
-> **Status:** RDF is behind an Imperva Incapsula WAF that blocks plain HTTP clients. ADR 0007 option C (accepted) reaches it through a human-paced Playwright browser at 3 requests/minute, which KRS support informally confirmed is permitted. Plan 0003 builds it: every listed document is indexed with its detail (submission date included), and annual financial statements and their corrections are downloaded (`config/mappings/rdf_document_types.yaml`). The flow as observed: ADR 0007 addendum, 2026-09-16. **The live run was then shown an hCaptcha**, so until another access route exists, documents are captured by hand as browser recordings and imported (`README.md` § "Manual RDF capture").
+> **Status:** RDF is behind an Imperva Incapsula WAF that blocks plain HTTP clients. ADR 0007 option C (accepted) reaches it through a human-paced Playwright browser at 3 requests/minute, which KRS support informally confirmed is permitted. Plan 0003 builds it: every listed document is indexed with its detail (submission date included), and annual financial statements and their corrections are downloaded (`config/mappings/rdf_document_types.yaml`). The flow as observed: ADR 0007 addendum, 2026-09-16. **The live run was then shown an hCaptcha**, so the seed's documents were captured by hand as browser recordings and imported (`README.md` § "Manual RDF capture"). **Scaled access (ADR 0013, accepted 2026-10-06):** the Ministry of Justice has no API endpoint for it yet; documents are downloaded by the owner's Power Automate Desktop script through the public UI, at most 3 a minute, with a listing of each document's submission date. Its importer is built for auditor reports only (`acquisition/report_import.py`); statements need one that builds `filing_index` from the listing.
 
 ### 2.1 Filing metadata
 
@@ -160,13 +160,13 @@ The spec forbids bulk enumeration of any source. Acquisition is per entity, seed
 | Credential / access | Env var | Stage | Req. | Status |
 |---|---|---|---|---|
 | GUS BIR1 **production** API key (issued by GUS on request) | `GUS_BIR1_API_KEY`, `GUS_BIR1_ENDPOINT=prod`, `BIR1_REQUESTS_PER_MINUTE` | A2 | required for real data | obtained 2026-09-16; set in the local `.env` (gitignored), verified with one production lookup |
-| RDF portal access | `RDF_REQUESTS_PER_MINUTE`, `RDF_MANUAL_INBOX`, `RDF_REPORT_INBOX` | A3 | required | no login; WAF blocks plain HTTP, and automated browsers get a CAPTCHA (ADR 0007), so captured by hand for now; scaled access: ADR 0013, proposed |
+| RDF portal access | `RDF_REQUESTS_PER_MINUTE`, `RDF_MANUAL_INBOX`, `RDF_REPORT_INBOX` | A3 | required | no login; WAF blocks plain HTTP, and automated browsers get a CAPTCHA (ADR 0007), so captured by hand for the seed; at scale a Power Automate Desktop script through the public UI, 3 documents a minute (ADR 0013, accepted 2026-10-06) |
 | KRS extract access | `KRS_API_REQUESTS_PER_MINUTE` | A2, A4 | required | open KRS API, no key; open-data act basis, no published limit, 15/min here (ADR 0011) |
 | KRZ access | — | A4 | required | Imperva WAF; no automated access (ADR 0011); a sanctioned channel is the owner's to pursue |
 | MSiG search access | `MSIG_REQUESTS_PER_MINUTE` | A4 | required | public JSON API, no key, no terms page; per entity, 15/min (ADR 0011) |
 | NBP API | — | A5 | required | public, no key |
 | GUS BDL API (optional client key raises rate limits) | none yet; add one if a key is used | A5 | optional | not requested |
-| Registry aggregator account / ToS acceptance | none yet | A1 | required for scaled discovery | aggregator not chosen; a vendor quote may cover it with A3 (ADR 0013, proposed) |
+| Registry aggregator account / ToS acceptance | none yet | A1 | required for scaled discovery | aggregator not chosen; the scripted RDF downloads (ADR 0013, accepted) need a list of KRS numbers from it |
 | LLM API key (vision tier and text extraction) | `ANTHROPIC_API_KEY`, `EXTRACTION_API_CONFIRMED` | C3, G2 | required from Phase 3 / 7 | not configured; in `.env.example` since plan 0013 step F. No call is made until the owner confirms the provider's data-retention terms and sets `EXTRACTION_API_CONFIRMED=true` (decision 2) |
 | Postgres | `POSTGRES_HOST/PORT/DB/USER/PASSWORD` | B, J | required | local Docker Compose |
 | MinIO | `MINIO_ENDPOINT/ACCESS_KEY/SECRET_KEY/BUCKET` | B | required | local Docker Compose |
@@ -181,7 +181,7 @@ The spec forbids bulk enumeration of any source. Acquisition is per entity, seed
 
 ## 8. Open gaps found while compiling this list
 
-1. **RDF access rests on an informal confirmation** (ADR 0007). KRS support allowed 3 requests/minute verbally, and could not promise how the WAF reacts. Re-run the probe notebook before any backfill.
+1. **RDF access rests on an informal confirmation** (ADR 0007). KRS support allowed 3 requests/minute verbally, and could not promise how the WAF reacts. Re-run the probe notebook before any backfill. The scripted downloads of ADR 0013 (2026-10-06) rest on the same confirmation: a rise in challenges is a reason to stop, not to tune the script.
 2. ~~**No source named for average employment.**~~ Answered by C2 in plan 0004: no MF structure carries it as a field. Superseded by item 8, which records the candidate sources and what is still undecided.
 3. ~~**No pre-2025-generation XML fixture.**~~ Resolved in plan 0004: golden fixtures for schemas 1-0 and 1-2. ~~Small and micro forms still have none.~~ Ten short-form fixtures added in plan 0005 step E, covering every body-choice case; a committed fixture carrying signer data is now a test failure, not a manual check (`test_no_fixture_contains_personal_data`).
 4. ~~**No LLM provider or key** in `.env.example`, yet C3 and G2 both need one.~~ Anthropic, `ANTHROPIC_API_KEY` in `.env.example` (plan 0013 step F); no key configured, and calls wait on the owner's confirmation of the provider's terms.
