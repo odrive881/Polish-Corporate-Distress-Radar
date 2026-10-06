@@ -31,9 +31,10 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
    and run on the seed (2026-10-05, progress), and the opinion rule reads the report's headings (`rules_v2`,
    2026-10-05); the report pages are queued for labelling (`golden_sample_v2`, 102 pages), and their features
    are built (`feature_set_v5`, 2026-10-05); left: labelling them.
-6. **Approve or change** step I's four departures from decision 7 (progress, step I), and the choices recorded
-   "for the owner to see" in the 2026-10-05 progress entries (reports in the same datasets with `document_kind`,
-   every signal read from a report, the notes' features reading the notes only).
+6. ~~**Approve or change** step I's departures from decision 7 and the 2026-10-05 choices.~~ **Approved as built
+   (owner, 2026-10-06):** step I's five departures from decision 7 (progress, step I), and the 2026-10-05 choices:
+   reports in the same datasets with `document_kind`, every signal read from a report, the notes' features
+   reading the notes only, and a report speaking until a later one is filed (with its age in v6).
 
 ### Decision 0(c): the auditor reports (2026-10-01)
 
@@ -311,7 +312,7 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
     test runs on v4: the correction and the deletion of its synthetic warehouse carry disclosures and notes,
     and two leaky variants (dated by the balance-sheet date) fail the truncation check. `backtest_v2`
     (`config/models/`), recorded before its first run. Both are the new defaults.
-  - **Changed from decision 7, for the owner to see:**
+  - **Changed from decision 7, for the owner to see** (approved as built, 2026-10-06):
     - **a text feature is null unless the notes were read for its signal** (`text_coverage` `read`, or a kept
       `present` on a `partial` read), so notes that were scanned, never sent to the model or not wholly
       answered never read as "no warning";
@@ -342,7 +343,7 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
     Dated by its own `submission_date` (decision 6, amended); a stored report with none is not read and is
     counted under `skipped: report_undated`, one whose object does not hold exactly one PDF under
     `report_not_one_pdf`. An unreadable report is G1, as an unreadable attachment is.
-  - **Changed from the step as drafted, for the owner to see:**
+  - **Changed from the step as drafted, for the owner to see** (approved as built, 2026-10-06):
     - **one dataset, a new column:** reports go into `text_signals` and `text_coverage` (AGENT_SPEC §5 names one
       `text_signals`), told apart by `document_kind` (`statement_notes` | `auditor_report`), not into a dataset of
       their own;
@@ -442,7 +443,7 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
     page, read as absent; the rest waits on the model. `backtest_v3` twice from the clean tree (commit `d168010`),
     the same report bytes; it differs from `backtest_v2`'s only in its header (version, commit, feature-set hash):
     the regression's inputs and rows are v2's, and no cell of 84 is scored, as before.
-  - **For the owner:** a report speaks until a later one is filed, however old: an entity that stops being
+  - **For the owner** (approved as built, 2026-10-06): a report speaks until a later one is filed, however old: an entity that stops being
     audited keeps its last report's values. A report-age feature would tell the model so; it is not in v5
     (added in v6, below).
     The auditor's own going-concern paragraph (`going_concern_uncertainty` on a report) is not a v5 feature
