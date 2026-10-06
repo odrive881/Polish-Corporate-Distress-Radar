@@ -299,6 +299,36 @@ def test_no_client_before_the_owner_confirms_the_terms() -> None:
         ex.anthropic_client(Settings(extraction_api_confirmed=True, anthropic_api_key=""))  # type: ignore[arg-type]
 
 
+def test_an_identity_linked_key_needs_its_workspace() -> None:
+    with pytest.raises(PermissionError, match="ANTHROPIC_WORKSPACE_ID"):
+        ex.anthropic_client(
+            Settings(
+                extraction_api_confirmed=True,
+                anthropic_api_key="sk-ant-usr-test",  # type: ignore[arg-type]
+                anthropic_workspace_id=None,
+            )
+        )
+    client = ex.anthropic_client(
+        Settings(
+            extraction_api_confirmed=True,
+            anthropic_api_key="sk-ant-usr-test",  # type: ignore[arg-type]
+            anthropic_workspace_id="wrkspc_test",
+        )
+    )
+    assert client.default_headers[ex.WORKSPACE_HEADER] == "wrkspc_test"
+
+
+def test_a_workspace_key_sends_no_workspace_header() -> None:
+    client = ex.anthropic_client(
+        Settings(
+            extraction_api_confirmed=True,
+            anthropic_api_key="sk-ant-api03-test",  # type: ignore[arg-type]
+            anthropic_workspace_id=None,
+        )
+    )
+    assert ex.WORKSPACE_HEADER not in client.default_headers
+
+
 # --- transports, against a fake client -----------------------------------------------------------
 
 

@@ -98,6 +98,10 @@ class Settings(BaseSettings):
     # has confirmed the provider's data-retention terms and set EXTRACTION_API_CONFIRMED=true; only
     # masked text is ever sent (ADR 0009, third addendum).
     anthropic_api_key: SecretStr | None = None
+    # The workspace an identity-linked key (`sk-ant-usr…`, tied to a user, not a workspace) acts in, sent
+    # as the `anthropic-workspace-id` header; such a key is refused without it. A header, not part of the
+    # request body, so it changes no stored response's key.
+    anthropic_workspace_id: str | None = None
     # Which `config/extraction/<extractor_version>.yaml` is in use: what `make eval` runs and the gate
     # in `make check` holds to its accepted scores (plan 0013 step G), under `eval_gate_version`.
     extractor_version: str = "extractor_v3"
