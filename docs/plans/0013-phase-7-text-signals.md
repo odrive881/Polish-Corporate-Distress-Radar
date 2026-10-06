@@ -22,9 +22,10 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
    after 30 minutes). Save each page before moving on; `make label-export` writes a checkpoint to
    `evals/text_signals/` for review and commit.
 2. ~~**Confirm the provider's data-retention terms** (decision 2)~~ **Confirmed (owner, 2026-10-06; below,
-   decision 2).** `.env` has `EXTRACTION_API_CONFIRMED=true` and a key, but the key is not scoped to a
-   workspace: the API refuses it without an `anthropic-workspace-id` header, which the client does not send.
-   A workspace-scoped key replaces it. Until then the eight model signals are `not_run`, and the notes'
+   decision 2).** `.env` has `EXTRACTION_API_CONFIRMED=true` and a key, but the key is identity-linked
+   (`sk-ant-usr…`, the only kind the Console now issues to this account), which the API refuses without an
+   `anthropic-workspace-id` header. The client now sends one from `ANTHROPIC_WORKSPACE_ID` (2026-10-06); the
+   owner sets it to a named workspace's id. Until then the eight model signals are `not_run`, and the notes'
    features are null wherever the prefilter selected a page.
 3. **Accept each signal's first result** after `make eval`: `make eval-accept SIGNAL=... BY=...`.
 4. **Then rerun** the `text` job and the `features` job: the notes' features fill in, with no new version.
@@ -570,7 +571,9 @@ Recommendations first; each is the owner's to accept, change or reject before th
      *Confirmed 2026-10-06 (owner), on Anthropic's Commercial Terms (an API key from the Console):*
      inputs and outputs deleted within 30 days (Privacy Center, "How long do you store my organization's
      data?", updated 2026-07-01; longer only for content flagged under the Usage Policy); not used for model
-     training; zero data retention not available to this account. The owner accepts these terms. The Batches
+     training; zero data retention not available to this account. The owner accepts these terms. The Console issues this
+     account only identity-linked keys (`sk-ant-usr…`), so the client sends `ANTHROPIC_WORKSPACE_ID` as the
+     `anthropic-workspace-id` header; it is not in the request body, so no stored response's key changes. The Batches
      API, which stores jobs until collected, stays the backfill route.
    - Rules before models: auditor opinions use the standard wording of the Polish auditing standards (*opinia
      bez zastrzeżeń*, *z zastrzeżeniem*, *negatywna*, *odmowa wyrażenia opinii*; *istotna niepewność dotycząca

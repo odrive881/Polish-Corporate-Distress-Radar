@@ -145,6 +145,10 @@ class Transport(Protocol):
         ...
 
 
+IDENTITY_LINKED_KEY_PREFIX = "sk-ant-usr"
+WORKSPACE_HEADER = "anthropic-workspace-id"
+
+
 def anthropic_client(settings: Settings) -> anthropic.Anthropic:
     """The API client, only once the owner has confirmed the provider's terms (decision 2)."""
     if not settings.extraction_api_confirmed:
@@ -155,7 +159,14 @@ def anthropic_client(settings: Settings) -> anthropic.Anthropic:
     key = settings.anthropic_api_key.get_secret_value() if settings.anthropic_api_key else ""
     if not key:
         raise PermissionError("ANTHROPIC_API_KEY is not set")
-    return anthropic.Anthropic(api_key=key)
+    workspace = (settings.anthropic_workspace_id or "").strip()
+    if key.startswith(IDENTITY_LINKED_KEY_PREFIX) and not workspace:
+        raise PermissionError(
+            "ANTHROPIC_API_KEY is an identity-linked key: set ANTHROPIC_WORKSPACE_ID (wrkspc_…) "
+            "to the workspace the calls act in"
+        )
+    headers = {WORKSPACE_HEADER: workspace} if workspace else None
+    return anthropic.Anthropic(api_key=key, default_headers=headers)
 
 
 def _params(params: dict[str, Any]) -> MessageCreateParamsNonStreaming:
