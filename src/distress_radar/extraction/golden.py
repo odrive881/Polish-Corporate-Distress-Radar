@@ -46,6 +46,7 @@ from distress_radar.extraction.preprocessing import (
     analyse,
     candidates,
 )
+from distress_radar.extraction.schemas import SIGNAL_VALUES
 from distress_radar.parsing.canonical_schema import CONFIG_DIR
 
 GOLDEN_DIR = CONFIG_DIR.parent / "evals" / "text_signals"
@@ -54,8 +55,10 @@ PAGES_FILE = "pages.jsonl"
 # hashes are left out: a hash can hold an 11-digit run that is no PESEL.
 TEXT_KEYS = frozenset({"text", "evidence", "evidence_span"})
 # `opinion_type`'s values: the four opinions of the Polish auditing standards (plan 0013 decision
-# 2). Every other signal is present or absent.
-OPINION_VALUES = ("unqualified", "qualified", "adverse", "disclaimer")
+# 2), required when present. `post_balance_sheet_event` takes the kind of event (decision 9), which a
+# label made before decision 9 lacks: until valued, it is scored on presence. Every other signal is
+# present or absent.
+OPINION_VALUES = SIGNAL_VALUES["opinion_type"]
 _TOKEN = re.compile("|".join(re.escape(t) for t in masking.TOKENS.values()))
 
 Sample = Literal["selected", "rejected"]
@@ -149,8 +152,11 @@ class QueuePage(_Frozen):
                 raise ValueError(f"{self.page_id} {signal}: evidence is not a span of the page")
             if signal == "opinion_type" and label.present and label.value not in OPINION_VALUES:
                 raise ValueError(f"{self.page_id}: opinion_type needs one of {OPINION_VALUES}")
-            if signal != "opinion_type" and label.value is not None:
-                raise ValueError(f"{self.page_id} {signal}: only opinion_type takes a value")
+            allowed = SIGNAL_VALUES.get(signal, ())
+            if label.value is not None and label.value not in allowed:
+                raise ValueError(
+                    f"{self.page_id} {signal}: value {label.value!r} is not one of {allowed}"
+                )
         return self
 
     @property

@@ -166,7 +166,7 @@ def test_a_label_is_consistent(kwargs: dict[str, Any], match: str) -> None:
         Label(**kwargs)
 
 
-def test_only_opinion_type_takes_a_value_and_from_its_list(queue: list[QueuePage]) -> None:
+def test_only_a_valued_signal_takes_a_value_and_from_its_list(queue: list[QueuePage]) -> None:
     row = _row(queue, 1)
     labels = _all_absent()
     labels["opinion_type"] = Label(present=True, value="clean", evidence="Spółki")
@@ -174,7 +174,15 @@ def test_only_opinion_type_takes_a_value_and_from_its_list(queue: list[QueuePage
         golden.label(row, labels, "owner")
     labels["opinion_type"] = Label(present=True, value="qualified", evidence="Spółki")
     labels["litigation"] = Label(present=True, value="qualified", evidence="Spółki")
-    with pytest.raises(ValidationError, match="only opinion_type takes a value"):
+    with pytest.raises(ValidationError, match="litigation: value 'qualified' is not one of"):
+        golden.label(row, labels, "owner")
+    labels["litigation"] = Label(present=False)
+    labels["post_balance_sheet_event"] = Label(present=True, value="qualified", evidence="Spółki")
+    with pytest.raises(ValidationError, match="is not one of"):
+        golden.label(row, labels, "owner")
+    # Decision 9: the kind of event; a label made before it, with no kind, still loads.
+    for kind in ("adverse", None):
+        labels["post_balance_sheet_event"] = Label(present=True, value=kind, evidence="Spółki")
         golden.label(row, labels, "owner")
 
 

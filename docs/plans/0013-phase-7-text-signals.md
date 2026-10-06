@@ -46,7 +46,8 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
    (owner, 2026-10-06):** step I's five departures from decision 7 (progress, step I), and the 2026-10-05 choices:
    reports in the same datasets with `document_kind`, every signal read from a report, the notes' features
    reading the notes only, and a report speaking until a later one is filed (with its age in v6).
-7. **Decision 9 (proposed 2026-10-06, open):** `post_balance_sheet_event` gains a value (adverse, favourable,
+7. **Decision 9 (accepted by the owner 2026-10-06, as recommended): built (2026-10-06, progress, "Decision 9,
+   built"); left for the owner: a kind for each of the 4 positive pages, then accepting v2.** As first recorded: `post_balance_sheet_event` gains a value (adverse, favourable,
    neutral) and the balance-sheet date, as `post_balance_sheet_event_v2` (§ Owner decisions, 9). If accepted: the
    owner updates the guide and values the 4 positive pages, then I build it, run `make eval`, and the owner
    accepts.
@@ -375,6 +376,38 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
     `loss_coverage_in_notes` 671 rows, true on 113 (was 233, all false); `emphasis_of_matter` 843 rows of 12
     entities, true on 76 (was 105, all false). `modified_opinion` and `auditor_changed` unchanged. Run once, not
     twice: byte reproducibility rests on the stored responses, which a rerun replays.
+- **Decision 9, built (2026-10-06): `extractor_v4`, `post_balance_sheet_event_v2`.**
+  - **What:**
+    - **Values beyond the opinion:** `schemas.SIGNAL_VALUES` names the signals that take a value and the values
+      allowed: `opinion_type` always, `post_balance_sheet_event` when its method says `valued`. The schema, the
+      response model, `interpret`, the golden labels, the `text_signals` contract and the notebook's value
+      dropdown all read it.
+    - **The date:** a method marked `balance_sheet_date` gets the statement's (or report's) period end before
+      the page. The text job passes the statement's; `make eval` reads each golden page's from Postgres
+      (`manifest.period_ends`), since putting it into `pages.jsonl` would change every accepted result's hash.
+    - **The prompt and config:** `post_balance_sheet_event_v2` (the guide's definition, the kinds, the date rule,
+      no heading as evidence), `extractor_v4`, the guide's definition and the prompt changelog.
+    - Every other signal's request is v3's byte for byte (tested), so their stored responses and accepted
+      results stand. `SCHEMA_VERSION` is unchanged for the same reason.
+  - **Found on the way, fixed:** rerunning `make eval` under a new extractor version dropped every acceptance,
+    though the results were the same but for the `extractor_version` label. A reproduced result now keeps its
+    acceptance whatever extractor version names the run (`eval_harness.unchanged`, tested). The 8 accepted
+    results were restored from git, and a second run under v4 kept them all.
+  - **`make eval` under `EXTRACTOR_VERSION=extractor_v4`:** 18 requests sent, 53 replayed.
+    `post_balance_sheet_event_v2` end to end: 4 positives, P 1.00 R 1.00 (v1: P 0.80 R 1.00). The FY2023 page
+    repeating a 2020 paragraph (`2fa1cf17360c2674`) is now absent. The golden positives have no kind yet, so they
+    are scored on presence. The model's kinds, for the owner to check when labelling them:
+
+    | Page | Kind given by v2 | Evidence (masked, shortened) |
+    |---|---|---|
+    | `0d7360a7bb902958` | adverse | a 31.01.2025 notice of the district court in Kielce (economic division) |
+    | `26a67244b75fd805` | favourable | the company won several road contracts running to 2021 |
+    | `2e34290c9ac1a233` | neutral | the start of 2020 brought the spread of COVID-19 in many countries |
+    | `521be011091c25a2` | adverse | the sanacja petition filed on 05.03.2021 |
+
+  - **Not switched yet:** the default stays `extractor_v3` until the owner has labelled the kinds and accepted
+    v2. Then the default moves to v4, and a rerun of the `text` job sends this signal's pages across the seed
+    (new requests, about 64 notes pages and the selected report pages). No feature reads this signal yet.
 - **Step I (2026-10-01), built and run on the seed.**
   - **What:** `feature_set_v4` (`config/features/`), v3 unchanged plus two families in
     `features/feature_definitions.py`: `disclosure` (`going_concern_threat`, `going_concern_basis_abandoned`,
@@ -685,7 +718,7 @@ Recommendations first; each is the owner's to accept, change or reject before th
    regression's inputs. It is recorded before any run, as decision 5 of plan 0012 requires; nothing on the seed
    is scored either way (plan 0012 correction).
 
-### Added after the first model run (proposed 2026-10-06, open)
+### Added after the first model run (accepted by the owner 2026-10-06, as recommended)
 
 9. **`post_balance_sheet_event`: what counts, and when.** From the review of the first run's disputed results
    (progress, "First model run"). The signal feeds no feature set yet (v6 reads only the notes' going-concern and

@@ -164,11 +164,17 @@ def _(SIGNAL_TYPES, golden, mo, row):
             for s in SIGNAL_TYPES
         }
     )
-    _opinion = row.labels.get("opinion_type")
-    opinion_value = mo.ui.dropdown(
-        options=list(golden.OPINION_VALUES),
-        value=_opinion.value if _opinion is not None else None,
-        label="opinion",
+    # A value for each signal that takes one (opinion; kind of event, decision 9), when present.
+    values = mo.ui.dictionary(
+        {
+            s: mo.ui.dropdown(
+                options=list(golden.SIGNAL_VALUES[s]),
+                value=row.labels[s].value if s in row.labels else None,
+                label="value",
+            )
+            for s in SIGNAL_TYPES
+            if s in golden.SIGNAL_VALUES
+        }
     )
     labelled_by = mo.ui.text(value=row.labelled_by or "owner", label="labelled by")
     save_button = mo.ui.run_button(label="Save labels")
@@ -179,17 +185,17 @@ def _(SIGNAL_TYPES, golden, mo, row):
                     [
                         mo.md(f"`{s}`"),
                         presence[s],
-                        *([opinion_value] if s == "opinion_type" else []),
+                        *([values[s]] if s in golden.SIGNAL_VALUES else []),
                         evidence[s],
                     ],
-                    widths=[2, 1, *([1] if s == "opinion_type" else []), 4],
+                    widths=[2, 1, *([1] if s in golden.SIGNAL_VALUES else []), 4],
                 )
                 for s in SIGNAL_TYPES
             ),
             mo.hstack([labelled_by, save_button]),
         ]
     )
-    return evidence, labelled_by, opinion_value, presence, save_button
+    return evidence, labelled_by, presence, save_button, values
 
 
 @app.cell
@@ -199,13 +205,13 @@ def _(
     golden,
     labelled_by,
     mo,
-    opinion_value,
     path,
     presence,
     row,
     save_button,
     set_rev,
     update_queue,
+    values,
 ):
     mo.stop(not save_button.value)
     try:
@@ -217,7 +223,7 @@ def _(
             if presence.value[s] == "absent"
             else golden.Label(
                 present=True,
-                value=opinion_value.value if s == "opinion_type" else None,
+                value=values.value[s] if s in golden.SIGNAL_VALUES else None,
                 evidence=evidence.value[s].strip(),
             )
             for s in SIGNAL_TYPES

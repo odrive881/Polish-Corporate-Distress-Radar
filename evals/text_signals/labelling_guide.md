@@ -31,9 +31,24 @@ corrects every proposal, and the row records who proposed (`proposed_by`) and wh
 | `covenant_breach` | a loan or bond covenant or condition was breached, a lender terminated a facility or called it due | loan terms described without a breach |
 | `key_customer_loss` | a major customer or contract was lost, withdrawn from or terminated (*odstąpienie od umowy* by the investor) | customer concentration described without a loss |
 | `litigation` | a court, arbitration or enforcement case involving the company, pending or decided, with a claim | routine receivables collection with no case |
-| `post_balance_sheet_event` | an event after the balance-sheet date that bears on the company's condition | the standard sentence that no such event occurred |
+| `post_balance_sheet_event` | an event after the balance-sheet date that bears on the company's condition; value: `adverse`, `favourable` or `neutral` (below) | the standard sentence that no such event occurred; text carried forward from an earlier year's statement |
 | `loss_coverage_resolution` | how a loss is (to be) covered: from future profits, reserve capital, shareholders' payments | profit distribution with no loss |
 | `continued_existence_vote` | the shareholders' vote on whether the company continues (KSH art. 233), called or held | the loss exceeding half the capital, stated without the vote |
+
+**`post_balance_sheet_event`, its kind and its date** (decision 9, 2026-10-06):
+
+- `adverse`: the event worsens the company's position or prospects: a bankruptcy or restructuring petition
+  filed or proceedings opened, a lost contract or customer, a loan called or a default, a ruling or
+  enforcement against the company, liquidation, a material loss.
+- `favourable`: it helps the company: state aid or a subsidy received, new contracts won, capital raised,
+  debt forgiven.
+- `neutral`: the page describes the event without stating an effect on the company: a general paragraph on
+  a pandemic or the economy, a change of shareholder.
+- Several events on one page: the most adverse, with that event's sentence as evidence. A section heading
+  alone is not evidence.
+- The event must postdate the statement's balance-sheet date. Statements copy paragraphs from earlier
+  years: one that names an earlier year's statement (the 2020 COVID paragraph in a FY2023 statement) is
+  absent.
 
 ## Masking
 

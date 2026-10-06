@@ -17,12 +17,12 @@ import polars as pl
 
 from distress_radar.extraction import auditor_reports as ar
 from distress_radar.extraction.preprocessing import DOCUMENT_KINDS, SIGNAL_TYPES
-from distress_radar.extraction.schemas import Confidence, OpinionValue
+from distress_radar.extraction.schemas import SIGNAL_VALUES, Confidence, OpinionValue
 from distress_radar.extraction.text_signals import COVERAGE_COLUMNS, SIGNAL_COLUMNS, CoverageStatus
 
 _SHA256 = r"^[0-9a-f]{64}$"
 _KRS = r"^[0-9]{10}$"
-_VALUES = ["present", "absent", *get_args(OpinionValue)]
+_VALUES = sorted({"present", "absent", *(v for vs in SIGNAL_VALUES.values() for v in vs)})
 
 
 def _column(
@@ -60,10 +60,12 @@ def _response_for_llm(data: pa.PolarsData) -> pl.LazyFrame:
     )
 
 
-def _opinion_values(data: pa.PolarsData) -> pl.LazyFrame:
-    return data.lazyframe.select(
-        (pl.col("signal_type") == "opinion_type") | pl.col("value").is_in(["present", "absent"])
-    )
+def _signal_values(data: pa.PolarsData) -> pl.LazyFrame:
+    """A value is "present", "absent", or one the signal takes (`SIGNAL_VALUES`)."""
+    ok = pl.col("value").is_in(["present", "absent"])
+    for signal, values in SIGNAL_VALUES.items():
+        ok = ok | ((pl.col("signal_type") == signal) & pl.col("value").is_in(list(values)))
+    return data.lazyframe.select(ok)
 
 
 # One row per kept extraction; every lineage column is required (invariant 3).
@@ -75,7 +77,7 @@ TEXT_SIGNALS = pa.DataFrameSchema(
     checks=[
         pa.Check(_evidence_when_present, error="evidence exactly when a signal is present"),
         pa.Check(_response_for_llm, error="a model's extraction names its stored response"),
-        pa.Check(_opinion_values, error="only opinion_type takes an opinion as its value"),
+        pa.Check(_signal_values, error="a value the signal does not take"),
     ],
     strict=True,
     ordered=True,

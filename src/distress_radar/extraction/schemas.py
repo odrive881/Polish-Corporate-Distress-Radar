@@ -6,6 +6,11 @@ every replay alike, so nothing is ever parsed from free text. The schema is writ
 generated from the Pydantic model, so the request is one fixed body for a single call and a batch,
 and its bytes are part of the response key (decision 3); a test keeps the two in step.
 
+A signal may take a value besides presence (`SIGNAL_VALUES`): `opinion_type` always (the opinion), and
+`post_balance_sheet_event` when its method says `valued` (the kind of event, plan 0013 decision 9).
+Whether a request asks for a value is the method's, so an earlier prompt's request, and its stored
+response, stay what they were.
+
 `Extraction` is a kept answer: present or absent, with evidence when present. `Discarded` is an
 answer that could not be kept, with its reason code (§6G2: an extraction without evidence is
 discarded).
@@ -20,11 +25,21 @@ from pydantic import BaseModel, ConfigDict
 
 from distress_radar.extraction.preprocessing import SignalType
 
-# Changes with any change to the schemas below: a new schema is a new response key.
+# Changes with any change to the schemas below. A new schema variant (a signal newly `valued`) is told
+# apart by its own bytes, in the request and in the eval's schema hash, so it leaves this alone: a bump
+# would change every accepted eval result's schema hash.
 SCHEMA_VERSION = "1"
 
 Confidence = Literal["high", "medium", "low"]
 OpinionValue = Literal["unqualified", "qualified", "adverse", "disclaimer"]
+# The kind of event after the balance-sheet date (decision 9): it worsens the company's position, it
+# helps it (state aid, new contracts, capital), or it is market-wide wording with no effect stated.
+EventKind = Literal["adverse", "favourable", "neutral"]
+# The signals that can take a value, and the values each allows (the labelling guide's definitions).
+SIGNAL_VALUES: dict[str, tuple[str, ...]] = {
+    "opinion_type": get_args(OpinionValue),
+    "post_balance_sheet_event": get_args(EventKind),
+}
 Method = Literal["llm", "rule"]
 DiscardReason = Literal[
     "no_evidence",  # present, with an empty evidence span
@@ -50,19 +65,33 @@ class OpinionAnswer(SignalAnswer):
     value: OpinionValue | Literal["none"]  # "none" exactly when absent
 
 
-def response_model(signal: SignalType) -> type[SignalAnswer]:
-    return OpinionAnswer if signal == "opinion_type" else SignalAnswer
+class EventAnswer(SignalAnswer):
+    value: EventKind | Literal["none"]  # "none" exactly when absent
 
 
-def json_schema(signal: SignalType) -> dict[str, Any]:
+def takes_value(signal: SignalType, valued: bool = False) -> bool:
+    """Whether an answer for the signal carries a value: `opinion_type` always, another valued
+    signal when its method asks for one."""
+    if valued and signal not in SIGNAL_VALUES:
+        raise ValueError(f"{signal} takes no value")
+    return signal == "opinion_type" or valued
+
+
+def response_model(signal: SignalType, valued: bool = False) -> type[SignalAnswer]:
+    if not takes_value(signal, valued):
+        return SignalAnswer
+    return OpinionAnswer if signal == "opinion_type" else EventAnswer
+
+
+def json_schema(signal: SignalType, valued: bool = False) -> dict[str, Any]:
     """The output schema sent with the request: every field required, nothing else allowed."""
     properties: dict[str, Any] = {
         "present": {"type": "boolean"},
         "evidence": {"type": "string"},
         "confidence": {"type": "string", "enum": list(get_args(Confidence))},
     }
-    if signal == "opinion_type":
-        properties["value"] = {"type": "string", "enum": [*get_args(OpinionValue), "none"]}
+    if takes_value(signal, valued):
+        properties["value"] = {"type": "string", "enum": [*SIGNAL_VALUES[signal], "none"]}
     return {
         "type": "object",
         "properties": properties,
@@ -75,7 +104,7 @@ def json_schema(signal: SignalType) -> dict[str, Any]:
 class Extraction:
     signal_type: SignalType
     present: bool
-    value: str | None  # `opinion_type` only
+    value: str | None  # a valued signal's value (`SIGNAL_VALUES`), when present
     evidence: str | None  # verbatim span of the masked page, when present
     evidence_start: int | None  # its offset in the masked page (the first occurrence)
     confidence: Confidence

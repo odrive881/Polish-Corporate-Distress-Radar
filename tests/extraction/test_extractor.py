@@ -5,10 +5,12 @@ from __future__ import annotations
 
 import json
 from collections.abc import Mapping
+from datetime import date
 from pathlib import Path
 from typing import Any, get_args
 
 import pytest
+import yaml
 from pydantic import ValidationError
 
 from distress_radar.acquisition.raw_store import InMemoryObjectStore
@@ -83,6 +85,22 @@ def test_the_sent_schema_and_the_validating_model_agree(signal: preprocessing.Si
         }
 
 
+@pytest.mark.parametrize("signal", sorted(schemas.SIGNAL_VALUES))
+def test_a_valued_signal_s_schema_and_model_agree_on_its_values(
+    signal: preprocessing.SignalType,
+) -> None:
+    schema = schemas.json_schema(signal, valued=True)
+    model = schemas.response_model(signal, valued=True)
+    assert set(schema["properties"]) == set(model.model_fields) == set(schema["required"])
+    assert schema["properties"]["value"]["enum"] == [*schemas.SIGNAL_VALUES[signal], "none"]
+
+
+def test_only_a_signal_with_values_can_be_valued() -> None:
+    with pytest.raises(ValueError, match="takes no value"):
+        schemas.json_schema("litigation", valued=True)
+    assert "value" not in schemas.json_schema("post_balance_sheet_event")
+
+
 def test_an_answer_with_an_extra_field_is_invalid() -> None:
     with pytest.raises(ValidationError):
         schemas.SignalAnswer.model_validate(
@@ -97,7 +115,13 @@ def test_the_config_names_a_prompt_for_every_model_signal(extractor: ex.Extracto
     llm = {s for s, m in extractor.config.signals.items() if m.method == "llm"}
     assert llm == set(preprocessing.SIGNAL_TYPES) - {"opinion_type"}
     prompts = {p.stem for p in (REPO / "prompts" / "extraction").glob("*.md")}
-    assert {m.prompt for m in extractor.config.signals.values() if m.prompt} == prompts
+    named = {
+        m.prompt
+        for path in (REPO / "config" / "extraction").glob("extractor_v*.yaml")
+        for m in ex.load_extractor(path.stem).config.signals.values()
+        if m.prompt
+    }
+    assert named == prompts  # no prompt file without an extractor version, and none missing
 
 
 def test_the_version_must_be_the_file_name(tmp_path: Path) -> None:
@@ -501,6 +525,64 @@ def test_rules_give_exactly_one_form(headings: rules.Rules) -> None:
     twice["adverse"] = twice["unqualified"]
     with pytest.raises(ValidationError, match="more than once"):
         rules.Rules(rules_version="x", opinion_headings=twice)
+
+
+def test_extractor_v4_dates_and_values_only_the_post_balance_sheet_event() -> None:
+    v3, v4 = ex.load_extractor("extractor_v3"), ex.load_extractor("extractor_v4")
+    end = date(2023, 12, 31)
+    for signal, method in v4.config.signals.items():
+        if method.method == "llm" and signal != "post_balance_sheet_event":
+            assert ex.request_params(v3, signal, "x") == ex.request_params(v4, signal, "x", end)
+    params = ex.request_params(v4, "post_balance_sheet_event", PAGE, end)
+    assert params["messages"][0]["content"].startswith(
+        "<balance_sheet_date>2023-12-31</balance_sheet_date>\n<page>"
+    )
+    assert params["output_config"]["format"]["schema"] == schemas.json_schema(
+        "post_balance_sheet_event", valued=True
+    )
+    assert request_key(params) != request_key(
+        ex.request_params(v4, "post_balance_sheet_event", PAGE, date(2022, 12, 31))
+    )
+    with pytest.raises(ValueError, match="balance-sheet date"):
+        ex.request_params(v4, "post_balance_sheet_event", PAGE)
+
+
+def test_a_valued_answer_keeps_its_kind_and_none_only_when_absent() -> None:
+    key = "k" * 64
+    event = "Spółka złożyła wniosek o otwarcie postępowania sanacyjnego."
+    page = f"Zdarzenia po dniu bilansowym. {event}"
+
+    def read(answer: dict[str, Any]) -> Extraction | Discarded:
+        return ex.interpret("post_balance_sheet_event", _message(answer), page, key, valued=True)
+
+    ok = read({"present": True, "evidence": event, "confidence": "high", "value": "adverse"})
+    assert isinstance(ok, Extraction) and ok.value == "adverse"
+    absent = read({"present": False, "evidence": "", "confidence": "high", "value": "none"})
+    assert isinstance(absent, Extraction) and absent.value is None
+    for bad in (
+        {"present": True, "evidence": event, "confidence": "high", "value": "none"},
+        {"present": False, "evidence": "", "confidence": "high", "value": "neutral"},
+        {"present": True, "evidence": event, "confidence": "high", "value": "qualified"},
+    ):
+        assert read(bad) == Discarded("post_balance_sheet_event", "invalid_output", key)
+
+
+@pytest.mark.parametrize(
+    ("signal", "method"),
+    [
+        ("litigation", {"method": "llm", "prompt": "litigation_v1", "valued": True}),
+        ("opinion_type", {"method": "rule", "balance_sheet_date": True}),
+    ],
+)
+def test_valued_and_dated_are_for_model_signals_that_take_them(
+    signal: str, method: dict[str, Any]
+) -> None:
+    config = yaml.safe_load(
+        (REPO / "config" / "extraction" / "extractor_v4.yaml").read_text(encoding="utf-8")
+    )
+    config["signals"][signal] = method
+    with pytest.raises(ValidationError, match="take no value|for an `llm` signal"):
+        ex.ExtractorConfig.model_validate(config)
 
 
 def test_extractor_v2_reads_the_opinion_by_headings_and_keeps_v1_s_requests() -> None:
