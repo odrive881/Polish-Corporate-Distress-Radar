@@ -4,7 +4,7 @@ Everything the pipeline has to get hold of, gathered from the spec documents in 
 
 Sources: `AGENT_SPEC.md`, `DIRECTORY_STRUCTURE.md`, `README.md`, `CLAUDE.md`, `docs/PROJECT_OVERVIEW.md`, `docs/TECHNICAL_ARCHITECTURE.md`, with `.env.example` and `docs/adr/` checked for status. If this file and the spec disagree, the spec wins. Fix this file.
 
-Stage codes use the letter scheme from `AGENT_SPEC.md` §6. The numbered stage (1–12) from `docs/PROJECT_OVERVIEW.md` is in brackets. Status was first compiled on 2026-09-14; rows are updated as plans land (latest: plan 0011, 2026-09-26).
+Stage codes use the letter scheme from `AGENT_SPEC.md` §6. The numbered stage (1–12) from `docs/PROJECT_OVERVIEW.md` is in brackets. Status was first compiled on 2026-09-14; rows are updated as plans land (latest: plan 0014 and ADR 0014, 2026-10-06).
 
 ---
 
@@ -14,7 +14,7 @@ These are the "credentials" of a company: they decide whether it belongs in the 
 
 | Item | Polish | Source | Stage | Feeds | Req. | Spec ref | Status |
 |---|---|---|---|---|---|---|---|
-| KRS number (10 chars, zero-padded) | numer KRS | A1 discovery, confirmed by BIR1 / KRS extract | A1, A2 (1, 2) | primary key of every dataset | required | SPEC §5, §6A | 17-entity seed in `config/segments/construction_sme_v1_seed.yaml` |
+| KRS number (10 chars, zero-padded) | numer KRS | A1 discovery, confirmed by BIR1 / KRS extract | A1, A2 (1, 2) | primary key of every dataset | required | SPEC §5, §6A | 17-entity seed in `config/segments/construction_sme_v1_seed.yaml`; about 600 more from the owner's Rejestr.io list (ADR 0014), kept outside the repository, loader in plan 0014 step 0 |
 | NIP | Numer Identyfikacji Podatkowej | GUS BIR1, KRS extract | A2 (2) | `entity_master`, `financial_statements_canonical` | required | SPEC §5; OVERVIEW stage 2 | BIR1 adapter built |
 | REGON | Rejestr Gospodarki Narodowej | GUS BIR1 | A2 (2) | `entity_master`, `financial_statements_canonical` | required | SPEC §5; OVERVIEW stage 2 | BIR1 adapter built |
 | Legal form (must be `sp. z o.o.`; S.A. only for future Art. 397 scope) | forma prawna | GUS BIR1 (form symbol), KRS extract | A2 (2) | segment filter | required | SPEC §1, §4.5 | BIR1 adapter built |

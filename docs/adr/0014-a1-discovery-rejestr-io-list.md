@@ -48,6 +48,9 @@ with Rejestr.io's (`rejestr.io`) search filters.**
 
   One sign already: 174 of the 611 have KRS numbers of 0001000000 or higher, among the most recently issued. Some
   of them will not have three filed years yet. Registration dates come from the KRS extracts.
+- **Comparing it with the segment:** PROJECT_OVERVIEW stage 1 already names the check, GUS aggregate counts
+  by PKD section and employment band against the discovered universe. It needs A5's GUS BDL adapter, which is
+  not built.
 - **To make it representative** (the owner's stated next step): record the filters used, describe the frame
   they draw from (how many companies match the segment's definition in all), and draw the next list from that
   frame by a written rule, stratified if wanted, with the strata and their weights recorded. A list built that

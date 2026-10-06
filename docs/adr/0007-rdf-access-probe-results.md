@@ -1,6 +1,6 @@
 # 0007 — RDF access probe results
 
-- **Status:** accepted. Option C, below, is the decision.
+- **Status:** accepted. Option C, below, was the decision; it failed live on 2026-09-16 (an hCaptcha, § "Live result"), and access at scale is now ADR 0013's (accepted 2026-10-06). The limits below still bind any automated access.
 - **Date:** 2026-09-14 (probe); decided 2026-09-15
 - **Follows up:** 0004
 - **Followed up by:** plan 0003 (A3 build)

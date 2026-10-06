@@ -19,3 +19,10 @@ Polish accounting and legal terms used in the data and the code. Keep the Polish
 | **Pozycja uszczegóławiająca** | pozycja uszczegóławiająca | A filer's own extra line inside a statement; captured as `….USER` totals |
 | **Wariant porównawczy / kalkulacyjny** | rachunek zysków i strat | Income statement by nature (comparative) or by function (calculation) |
 | **CRWDE** | Centralne Repozytorium Wzorów Dokumentów Elektronicznych | Government repository of e-document templates; publishes the 2025 statement structures |
+| **Data dodania** | data dodania dokumentu | The date RDF published a document: its `known_from` (the detail's `dataDodania`). Never confuse it with *data sporządzenia* |
+| **Data sporządzenia** | data sporządzenia dokumentu | The date the filer says the document was prepared; it precedes publication, so it is never `known_from` |
+| **Korekta** | korekta dokumentu | A correction filed to RDF; reachable only inside the expanded row of the document it corrects, never a list row of its own |
+| **Informacja dodatkowa** | informacja dodatkowa | The notes to the statement, usually a PDF attached inside the XML; Phase 7 reads their text layer |
+| **Sprawozdanie z badania** | sprawozdanie z badania rocznego sprawozdania finansowego | The auditor's report (RDF type 19); its opinion is read by the report's KSB headings |
+| **KSB** | Krajowe Standardy Badania | Polish auditing standards (ISA-based); KSB 700/705 fix the opinion headings the opinion rule reads |
+| **Postępowanie naprawcze** | postępowanie naprawcze | Literally "recovery proceedings": the label KRS uses for a post-2016 *sanacja* (a restructuring), a trap for the outcome taxonomy |
