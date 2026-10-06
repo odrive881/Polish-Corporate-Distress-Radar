@@ -99,6 +99,9 @@ So every entity beyond the seed needs an importer that builds `filing_index` fro
      (the ZIP's path, empty when not downloaded) and `captured_at`;
    - `entities.csv`, one row per KRS number searched: `krs`, `searched_at`, `found`, `list_rows` (all types, as
      the list counts them) and `complete` (every in-scope row expanded and downloaded);
+   - `challenges.csv`, the log of ADR 0013 rule 7: `at`, `krs`, `action`, `kind` (CAPTCHA, block page,
+     unexpected page) and `solved_by_hand`; stored raw with the import, and its counts in the run's metadata
+     (added 2026-10-06, after the decisions were accepted);
    - one ZIP per expanded row, exactly as "Pobierz dokumenty" delivered it, at `<krs>/<row_document_id>.zip`;
    - "Identyfikator zgłoszenia" is not collected (nothing needs it), and neither is anything from "Pokaż
      zgłoszenie".
