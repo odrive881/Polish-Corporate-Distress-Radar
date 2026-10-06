@@ -47,7 +47,8 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
    reports in the same datasets with `document_kind`, every signal read from a report, the notes' features
    reading the notes only, and a report speaking until a later one is filed (with its age in v6).
 7. **Decision 9 (accepted by the owner 2026-10-06, as recommended): built (2026-10-06, progress, "Decision 9,
-   built"); left for the owner: a kind for each of the 4 positive pages, then accepting v2.** As first recorded: `post_balance_sheet_event` gains a value (adverse, favourable,
+   built"); the owner labelled the kinds and accepted v2 (2026-10-06); `extractor_v4` is the default.** As first
+   recorded: `post_balance_sheet_event` gains a value (adverse, favourable,
    neutral) and the balance-sheet date, as `post_balance_sheet_event_v2` (§ Owner decisions, 9). If accepted: the
    owner updates the guide and values the 4 positive pages, then I build it, run `make eval`, and the owner
    accepts.
@@ -405,9 +406,10 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
     | `2e34290c9ac1a233` | neutral | the start of 2020 brought the spread of COVID-19 in many countries |
     | `521be011091c25a2` | adverse | the sanacja petition filed on 05.03.2021 |
 
-  - **Not switched yet:** the default stays `extractor_v3` until the owner has labelled the kinds and accepted
-    v2. Then the default moves to v4, and a rerun of the `text` job sends this signal's pages across the seed
-    (new requests, about 64 notes pages and the selected report pages). No feature reads this signal yet.
+  - **Kinds labelled and v2 accepted (owner, 2026-10-06):** the owner gave the four positives the kinds v2 had
+    proposed (adverse, favourable, neutral, adverse); scored with the kinds, v2 is P 1.00 R 1.00, no call made.
+    Accepted, and `extractor_v4` is now the default (`EXTRACTOR_VERSION`). v1's accepted result stays in
+    `results/` as the record of `extractor_v3`.
 - **Step I (2026-10-01), built and run on the seed.**
   - **What:** `feature_set_v4` (`config/features/`), v3 unchanged plus two families in
     `features/feature_definitions.py`: `disclosure` (`going_concern_threat`, `going_concern_basis_abandoned`,

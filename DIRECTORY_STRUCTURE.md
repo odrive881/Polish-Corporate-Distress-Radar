@@ -90,8 +90,8 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │   ├── eval_gate_v1.yaml          # how far a change may fall below the accepted scores (owner's tolerance)
 │   │   ├── extractor_v1.yaml          # model, effort, prefilter, and the method (llm + prompt, or rule) per signal_type
 │   │   ├── extractor_v2.yaml          # v1 with rules_v2 and prefilter_v2
-│   │   ├── extractor_v3.yaml          # v2 with rules_v3 (the default, EXTRACTOR_VERSION)
-│   │   ├── extractor_v4.yaml          # v3 with post_balance_sheet_event_v2: dated and valued (decision 9)
+│   │   ├── extractor_v3.yaml          # v2 with rules_v3
+│   │   ├── extractor_v4.yaml          # v3 with post_balance_sheet_event_v2: dated and valued (decision 9; the default, EXTRACTOR_VERSION)
 │   │   ├── golden_sample_v1.yaml      # which pages go to the labeller: all selected, a fixed rejected sample
 │   │   ├── golden_sample_v2.yaml      # the auditor reports' pages: whole reports, every modified opinion and a fixed draw
 │   │   ├── prefilter_v1.yaml          # lemma terms per signal_type; the file name is the prefilter_version
