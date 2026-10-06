@@ -1,5 +1,8 @@
 {
- "accepted": null,
+ "accepted": {
+  "by": "owner",
+  "on": "2026-10-06"
+ },
  "examples": [
   {
    "discard_reason": null,
@@ -752,7 +755,7 @@
  "extractor_version": "extractor_v4",
  "hashes": {
   "effort": "c082456a7766e23a18db084cd34b6ff510baef506548b897cc80e9b7d3e121c8",
-  "golden": "6fa9da4f6ff519978ec350d65fc3a34220a5c3535116e5e0108a52c6230cef13",
+  "golden": "6c6dcffbf6164c7d0875175d13f7705749f4dc2a38b8859e8c72bec12514e87f",
   "model": "005912bee6ee4543cec4404b5a02b9bcb11a6f1dcc134b6693c7ccde5fdd2f69",
   "pages": "95080eb9178e11ab475528ef08f64f1340c182465d54ad6be06ea3b6ee0a6fd4",
   "prefilter": "5f17c94b3efb4dc568349bf31c4e2f8db7cf22ead670d717df6c3e4aa04ed1e5",
@@ -773,7 +776,7 @@
    "tn": 79,
    "tp": 4
   },
-  "evidence_overlaps": 1,
+  "evidence_overlaps": 3,
   "extractor": {
    "f1": 1.0,
    "fn": 0,
