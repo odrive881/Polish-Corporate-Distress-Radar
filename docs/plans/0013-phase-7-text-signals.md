@@ -11,7 +11,7 @@
 **Order:** after plan 0012 (complete). It does not wait for ADR 0013: like Phase 6, it builds and measures
 machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set this plan adds.
 
-## Status: active (2026-10-05): owner decisions 0–8 accepted; steps A to D and F to I built, step E's tooling built, with the notes' queue (50 of 240 pages labelled and committed) and the auditor reports' (`golden_sample_v2`, 102 pages); the rest of the labelling and the first model call wait on the owner; the auditor reports of decision 0(c) are stored, dated from the owner's list (decision 6 amended 2026-10-02) and read by the text job, the opinion by the report's headings (`rules_v2`), their features in `feature_set_v5` with the auditor change (2026-10-05)
+## Status: active (2026-10-05): owner decisions 0–8 accepted; steps A to D and F to I built, step E's tooling built, with the notes' queue (50 of 240 pages labelled and committed) and the auditor reports' (`golden_sample_v2`, 102 pages); the rest of the labelling and the first model call wait on the owner; the auditor reports of decision 0(c) are stored, dated from the owner's list (decision 6 amended 2026-10-02) and read by the text job, the opinion by the report's headings (`rules_v2`), their features in `feature_set_v5` with the auditor change (2026-10-05); step J's docs written (2026-10-06)
 
 ### Where this stands (2026-10-05): what waits on the owner, in order
 
@@ -456,6 +456,14 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
     over two years old, so the stale values v5 alone would have shown are common, not an edge case.
     `backtest_v4` twice from the clean tree (commit `7154c02`), the same report bytes, differing from v3's only in
     its header: no cell of 84 is scored.
+- **Step J (2026-10-06), docs.** Most of it was kept current by the doc sweeps after each step (DIRECTORY_STRUCTURE's
+  modules, `config/extraction/` and the gate in `ci.yml`; `docs/data_inventory.md` §2.4 and the credentials table;
+  README's status, the `text` job and `make eval`; AGENT_SPEC §5). Added: AGENT_SPEC §6G as built (sources, masking,
+  G1 to G3, the gate, the outputs). `make check` (1,169 passed) and `make test-integration` (54 passed) green.
+  - **Not part of this plan, recorded the same day:** ADR 0013 accepted (owner, 2026-10-06). The Ministry of Justice
+    has no API for RDF yet; documents are downloaded by the owner's Power Automate Desktop script through the
+    public UI, at most 3 a minute, with a listing of each document's "Data dodania" as `known_from`, the route
+    decision 0(c) took for the seed's auditor reports.
 
 ## Why
 
@@ -704,7 +712,7 @@ text job and `make eval`; this plan's status.
       `make check`.
 - [x] `feature_set_v4` leak-free and byte-reproducible; `backtest_v2` run twice, identical (2026-10-01; the
       notes' features fill in when the model signals run, by a rebuild, not a new version).
-- [ ] `make check` and `make test-integration` green; docs from step J updated.
+- [x] `make check` and `make test-integration` green; docs from step J updated (2026-10-06).
 
 ## Risks
 
@@ -728,4 +736,5 @@ text job and `make eval`; this plan's status.
 ## After Phase 7
 
 Phase 8 adds LightGBM (native nulls suit the text family's missingness), survival models, calibration and SHAP on
-`feature_set_v4`. What any of it says about the population still waits on ADR 0013.
+`feature_set_v4`. What any of it says about the population still waits on a larger universe: ADR 0013 (accepted
+2026-10-06) chose the route, scripted downloads through RDF's public UI; its importer and A1 discovery come first.
