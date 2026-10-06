@@ -46,6 +46,10 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
    (owner, 2026-10-06):** step I's five departures from decision 7 (progress, step I), and the 2026-10-05 choices:
    reports in the same datasets with `document_kind`, every signal read from a report, the notes' features
    reading the notes only, and a report speaking until a later one is filed (with its age in v6).
+7. **Decision 9 (proposed 2026-10-06, open):** `post_balance_sheet_event` gains a value (adverse, favourable,
+   neutral) and the balance-sheet date, as `post_balance_sheet_event_v2` (§ Owner decisions, 9). If accepted: the
+   owner updates the guide and values the 4 positive pages, then I build it, run `make eval`, and the owner
+   accepts.
 
 ### Decision 0(c): the auditor reports (2026-10-01)
 
@@ -680,6 +684,40 @@ Recommendations first; each is the owner's to accept, change or reject before th
 8. **The backtest.** Recommended: `backtest_v2` pins `feature_set_v4` and adds only `going_concern_threat` to the
    regression's inputs. It is recorded before any run, as decision 5 of plan 0012 requires; nothing on the seed
    is scored either way (plan 0012 correction).
+
+### Added after the first model run (proposed 2026-10-06, open)
+
+9. **`post_balance_sheet_event`: what counts, and when.** From the review of the first run's disputed results
+   (progress, "First model run"). The signal feeds no feature set yet (v6 reads only the notes' going-concern and
+   loss-coverage signals), so it can change now without a new feature version. Recommended, as one prompt
+   version, `post_balance_sheet_event_v2`:
+   - **(a) Keep detecting every event, and record which kind.** The signal keeps its present/absent test
+     (the statutory "events after the balance-sheet date" disclosure, which the owner labelled consistently),
+     and a present answer gains a value, as `opinion_type` has: `adverse` (it worsens the company's position:
+     a lost contract, a petition, a default, a loss), `favourable` (state aid, new contracts, capital raised) or
+     `neutral` (market-wide wording with no effect stated for the company, such as the 2019–2020 COVID
+     paragraph). A wrong value counts as both a false positive and a false negative, as for opinions. A later
+     feature reads `adverse` only; whether `favourable` (a COVID subsidy is also a sign of needing aid) carries
+     signal is the backtest's to show, not the label's.
+     *Rejected:* narrowing the definition to adverse events. "Is it adverse?" is a harder judgement than "was it
+     disclosed?", and as a gate every doubt becomes a silent absent; as a value it is measured.
+   - **(b) Give the model this statement's balance-sheet date**, and the rule: an event counts only if it
+     occurred after that date; a section headed "events after the balance-sheet date" counts as dated; text
+     naming an earlier year's statement ("for 2020" in a FY2023 statement) is carried-forward wording, not this
+     statement's event. Filers copy old paragraphs forward, and a page often does not state its own period
+     (`2fa1cf17360c2674`, the first run's one real model error). Only for this signal: a carried-forward
+     going-concern warning usually still applies, and that prompt holds 0.90 / 1.00.
+   - **What it costs:**
+     - the guide's definition updated, and the owner values the 4 positive pages of the golden set;
+     - a schema change: a present/absent signal with a value, which the schemas and the harness generalise
+       from `opinion_type`;
+     - new requests for this signal only (the date changes the request, so the key): on the seed about 64 notes
+       pages and the report pages the prefilter selects, estimated well under $2 through the Batches API (not
+       measured);
+     - an `extractor_v4` naming the new prompt, and a new pipeline hash for the text datasets.
+   - **The test:** labelling the values changes the golden file, so the gate cannot hold v2 to the accepted
+     result; the owner compares v2 with v1's 0.80 / 1.00 by hand and accepts v2 afresh. `2fa1cf17360c2674` should
+     turn absent and recall stay at 1.00; the values are scored on top.
 
 ## Out of scope
 
