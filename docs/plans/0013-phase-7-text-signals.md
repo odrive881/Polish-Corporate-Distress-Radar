@@ -11,11 +11,11 @@
 **Order:** after plan 0012 (complete). It does not wait for ADR 0013: like Phase 6, it builds and measures
 machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set this plan adds.
 
-## Status: active (2026-10-05): owner decisions 0–8 accepted; steps A to D and F to I built, step E's tooling built, with the notes' queue (50 of 240 pages labelled and committed) and the auditor reports' (`golden_sample_v2`, 102 pages); the rest of the labelling and the first model call wait on the owner; the auditor reports of decision 0(c) are stored, dated from the owner's list (decision 6 amended 2026-10-02) and read by the text job, the opinion by the report's headings (`rules_v2`), their features in `feature_set_v5` with the auditor change (2026-10-05); step J's docs written (2026-10-06)
+## Status: active (2026-10-05): owner decisions 0–8 accepted; steps A to D and F to I built, step E's tooling built, with the notes' queue (77 of 240 pages labelled and committed) and the auditor reports' (`golden_sample_v2`, 102 pages); the rest of the labelling and the first model call wait on the owner; the auditor reports of decision 0(c) are stored, dated from the owner's list (decision 6 amended 2026-10-02) and read by the text job, the opinion by the report's headings (`rules_v2`), their features in `feature_set_v5` with the auditor change (2026-10-05); step J's docs written (2026-10-06)
 
 ### Where this stands (2026-10-05): what waits on the owner, in order
 
-1. **Label the rest of the golden set:** the notes' queue (`golden_sample_v1`, 240 pages, 77 labelled on
+1. **Label the rest of the golden set:** the notes' queue (`golden_sample_v1`, 240 pages, 77 labelled and committed on
    2026-10-05) and the auditor reports' (`golden_sample_v2`, 102 pages of 20 reports, 15 with a span to mask by
    hand), picked at the top of the notebook (`uv run marimo run
    notebooks/labelling/golden_set.py` from a WSL terminal, not through Claude Code, whose background tasks stop
@@ -299,6 +299,9 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
 - **Step E, labels (2026-10-01):** the owner labelled the first 50 queued pages (32 selected, 18 rejected), exported
   and committed: 3 `going_concern_uncertainty` and 1 `post_balance_sheet_event` present, nothing else; the
   masker hid 21 persons on them and the owner 1 more. 190 pages remain.
+- **Step E, labels (2026-10-06):** 77 of the notes' 240 pages labelled, exported and committed (27 more): present on
+  them, `going_concern_uncertainty` 7, `loss_coverage_resolution` 2, `post_balance_sheet_event` 1, nothing else.
+  163 pages remain, and the auditor reports' 102.
 - **Step I (2026-10-01), built and run on the seed.**
   - **What:** `feature_set_v4` (`config/features/`), v3 unchanged plus two families in
     `features/feature_definitions.py`: `disclosure` (`going_concern_threat`, `going_concern_basis_abandoned`,
