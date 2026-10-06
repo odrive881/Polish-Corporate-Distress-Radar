@@ -129,6 +129,11 @@ Power Automate Desktop (PAD).**
      back to it (plan 0013 decision 6, as amended 2026-10-02): it is the documents' `known_from`.
 6. **Personal data:** the ZIPs as downloaded name people. They stay out of the repository and are
    deleted once imported; only redacted copies are stored (ADR 0009).
+7. **The challenge log is the WAF check** (added 2026-10-06, replacing ADR 0007's probe rerun for this
+   route). The probe notebook tests plain HTTP, which tells nothing about a person's browser, so the script
+   keeps a log of every CAPTCHA, block page and unexpected page: time, KRS number, the action it interrupted,
+   and whether it was solved by hand. The log is handed over with the listing and stored with the import. A
+   rising rate of challenges, or any block page, means stopping and revisiting (a), not tuning the script.
 
 ## Consequences
 
