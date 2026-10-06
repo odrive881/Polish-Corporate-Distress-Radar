@@ -9,11 +9,21 @@
 - **Output:** `filing_index` rows and stored documents for any entity the owner's Power Automate Desktop (PAD)
   script has downloaded, through the same parsing stages as today.
 
-**Order:** after ADR 0013's decision. It does not wait for plan 0013 (Phase 7). It does not settle A1
-discovery: until a source for KRS numbers is chosen, the script runs on the seed and on lists the owner
-supplies.
+**Order:** after ADR 0013's decision. It does not wait for plan 0013 (Phase 7). A1 is the owner's
+Rejestr.io list (ADR 0014, accepted 2026-10-06), loaded in step 0.
 
-## Status: draft (2026-10-06): owner decisions 1–6 open; nothing built
+## Status: active (2026-10-06): owner decisions 1–6 accepted as recommended; nothing built; step A waits on a sample of the running script's output
+
+### Where this stands (2026-10-06)
+
+- **The script is already running.** It has run on the owner's laptop for three days on the ADR 0014 list (about
+  600 companies), with no CAPTCHA so far. The owner solves one by hand if it comes (ADR 0013, rule 2 as
+  amended). Its output predates decision 2's contract, so step A starts from what it actually writes. The
+  owner shares one entity's output (listing and file layout, never the ZIPs), and the importer either reads it
+  as it is or the script adapts. Whatever the script did not record cannot be recovered later without a
+  re-download, above all "Data dodania" per document and whether each entity was finished.
+- **To confirm:** the pace the running script keeps (decision 6: one RDF action every 20 seconds).
+- **A1 is settled for now** by ADR 0014 (accepted): the Rejestr.io list. It adds step 0 below.
 
 ## Why
 
@@ -65,7 +75,7 @@ So every entity beyond the seed needs an importer that builds `filing_index` fro
    per action, like the Playwright tier's `RDF_REQUESTS_PER_MINUTE`, it is about 8 minutes per entity, about
    17 days. These are estimates from seed averages, not measurements.
 
-## Owner decisions (recommendations first; each is the owner's to accept, change or reject)
+## Owner decisions (accepted by the owner, 2026-10-06, as recommended)
 
 1. **The document key.** Recommended:
    - add `filing_index.rdf_document_id` (the numeric `idDokumentu`), unique per KRS;
@@ -114,18 +124,30 @@ So every entity beyond the seed needs an importer that builds `filing_index` fro
    likely to be the reason the WAF reacts. Per download is twice as fast. ADR 0013's wording, "3 documents a
    minute", allows it. The choice goes into ADR 0013 either way.
 
-Open from ADR 0013 and not part of this plan: whether a person may pass a challenge by hand and restart the
-script, and the source for KRS numbers (A1).
+Settled since, outside this plan: a CAPTCHA is solved by the owner by hand (ADR 0013, rule 2, amended
+2026-10-06), and A1 is the Rejestr.io list (ADR 0014).
 
 ## Out of scope
 
-- A1 discovery, and any list of KRS numbers not supplied by the owner (AGENT_SPEC §6A: no enumeration).
+- Any list of KRS numbers not supplied by the owner (AGENT_SPEC §6A: no enumeration), and redrawing the
+  list to be representative (ADR 0014, the owner's next step).
 - The PAD script itself: it is the owner's, and runs on Windows outside the repository. This plan defines
   its output and imports it.
 - Types 3, 4 and 20 (decision 4); pre-2018 statements (still out of v1 scope, `rdf_document_types.yaml`).
 - KRZ, OCR, the PDF statement tier (plan 0006 stays deferred).
 
 ## Steps
+
+### 0. The list (A1, ADR 0014) and A2 over it
+- A loader for the owner's list (the version the script runs on, read from outside the repository) into
+  `universe_candidates`, KRS numbers only, `discovery_source` naming the list and its SHA-256, beside the
+  seed's YAML loader (`acquisition/universe_discovery.py`). Malformed or duplicate numbers are quarantined
+  (A1), as the seed's are.
+- A2 (GUS BIR1) over it, so every entity the importer meets is in `entity_master`, with the segment checks A2
+  already applies (legal form, PKD). Entities A2 rejects are reported in the composition census.
+- **The composition census** (ADR 0014, § Consequences), from A2 and, once run over the list, the KRS
+  extracts (A4): PKD section F or not, legal form, size, region, registration date, and the pipeline's own
+  distress labels. Recorded in the progress section by counts.
 
 ### A. Census and the owner's check (no code, except reads of the stores)
 - **The owner:** run the script on two seed entities, one of them with a correction group (an entity from
@@ -218,7 +240,8 @@ progress section before this plan closes.
 
 ## Definition of done
 
-- [ ] Owner decisions 1–6 made.
+- [x] Owner decisions 1–6 made (2026-10-06, as recommended).
+- [ ] Step 0: the list loaded, A2 run over it, its composition census recorded.
 - [ ] Step A's census in the progress section; the decisions revisited with it.
 - [ ] `rdf_script_import` built, with the manifest changes, the `personal_data` check passing after it.
 - [ ] The seed reproduced through the script (step E), every difference explained.
