@@ -25,9 +25,14 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
    decision 2).** `.env` has `EXTRACTION_API_CONFIRMED=true` and a key, but the key is identity-linked
    (`sk-ant-usr…`, the only kind the Console now issues to this account), which the API refuses without an
    `anthropic-workspace-id` header. The client now sends one from `ANTHROPIC_WORKSPACE_ID` (2026-10-06); the
-   owner sets it to a named workspace's id. Until then the eight model signals are `not_run`, and the notes'
-   features are null wherever the prefilter selected a page.
-3. **Accept each signal's first result** after `make eval`: `make eval-accept SIGNAL=... BY=...`.
+   owner sets it to a named workspace's id. Set and checked 2026-10-06; the first model run followed (progress,
+   "First model run").
+3. **Review the first run's seven disputed results, then accept each signal's result** (`make eval-accept
+   SIGNAL=... BY=...`). **Outstanding (2026-10-06):** on 6 pages the model found a signal the owner labelled
+   absent, and most look like label slips or edge cases of the guide rather than model errors (progress,
+   "First model run", the table). The owner re-checks them in the labelling notebook. Then `make eval` rescores
+   from the stored responses at no cost, and the owner accepts. The results stay uncommitted until then: the
+   gate in `make check` fails on a result with no acceptance.
 4. **Then rerun** the `text` job and the `features` job: the notes' features fill in, with no new version.
 5. **Decision 0(c), auditor reports: stored and dated (2026-10-02, below).** Left for the owner: the three
    reports with no date in the list and 0000507997's "2019" file (below). The reports' text step is built
@@ -306,6 +311,34 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
 - **Step E, labels (2026-10-06):** 77 of the notes' 240 pages labelled, exported and committed (27 more): present on
   them, `going_concern_uncertainty` 7, `loss_coverage_resolution` 2, `post_balance_sheet_event` 1, nothing else.
   163 pages remain, and the auditor reports' 102.
+- **First model run (2026-10-06): `make eval` on the 77 labelled pages.** The owner confirmed the provider's terms
+  (decision 2) and set a key: identity-linked (`sk-ant-usr…`), so the client sends `ANTHROPIC_WORKSPACE_ID` as the
+  `anthropic-workspace-id` header (commit `e92a880`). One batch (`msgbatch_013uEAsQahgF25ESNWPTjyV7`): 66
+  requests sent, 66 answered, none discarded; the responses are stored and replay without a call.
+  - **Scores, end to end** (labelled present / found by the model / precision / recall):
+    `going_concern_uncertainty` 7 / 9 / 0.78 / 1.00; `loss_coverage_resolution` 2 / 2 / 1.00 / 1.00;
+    `post_balance_sheet_event` 1 / 5 / 0.20 / 1.00; `litigation` 0 / 1 / 0.00 / none. The other five signals,
+    the opinion rule included, have no positive on these pages and no score. The masker found 33 of the 34
+    persons (recall 0.9706; the owner masked 1 by hand).
+  - **Outstanding: the seven disputed results**, each a page the model marked present and the owner absent,
+    read against `labelling_guide.md`:
+
+    | Page | Signal | Evidence (masked) | Reading against the guide |
+    |---|---|---|---|
+    | `37c25c370fb8c329` | `going_concern_uncertainty` | the restructuring was approved on 2022-09-30; the company trades "w restrukturyzacji" | the guide counts restructuring pending or open as present: likely a label slip |
+    | `2c4d7e30c1579a17` | `going_concern_uncertainty` | the company resolved to continue its activity and is preparing plans to cut costs and raise capital | probably not going concern; but the resolution looks like the shareholders' vote to continue, `continued_existence_vote`, labelled absent and **not selected by the prefilter** for that signal |
+    | `2e34290c9ac1a233` | `post_balance_sheet_event` | management treats the situation (COVID) as an event after the balance-sheet date requiring disclosure (FY2019) | an event after the balance-sheet date bearing on the company: likely present |
+    | `2fa1cf17360c2674` | `post_balance_sheet_event` | the same for FY2020 | likely present (the page is labelled present for going concern) |
+    | `521be011091c25a2` | `post_balance_sheet_event` | a sanacja petition filed 2021-03-05 | present if filed after the balance-sheet date |
+    | `521be011091c25a2` | `litigation` | the court suspended enforcement proceedings against the company (2021-05-21) | an enforcement case involving the company: likely present |
+    | `26a67244b75fd805` | `post_balance_sheet_event` | a subsidy received under the COVID financial shield | borderline: an event after the date, but does it bear on the company's condition? |
+
+    If the owner keeps a label, the model's reading is a false positive and the prompt is the place to fix it.
+    If a label changes, the golden file changes and is committed with the new export.
+  - **Also found:** the masker over-masks: "SARS-CoV-2" became "[osoba]-CoV-2". The guide accepts over-masking,
+    and the harness does not measure it (masked text does not show what was masked), but it is a known flaw.
+    The prefilter's miss on `2c4d7e30c1579a17` for `continued_existence_vote` ("o prowadzeniu dalszej
+    działalności") is a candidate term for a next prefilter version, once the label is settled.
 - **Step I (2026-10-01), built and run on the seed.**
   - **What:** `feature_set_v4` (`config/features/`), v3 unchanged plus two families in
     `features/feature_definitions.py`: `disclosure` (`going_concern_threat`, `going_concern_basis_abandoned`,
