@@ -1,6 +1,8 @@
 # 0013 — Scaled access to financial statements
 
-- **Status:** proposed. The owner decides; this ADR lays out the options and a recommendation.
+- **Status:** accepted (2026-10-06): RDF documents are downloaded through the public UI by a Power
+  Automate Desktop script at a human pace; the Ministry of Justice has no API endpoint for this yet
+  (§ Decision).
 - **Date:** 2026-09-27
 - **Follows up:** 0007 (options a and b, left open when option C failed on 2026-09-16)
 - **Opened by:** plan 0012, owner decision 0
@@ -86,9 +88,67 @@ Pursue (a) and (b) in parallel, and use (c) and (d) meanwhile.
 
 ## Decision
 
-Open. To be recorded here by the owner, with the date and the chosen route or routes.
+**Accepted by the owner, 2026-10-06: scripted downloads through RDF's public UI, at a human pace, with
+Power Automate Desktop (PAD).**
+
+- **(a) answered: not available yet.** The Ministry of Justice told the owner that RDF has no API
+  endpoint for this access, and that one is planned, with no date given. (a) is revisited when it
+  ships: an official channel that delivers the filed documents replaces the route below through a
+  new delivery adapter (§ Consequences), and the RDF adapter kept by ADR 0007 is checked against it.
+- **The route.** A PAD script, run by the owner on their own machine, drives an ordinary browser
+  through RDF's public UI and downloads each category of document the pipeline needs, one category
+  at a time, at a human pace. It extends to every category what plan 0013 (decision 0c) did for the
+  seed's auditor reports on 2026-10-01, and it is the kind of "non-invasive download automation
+  script" KRS support confirmed on 2026-09-15 (ADR 0007). It is not ADR 0007's option C: that was a
+  Playwright tier inside the pipeline, and it stays failed.
+- **The other options.** (b) is not taken up for A3. (c) gives way to the script; HAR capture
+  (`rdf_manual_import`) stays for single entities and for documents the script cannot fetch. (d)
+  still applies: the next universe beyond the seed is drawn by a written sampling rule from a frame,
+  never by distress hints.
+
+### The rules the script keeps
+
+1. **Pace:** at most 3 documents a minute, the rate KRS support confirmed; one browser, one document
+   at a time, never two scripts at once. A higher rate needs a new ADR (ADR 0007).
+2. **A challenge stops the run.** On a CAPTCHA, a WAF block page or any page other than the one it
+   expects, the script stops and does not retry. Nothing solves a challenge, neither a service nor a
+   step of the script; no stealth settings, no replayed cookies (ADR 0007's limits). Whether a person
+   may pass a challenge by hand and then restart the script is not decided here.
+3. **Scope:** the categories the pipeline reads, by `config/mappings/rdf_document_types.yaml`: annual
+   financial statements from 2018 (type 18) with their corrections, and auditor reports (type 19).
+   Another category joins by a new version of that file, never by the script alone. The script never
+   opens "Pokaż zgłoszenie" (it lists the signatories by name).
+4. **Per entity, from a list:** the script searches only KRS numbers it is given. It never enumerates
+   KRS numbers (AGENT_SPEC §6A); the list comes from A1 discovery or a written sample.
+5. **What it hands over,** in an inbox outside the repository:
+   - each ZIP exactly as "Pobierz dokumenty" delivered it (raw immutability, invariant 2);
+   - a listing, one row per document: KRS number, RDF's document id (`idDokumentu`), type, period
+     end, "Data dodania" (the detail's `dataDodania`, never "Data sporządzenia dokumentu") and, for a
+     correction, the id of the document it corrects. The listing is stored raw and every date points
+     back to it (plan 0013 decision 6, as amended 2026-10-02): it is the documents' `known_from`.
+6. **Personal data:** the ZIPs as downloaded name people. They stay out of the repository and are
+   deleted once imported; only redacted copies are stored (ADR 0009).
 
 ## Consequences
+
+**Of the decision (2026-10-06):**
+
+- **An importer for the script's output** is the next A3 build, its own plan. `acquisition/report_import.py`
+  (the `manual_files` tier) takes only auditor reports, and only onto `filing_index` rows that a HAR
+  capture already created. For an entity first reached by the script there is no such row, so the
+  listing has to create the `filing_index` rows itself, statements and corrections included, with the
+  same matching rules and refusals as `har_import.py`.
+- **A1 discovery is still open.** The script needs a list of KRS numbers, and no source for one is
+  chosen (`docs/data_inventory.md`, "Registry aggregator account"). Until there is one, the route
+  can only refresh and extend the seed.
+- **Volume:** tens of thousands of documents at 3 a minute are days of running for the v1 universe,
+  and each filing season adds a wave (PROJECT_OVERVIEW stage 3). The script resumes from where it
+  stopped; a re-import adds nothing (idempotence, invariant 5).
+- **The permission is informal.** KRS support's confirmation was not a written policy, and the WAF
+  can change without notice. A rise in challenges is a reason to stop and revisit (a), not to tune
+  the script.
+
+**Of the options, as written on 2026-09-27:**
 
 - Whichever route delivers filed XML, A3 needs no new parser: `rdf_manual_import`, the RDF adapter
   and the parsing stages already take it. A new *delivery* adapter (bulk files, an allow-listed
@@ -96,4 +156,4 @@ Open. To be recorded here by the owner, with the date and the chosen route or ro
 - A1 discovery needs a source whichever route is chosen for A3; option (b) may settle both.
 - Until one of these lands, Phase 7 (text signals) and Phase 8 (LightGBM, survival) can be built on
   the seed, but, like Phase 6, they prove machinery, not performance.
-- `CLAUDE.md`'s "Known moving targets" points here; it records the owner's decision once made.
+- `CLAUDE.md`'s "Known moving targets" points here and records the decision (2026-10-06).
