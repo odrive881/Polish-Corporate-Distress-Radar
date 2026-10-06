@@ -1,0 +1,795 @@
+{
+ "accepted": {
+  "by": "owner",
+  "on": "2026-10-06"
+ },
+ "examples": [
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "0001677ef4418388",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "00aad22b0ee8a34d",
+   "response_key": "3feea3a7dfdb0171d5c6c03e1585d169809139ee9f27b2c99d76fe4f74ec359e",
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "01a9d5f7c96fc047",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "025eac491b67bd53",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "0362fe4377b44c51",
+   "response_key": "2c508da4a68914318d13f73e3e25894d35895b56cbb4d6c2dc499458fd67d77a",
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "0377f2bfbae7aeb7",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "0867ca843ac8694a",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "09e4693bfac761be",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "0a9b98ed27ab5e66",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "0a9eef4cb5f2af6b",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "0cb483117d66e8e0",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "0d7360a7bb902958",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "0e7990b30ac177eb",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "0f91d41f98f6c08c",
+   "response_key": "95cefd7aea7169fbdf3f1a487b33f80447f71a6005ff94f1999738bc5b8bb9cb",
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "1079a295580a3c68",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "10a96bab45d85a02",
+   "response_key": "8a4517dff5b709243bea40dcd40d17f8ff649bc7f2e9a5a6e00de5e6cacfee1b",
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "10aed23e18ae6473",
+   "response_key": "d75dc5e5bb44bacb07c92e92a0d8c38adaa99ec535808832c3d959896a0f7603",
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "134af39381cecdc6",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "135dae71e9f6dc5b",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "13613ad83450195b",
+   "response_key": "e01037de6792537cb7c196a57a9667c9d58d9eb7fefbdf2967c718448f8f5619",
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "145860d4cbe7486e",
+   "response_key": "70787584d3cea1e6b42e5ec31bb8f185f1ee58013c7709732927bbc937baabfc",
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "15df14d9b7d8c78e",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "16c03e332d4dc173",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "19f66265da6bb4a2",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "1a058161d217f266",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "1b1099af64b57f2d",
+   "response_key": "20c48f6ef624ba87022a5877b998bab46ca9ed5f57b326c0f65e24c60bb12091",
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "1ce548ecb3008a9f",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "21669f7b37a280f6",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "22f90c679d11994c",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "2539c131433bf3b4",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "25a3deef52c92f4f",
+   "response_key": "f3e387f6e880ed87c765d307fb3f42a570e1fd44fb1ecaaf06c7692b6123c505",
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "25d1d84ceb44535c",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "26a67244b75fd805",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "26cf56d4b4119081",
+   "response_key": "ff21fde9166087b8f0828c9d45ea9bbe3e18186245523bebf8244660f1635d21",
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "274fb92a9d072f35",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "285b90bde035b8a2",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "29f748be3ee2bb28",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "29feee8a465afa65",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "2a584b531c5b69d8",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "2b01fa1cc363ae84",
+   "response_key": "2bdd200fb2fa03b56b4234799a1f0c4591eb0809806c7c6fe63ddd03cb0f2792",
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "2c4d7e30c1579a17",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "2ca0053f6de41717",
+   "response_key": "b94c27122f12474c1f03627cd6f5a262086eec4a7b9bc7ed863756243af3179b",
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "2d2b1bd95099a6e8",
+   "response_key": "08e8e5c00310feaf3a8204a4370ce5b2bdca4aba34ba8a48b307aca168ef3a9c",
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "2e34290c9ac1a233",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "2ee059e227d106b9",
+   "response_key": "9c2cde4238934ceda168857b6906c5769c3bb9eed637df00fd8426d023dd783e",
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "2f0a9987a081ff52",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "2fa1cf17360c2674",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "2fbafcb735b73c0a",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "302135288aaac9f0",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "31c6dc6aa81a3085",
+   "response_key": "78dddf9abbf9b208d9b2dc6e4b31b9bf62156a8b9b2c833e2c5a3cb5cd695014",
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "3460fa80d3684d84",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "34be5676343d057e",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": "Stratę roku obrotowego w wysokości 4.098,70 Zarząd proponuje pokryć z zysku roku\n\nnastępnego.",
+   "outcome": "present",
+   "page_id": "36e0f689420e3ac4",
+   "response_key": "c511f1d3d575feaff7089f4cf06be01569e13cf94af9024581700746da977c80",
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "37c25c370fb8c329",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "37f5c97661a3a64f",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "380af508de352efa",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "384aac2b6fe02f8e",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "391260aa3de0d4ac",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "3afc3add1016902b",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "3bfa3becb15c835e",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "3dd71131d80bb2de",
+   "response_key": "ad2cd10cae3a6a9374d8f8fa8e9f3e08f20b8c89a4f779cf8e5a4e137cbe420f",
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "415b2c35181855fc",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "44d4d3887f6a6928",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "4563244956dc70e5",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "4630e5629e4a9daa",
+   "response_key": "670abb92290db38d0192e7628f6e395a4c0601c443ff7a07c719cd3db2953aa3",
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": "– kapitał zapasowy 1 075 096,92",
+   "outcome": "present",
+   "page_id": "48431e85e052f3c3",
+   "response_key": "905c6ae3efcf26209004ec0d8f9643e760fdb311caf9b814fe844d9d1e2bec47",
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "4877c29354133507",
+   "response_key": "6936012602964f1107d04fbd2f8b926a349434869353a1f38e04f2f1362bf0bd",
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "4942f8f9d656d7c6",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "4ae233a806b903bf",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "4b1fa277832e2a60",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "4c8b57770b953323",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "4f36d0bc032dee91",
+   "response_key": "82c2f195f4283b379535d6e2dbe307beb04a549dc60fddc41c64d434e8c2e31a",
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "4f529006c647dc66",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "4f54d847bac62889",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "521be011091c25a2",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "5238679961933a47",
+   "response_key": "fd9c62caad944c21cf18223a1a32420a37605bf0b162152edb567bf5f17b9a42",
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "531dd5e7afff328b",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "53e5acfff2a2ba2e",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "56db8c8a907b1f51",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "57f62bda51c0dee7",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "58724977b0a21092",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": "Stratę za rok obrotowy 2025 w kwocie 1.074.552,72 zł Zarząd proponuje pokryć kapitałem\nrezerwowym.",
+   "outcome": "present",
+   "page_id": "58afd5672a176601",
+   "response_key": "0e11d98b873cdb464780f081ccd7ed90a1ffe3e3cb904a68061d4253656e4a72",
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "5905f3be8751e693",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  }
+ ],
+ "extractor_version": "extractor_v3",
+ "hashes": {
+  "effort": "c082456a7766e23a18db084cd34b6ff510baef506548b897cc80e9b7d3e121c8",
+  "golden": "11137bab270fbfb12b5e9dcad7626abc8e106e671a9a853985366122e13fbbec",
+  "model": "005912bee6ee4543cec4404b5a02b9bcb11a6f1dcc134b6693c7ccde5fdd2f69",
+  "pages": "95080eb9178e11ab475528ef08f64f1340c182465d54ad6be06ea3b6ee0a6fd4",
+  "prefilter": "5f17c94b3efb4dc568349bf31c4e2f8db7cf22ead670d717df6c3e4aa04ed1e5",
+  "prompt": "c2aa586cec9f632c156ddc8ee763653cf0bb04a60caac580829eb6fac9ecf733",
+  "schema": "e27451486a2e74945b3941cb1c9d8f726eda8a94f53493adbc9bf1abc73e04d3"
+ },
+ "method": "llm",
+ "method_id": "loss_coverage_resolution_v1__claude-opus-5-5",
+ "prefilter_version": "prefilter_v2",
+ "scores": {
+  "discarded": {},
+  "end_to_end": {
+   "f1": 1.0,
+   "fn": 0,
+   "fp": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "tn": 80,
+   "tp": 3
+  },
+  "evidence_overlaps": 2,
+  "extractor": {
+   "f1": 1.0,
+   "fn": 0,
+   "fp": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "tn": 20,
+   "tp": 3
+  },
+  "pages": 83,
+  "positives": 3,
+  "prefilter_missed_in_rejected_sample": 0,
+  "prefilter_selected_positives": 3
+ },
+ "signal_type": "loss_coverage_resolution"
+}
