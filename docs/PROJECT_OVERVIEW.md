@@ -80,6 +80,8 @@ Stage-by-stage implementation plans live in `docs/plans/`, one numbered `.md` fi
 - Each candidate is stored with its discovery source and discovery timestamp, so the provenance of the universe itself is auditable.
 - GUS aggregate statistics (entity counts by PKD section and employment band) serve as a coverage sanity check. If the discovered universe is wildly smaller or skewed compared to official counts, the run is flagged.
 
+- As built: the 17-entity hand-picked seed (`config/segments/construction_sme_v1_seed.yaml`), then a list of about 600 construction companies the owner built with Rejestr.io's search filters (ADR 0014). It was chosen partly by distress status, so it is purposive, not representative: its composition is measured after Stage 2, and the GUS coverage check above is how it is compared with the segment. Only KRS numbers enter the pipeline.
+
 **Output:** `universe_candidates`, a list of KRS numbers with source lineage and a coverage report.
 
 ---
@@ -111,6 +113,8 @@ Stage-by-stage implementation plans live in `docs/plans/`, one numbered `.md` fi
 - Every document is stored immutably in raw form, with a content hash, the RDF submission date, and the acquisition timestamp.
 - Re-runs are incremental. Already-acquired documents are skipped by hash, and new submissions or corrections are picked up automatically.
 - The **RDF submission date** is recorded as the document's public availability date. This date drives all point-in-time logic downstream.
+
+- As built: RDF blocks automated clients (ADR 0007), so the seed was captured by hand in a browser (HAR files). At scale, the owner's Power Automate Desktop script downloads documents through the public website at a human pace (ADR 0013), and plan 0014 imports them. Only statements (with their corrections) and auditor reports are downloaded; management reports and resolutions are indexed on the seed but not read.
 
 **Output:** `raw_documents` (immutable object store) and `filing_index`.
 
@@ -162,6 +166,8 @@ Stage-by-stage implementation plans live in `docs/plans/`, one numbered `.md` fi
 - **Resolutions** are checked for how losses were covered and whether shareholders voted on the company's continued existence.
 - Each extracted signal stores the source document, the page or section, the supporting text span, the extraction method, and a confidence score.
 - A hand-labeled evaluation set measures extraction precision and recall. Extraction models are only promoted if they beat the previous version on this set.
+
+- As built (plan 0013): the notes embedded in the statements and the auditor reports are read from their PDF text layer, masked of person names first; scanned pages are counted, not read. The auditor's opinion and the audit firm's change come from rules; the free-text signals from Claude, which makes no call until the owner confirms the provider's terms. Resolutions are not downloaded.
 
 **Output:** `text_signals`, with full evidence lineage for every extracted signal.
 
@@ -223,7 +229,7 @@ Stage-by-stage implementation plans live in `docs/plans/`, one numbered `.md` fi
   - **Registry dynamics** from Stage 7, such as frequent board turnover or office moves.
   - **Macro and sector context:** NBP reference rate, sector-level financial aggregates, and regional indicators.
 - Automated leakage tests fail the build if any feature references data with an availability date later than the prediction date.
-- As built in Phase 5 (plan 0010): the financial, construction, tripwire, filing-behaviour, registry and legal-history families. Text signals, auditor change and loss-coverage history wait for Stage 6; macro and sector context, and the size class, are deferred (AGENT_SPEC §6H). Phase 7 (plan 0013, in progress) adds the statement's going-concern flags and employment and the notes' going-concern and loss-coverage signals (`feature_set_v4`); `feature_set_v5` adds the auditor's opinion, auditor change and emphasis of matter, from the reports, and v6 the report's age.
+- As built in Phase 5 (plan 0010): the financial, construction, tripwire, filing-behaviour, registry and legal-history families. Text signals, auditor change and loss-coverage history were left to Stage 6; macro and sector context, and the size class, are deferred (AGENT_SPEC §6H). Phase 7 (plan 0013, in progress) adds the statement's going-concern flags and employment and the notes' going-concern and loss-coverage signals (`feature_set_v4`); `feature_set_v5` adds the auditor's opinion, auditor change and emphasis of matter, from the reports, and v6 the report's age.
 
 **Output:** `feature_store` (entity, as-of date, feature vector, feature set version).
 

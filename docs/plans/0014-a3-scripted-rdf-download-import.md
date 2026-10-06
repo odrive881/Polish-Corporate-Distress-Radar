@@ -127,6 +127,22 @@ So every entity beyond the seed needs an importer that builds `filing_index` fro
 Settled since, outside this plan: a CAPTCHA is solved by the owner by hand (ADR 0013, rule 2, amended
 2026-10-06), and A1 is the Rejestr.io list (ADR 0014).
 
+## Deferrals this plan reopens (found in the doc sweep, 2026-10-06)
+
+Three things were deferred "until the universe grows beyond the seed", and this plan is where it grows. Each
+is measured once the list is imported, and goes back to the owner with its counts; none is built here.
+
+- **KRZ** (plan 0009, ADR 0011: deferred until the universe grows beyond the seed). Without it, insolvency
+  events after 2021 reach the labels only through the KRS registry, with lag of up to 21 months, so the `alive`
+  labels of the newer years are the least reliable. Measure: entities of the list with a post-2021 proceeding in
+  the KRS extract, and the lag between decision and entry.
+- **The PDF statement tier** (plan 0006, trigger 2): PDF-only years not recoverable from a later filing, and
+  whether they concentrate in distressed entities. Measure: `needs_pdf_tier` in `parsed_documents`, joined to
+  a later filing of the same entity, split by label.
+- **Scans** (plan 0013, risks): on the seed, 459 notes pages and 4 auditor reports have no text layer, nearly
+  all from entities with no event. Measure the share on the list, by label, before any text feature is read
+  as evidence; OCR stays its own decision.
+
 ## Out of scope
 
 - Any list of KRS numbers not supplied by the owner (AGENT_SPEC §6A: no enumeration), and redrawing the

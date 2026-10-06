@@ -220,7 +220,7 @@ Five distinct external contact points, each with a different protocol and differ
 | **Scrapy** | Its real value is distributed crawl scheduling across millions of URLs. You have thousands. Framework overhead without payoff |
 | **Playwright** | Necessary only where content is JavaScript-gated. Heavy — a browser per worker |
 
-**→ Pick: httpx + selectolax as default, Playwright as a routed fallback** for pages that fail a "did we get real content" check. Tiering by need rather than using a browser everywhere keeps the pipeline fast and cheap.
+**→ Pick: httpx + selectolax as default, Playwright as a routed fallback** for pages that fail a "did we get real content" check. *As built (ADR 0014):* no crawler. A1 is a list of KRS numbers the owner builds by hand with an aggregator's search filters (Rejestr.io), loaded as data; the pipeline never enumerates numbers itself (AGENT_SPEC §6A). Tiering by need rather than using a browser everywhere keeps the pipeline fast and cheap.
 
 #### A2 — Registry lookup (GUS BIR1)
 
@@ -240,7 +240,7 @@ The most constrained contact point: a lookup portal, one entity at a time, with 
 
 Write every response body to the object store *before* parsing, keyed by content hash. Parsing is then always a local, repeatable operation against immutable inputs.
 
-*As built (ADR 0007, plan 0003):* RDF sits behind an Imperva WAF that blocks plain httpx, so the adapter drives one human-paced Playwright browser at 3 documents a minute, the rate KRS support confirmed. That tier then met an hCaptcha, which the project never solves, so documents are captured by hand as HAR files and imported by `rdf_manual_import` (`acquisition/har_import.py`). Automated access at scale needs a new ADR.
+*As built (ADR 0007, plan 0003):* RDF sits behind an Imperva WAF that blocks plain httpx, so the adapter drives one human-paced Playwright browser at 3 documents a minute, the rate KRS support confirmed. That tier then met an hCaptcha, which the project never solves, so documents are captured by hand as HAR files and imported by `rdf_manual_import` (`acquisition/har_import.py`). At scale (ADR 0013, accepted 2026-10-06): the owner's Power Automate Desktop script downloads through the public website, at most 3 documents a minute, outside the pipeline; plan 0014 imports its output.
 
 #### A4 — Legal event feeds
 
@@ -412,6 +412,8 @@ Lemmatisation is not optional for Polish: the language is heavily inflected, so 
 |---|---|
 | **pytest + golden JSONL in git** | Fully reproducible, no external dependency, and the labelled set becomes a portfolio artifact in its own right |
 | **promptfoo / DeepEval** | More features than needed; adds config surface and, in some cases, a service dependency |
+
+*As built (plan 0013, G1 and G2):* text is masked of person names before the prefilter or any model sees it (ADR 0009, third addendum). The model is Claude through the Anthropic SDK, with the schema sent as structured output and validated by the same Pydantic model, every response stored by request hash and replayed. Rules take the signals with standard wording (the auditor's opinion by its headings). No HerBERT distillation yet.
 
 **→ Pick: pytest with a hand-labelled golden set committed to the repo.** Report precision, recall, and F1 per signal type. Gate prompt and model changes in CI: no extraction change ships unless it holds or improves the scores. Publishing the eval set and its history is one of the strongest credibility moves available to you.
 
@@ -648,6 +650,6 @@ Put this table in the README. Deliberate, justified omissions read as seniority;
 
 Three things in this document rest on a fast-moving landscape and should be checked at the start of phase 0:
 
-1. **RDF's rebuilt platform** went live in February 2026. Per-entity lookup and XML/PDF downloads confirmed (ADR 0004); automated access is blocked by a WAF and then an hCaptcha, so documents are captured by hand for now (ADR 0007).
+1. **RDF's rebuilt platform** went live in February 2026. Per-entity lookup and XML/PDF downloads confirmed (ADR 0004); automated access is blocked by a WAF and then an hCaptcha, so the seed was captured by hand (ADR 0007), and scale goes through the owner's Power Automate Desktop script (ADR 0013).
 2. **The new generation of Ministry of Finance XML structures** applies to financial statements for fiscal years beginning on or after 1 January 2025 (corrected in ADR 0005). Confirmed, XSDs vendored in `config/xsd/` (plan 0004).
 3. **DuckDB's Iceberg write support** has historically trailed its read support. If you choose Iceberg over plain Parquet, verify the current state first.
