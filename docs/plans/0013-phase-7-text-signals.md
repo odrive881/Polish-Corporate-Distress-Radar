@@ -410,6 +410,10 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
     proposed (adverse, favourable, neutral, adverse); scored with the kinds, v2 is P 1.00 R 1.00, no call made.
     Accepted, and `extractor_v4` is now the default (`EXTRACTOR_VERSION`). v1's accepted result stays in
     `results/` as the record of `extractor_v3`.
+  - **The `text` job under `extractor_v4` (2026-10-06):** one batch (`msgbatch_01B3o7rpjQJT89mKjZVfc4qF`), 47 new
+    requests, all answered (the golden pages' 18 replayed, every other signal replayed); `evidence_masked` passed.
+    `post_balance_sheet_event` in the notes: 8 present (5 adverse, 1 favourable, 2 neutral), against v1's 13;
+    none in the auditor reports. No feature reads it, so `features` was not rerun.
 - **Step I (2026-10-01), built and run on the seed.**
   - **What:** `feature_set_v4` (`config/features/`), v3 unchanged plus two families in
     `features/feature_definitions.py`: `disclosure` (`going_concern_threat`, `going_concern_basis_abandoned`,
