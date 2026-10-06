@@ -110,10 +110,11 @@ Power Automate Desktop (PAD).**
 
 1. **Pace:** at most 3 documents a minute, the rate KRS support confirmed; one browser, one document
    at a time, never two scripts at once. A higher rate needs a new ADR (ADR 0007).
-2. **A challenge stops the run.** On a CAPTCHA, a WAF block page or any page other than the one it
-   expects, the script stops and does not retry. Nothing solves a challenge, neither a service nor a
-   step of the script; no stealth settings, no replayed cookies (ADR 0007's limits). Whether a person
-   may pass a challenge by hand and then restart the script is not decided here.
+2. **A challenge stops the script.** On a CAPTCHA, a WAF block page or any page other than the one it
+   expects, the script stops and does not retry. The script never solves a challenge, and no service does;
+   no stealth settings, no replayed cookies (ADR 0007's limits). *Amended 2026-10-06 (owner):* the owner,
+   at the machine, solves a CAPTCHA by hand, as in ordinary use of the page, and the run then continues at
+   the same pace. Each challenge is noted with its time, so their rate is known.
 3. **Scope:** the categories the pipeline reads, by `config/mappings/rdf_document_types.yaml`: annual
    financial statements from 2018 (type 18) with their corrections, and auditor reports (type 19).
    Another category joins by a new version of that file, never by the script alone. The script never
@@ -144,6 +145,8 @@ Power Automate Desktop (PAD).**
 - **Volume:** tens of thousands of documents at 3 a minute are days of running for the v1 universe,
   and each filing season adds a wave (PROJECT_OVERVIEW stage 3). The script resumes from where it
   stopped; a re-import adds nothing (idempotence, invariant 5).
+- **In operation (owner, 2026-10-06):** the script has been running on the owner's laptop for three days
+  on the list of ADR 0014, with no CAPTCHA so far.
 - **The permission is informal.** KRS support's confirmation was not a written policy, and the WAF
   can change without notice. A rise in challenges is a reason to stop and revisit (a), not to tune
   the script.
