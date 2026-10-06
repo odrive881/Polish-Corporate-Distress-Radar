@@ -27,8 +27,9 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
    `anthropic-workspace-id` header. The client now sends one from `ANTHROPIC_WORKSPACE_ID` (2026-10-06); the
    owner sets it to a named workspace's id. Set and checked 2026-10-06; the first model run followed (progress,
    "First model run").
-3. **Review the first run's seven disputed results, then accept each signal's result** (`make eval-accept
-   SIGNAL=... BY=...`). **Outstanding (2026-10-06):** on 6 pages the model found a signal the owner labelled
+3. **Accept each signal's result** (`make eval-accept SIGNAL=... BY=...`). The seven disputed results are
+   **resolved (owner, 2026-10-06; progress, "First model run", resolution)**; the rescored results wait for
+   acceptance. *As first recorded:* on 6 pages the model found a signal the owner labelled
    absent, and most look like label slips or edge cases of the guide rather than model errors (progress,
    "First model run", the table). The owner re-checks them in the labelling notebook. Then `make eval` rescores
    from the stored responses at no cost, and the owner accepts. The results stay uncommitted until then: the
@@ -336,6 +337,19 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
 
     If the owner keeps a label, the model's reading is a false positive and the prompt is the place to fix it.
     If a label changes, the golden file changes and is committed with the new export.
+  - **Resolved (owner, 2026-10-06).** Relabelled present: `37c25c370fb8c329` going concern; `2e34290c9ac1a233`,
+    `521be011091c25a2` and `26a67244b75fd805` post-balance-sheet event; `521be011091c25a2` litigation;
+    `2c4d7e30c1579a17` `continued_existence_vote`. Kept absent: `2fa1cf17360c2674` post-balance-sheet event (a
+    FY2023 statement repeating a 2020 COVID paragraph: a real model error) and `2c4d7e30c1579a17` going concern.
+    The owner also labelled 6 more pages (83 in all). Rescored with no call (71 responses replayed; the new
+    pages were answered by the whole-seed run), end to end: `going_concern_uncertainty` 9 positives, P 0.90
+    R 1.00; `post_balance_sheet_event` 4, P 0.80 R 1.00; `litigation` 1, P 1.00 R 1.00;
+    `loss_coverage_resolution` 3, P 1.00 R 1.00; `continued_existence_vote` 1, R 0.00 (the prefilter did not
+    select the page); masker recall 0.9762.
+  - **Left open by the review, for later:** whether `post_balance_sheet_event` should count adverse events only
+    (it now counts subsidies, contracts and the COVID wording of 2019–2020 statements, noisy for a distress
+    feature; a change is a new prompt and a relabelling), and whether the prompts should check that an event
+    postdates this statement's balance-sheet date (old paragraphs are carried into later statements).
   - **Also found:** the masker over-masks: "SARS-CoV-2" became "[osoba]-CoV-2". The guide accepts over-masking,
     and the harness does not measure it (masked text does not show what was masked), but it is a known flaw.
     The prefilter's miss on `2c4d7e30c1579a17` for `continued_existence_vote` ("o prowadzeniu dalszej
