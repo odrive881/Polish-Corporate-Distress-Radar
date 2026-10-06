@@ -151,6 +151,22 @@ def test_the_wrong_opinion_is_a_false_positive_and_a_false_negative() -> None:
     assert (counts.tp, counts.fp, counts.fn) == (0, 1, 1)
 
 
+def test_the_wrong_kind_of_event_counts_twice_and_an_unvalued_label_on_presence() -> None:
+    def ex_(value: str) -> tuple[h.Example, ...]:
+        return (
+            h.Example(
+                page_id="p3", selected=True, outcome="present", value=value, evidence=OPINION
+            ),
+        )
+
+    valued = [_label("p3", True, OPINION, "adverse")]
+    assert h.score(valued, ex_("adverse"), PAGES, set()).end_to_end.tp == 1
+    counts = h.score(valued, ex_("favourable"), PAGES, set()).end_to_end
+    assert (counts.tp, counts.fp, counts.fn) == (0, 1, 1)
+    unvalued = [_label("p3", True, OPINION, None)]  # labelled before decision 9
+    assert h.score(unvalued, ex_("neutral"), PAGES, set()).end_to_end.tp == 1
+
+
 def test_examples_must_be_one_per_golden_page() -> None:
     with pytest.raises(ValueError, match="one per golden page"):
         h.score([_label("p1", True, LITIGATION)], (), PAGES, set())
@@ -221,6 +237,22 @@ def test_a_result_needs_acceptance_and_may_not_fall_below_the_accepted_one(
         eval_gate_version="eval_gate_t", tolerance=h.Tolerance(precision=1.0, recall=1.0)
     )
     assert _problems(extractor, loose, golden) == []
+
+
+def test_a_result_reproduced_under_a_new_extractor_version_keeps_its_acceptance(
+    extractor: ex.Extractor, tmp_path: Path
+) -> None:
+    golden = _write_golden(tmp_path, {"litigation": LIT_LABELS})
+    current = _result(extractor, golden, _examples(_extraction(True, LITIGATION)))
+    stored = current.model_copy(
+        update={
+            "extractor_version": "extractor_v0",
+            "accepted": h.Acceptance(by="owner", on=date(2026, 10, 6)),
+        }
+    )
+    assert h.unchanged(stored, current)
+    rescored = current.model_copy(update={"examples": _examples(_extraction(False))})
+    assert not h.unchanged(stored, rescored)
 
 
 # --- make eval, offline --------------------------------------------------------------------------

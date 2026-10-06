@@ -5,7 +5,8 @@ For each masked page and each signal_type the prefilter selected on it, `extract
 - a `rule` signal is read by `extraction.rules`, no model;
 - an `llm` signal is one request: the signal's prompt (`prompts/extraction/<prompt>.md`) as the
   system prompt, the masked page as the user turn, the answer constrained to
-  `schemas.json_schema(signal)`. Its response is read from the `ResponseStore`; only requests the
+  `schemas.json_schema(signal)`; a method marked `balance_sheet_date` also gets the statement's
+  balance-sheet date before the page, and a `valued` one asks for a value (decision 9). Its response is read from the `ResponseStore`; only requests the
   store lacks go to the `Transport`, and what comes back is stored before it is read. A second run
   over the same pages makes no call and gives the same answers.
 - an answer is kept only when it validates against `schemas.response_model(signal)` and, when
@@ -26,7 +27,7 @@ import time
 from collections import Counter
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any, Literal, Protocol
 
@@ -41,10 +42,10 @@ from distress_radar.extraction.preprocessing import SIGNAL_TYPES, Sentence, Sign
 from distress_radar.extraction.response_store import ResponseMeta, ResponseStore, request_key
 from distress_radar.extraction.schemas import (
     SCHEMA_VERSION,
+    SIGNAL_VALUES,
     Discarded,
     DiscardReason,
     Extraction,
-    OpinionAnswer,
     json_schema,
     response_model,
 )
@@ -65,11 +66,17 @@ class _Frozen(BaseModel):
 class SignalMethod(_Frozen):
     method: Literal["llm", "rule"]
     prompt: str | None = None
+    # Decision 9: the answer carries a value (`schemas.SIGNAL_VALUES`), and the request carries the
+    # statement's balance-sheet date. Both change the request, so they belong to a prompt version.
+    valued: bool = False
+    balance_sheet_date: bool = False
 
     @model_validator(mode="after")
     def _prompt_with_llm(self) -> SignalMethod:
         if (self.method == "llm") != (self.prompt is not None):
             raise ValueError("an `llm` signal names its prompt, a `rule` signal none")
+        if self.method == "rule" and (self.valued or self.balance_sheet_date):
+            raise ValueError("`valued` and `balance_sheet_date` are for an `llm` signal")
         return self
 
 
@@ -90,6 +97,11 @@ class ExtractorConfig(_Frozen):
         rule_signals = {s for s, m in self.signals.items() if m.method == "rule"}
         if not rule_signals <= {"opinion_type"}:
             raise ValueError(f"no rule is written for {sorted(rule_signals - {'opinion_type'})}")
+        unvaluable = sorted(
+            s for s, m in self.signals.items() if m.valued and s not in SIGNAL_VALUES
+        )
+        if unvaluable:
+            raise ValueError(f"{unvaluable} take no value (schemas.SIGNAL_VALUES)")
         return self
 
 
@@ -122,19 +134,28 @@ def load_extractor(
 # --- requests ------------------------------------------------------------------------------------
 
 
-def request_params(extractor: Extractor, signal: SignalType, page_text: str) -> dict[str, Any]:
-    """The full request body for one signal on one masked page; its hash is the response key."""
+def request_params(
+    extractor: Extractor, signal: SignalType, page_text: str, period_end: date | None = None
+) -> dict[str, Any]:
+    """The full request body for one signal on one masked page; its hash is the response key. A
+    `balance_sheet_date` method needs the statement's period end, and nothing else gets it, so the
+    other signals' requests are what they were."""
     method = extractor.config.signals[signal]
     if method.prompt is None:
         raise ValueError(f"{signal} is read by a rule, not a model")
+    content = f"<page>\n{page_text}\n</page>"
+    if method.balance_sheet_date:
+        if period_end is None:
+            raise ValueError(f"{signal}: its prompt needs the statement's balance-sheet date")
+        content = f"<balance_sheet_date>{period_end.isoformat()}</balance_sheet_date>\n{content}"
     return {
         "model": extractor.config.model,
         "max_tokens": extractor.config.max_tokens,
         "system": extractor.prompts[method.prompt],
-        "messages": [{"role": "user", "content": f"<page>\n{page_text}\n</page>"}],
+        "messages": [{"role": "user", "content": content}],
         "output_config": {
             "effort": extractor.config.effort,
-            "format": {"type": "json_schema", "schema": json_schema(signal)},
+            "format": {"type": "json_schema", "schema": json_schema(signal, method.valued)},
         },
     }
 
@@ -235,6 +256,7 @@ class PageInput:
     text: str  # masked
     sentences: list[Sentence]  # `preprocessing.analyse(text)`
     signals: tuple[SignalType, ...]  # what the prefilter selected on the page
+    period_end: date | None = None  # the statement's (or report's) balance-sheet date
 
 
 @dataclass
@@ -246,7 +268,9 @@ class ExtractionStats:
     discarded: Counter[str] = field(default_factory=Counter[str])
 
 
-def interpret(signal: SignalType, body: bytes, page_text: str, key: str) -> Extraction | Discarded:
+def interpret(
+    signal: SignalType, body: bytes, page_text: str, key: str, valued: bool = False
+) -> Extraction | Discarded:
     """A stored response read as an extraction, or discarded with its reason."""
     message = json.loads(body)
     stop_reason = message.get("stop_reason")
@@ -257,10 +281,10 @@ def interpret(signal: SignalType, body: bytes, page_text: str, key: str) -> Extr
         (b.get("text", "") for b in message.get("content", []) if b.get("type") == "text"), None
     )
     try:
-        answer = response_model(signal).model_validate_json(text or "")
+        answer = response_model(signal, valued).model_validate_json(text or "")
     except ValidationError:
         return Discarded(signal, "invalid_output", key)
-    value = answer.value if isinstance(answer, OpinionAnswer) else None
+    value: str | None = getattr(answer, "value", None)
     if not answer.present:
         if value not in (None, "none"):
             return Discarded(signal, "invalid_output", key)
@@ -294,7 +318,7 @@ def extract(
                     page.text, page.sentences, extractor.rules
                 )
                 continue
-            params = request_params(extractor, signal, page.text)
+            params = request_params(extractor, signal, page.text, page.period_end)
             pending.setdefault(request_key(params), (signal, params, []))[2].append(page)
     stats.requests += len(pending)
     missing = {k: p for k, (_signal, p, _pages) in pending.items() if store.get(k) is None}
@@ -321,7 +345,9 @@ def extract(
             out[(page.page_id, signal)] = (
                 Discarded(signal, "api_error", None)
                 if body is None
-                else interpret(signal, body, page.text, key)
+                else interpret(
+                    signal, body, page.text, key, extractor.config.signals[signal].valued
+                )
             )
     for result in out.values():
         if isinstance(result, Discarded):

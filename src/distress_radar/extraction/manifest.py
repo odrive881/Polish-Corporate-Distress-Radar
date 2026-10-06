@@ -122,6 +122,31 @@ def report_sources(conn: Connection, rdf_type_codes: Collection[str]) -> list[Re
     ]
 
 
+def period_ends(
+    conn: Connection, rdf_type_codes: Collection[str]
+) -> dict[tuple[str, str | None], date]:
+    """The balance-sheet date of every stored document a golden page can come from (decision 9):
+    a statement file by (download SHA-256, source member), an auditor report by (its SHA-256, None).
+    A key two filings claim with different dates is left out, never guessed."""
+    found: dict[tuple[str, str | None], set[date]] = {}
+    for sha256, member, period_end in conn.execute(
+        """
+        SELECT DISTINCT p.sha256, p.source_member, f.period_end
+        FROM parsed_documents p
+        JOIN filing_index f ON f.document_ref = p.document_ref AND f.krs = p.krs
+        WHERE p.member_kind = 'xml_statement'
+        """
+    ).fetchall():
+        found.setdefault((str(sha256), str(member)), set()).add(period_end)
+    for sha256, period_end in conn.execute(
+        "SELECT DISTINCT sha256, period_end FROM filing_index"
+        " WHERE rdf_type_code = ANY(%s) AND sha256 IS NOT NULL",
+        (list(rdf_type_codes),),
+    ).fetchall():
+        found.setdefault((str(sha256), None), set()).add(period_end)
+    return {key: next(iter(dates)) for key, dates in found.items() if len(dates) == 1}
+
+
 def record_text_extraction(
     conn: Connection, source: TextSource, pipeline_hash: str, run_id: str, now: datetime
 ) -> str:

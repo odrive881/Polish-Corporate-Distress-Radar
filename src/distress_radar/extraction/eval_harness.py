@@ -11,8 +11,10 @@ the golden pages, with their counts beside them:
 - `extractor`: precision, recall and F1 on the pages the prefilter selected, the extractor alone;
 - `end_to_end`: the same over every golden page, a page not selected counting as absent. This is
   what reaches the features, and what the gate holds.
-A discarded extraction counts as absent, and its reason is counted. For `opinion_type`, a present
-answer with the wrong opinion is both a false positive and a false negative. The rejected pages in
+A discarded extraction counts as absent, and its reason is counted. For a signal that takes a value
+(`opinion_type`, and `post_balance_sheet_event` once valued, decision 9), a present answer with the
+wrong value is both a false positive and a false negative; a positive labelled without a value (one
+labelled before decision 9) is scored on presence alone. The rejected pages in
 the golden set are a sample (`golden_sample_*.yaml`): of the notes, a random sample of the pool, so a
 positive the prefilter misses there stands for several in the whole rejected pool; of the auditor
 reports, every rejected page of a sample of whole reports. Counts, not rates, are the honest reading.
@@ -182,7 +184,9 @@ def fingerprint(
 ) -> dict[str, str]:
     """The SHA-256 of everything a result depends on, from the files as they are now."""
     method = extractor.config.signals[signal]
-    schema = canonical({"schema_version": SCHEMA_VERSION, "schema": json_schema(signal)})
+    schema = canonical(
+        {"schema_version": SCHEMA_VERSION, "schema": json_schema(signal, method.valued)}
+    )
     hashes = {
         "golden": _sha256(golden_dir / f"{signal}.jsonl"),
         "pages": _sha256(golden_dir / PAGES_FILE),
@@ -228,14 +232,19 @@ def _ratio(num: int, den: int) -> float | None:
     return round(num / den, 4) if den else None
 
 
+def _same_value(label: GoldenLabel, ex: Example) -> bool:
+    """A labelled value must be matched; a positive labelled with none is matched on presence."""
+    return label.value is None or label.value == ex.value
+
+
 def _counts(pairs: list[tuple[GoldenLabel, Example]]) -> Counts:
     tp = fp = fn = tn = 0
     for label, ex in pairs:
         predicted = ex.outcome == "present"
-        right_value = label.value == ex.value
+        right_value = _same_value(label, ex)
         if label.present and predicted and right_value:
             tp += 1
-        elif label.present and predicted:  # the wrong opinion: claimed, and the right one missed
+        elif label.present and predicted:  # the wrong value: claimed, and the right one missed
             fp += 1
             fn += 1
         elif predicted:
@@ -287,7 +296,7 @@ def score(
         evidence_overlaps=sum(
             lb.present
             and ex.outcome == "present"
-            and lb.value == ex.value
+            and _same_value(lb, ex)
             and _overlaps(texts.get(lb.page_id, ""), lb.evidence, ex.evidence)
             for lb, ex in pairs
         ),
@@ -304,6 +313,19 @@ def rejected_sample(golden_dir: Path = GOLDEN_DIR) -> set[str]:
         json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
     ]
     return {str(row["page_id"]) for row in rows if row["sample"] == "rejected"}
+
+
+def unchanged(previous: EvalResult, current: EvalResult) -> bool:
+    """Whether a rerun reproduces a stored result, so it keeps the stored one and its acceptance.
+    `extractor_version` is left out: it names the run, not the result, and a new extractor version
+    that leaves a signal's method alone (decision 9's `extractor_v4`, for eight of nine) must not
+    cost that signal its acceptance. The method, every hash, every example and the scores must match."""
+    return (
+        previous.model_copy(
+            update={"accepted": None, "extractor_version": current.extractor_version}
+        )
+        == current
+    )
 
 
 def dump_result(result: EvalResult) -> bytes:

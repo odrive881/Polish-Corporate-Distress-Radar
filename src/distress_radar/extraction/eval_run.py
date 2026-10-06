@@ -20,16 +20,18 @@ from __future__ import annotations
 
 import json
 import sys
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
 import psycopg
 
+from distress_radar.acquisition.document_retrieval import load_document_types
 from distress_radar.acquisition.raw_store import InMemoryObjectStore, ObjectStore, S3ObjectStore
+from distress_radar.acquisition.report_import import auditor_codes
 from distress_radar.extraction import eval_harness as h
 from distress_radar.extraction import extractor as ex
-from distress_radar.extraction import masking, preprocessing, response_store
+from distress_radar.extraction import manifest, masking, preprocessing, response_store
 from distress_radar.extraction.golden import GOLDEN_DIR, PAGES_FILE
 from distress_radar.extraction.preprocessing import SignalType
 from distress_radar.settings import Settings
@@ -65,6 +67,25 @@ def masker_summary(golden_dir: Path = GOLDEN_DIR) -> dict[str, Any]:
     }
 
 
+def page_period_ends(settings: Settings, golden_dir: Path = GOLDEN_DIR) -> dict[str, date]:
+    """Each golden page's balance-sheet date, from the filing its document belongs to (decision 9).
+    Read from Postgres, not stored in `pages.jsonl`: every accepted result hashes that file."""
+    rows = [
+        json.loads(line)
+        for line in (golden_dir / PAGES_FILE).read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    with psycopg.connect(settings.postgres_conninfo) as conn:
+        known = manifest.period_ends(conn, auditor_codes(load_document_types()))
+    out: dict[str, date] = {}
+    for r in rows:
+        member = None if r["document_kind"] == "auditor_report" else str(r["source_member"])
+        period_end = known.get((str(r["document_hash"]), member))
+        if period_end is not None:
+            out[str(r["page_id"])] = period_end
+    return out
+
+
 def run(settings: Settings, sync: bool = False, golden_dir: Path = GOLDEN_DIR) -> dict[str, str]:
     """Every signal with a golden file: its result written, or why it was skipped."""
     extractor = ex.load_extractor(settings.extractor_version)
@@ -97,9 +118,18 @@ def run(settings: Settings, sync: bool = False, golden_dir: Path = GOLDEN_DIR) -
         transport = ex.SyncTransport(client) if sync else ex.BatchTransport(client)
     else:
         transport = ex.NoCalls()
+    dated = {s for s in runnable if extractor.config.signals[s].balance_sheet_date}
+    period_ends = page_period_ends(settings, golden_dir) if dated else {}
+    undated = sorted(pid for pid in texts if pid not in period_ends and dated & set(selected[pid]))
+    if undated:
+        raise ValueError(f"no balance-sheet date for golden pages {undated} (decision 9)")
     pages = [
         ex.PageInput(
-            pid, texts[pid], sentences[pid], tuple(s for s in selected[pid] if s in runnable)
+            pid,
+            texts[pid],
+            sentences[pid],
+            tuple(s for s in selected[pid] if s in runnable),
+            period_ends.get(pid),
         )
         for pid in sorted(texts)
     ]
@@ -130,8 +160,8 @@ def run(settings: Settings, sync: bool = False, golden_dir: Path = GOLDEN_DIR) -
         path = h.result_path(signal, mid, golden_dir / "results")
         if path.exists():
             previous = h.load_result(path)
-            if previous.model_copy(update={"accepted": None}) == result:
-                result = previous  # unchanged: it keeps its acceptance
+            if h.unchanged(previous, result):
+                result = previous  # unchanged: it keeps its acceptance (and its first run's name)
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(h.dump_result(result))
         e2e = result.scores.end_to_end

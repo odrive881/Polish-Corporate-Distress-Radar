@@ -64,7 +64,7 @@ SIGNAL_COLUMNS: dict[str, pl.DataType | type[pl.DataType]] = {
     "krs": pl.String,
     "fiscal_year": pl.Int32,
     "signal_type": pl.String,
-    "value": pl.String,  # "present" | "absent"; for `opinion_type` the opinion, or "absent"
+    "value": pl.String,  # "present" | "absent"; a valued signal's value (`SIGNAL_VALUES`), or "absent"
     "evidence_span": pl.String,  # masked; null when absent
     "source_document_hash": pl.String,
     "page": pl.Int32,
@@ -301,7 +301,13 @@ def build(
     """`text_signals`, `text_coverage` and the quarantine detections, sorted."""
     notes_list = list(all_notes)
     inputs = [
-        ex.PageInput(p.page_id, p.text, p.sentences, tuple(s for s in p.selected if s in runnable))
+        ex.PageInput(
+            p.page_id,
+            p.text,
+            p.sentences,
+            tuple(s for s in p.selected if s in runnable),
+            notes.statement.period_end,
+        )
         for notes in notes_list
         for p in notes.pages
     ]

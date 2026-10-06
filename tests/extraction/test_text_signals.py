@@ -201,6 +201,34 @@ def test_model_signals_run_once_confirmed_and_discards_are_quarantined(
     }
 
 
+def test_a_dated_valued_signal_gets_its_statement_s_date_and_keeps_its_kind() -> None:
+    """Decision 9: `post_balance_sheet_event` under extractor_v4."""
+    event = "Po dniu bilansowym Spolka zlozyla wniosek o otwarcie postepowania sanacyjnego."
+    page = ts.NotesPage("p5", 1, "Informacja/Plik", 1, event, [], ("post_balance_sheet_event",))
+    notes = ts.StatementNotes(statement=_file(5), pages=[page], attachments=1)
+    notes.page_status["text"] = 1
+    seen: list[dict[str, Any]] = []
+
+    class Capture(FakeTransport):
+        def run(self, requests: Mapping[str, dict[str, Any]]) -> tuple[dict[str, bytes], set[str]]:
+            seen.extend(requests.values())
+            return super().run(requests)
+
+    answer = {"present": True, "evidence": event, "confidence": "high", "value": "adverse"}
+    kept, _c, _d = _build(
+        [notes],
+        ex.load_extractor("extractor_v4"),
+        {"post_balance_sheet_event"},
+        Capture(answer),
+    )
+    [request] = seen
+    assert request["messages"][0]["content"].startswith(
+        "<balance_sheet_date>2023-12-31</balance_sheet_date>"
+    )
+    assert kept["value"].to_list() == ["adverse"]
+    TEXT_SIGNALS.validate(kept)
+
+
 def _report(n: int) -> ts.StatementFile:
     return replace(
         _file(n),
