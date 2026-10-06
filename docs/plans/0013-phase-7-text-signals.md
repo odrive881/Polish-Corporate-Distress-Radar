@@ -11,47 +11,51 @@
 **Order:** after plan 0012 (complete). It does not wait for ADR 0013: like Phase 6, it builds and measures
 machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set this plan adds.
 
-## Status: active (2026-10-05): owner decisions 0–8 accepted; steps A to D and F to I built, step E's tooling built, with the notes' queue (77 of 240 pages labelled and committed) and the auditor reports' (`golden_sample_v2`, 102 pages); the rest of the labelling and the first model call wait on the owner; the auditor reports of decision 0(c) are stored, dated from the owner's list (decision 6 amended 2026-10-02) and read by the text job, the opinion by the report's headings (`rules_v2`), their features in `feature_set_v5` with the auditor change (2026-10-05); step J's docs written (2026-10-06)
+## Status: active (2026-10-07): owner decisions 0–9 accepted; every step built, J's docs included; the model runs on the seed under `extractor_v4` (the default) with the provider's terms confirmed; all nine signals accepted on the 83-page golden set and held by the gate in `make check`; open: enough labelled positives per signal to close the plan, and the owner's items below
 
-### Where this stands (2026-10-05): what waits on the owner, in order
+### Where this stands (2026-10-07)
 
-1. **Label the rest of the golden set:** the notes' queue (`golden_sample_v1`, 240 pages, 77 labelled and committed on
-   2026-10-05) and the auditor reports' (`golden_sample_v2`, 102 pages of 20 reports, 15 with a span to mask by
-   hand), picked at the top of the notebook (`uv run marimo run
-   notebooks/labelling/golden_set.py` from a WSL terminal, not through Claude Code, whose background tasks stop
-   after 30 minutes). Save each page before moving on; `make label-export` writes a checkpoint to
-   `evals/text_signals/` for review and commit.
-2. ~~**Confirm the provider's data-retention terms** (decision 2)~~ **Confirmed (owner, 2026-10-06; below,
-   decision 2).** `.env` has `EXTRACTION_API_CONFIRMED=true` and a key, but the key is identity-linked
-   (`sk-ant-usr…`, the only kind the Console now issues to this account), which the API refuses without an
-   `anthropic-workspace-id` header. The client now sends one from `ANTHROPIC_WORKSPACE_ID` (2026-10-06); the
-   owner sets it to a named workspace's id. Set and checked 2026-10-06; the first model run followed (progress,
-   "First model run").
-3. ~~**Accept each signal's result**~~ **Done (owner, 2026-10-06):** all nine accepted on the 83-page golden set and
-   committed (`e675c21`); `make check` holds them. The seven disputed results are
-   **resolved (owner, 2026-10-06; progress, "First model run", resolution)**; the rescored results wait for
-   acceptance. *As first recorded:* on 6 pages the model found a signal the owner labelled
-   absent, and most look like label slips or edge cases of the guide rather than model errors (progress,
-   "First model run", the table). The owner re-checks them in the labelling notebook. Then `make eval` rescores
-   from the stored responses at no cost, and the owner accepts. The results stay uncommitted until then: the
-   gate in `make check` fails on a result with no acceptance.
-4. ~~**Then rerun** the `text` job and the `features` job~~ **Done (2026-10-06)**, ahead of the acceptance, which
-   it does not need: the notes' features filled in, with no new version (progress, "The model on the whole seed").
-5. **Decision 0(c), auditor reports: stored and dated (2026-10-02, below).** Left for the owner: the three
-   reports with no date in the list and 0000507997's "2019" file (below). The reports' text step is built
-   and run on the seed (2026-10-05, progress), and the opinion rule reads the report's headings (`rules_v2`,
-   2026-10-05); the report pages are queued for labelling (`golden_sample_v2`, 102 pages), and their features
-   are built (`feature_set_v5`, 2026-10-05); left: labelling them.
-6. ~~**Approve or change** step I's departures from decision 7 and the 2026-10-05 choices.~~ **Approved as built
-   (owner, 2026-10-06):** step I's five departures from decision 7 (progress, step I), and the 2026-10-05 choices:
-   reports in the same datasets with `document_kind`, every signal read from a report, the notes' features
-   reading the notes only, and a report speaking until a later one is filed (with its age in v6).
-7. **Decision 9 (accepted by the owner 2026-10-06, as recommended): built (2026-10-06, progress, "Decision 9,
-   built"); the owner labelled the kinds and accepted v2 (2026-10-06); `extractor_v4` is the default.** As first
-   recorded: `post_balance_sheet_event` gains a value (adverse, favourable,
-   neutral) and the balance-sheet date, as `post_balance_sheet_event_v2` (§ Owner decisions, 9). If accepted: the
-   owner updates the guide and values the 4 positive pages, then I build it, run `make eval`, and the owner
-   accepts.
+**Done since 2026-10-05** (each in the progress section): the provider's terms confirmed and the key set up
+(decision 2; the client sends `ANTHROPIC_WORKSPACE_ID`); the first model run, and its seven disputed results
+resolved by the owner; all nine signals accepted on the 83-page golden set; the model run over the whole seed and
+the notes' features filled in; step I's departures and the 2026-10-05 choices approved as built; decision 9
+(`post_balance_sheet_event_v2`, dated and valued) built, labelled, accepted and the default; step J's docs.
+
+**Open for the owner, in order:**
+
+1. **How this plan closes (recommended, not yet decided).** The definition of done asks for the golden set
+   "labelled". Recommended: close once each signal has a handful of labelled positives, rather than after the
+   whole seed queue (163 of the notes' 240 pages are still unlabelled, and the seed is a poor sample of the
+   population). In that order:
+   - the auditor reports' queue (`golden_sample_v2`, 102 pages of 20 reports, 15 with a span to mask by hand):
+     the only source of positives for `opinion_type`, `emphasis_of_matter` and the auditor's going-concern
+     paragraph;
+   - then a new golden sample drawn from the ADR 0014 list once plan 0014 has imported it, instead of finishing
+     the seed's notes queue.
+
+   Today five signals have no positive, or one: `opinion_type`, `emphasis_of_matter`, `covenant_breach`,
+   `key_customer_loss` none; `litigation` and `continued_existence_vote` one each. Labelling is done in the
+   notebook from a WSL terminal (`uv run marimo run notebooks/labelling/golden_set.py`, not through Claude Code,
+   whose background tasks stop after 30 minutes), then `make label-export`.
+2. **Auditor reports, loose ends (decision 0c, below):**
+   - 0000181328's 2019 report is `unknown` in the dates list;
+   - 0000291203's 2024 and 2025 reports are not in the list;
+   - 0000507997's "2019" file is a statement XML, not a report: to check on RDF;
+   - the five pre-2018 reports wait on RDF's name for document type 2, to add as `canonical: auditor_report`
+     in a new version of `rdf_document_types.yaml`.
+3. **A new prefilter version for `continued_existence_vote`?** Its one golden positive (`2c4d7e30c1579a17`,
+   "uchwała o prowadzeniu dalszej działalności") is not selected by `prefilter_v2`, so recall is 0.00 end to end.
+   A term for that wording is a new prefilter version, measured like any change.
+4. **The auditor's own going-concern paragraph as a feature?** Recommended: park it. On the seed it was absent on
+   all 89 report pages read; revisit once the universe grows.
+5. **The model (not urgent):** `claude-opus-5-5` stays unless a cheaper model is compared on the golden set first
+   (decision 2).
+
+**Known, not a decision:**
+- the masker over-masks (it turned "SARS" in "SARS-CoV-2" into `[osoba]`), which the guide accepts and the harness
+  does not measure;
+- two golden evidence spans quote a heading (`26a67244b75fd805`; the start of `521be011091c25a2`'s), which the guide
+  now discourages; evidence does not affect a score.
 
 ### Decision 0(c): the auditor reports (2026-10-01)
 
@@ -859,11 +863,13 @@ text job and `make eval`; this plan's status.
 
 ## Definition of done
 
-- [x] Owner decisions 0–8 made (2026-09-29, all as recommended).
+- [x] Owner decisions 0–8 made (2026-09-29, all as recommended); decision 9 (2026-10-06, as recommended).
 - [x] Census in the progress section; decisions revisited with it (2026-09-29).
 - [x] ADR 0009's third addendum (masking) accepted before the first masked text is stored (owner decision 1,
       2026-09-29; written in step C, no masked text stored yet).
-- [ ] `text_signals` built from the chosen sources, every row with evidence and lineage, no unmasked name.
+- [x] `text_signals` built from the chosen sources, every row with evidence and lineage, no unmasked name
+      (2026-10-06: every signal on the seed under `extractor_v4`; `evidence_masked` passed; the masker's measured
+      recall is 0.98, so "no name" rests on that check and the pre-commit scan, as ADR 0009 sets out).
 - [ ] Golden set labelled and committed; precision, recall and F1 per `signal_type` with counts; the gate in
       `make check`.
 - [x] `feature_set_v4` leak-free and byte-reproducible; `backtest_v2` run twice, identical (2026-10-01; the

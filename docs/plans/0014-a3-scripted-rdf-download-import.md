@@ -12,18 +12,31 @@
 **Order:** after ADR 0013's decision. It does not wait for plan 0013 (Phase 7). A1 is the owner's
 Rejestr.io list (ADR 0014, accepted 2026-10-06), loaded in step 0.
 
-## Status: active (2026-10-06): owner decisions 1–6 accepted as recommended; nothing built; step A waits on a sample of the running script's output
+## Status: active (2026-10-07): owner decisions 1–6 accepted as recommended; nothing built; step 0 waits on the list the script runs on, step A on a sample of its output
 
-### Where this stands (2026-10-06)
+### Where this stands (2026-10-07)
 
-- **The script is already running.** It has run on the owner's laptop for three days on the ADR 0014 list (about
-  600 companies), with no CAPTCHA so far. The owner solves one by hand if it comes (ADR 0013, rule 2 as
-  amended). Its output predates decision 2's contract, so step A starts from what it actually writes. The
-  owner shares one entity's output (listing and file layout, never the ZIPs), and the importer either reads it
-  as it is or the script adapts. Whatever the script did not record cannot be recovered later without a
-  re-download, above all "Data dodania" per document and whether each entity was finished.
-- **To confirm:** the pace the running script keeps (decision 6: one RDF action every 20 seconds).
-- **A1 is settled for now** by ADR 0014 (accepted): the Rejestr.io list. It adds step 0 below.
+- **The script is already running** on the owner's laptop, on the ADR 0014 list (about 600 companies), since about
+  2026-10-03, with no CAPTCHA so far. The owner solves one by hand if it comes (ADR 0013, rule 2 as amended).
+  Its output predates decision 2's contract, so step A starts from what it actually writes.
+
+**Open for the owner, in order:**
+
+1. **A sample of the script's output:** one entity's listing and file layout, never the ZIPs. The importer
+   reads it as it is, or the script adapts to decision 2. Urgent: whatever the script does not record now
+   cannot be recovered without downloading again, above all each document's "Data dodania", whether each
+   entity was finished (`entities.csv`), and the challenge log (`challenges.csv`, ADR 0013 rule 7).
+2. **The pace the running script keeps** (decision 6: one RDF action every 20 seconds).
+3. **The exact list the script runs on** (it differs slightly from the file of ADR 0014), and the Rejestr.io
+   filter settings used to build it. Step 0 loads that list, not the earlier file.
+4. **Rejestr.io's terms of use** for this use (ADR 0014, AGENT_SPEC §11.3). Until confirmed, nothing from
+   Rejestr.io beyond the KRS numbers is stored, and nothing from it is published.
+5. **On RDF:** whether each correction's tab in an expanded row has its own "Pobierz dokumenty" (step A,
+   decision 3).
+
+**After the import, each back to the owner with its counts** (§ "Deferrals this plan reopens"): KRZ, the PDF
+statement tier, and the share of scans; and, from ADR 0014, the list's composition and a written rule to make
+the next list representative.
 
 ## Why
 

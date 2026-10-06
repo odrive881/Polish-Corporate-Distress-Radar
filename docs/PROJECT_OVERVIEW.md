@@ -167,7 +167,7 @@ Stage-by-stage implementation plans live in `docs/plans/`, one numbered `.md` fi
 - Each extracted signal stores the source document, the page or section, the supporting text span, the extraction method, and a confidence score.
 - A hand-labeled evaluation set measures extraction precision and recall. Extraction models are only promoted if they beat the previous version on this set.
 
-- As built (plan 0013): the notes embedded in the statements and the auditor reports are read from their PDF text layer, masked of person names first; scanned pages are counted, not read. The auditor's opinion and the audit firm's change come from rules; the free-text signals from Claude, which makes no call until the owner confirms the provider's terms. Resolutions are not downloaded.
+- As built (plan 0013): the notes embedded in the statements and the auditor reports are read from their PDF text layer, masked of person names first; scanned pages are counted, not read. The auditor's opinion and the audit firm's change come from rules; the free-text signals from Claude (the owner confirmed the provider's terms on 2026-10-06), scored against a hand-labelled golden set that gates every prompt or model change. Resolutions are not downloaded.
 
 **Output:** `text_signals`, with full evidence lineage for every extracted signal.
 
