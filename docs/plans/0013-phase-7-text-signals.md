@@ -21,8 +21,10 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
    notebooks/labelling/golden_set.py` from a WSL terminal, not through Claude Code, whose background tasks stop
    after 30 minutes). Save each page before moving on; `make label-export` writes a checkpoint to
    `evals/text_signals/` for review and commit.
-2. **Confirm the provider's data-retention terms** (decision 2), then set `ANTHROPIC_API_KEY` and
-   `EXTRACTION_API_CONFIRMED=true` in `.env`. Until then the eight model signals are `not_run`, and the notes'
+2. ~~**Confirm the provider's data-retention terms** (decision 2)~~ **Confirmed (owner, 2026-10-06; below,
+   decision 2).** `.env` has `EXTRACTION_API_CONFIRMED=true` and a key, but the key is not scoped to a
+   workspace: the API refuses it without an `anthropic-workspace-id` header, which the client does not send.
+   A workspace-scoped key replaces it. Until then the eight model signals are `not_run`, and the notes'
    features are null wherever the prefilter selected a page.
 3. **Accept each signal's first result** after `make eval`: `make eval-accept SIGNAL=... BY=...`.
 4. **Then rerun** the `text` job and the `features` job: the notes' features fill in, with no new version.
@@ -565,6 +567,11 @@ Recommendations first; each is the owner's to accept, change or reject before th
    - backfills through the Message Batches API (asynchronous, half price); single calls only for development;
    - only masked text is sent. The owner confirms the organisation's data-retention terms with the provider
      before the first call, and `ANTHROPIC_API_KEY` joins `.env.example` and the credentials table.
+     *Confirmed 2026-10-06 (owner), on Anthropic's Commercial Terms (an API key from the Console):*
+     inputs and outputs deleted within 30 days (Privacy Center, "How long do you store my organization's
+     data?", updated 2026-07-01; longer only for content flagged under the Usage Policy); not used for model
+     training; zero data retention not available to this account. The owner accepts these terms. The Batches
+     API, which stores jobs until collected, stays the backfill route.
    - Rules before models: auditor opinions use the standard wording of the Polish auditing standards (*opinia
      bez zastrzeżeń*, *z zastrzeżeniem*, *negatywna*, *odmowa wyrażenia opinii*; *istotna niepewność dotycząca
      kontynuacji działalności*), so `opinion_type` and the auditor's going-concern paragraph are lemma rules,

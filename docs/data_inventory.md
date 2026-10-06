@@ -167,7 +167,7 @@ The spec forbids bulk enumeration of any source. Acquisition is per entity, seed
 | NBP API | — | A5 | required | public, no key |
 | GUS BDL API (optional client key raises rate limits) | none yet; add one if a key is used | A5 | optional | not requested |
 | Registry aggregator account / ToS acceptance | none | A1 | required for scaled discovery | Rejestr.io, used by hand through its search filters (ADR 0014, accepted 2026-10-06): a list of about 600 KRS numbers, kept outside the repository; terms of use not yet confirmed |
-| LLM API key (vision tier and text extraction) | `ANTHROPIC_API_KEY`, `EXTRACTION_API_CONFIRMED` | C3, G2 | required from Phase 3 / 7 | not configured; in `.env.example` since plan 0013 step F. No call is made until the owner confirms the provider's data-retention terms and sets `EXTRACTION_API_CONFIRMED=true` (decision 2) |
+| LLM API key (vision tier and text extraction) | `ANTHROPIC_API_KEY`, `EXTRACTION_API_CONFIRMED` | C3, G2 | required from Phase 3 / 7 | terms confirmed by the owner 2026-10-06 (Commercial Terms: 30-day retention, no training, no zero data retention; plan 0013 decision 2) and `EXTRACTION_API_CONFIRMED=true` set; the key in `.env` is not scoped to a workspace and is to be replaced by one that is |
 | Postgres | `POSTGRES_HOST/PORT/DB/USER/PASSWORD` | B, J | required | local Docker Compose |
 | MinIO | `MINIO_ENDPOINT/ACCESS_KEY/SECRET_KEY/BUCKET` | B | required | local Docker Compose |
 | MLflow tracking store | `MLFLOW_TRACKING_URI`, `MLFLOW_ARTIFACT_DIR` | I, J | required from Phase 6 | local SQLite store under `.data/mlflow/` by default (plan 0012); the server comes in Phase 9 |
