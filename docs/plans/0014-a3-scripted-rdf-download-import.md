@@ -88,6 +88,11 @@ the next list representative.
     dokumentu" (the filer's free text), "Wydział sądu", "Sygnatura sprawy", anything from "Pokaż zgłoszenie" or
     "Pokaż treść dokumentu" (both list signatories by name). `entities.csv` as in decision 2: `krs`, `searched_at`, `found`, `list_rows`,
     `complete`.
+  - **Flags as the page writes them (2026-10-07).** `is_ifrs`, `is_correction`, `found` and `complete` hold
+    `Tak` / `Nie`, as RDF shows them, not yes/no; the importer maps them. The owner has both specifications, as
+    prompts for the script: `documents.csv` one row per tab, appended, never rewritten; `entities.csv` one row
+    per search, appended, `complete` = `Nie` on any early stop or doubt, and a number RDF does not find written
+    `found` = `Nie`, `complete` = `Tak`.
   - **Owner decision (2026-10-07): keep both the `.xades` files and the ZIPs.** A `.xades` here is an enveloping
     signature with the statement inside `ds:Object` (on 42 periods the only copy), which `redaction.py` unwraps
     before hashing; the ZIPs stay the raw input of decision 2. Neither is deleted or committed.
@@ -165,7 +170,8 @@ So every entity beyond the seed needs an importer that builds `filing_index` fro
      `submission_date` ("Data dodania", never "Data sporządzenia dokumentu"), `status`, `deleted_on`, `file`
      (the ZIP's path, empty when not downloaded) and `captured_at`;
    - `entities.csv`, one row per KRS number searched: `krs`, `searched_at`, `found`, `list_rows` (all types, as
-     the list counts them) and `complete` (every in-scope row expanded and downloaded);
+     the list counts them) and `complete` (every in-scope row expanded and downloaded); flags as `Tak` / `Nie`
+     (amended 2026-10-07, § "Progress");
    - ~~`challenges.csv`, the log of ADR 0013 rule 7~~ (added 2026-10-06; dropped 2026-10-07 by the owner, with
      rule 7: the import carries no challenge counts);
    - one ZIP per expanded row, exactly as "Pobierz dokumenty" delivered it, at `<krs>/<row_document_id>.zip`;
