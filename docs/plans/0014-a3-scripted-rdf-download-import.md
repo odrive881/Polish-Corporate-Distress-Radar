@@ -26,9 +26,9 @@ Rejestr.io list (ADR 0014, accepted 2026-10-06), loaded in step 0.
    finished (`entities.csv`)~~: the owner adds it to the script (2026-10-07). The listing's missing columns
    (decision 2) are listed per field in § "Progress" for the owner to add. (The challenge log is dropped: ADR
    0013 rule 7, withdrawn 2026-10-07.)
-2. ~~The pace the running script keeps~~ (owner, 2026-10-07): slower than ADR 0013's ceiling of 3 documents a
-   minute, chosen by the owner: one download every 1 to 2 minutes, the spread from a randomised delay, running
-   continuously, with no challenge so far.
+2. ~~The pace the running script keeps~~ (owner, 2026-10-07): the owner's to set, below ADR 0013's ceiling, and
+   it changes with the situation: a randomised delay, roughly 45 seconds to 2 minutes a download at present.
+   Nothing in the importer depends on it.
 3. **The exact list the script runs on** (it differs slightly from the file of ADR 0014), and the Rejestr.io
    filter settings used to build it. Step 0 loads that list, not the earlier file.
 4. ~~Rejestr.io's terms of use~~ confirmed by the owner (2026-10-07): a commercial aggregator of public data,
@@ -188,7 +188,8 @@ So every entity beyond the seed needs an importer that builds `filing_index` fro
 6. **The pace (constraint 4).** Recommended: per action, at most one RDF action (search, list page, expansion,
    download) every 20 seconds. It is how ADR 0007's tier counted, and it is the reading of "3 a minute" least
    likely to be the reason the WAF reacts. Per download is twice as fast. ADR 0013's wording, "3 documents a
-   minute", allows it. The choice goes into ADR 0013 either way.
+   minute", allows it. The choice goes into ADR 0013 either way. *In practice (owner, 2026-10-07): the owner
+   sets the pace, slower than this and varying, within ADR 0013's ceiling.*
 
 Settled since, outside this plan: a CAPTCHA is solved by the owner by hand (ADR 0013, rule 2, amended
 2026-10-06), and A1 is the Rejestr.io list (ADR 0014).
@@ -281,7 +282,7 @@ is measured once the list is imported, and goes back to the owner with its count
   new captures.
 
 ### E. The seed as the acceptance test
-The owner runs the script on all 17 seed entities (about 180 documents: an hour or two at the chosen pace),
+The owner runs the script on all 17 seed entities (about 180 documents: a few hours, depending on the pace),
 and the importer loads them into an empty database. Every column of the statements' and reports' rows in
 `filing_index` must equal today's HAR-built rows, after the key and lineage columns are removed:
 - the period, status and deletion;
@@ -297,7 +298,7 @@ progress section before this plan closes.
   import.
 - The data inventory: §2's status, the credentials table, and the types no longer indexed.
 - DIRECTORY_STRUCTURE: the new module and inbox.
-- ADR 0013: the pace chosen (decision 6).
+- ADR 0013: the pace is the owner's, within its ceiling (decision 6).
 - AGENT_SPEC §6A: the A3 tiers.
 
 ## Tests (`tests/acquisition/`, no network; synthetic listings and ZIPs, no real names)
