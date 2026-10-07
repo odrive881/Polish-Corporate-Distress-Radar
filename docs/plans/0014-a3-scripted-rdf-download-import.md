@@ -27,7 +27,8 @@ Rejestr.io list (ADR 0014, accepted 2026-10-06), loaded in step 0.
    (decision 2) are listed per field in § "Progress" for the owner to add. (The challenge log is dropped: ADR
    0013 rule 7, withdrawn 2026-10-07.)
 2. ~~The pace the running script keeps~~ (owner, 2026-10-07): slower than ADR 0013's ceiling of 3 documents a
-   minute, chosen by the owner, running continuously, with no challenge so far. The exact rate is to be stated.
+   minute, chosen by the owner: one download every 1 to 2 minutes, the spread from a randomised delay, running
+   continuously, with no challenge so far.
 3. **The exact list the script runs on** (it differs slightly from the file of ADR 0014), and the Rejestr.io
    filter settings used to build it. Step 0 loads that list, not the earlier file.
 4. ~~Rejestr.io's terms of use~~ confirmed by the owner (2026-10-07): a commercial aggregator of public data,
