@@ -14,7 +14,7 @@ These are the "credentials" of a company: they decide whether it belongs in the 
 
 | Item | Polish | Source | Stage | Feeds | Req. | Spec ref | Status |
 |---|---|---|---|---|---|---|---|
-| KRS number (10 chars, zero-padded) | numer KRS | A1 discovery, confirmed by BIR1 / KRS extract | A1, A2 (1, 2) | primary key of every dataset | required | SPEC §5, §6A | 17-entity seed in `config/segments/construction_sme_v1_seed.yaml`; about 600 more from the owner's Rejestr.io list (ADR 0014), kept outside the repository, loader in plan 0014 step 0 |
+| KRS number (10 chars, zero-padded) | numer KRS | A1 discovery, confirmed by BIR1 / KRS extract | A1, A2 (1, 2) | primary key of every dataset | required | SPEC §5, §6A | 17-entity seed in `config/segments/construction_sme_v1_seed.yaml`; about 600 more from the owner's Rejestr.io list (ADR 0014), kept outside the repository, loader in plan 0014 step 0; list v2 drawn by ADR 0014's sampling rule (addendum, 2026-10-07, proposed) |
 | NIP | Numer Identyfikacji Podatkowej | GUS BIR1, KRS extract | A2 (2) | `entity_master`, `financial_statements_canonical` | required | SPEC §5; OVERVIEW stage 2 | BIR1 adapter built |
 | REGON | Rejestr Gospodarki Narodowej | GUS BIR1 | A2 (2) | `entity_master`, `financial_statements_canonical` | required | SPEC §5; OVERVIEW stage 2 | BIR1 adapter built |
 | Legal form (must be `sp. z o.o.`; S.A. only for future Art. 397 scope) | forma prawna | GUS BIR1 (form symbol), KRS extract | A2 (2) | segment filter | required | SPEC §1, §4.5 | BIR1 adapter built |
@@ -166,7 +166,7 @@ The spec forbids bulk enumeration of any source. Acquisition is per entity, seed
 | MSiG search access | `MSIG_REQUESTS_PER_MINUTE` | A4 | required | public JSON API, no key, no terms page; per entity, 15/min (ADR 0011) |
 | NBP API | — | A5 | required | public, no key |
 | GUS BDL API (optional client key raises rate limits) | none yet; add one if a key is used | A5 | optional | not requested |
-| Registry aggregator account / ToS acceptance | none | A1 | required for scaled discovery | Rejestr.io, used by hand through its search filters (ADR 0014, accepted 2026-10-06): a list of about 600 KRS numbers, kept outside the repository; terms of use confirmed by the owner (2026-10-07) |
+| Registry aggregator account / ToS acceptance | none | A1 | required for scaled discovery | Rejestr.io, used by hand through its search filters (ADR 0014, accepted 2026-10-06): a list of about 600 KRS numbers, kept outside the repository; terms of use confirmed by the owner (2026-10-07); list v2's frame (its KRS numbers) exported before the 14-day trial ends (ADR 0014 addendum) |
 | LLM API key (vision tier and text extraction) | `ANTHROPIC_API_KEY`, `ANTHROPIC_WORKSPACE_ID`, `EXTRACTION_API_CONFIRMED` | C3, G2 | required from Phase 3 / 7 | terms confirmed by the owner 2026-10-06 (Commercial Terms: 30-day retention, no training, no zero data retention; plan 0013 decision 2) and `EXTRACTION_API_CONFIRMED=true` set; the key is identity-linked (`sk-ant-usr…`), so calls also need `ANTHROPIC_WORKSPACE_ID` |
 | Postgres | `POSTGRES_HOST/PORT/DB/USER/PASSWORD` | B, J | required | local Docker Compose |
 | MinIO | `MINIO_ENDPOINT/ACCESS_KEY/SECRET_KEY/BUCKET` | B | required | local Docker Compose |
