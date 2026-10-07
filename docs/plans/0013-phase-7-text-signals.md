@@ -30,8 +30,8 @@ the notes' features filled in; step I's departures and the 2026-10-05 choices ap
    - the auditor reports' queue (`golden_sample_v2`, 102 pages of 20 reports, 15 with a span to mask by hand):
      the only source of positives for `opinion_type`, `emphasis_of_matter` and the auditor's going-concern
      paragraph;
-   - then a new golden sample drawn from the ADR 0014 list once plan 0014 has imported it, instead of finishing
-     the seed's notes queue.
+   - then a new golden sample drawn from ADR 0014's list v2 (its random and distress groups, addendum of
+     2026-10-07) once plan 0014 has imported it, instead of finishing the seed's notes queue.
 
    Today five signals have no positive, or one: `opinion_type`, `emphasis_of_matter`, `covenant_breach`,
    `key_customer_loss` none; `litigation` and `continued_existence_vote` one each. Labelling is done in the

@@ -147,9 +147,9 @@ Power Automate Desktop (PAD).**
   capture already created. For an entity first reached by the script there is no such row, so the
   listing has to create the `filing_index` rows itself, statements and corrections included, with the
   same matching rules and refusals as `har_import.py`.
-- **A1 discovery is still open.** The script needs a list of KRS numbers, and no source for one is
-  chosen (`docs/data_inventory.md`, "Registry aggregator account"). Until there is one, the route
-  can only refresh and extend the seed.
+- ~~**A1 discovery is still open.**~~ Settled by ADR 0014 (accepted 2026-10-06): the owner's Rejestr.io list,
+  and from list v2 a sampling rule (ADR 0014 addendum, 2026-10-07, proposed). As written: the script needs a
+  list of KRS numbers, and no source for one is chosen.
 - **Volume:** tens of thousands of documents at 3 a minute are days of running for the v1 universe,
   and each filing season adds a wave (PROJECT_OVERVIEW stage 3). The script resumes from where it
   stopped; a re-import adds nothing (idempotence, invariant 5).

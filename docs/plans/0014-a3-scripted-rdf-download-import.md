@@ -19,6 +19,9 @@ Rejestr.io list (ADR 0014, accepted 2026-10-06), loaded in step 0.
 - **The script is already running** on the owner's laptop, on the ADR 0014 list (about 600 companies), since about
   2026-10-03, with no CAPTCHA so far. The owner solves one by hand if it comes (ADR 0013, rule 2 as amended).
   Its output predates decision 2's contract, so step A starts from what it actually writes.
+- **Since 2026-10-07:** the owner has the specifications of `documents.csv` and `entities.csv` to update the
+  script with (§ "Progress"); list v2, which the script runs on next, is to be drawn by ADR 0014's sampling rule
+  (addendum of 2026-10-07, proposed).
 
 **Open for the owner, in order:**
 
@@ -47,7 +50,7 @@ the next list representative.
 ### Progress
 
 - **The script's output, as it writes it (sample, 2026-10-07).** One entity's folder (`0000563676`) and the
-  listing so far (`filing_dates.csv`, 76 entities of the legacy seed file the script is still running on), both
+  listing so far (`filing_dates.csv`, 76 entities of ADR 0014's list v1, the 611 companies the script is still running on), both
   in `.cache/rdf_script_inbox/` (ignored; root copies are caught by `.gitignore` too).
   - **Layout:** `<krs>/<krs>_<period_end>[_<n>].<ext>`, extracted, plus `<krs>/_originals/<krs>_<period_end>.zip`
     as delivered. In the sample each ZIP holds one member, byte-equal in size to its extracted copy; members keep
