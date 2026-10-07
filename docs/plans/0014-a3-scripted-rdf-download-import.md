@@ -42,6 +42,36 @@ Rejestr.io list (ADR 0014, accepted 2026-10-06), loaded in step 0.
    the full list. Only KRS numbers still enter the pipeline (ADR 0014's design, not a condition of the terms).
 5. **(Reminder for the owner, deferred 2026-10-07.) On RDF:** whether each correction's tab in an expanded row has its own "Pobierz dokumenty" (step A,
    decision 3).
+6. **List v1's downloads in the old format.** The script has run on the 611 companies since about 2026-10-03,
+   writing `filing_dates.csv` (`doc_name;krs;filing_date;period;document_id`), the format `report_import.py`
+   already reads, without the type, correction flag or status. Either they are imported as they are (corrections
+   inferred from the `_2` suffixes and shared ids, the missing fields completed later from details or a re-run),
+   or those companies are downloaded again once the script writes `documents.csv`. Either way list v1 stays
+   outside any weighted result (ADR 0014 addendum).
+
+**What can be built meanwhile (2026-10-07), in this order:**
+
+1. **Step A's two seed checks, from the stores alone:** decision 3's pairing rule (a correction group's members
+   paired with their tabs by the statement's header dates against "Data sporządzenia dokumentu") on the seed's 8
+   groups, and decision 5's type-code rule (name and period) on the 538 rows. Only the field-by-field comparison
+   with a new listing waits on the script.
+2. **Step B:** `filing_index.rdf_document_id` with decision 1's backfill, `listing_sha256`, and
+   `rdf_listed_entities`.
+3. **Steps C and D:** `script_import.py` and the `rdf_script_import` asset, built to the `documents.csv` and
+   `entities.csv` specifications given to the owner (§ "Progress"), tested on synthetic listings and ZIPs; item 1's
+   result decides the pairing, and the unpaired path stands otherwise. A difference in the script's real output
+   is adjusted when step A sees it.
+
+Once the owner accepts ADR 0014's sampling addendum:
+
+4. **Weighted models:** sample weights in training (`models/classical.py`, today unweighted) and in the
+   evaluation (Brier score, reliability, base rates), with group A alone reported beside them.
+5. **Step 0's draw:** the seeded permutation of a frame file, groups A and B, each company's probability of
+   being drawn, loaded into `universe_candidates`; tested on a synthetic frame, the export's format read from
+   Rejestr.io's.
+
+Waiting on the owner: plan 0013's new prefilter version (its item 3), item 6 above, then step A's comparison,
+step E, the composition census and the draw.
 
 **After the import, each back to the owner with its counts** (§ "Deferrals this plan reopens"): KRZ, the PDF
 statement tier, and the share of scans; and, from ADR 0014, the list's composition and a written rule to make
