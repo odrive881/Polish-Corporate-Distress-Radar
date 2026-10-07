@@ -47,3 +47,11 @@ __marimo__/
 # name people. They live under .cache/rdf_auditor_reports/ (ignored above); this catches a copy
 # dropped at the root by mistake.
 /auditor_reports/
+
+# Scripted RDF downloads (plan 0014, ADR 0013): the owner's PAD script output and its
+# filing_dates.csv listing live in .cache/rdf_script_inbox/ (ignored above). Signed statements
+# (.xades) and the ZIPs as delivered name people; this catches copies dropped at the root.
+/[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]/
+/filing_dates.csv
+*.xades
+*.zip
