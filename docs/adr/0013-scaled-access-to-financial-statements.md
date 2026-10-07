@@ -114,7 +114,8 @@ Power Automate Desktop (PAD).**
    expects, the script stops and does not retry. The script never solves a challenge, and no service does;
    no stealth settings, no replayed cookies (ADR 0007's limits). *Amended 2026-10-06 (owner):* the owner,
    at the machine, solves a CAPTCHA by hand, as in ordinary use of the page, and the run then continues at
-   the same pace. Each challenge is noted with its time, so their rate is known.
+   the same pace. ~~Each challenge is noted with its time, so their rate is known.~~ (withdrawn with rule 7,
+   2026-10-07)
 3. **Scope:** the categories the pipeline reads, by `config/mappings/rdf_document_types.yaml`: annual
    financial statements from 2018 (type 18) with their corrections, and auditor reports (type 19).
    Another category joins by a new version of that file, never by the script alone. The script never
@@ -129,8 +130,10 @@ Power Automate Desktop (PAD).**
      back to it (plan 0013 decision 6, as amended 2026-10-02): it is the documents' `known_from`.
 6. **Personal data:** the ZIPs as downloaded name people. They stay out of the repository and are
    deleted once imported; only redacted copies are stored (ADR 0009).
-7. **The challenge log is the WAF check** (added 2026-10-06, replacing ADR 0007's probe rerun for this
-   route). The probe notebook tests plain HTTP, which tells nothing about a person's browser, so the script
+7. ~~**The challenge log is the WAF check**~~ *Withdrawn 2026-10-07 (owner): the script keeps no challenge
+   log. Rule 2 stands: a challenge still stops the script, and any block page, or CAPTCHAs coming more often,
+   still means stopping and revisiting (a). Nothing records their rate, so that judgement rests on the owner,
+   at the machine.* As added 2026-10-06, replacing ADR 0007's probe rerun for this route: The probe notebook tests plain HTTP, which tells nothing about a person's browser, so the script
    keeps a log of every CAPTCHA, block page and unexpected page: time, KRS number, the action it interrupted,
    and whether it was solved by hand. The log is handed over with the listing and stored with the import. A
    rising rate of challenges, or any block page, means stopping and revisiting (a), not tuning the script.
@@ -154,7 +157,7 @@ Power Automate Desktop (PAD).**
   on the list of ADR 0014, with no CAPTCHA so far.
 - **The permission is informal.** KRS support's confirmation was not a written policy, and the WAF
   can change without notice. A rise in challenges is a reason to stop and revisit (a), not to tune
-  the script.
+  the script; since rule 7's withdrawal (2026-10-07) only the owner sees that rise.
 
 **Of the options, as written on 2026-09-27:**
 
