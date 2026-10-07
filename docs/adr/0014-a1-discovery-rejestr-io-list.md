@@ -55,8 +55,10 @@ with Rejestr.io's (`rejestr.io`) search filters.**
   they draw from (how many companies match the segment's definition in all), and draw the next list from that
   frame by a written rule, stratified if wanted, with the strata and their weights recorded. A list built that
   way gets a new `discovery_source` version, and the backtest reports which list each result rests on.
-- **Rejestr.io's terms of use are not yet confirmed** for this use (AGENT_SPEC §11.3). The owner checks them;
-  until then nothing from Rejestr.io beyond the KRS numbers is stored, and nothing from it is published.
+- ~~**Rejestr.io's terms of use are not yet confirmed**~~ *Confirmed by the owner, 2026-10-07* (AGENT_SPEC
+  §11.3): Rejestr.io is a commercial aggregator of public registry data, and the owner uses it by hand through
+  its search, as it is meant to be used, on a 14-day trial during which the full list is built. Only KRS numbers
+  still enter the pipeline, and nothing from Rejestr.io is published.
 - **Follow-up work** goes in plan 0014:
   - a loader for the list into `universe_candidates`, beside the seed's YAML loader;
   - A2 over its KRS numbers;

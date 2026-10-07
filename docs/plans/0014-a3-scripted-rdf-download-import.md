@@ -22,15 +22,18 @@ Rejestr.io list (ADR 0014, accepted 2026-10-06), loaded in step 0.
 
 **Open for the owner, in order:**
 
-1. ~~A sample of the script's output~~ received 2026-10-07 (§ "Progress", below). Still urgent, because
-   the script does not record them yet and they cannot be recovered without downloading again: whether each
-   entity was finished (`entities.csv`). (The challenge log is dropped: ADR 0013 rule 7, withdrawn 2026-10-07.)
-2. **The pace the running script keeps** (decision 6: one RDF action every 20 seconds).
+1. ~~A sample of the script's output~~ received 2026-10-07 (§ "Progress", below). ~~Whether each entity was
+   finished (`entities.csv`)~~: the owner adds it to the script (2026-10-07). The listing's missing columns
+   (decision 2) are listed per field in § "Progress" for the owner to add. (The challenge log is dropped: ADR
+   0013 rule 7, withdrawn 2026-10-07.)
+2. ~~The pace the running script keeps~~ (owner, 2026-10-07): slower than ADR 0013's ceiling of 3 documents a
+   minute, chosen by the owner, running continuously, with no challenge so far. The exact rate is to be stated.
 3. **The exact list the script runs on** (it differs slightly from the file of ADR 0014), and the Rejestr.io
    filter settings used to build it. Step 0 loads that list, not the earlier file.
-4. **Rejestr.io's terms of use** for this use (ADR 0014, AGENT_SPEC §11.3). Until confirmed, nothing from
-   Rejestr.io beyond the KRS numbers is stored, and nothing from it is published.
-5. **On RDF:** whether each correction's tab in an expanded row has its own "Pobierz dokumenty" (step A,
+4. ~~Rejestr.io's terms of use~~ confirmed by the owner (2026-10-07): a commercial aggregator of public data,
+   used by hand through its search, as it is meant to be used, on a 14-day trial during which the owner builds
+   the full list. Only KRS numbers still enter the pipeline (ADR 0014's design, not a condition of the terms).
+5. **(Reminder for the owner, deferred 2026-10-07.) On RDF:** whether each correction's tab in an expanded row has its own "Pobierz dokumenty" (step A,
    decision 3).
 
 **After the import, each back to the owner with its counts** (§ "Deferrals this plan reopens"): KRZ, the PDF
@@ -56,6 +59,31 @@ the next list representative.
   - **For the importer:** extensions vary in case and form (`.XML`, `.XAdES`, `.xml (1).xades`, `.xhtml.xades`); a
     period can appear as both `.xml` and `.xades` under one `document_id`; short periods (a changed fiscal year)
     count as periods of their own.
+  - **What each row should carry, for the owner to add to the script (2026-10-07).** One row per tab of an
+    expanded row (the document and each correction), of every in-scope row, downloaded or not:
+
+    | Column | Page field | Today | Why |
+    |---|---|---|---|
+    | `krs` | KRS | `krs` | the entity |
+    | `document_id` | "Identyfikator dokumentu" of the tab | `document_id`, per file, not per tab | the key (decision 1) |
+    | `row_document_id` | the id of the row that was expanded | missing | ties a correction to its original |
+    | `type_name` | the row's type ("Roczne sprawozdanie finansowe", "Sprawozdanie z badania", …) | missing | statement or auditor report; the type code (decision 5) |
+    | `period_start` | "Okres sprawozdawczy", from | missing | short and changed fiscal years |
+    | `period_end` | "Okres sprawozdawczy", to | `period` | the fiscal year |
+    | `prepared_date` | "Data sporządzenia dokumentu" | missing | pairing a correction group's members (decision 3) |
+    | `is_ifrs` | MSR | missing | IFRS statements are out of the mapped structures |
+    | `is_correction` | "Dokument jest korektą" | missing | original or correction; today only guessable from `_2` |
+    | `submission_date` | "Data dodania", of the tab | `filing_date`, per file | `known_from` (invariant 1) |
+    | `status` | status | missing | a deleted or withdrawn document is not a filing |
+    | `deleted_on` | "Data usunięcia dokumentu przez sąd" | missing | when it stopped being one |
+    | `file` | the ZIP saved for the row | `doc_name`, the extracted file | links the row to its bytes; empty when not downloaded |
+    | `captured_at` | the time the script read the tab | missing | the listing's own date: a later deletion or correction is seen against it |
+
+    Two layout changes: name each ZIP after its row's `document_id` (`<krs>/<row_document_id>.zip`), since
+    period names collide (two originals for one period, a changed fiscal year); and keep the extracted files or
+    not, as convenient, since the importer reads the ZIPs. Nothing from "Pokaż zgłoszenie", and not
+    "Identyfikator zgłoszenia". `entities.csv` as in decision 2: `krs`, `searched_at`, `found`, `list_rows`,
+    `complete`.
   - **Owner decision (2026-10-07): keep both the `.xades` files and the ZIPs.** A `.xades` here is an enveloping
     signature with the statement inside `ds:Object` (on 42 periods the only copy), which `redaction.py` unwraps
     before hashing; the ZIPs stay the raw input of decision 2. Neither is deleted or committed.
