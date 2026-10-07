@@ -12,7 +12,7 @@
 **Order:** after ADR 0013's decision. It does not wait for plan 0013 (Phase 7). A1 is the owner's
 Rejestr.io list (ADR 0014, accepted 2026-10-06), loaded in step 0.
 
-## Status: active (2026-10-07): owner decisions 1–6 accepted as recommended; nothing built; step 0 waits on the list the script runs on, step A on a sample of its output
+## Status: active (2026-10-07): owner decisions 1–6 accepted as recommended; nothing built; a sample of the script's output received (progress); step 0 waits on the list the script runs on
 
 ### Where this stands (2026-10-07)
 
@@ -22,10 +22,9 @@ Rejestr.io list (ADR 0014, accepted 2026-10-06), loaded in step 0.
 
 **Open for the owner, in order:**
 
-1. **A sample of the script's output:** one entity's listing and file layout, never the ZIPs. The importer
-   reads it as it is, or the script adapts to decision 2. Urgent: whatever the script does not record now
-   cannot be recovered without downloading again, above all each document's "Data dodania", whether each
-   entity was finished (`entities.csv`), and the challenge log (`challenges.csv`, ADR 0013 rule 7).
+1. ~~A sample of the script's output~~ received 2026-10-07 (§ "Progress", below). Still urgent, because
+   the script does not record them yet and they cannot be recovered without downloading again: whether each
+   entity was finished (`entities.csv`) and the challenge log (`challenges.csv`, ADR 0013 rule 7).
 2. **The pace the running script keeps** (decision 6: one RDF action every 20 seconds).
 3. **The exact list the script runs on** (it differs slightly from the file of ADR 0014), and the Rejestr.io
    filter settings used to build it. Step 0 loads that list, not the earlier file.
@@ -37,6 +36,29 @@ Rejestr.io list (ADR 0014, accepted 2026-10-06), loaded in step 0.
 **After the import, each back to the owner with its counts** (§ "Deferrals this plan reopens"): KRZ, the PDF
 statement tier, and the share of scans; and, from ADR 0014, the list's composition and a written rule to make
 the next list representative.
+
+### Progress
+
+- **The script's output, as it writes it (sample, 2026-10-07).** One entity's folder (`0000563676`) and the
+  listing so far (`filing_dates.csv`, 76 entities of the legacy seed file the script is still running on), both
+  in `.cache/rdf_script_inbox/` (ignored; root copies are caught by `.gitignore` too).
+  - **Layout:** `<krs>/<krs>_<period_end>[_<n>].<ext>`, extracted, plus `<krs>/_originals/<krs>_<period_end>.zip`
+    as delivered. In the sample each ZIP holds one member, byte-equal in size to its extracted copy; members keep
+    the filer's file name, which the importer turns into a token (ADR 0009 second addendum).
+  - **Listing:** `;`-separated, UTF-8 with a BOM, columns `doc_name`, `krs`, `filing_date` ("Data dodania"),
+    `period` (period end), `document_id`, one row per extracted file; files from one ZIP share a `document_id`.
+    Against decision 2 it lacks `row_document_id`, `type_name`, `period_start`, `prepared_date`, `is_ifrs`,
+    `is_correction`, `status`, `deleted_on` and `captured_at`, and there is no `entities.csv` or `challenges.csv`.
+  - **Counts:** 485 files, 464 documents, 458 entity-periods. 431 files `.xml`, 44 `.xades`, 10 `.pdf`; by period,
+    410 have an XML, 42 exist only as `.xades`, 6 only as PDF (one 2018 filing of 5 PDFs, and one entity's
+    2019–2023). Periods per entity: 1 (2), 2 (8), 3 (3), 4–7 (27), 8–9 (36), so 10 entities fall short of v1's
+    three filed years.
+  - **For the importer:** extensions vary in case and form (`.XML`, `.XAdES`, `.xml (1).xades`, `.xhtml.xades`); a
+    period can appear as both `.xml` and `.xades` under one `document_id`; short periods (a changed fiscal year)
+    count as periods of their own.
+  - **Owner decision (2026-10-07): keep both the `.xades` files and the ZIPs.** A `.xades` here is an enveloping
+    signature with the statement inside `ds:Object` (on 42 periods the only copy), which `redaction.py` unwraps
+    before hashing; the ZIPs stay the raw input of decision 2. Neither is deleted or committed.
 
 ## Why
 
