@@ -24,7 +24,7 @@ Rejestr.io list (ADR 0014, accepted 2026-10-06), loaded in step 0.
 
 1. ~~A sample of the script's output~~ received 2026-10-07 (§ "Progress", below). Still urgent, because
    the script does not record them yet and they cannot be recovered without downloading again: whether each
-   entity was finished (`entities.csv`) and the challenge log (`challenges.csv`, ADR 0013 rule 7).
+   entity was finished (`entities.csv`). (The challenge log is dropped: ADR 0013 rule 7, withdrawn 2026-10-07.)
 2. **The pace the running script keeps** (decision 6: one RDF action every 20 seconds).
 3. **The exact list the script runs on** (it differs slightly from the file of ADR 0014), and the Rejestr.io
    filter settings used to build it. Step 0 loads that list, not the earlier file.
@@ -48,7 +48,7 @@ the next list representative.
   - **Listing:** `;`-separated, UTF-8 with a BOM, columns `doc_name`, `krs`, `filing_date` ("Data dodania"),
     `period` (period end), `document_id`, one row per extracted file; files from one ZIP share a `document_id`.
     Against decision 2 it lacks `row_document_id`, `type_name`, `period_start`, `prepared_date`, `is_ifrs`,
-    `is_correction`, `status`, `deleted_on` and `captured_at`, and there is no `entities.csv` or `challenges.csv`.
+    `is_correction`, `status`, `deleted_on` and `captured_at`, and there is no `entities.csv`.
   - **Counts:** 485 files, 464 documents, 458 entity-periods. 431 files `.xml`, 44 `.xades`, 10 `.pdf`; by period,
     410 have an XML, 42 exist only as `.xades`, 6 only as PDF (one 2018 filing of 5 PDFs, and one entity's
     2019–2023). Periods per entity: 1 (2), 2 (8), 3 (3), 4–7 (27), 8–9 (36), so 10 entities fall short of v1's
@@ -134,9 +134,8 @@ So every entity beyond the seed needs an importer that builds `filing_index` fro
      (the ZIP's path, empty when not downloaded) and `captured_at`;
    - `entities.csv`, one row per KRS number searched: `krs`, `searched_at`, `found`, `list_rows` (all types, as
      the list counts them) and `complete` (every in-scope row expanded and downloaded);
-   - `challenges.csv`, the log of ADR 0013 rule 7: `at`, `krs`, `action`, `kind` (CAPTCHA, block page,
-     unexpected page) and `solved_by_hand`; stored raw with the import, and its counts in the run's metadata
-     (added 2026-10-06, after the decisions were accepted);
+   - ~~`challenges.csv`, the log of ADR 0013 rule 7~~ (added 2026-10-06; dropped 2026-10-07 by the owner, with
+     rule 7: the import carries no challenge counts);
    - one ZIP per expanded row, exactly as "Pobierz dokumenty" delivered it, at `<krs>/<row_document_id>.zip`;
    - "Identyfikator zgłoszenia" is not collected (nothing needs it), and neither is anything from "Pokaż
      zgłoszenie".
@@ -307,7 +306,8 @@ progress section before this plan closes.
   column. The importer's checks (date order, ids per KRS, type names from config) catch a shifted field; the
   seed comparison of step E is the regression test to rerun after any script change.
 - **The WAF.** ADR 0013's rule stands: a challenge stops the run, and more challenges are a reason to revisit
-  the route, not to tune the script.
+  the route, not to tune the script. With no challenge log (rule 7 withdrawn, 2026-10-07), nothing in the
+  import shows that rate; only the owner does.
 - **A listed date typed or read wrong** becomes a wrong `known_from`, and so a leak or a lost signal. The
   listing is stored raw, every date points back to it, and the date-order check bounds it; step E measures the
   agreement with the details on the seed.
