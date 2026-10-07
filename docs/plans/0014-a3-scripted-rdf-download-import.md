@@ -79,11 +79,14 @@ the next list representative.
     | `deleted_on` | "Data usunięcia dokumentu przez sąd" | missing | when it stopped being one |
     | `file` | the ZIP saved for the row | `doc_name`, the extracted file | links the row to its bytes; empty when not downloaded |
     | `captured_at` | the time the script read the tab | missing | the listing's own date: a later deletion or correction is seen against it |
+    | `tab` | "Szczegóły dokumentu *n* / *m*": *n* and *m* | missing | every tab of a row read (*m* tabs, one row each) |
+    | `language` | "Język dokumentu" | missing | text signals read Polish only |
 
     Two layout changes: name each ZIP after its row's `document_id` (`<krs>/<row_document_id>.zip`), since
     period names collide (two originals for one period, a changed fiscal year); and keep the extracted files or
-    not, as convenient, since the importer reads the ZIPs. Nothing from "Pokaż zgłoszenie", and not
-    "Identyfikator zgłoszenia". `entities.csv` as in decision 2: `krs`, `searched_at`, `found`, `list_rows`,
+    not, as convenient, since the importer reads the ZIPs. Not collected: "Identyfikator zgłoszenia", "Nazwa
+    dokumentu" (the filer's free text), "Wydział sądu", "Sygnatura sprawy", anything from "Pokaż zgłoszenie" or
+    "Pokaż treść dokumentu" (both list signatories by name). `entities.csv` as in decision 2: `krs`, `searched_at`, `found`, `list_rows`,
     `complete`.
   - **Owner decision (2026-10-07): keep both the `.xades` files and the ZIPs.** A `.xades` here is an enveloping
     signature with the statement inside `ds:Object` (on 42 periods the only copy), which `redaction.py` unwraps
