@@ -30,7 +30,10 @@ Rejestr.io list (ADR 0014, accepted 2026-10-06), loaded in step 0.
    it changes with the situation: a randomised delay, roughly 45 seconds to 2 minutes a download at present.
    Nothing in the importer depends on it.
 3. **The exact list the script runs on** (it differs slightly from the file of ADR 0014), and the Rejestr.io
-   filter settings used to build it. Step 0 loads that list, not the earlier file.
+   filter settings used to build it. Step 0 loads that list, not the earlier file. *2026-10-07:* list v2 is to
+   be drawn by ADR 0014's sampling rule (addendum of 2026-10-07, proposed): the frame's counts and its exported
+   KRS numbers, from Rejestr.io before the trial ends, then the group sizes and the seed; step 0 then also loads
+   each company's group and probability of being drawn.
 4. ~~Rejestr.io's terms of use~~ confirmed by the owner (2026-10-07): a commercial aggregator of public data,
    used by hand through its search, as it is meant to be used, on a 14-day trial during which the owner builds
    the full list. Only KRS numbers still enter the pipeline (ADR 0014's design, not a condition of the terms).
