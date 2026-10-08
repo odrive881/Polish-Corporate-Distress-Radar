@@ -14,7 +14,21 @@ Rejestr.io list (ADR 0014, accepted 2026-10-06), loaded in step 0.
 
 ## Status: active (2026-10-08): owner decisions 1–6 accepted as recommended; steps B–D built and tested, step F's docs written; step A's two seed checks run (decision 5's rule agrees on all placeable rows, decision 3's pairing exact on all 8 groups, so pairing is on); step A's field-by-field comparison waits on a listing from the script; a sample of the script's output received; step 0 waits on the list the script runs on
 
-### Where this stands (2026-10-07)
+### Where this stands (2026-10-09)
+
+- **Built (2026-10-08), with nothing more to build before the owner's next items:**
+  - the manifest columns (step B);
+  - the importer and its asset (steps C and D), tested on synthetic listings and ZIPs;
+  - step A's two seed checks: type codes agree on every row they can place, and all 8 correction groups pair
+    exactly, so pairing is on;
+  - the docs (step F).
+
+  `make check` and `make test-integration` are green.
+- **The importer has not met real data yet.** Its input is the format of decision 2, which the script does not
+  write yet. The next step is the owner's: the script updated to write `documents.csv` and `entities.csv`, run
+  on two seed entities (step A), then on all 17 (step E).
+
+As of 2026-10-07:
 
 - **The script is already running** on the owner's laptop, on the ADR 0014 list (about 600 companies), since about
   2026-10-03, with no CAPTCHA so far. The owner solves one by hand if it comes (ADR 0013, rule 2 as amended).
