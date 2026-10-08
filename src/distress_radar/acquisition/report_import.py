@@ -22,6 +22,10 @@ that does not hold exactly one PDF is not an auditor report and is not stored.
 
 A detail captured later wins: `record_a3_detail` replaces the date and clears its source.
 Only rows with nothing recorded are written, so importing the same inbox twice adds nothing.
+
+This tier stays for the seed's existing list. New captures go through the scripted downloads'
+importer (`script_import.py`, plan 0014), which supersedes it: its listing carries each tab's id,
+type and flags, and it creates the rows this module can only complete.
 """
 
 from __future__ import annotations
@@ -71,6 +75,7 @@ class ListedDate:
     period_end: date
     filing_date: date | None  # None: the list says `unknown`
     line: int
+    document_id: str | None = None  # RDF's `idDokumentu`; None: `unknown`
 
 
 @dataclass
@@ -118,7 +123,15 @@ def read_dates(data: bytes) -> list[ListedDate]:
             filed = None if filing_date == UNKNOWN else date.fromisoformat(filing_date)
         except ValueError as exc:
             raise DatesFileError(f"line {line}: {exc}") from exc
-        rows.append(ListedDate(krs=krs, period_end=period_end, filing_date=filed, line=line))
+        rows.append(
+            ListedDate(
+                krs=krs,
+                period_end=period_end,
+                filing_date=filed,
+                line=line,
+                document_id=None if document_id == UNKNOWN else document_id,
+            )
+        )
     return rows
 
 

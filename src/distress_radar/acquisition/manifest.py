@@ -10,7 +10,7 @@ the transaction (a Dagster asset commits once per materialization).
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from datetime import datetime
 from typing import Any, LiteralString
 
@@ -201,6 +201,34 @@ SCHEMA_DDL: tuple[LiteralString, ...] = (
     ALTER TABLE filing_index
         ADD COLUMN IF NOT EXISTS submission_date_sha256 text REFERENCES raw_documents (sha256)
     """,
+    # The scripted downloads (plan 0014, decision 1). `rdf_document_id` is RDF's numeric
+    # `idDokumentu`, the only id the page shows; `listing_sha256` the stored listing a row's
+    # detail columns were read from when no detail was captured (a row from the listing counts
+    # as detailed). A listed type name no code fits leaves `rdf_type_code` empty (decision 5).
+    """
+    ALTER TABLE filing_index
+        ADD COLUMN IF NOT EXISTS rdf_document_id text,
+        ADD COLUMN IF NOT EXISTS listing_sha256 text REFERENCES raw_documents (sha256),
+        ALTER COLUMN rdf_type_code DROP NOT NULL
+    """,
+    """
+    CREATE UNIQUE INDEX IF NOT EXISTS filing_index_rdf_document_id
+        ON filing_index (krs, rdf_document_id) WHERE rdf_document_id IS NOT NULL
+    """,
+    # One row per search the script made (`entities.csv`): whether an entity's listing is
+    # complete is a stored fact, so a document missing from it reads as "not filed" only then.
+    """
+    CREATE TABLE IF NOT EXISTS rdf_listed_entities (
+        krs               char(10) NOT NULL REFERENCES entity_master (krs),
+        searched_at       timestamptz NOT NULL,
+        found             boolean NOT NULL,
+        list_rows         integer,
+        complete          boolean NOT NULL,
+        listing_sha256    text NOT NULL REFERENCES raw_documents (sha256),
+        ingestion_run_id  text NOT NULL,
+        PRIMARY KEY (krs, searched_at)
+    )
+    """,
     # Backfill `krs` / `document_ref` on log rows written before plan 0007, from
     # the stage-specific `entity_key` they were packed into: the KRS alone for
     # A2/A3 (and a well-formed A1 key), `krs:document_ref` for C1/C2/E2 — where
@@ -285,6 +313,10 @@ SCHEMA_DDL: tuple[LiteralString, ...] = (
     ON CONFLICT DO NOTHING
     """,
 )
+
+
+class ManifestConflict(Exception):
+    """Two records the manifest cannot reconcile on its own; nothing of the step is written."""
 
 
 def ensure_schema(conn: Connection) -> None:
@@ -514,15 +546,22 @@ _UPDATE_DETAIL: LiteralString = """
         submission_date = %(submitted)s, prepared_date = %(prepared)s,
         is_correction = %(is_correction)s, is_ifrs = %(is_ifrs)s, file_name = %(file_name)s,
         correction_refs = %(correction_refs)s, detail_sha256 = %(detail_sha256)s,
-        submission_date_sha256 = NULL
+        rdf_document_id = COALESCE(rdf_document_id, %(document_id)s),
+        submission_date_sha256 = NULL, listing_sha256 = NULL
     WHERE krs = %(krs)s AND document_ref = %(ref)s AND detail_sha256 IS NULL
 """
 
 
-def _detail_params(krs: str, detail: FilingDetail, fetch: RawFetchRecord) -> dict[str, object]:
+def _detail_params(
+    krs: str,
+    detail: FilingDetail,
+    fetch: RawFetchRecord,
+    aliases: Mapping[str, str] | None = None,
+) -> dict[str, object]:
+    alias = aliases or {}
     return {
         "krs": krs,
-        "ref": detail.document_ref,
+        "ref": alias.get(detail.document_ref, detail.document_ref),
         "type_id": detail.rdf_type_id,
         "type_name": detail.rdf_type_name,
         "submitted": detail.submission_date,
@@ -530,24 +569,82 @@ def _detail_params(krs: str, detail: FilingDetail, fetch: RawFetchRecord) -> dic
         "is_correction": detail.is_correction,
         "is_ifrs": detail.is_ifrs,
         "file_name": detail.file_name,
-        "correction_refs": Jsonb(detail.correction_refs),
+        "correction_refs": Jsonb([alias.get(r, r) for r in detail.correction_refs]),
         "detail_sha256": fetch.sha256,
+        "document_id": detail.rdf_document_id,
     }
 
 
-def record_a3_detail(conn: Connection, fetched: A3Detail) -> None:
+def _script_aliases(conn: Connection, krs: str, details: Iterable[FilingDetail]) -> dict[str, str]:
+    """RDF id -> the row already holding the same `idDokumentu` under another key.
+
+    A row the scripted downloads created is keyed `id-<idDokumentu>` (plan 0014, decision 1):
+    a detail captured later completes that row instead of adding a second one.
+    """
+    aliases: dict[str, str] = {}
+    for detail in details:
+        if detail.rdf_document_id is None:
+            continue
+        row = conn.execute(
+            """
+            SELECT document_ref FROM filing_index
+            WHERE krs = %s AND rdf_document_id = %s AND document_ref <> %s
+            """,
+            (krs, detail.rdf_document_id, detail.document_ref),
+        ).fetchone()
+        if row is not None:
+            aliases[detail.document_ref] = str(row[0])
+    return aliases
+
+
+def _drop_list_duplicate(conn: Connection, krs: str, document_ref: str) -> None:
+    """Remove a bare list row that a detail showed to be a scripted row's document.
+
+    Only a row with nothing recorded but the list is removed; anything more is a conflict
+    between two keys of one document and fails the step.
+    """
+    row = conn.execute(
+        "SELECT detail_sha256, sha256 FROM filing_index WHERE krs = %s AND document_ref = %s",
+        (krs, document_ref),
+    ).fetchone()
+    if row is None:
+        return
+    if row != (None, None):
+        raise ManifestConflict(
+            f"{krs}: document {document_ref} is recorded under two keys; resolve by hand"
+        )
+    conn.execute(
+        "DELETE FROM filing_index WHERE krs = %s AND document_ref = %s", (krs, document_ref)
+    )
+
+
+def record_a3_detail(conn: Connection, fetched: A3Detail) -> dict[str, str]:
     """Record an expanded row: fill the listed document's detail columns (once), and add
     a row per correction, filled from its own detail.
 
     A correction's list columns come from its detail, falling back to the
-    document it corrects where the detail lacks them.
+    document it corrects where the detail lacks them. A document the scripted downloads
+    already recorded (same `idDokumentu`) is completed under its existing key, and the list
+    row this capture added for it is removed; the returned map names those documents
+    (RDF id -> existing key).
     """
     insert_raw_fetch(conn, fetched.corrections_fetch)
     insert_raw_fetch(conn, fetched.detail_fetch)
-    conn.execute(_UPDATE_DETAIL, _detail_params(fetched.krs, fetched.detail, fetched.detail_fetch))
-    listed = fetched.detail.document_ref
+    aliases = _script_aliases(
+        conn, fetched.krs, [fetched.detail, *(detail for detail, _ in fetched.related)]
+    )
+    for ref in aliases:
+        _drop_list_duplicate(conn, fetched.krs, ref)
+    conn.execute(
+        _UPDATE_DETAIL,
+        _detail_params(fetched.krs, fetched.detail, fetched.detail_fetch, aliases),
+    )
+    listed = aliases.get(fetched.detail.document_ref, fetched.detail.document_ref)
     for detail, fetch in fetched.related:
         insert_raw_fetch(conn, fetch)
+        if detail.document_ref in aliases:
+            conn.execute(_UPDATE_DETAIL, _detail_params(fetched.krs, detail, fetch, aliases))
+            continue
         conn.execute(
             """
             INSERT INTO filing_index
@@ -573,7 +670,8 @@ def record_a3_detail(conn: Connection, fetched: A3Detail) -> None:
                 "run": fetch.meta.ingestion_run_id,
             },
         )
-        conn.execute(_UPDATE_DETAIL, _detail_params(fetched.krs, detail, fetch))
+        conn.execute(_UPDATE_DETAIL, _detail_params(fetched.krs, detail, fetch, aliases))
+    return aliases
 
 
 def record_a3_download(conn: Connection, download: A3Download) -> None:
@@ -586,6 +684,14 @@ def record_a3_download(conn: Connection, download: A3Download) -> None:
         """,
         (download.raw_fetch.sha256, download.krs, download.document_refs),
     )
+
+
+def scripted_entities(conn: Connection) -> set[str]:
+    """Entities with a row only the scripted downloads know (keyed `id-<idDokumentu>`)."""
+    rows = conn.execute(
+        "SELECT DISTINCT krs FROM filing_index WHERE document_ref LIKE 'id-%'"
+    ).fetchall()
+    return {str(krs).strip() for (krs,) in rows}
 
 
 def unindexed_entities(conn: Connection) -> list[str]:
@@ -610,7 +716,7 @@ def unindexed_entities(conn: Connection) -> list[str]:
 _STATE_SQL: LiteralString = """
     SELECT f.krs, f.document_ref, f.rdf_type_code, f.status, f.rdf_type_id, f.file_name,
            f.sha256 IS NOT NULL AS downloaded,
-           f.detail_sha256 IS NULL OR EXISTS (
+           (f.detail_sha256 IS NULL AND f.listing_sha256 IS NULL) OR EXISTS (
                SELECT 1 FROM jsonb_array_elements_text(f.correction_refs) AS c (ref)
                WHERE NOT EXISTS (
                    SELECT 1 FROM filing_index g WHERE g.krs = f.krs AND g.document_ref = c.ref
@@ -800,6 +906,7 @@ def table_counts(conn: Connection) -> dict[str, int]:
         "entity_reconciliation_log",
         "quarantine_events",
         "filing_index",
+        "rdf_listed_entities",
         "legal_source_fetches",
         "msig_notices",
     ):

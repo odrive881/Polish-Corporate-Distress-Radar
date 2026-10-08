@@ -32,6 +32,7 @@ from distress_radar.acquisition.raw_store import S3ObjectStore
 from distress_radar.acquisition.redaction_migration import stored_markers
 from distress_radar.acquisition.regon_client import resolve_entity
 from distress_radar.acquisition.report_import import import_reports
+from distress_radar.acquisition.script_import import import_listing
 from distress_radar.acquisition.universe_discovery import load_seed, load_segment
 from distress_radar.settings import Settings
 
@@ -411,8 +412,11 @@ def rdf_manual_import(
     with their detail columns and `sha256`, and A3 `quarantine_events` rows. Only
     pending work is done, so re-importing the same files adds nothing. The HAR
     files themselves are never stored. In-scope documents a capture did not
-    complete are listed in the metadata (`missing_documents`); a file that could
-    not be read or imported fails the asset after the other files are done.
+    complete are listed in the metadata (`missing_documents`), and so are the listed
+    documents of an entity with scripted rows that the capture did not expand
+    (`listed_not_added`: only a detail tells them from the scripted rows, plan 0014);
+    a file that could not be read or imported fails the asset after the other files
+    are done.
     Check: `personal_data`, blocking — no stored object holds natural persons' data (a store-wide
     scan, plan 0011 step F).
     Partition scheme: none (unpartitioned).
@@ -427,6 +431,7 @@ def rdf_manual_import(
 
     indexed = topped_up = details = downloads = 0
     missing: dict[str, list[str]] = {}
+    not_added: dict[str, list[str]] = {}
     problems: list[str] = []
     with postgres.connect() as conn:
         manifest.ensure_schema(conn)
@@ -461,6 +466,12 @@ def rdf_manual_import(
             downloads += report.downloads
             for krs, refs in report.missing.items():
                 missing[krs] = refs  # later files see earlier imports, so the last word wins
+            for krs, refs in report.not_added.items():
+                context.log.warning(
+                    f"{path.name}: {len(refs)} listed documents of {krs} not added: not expanded, "
+                    "and the entity has scripted rows"
+                )
+                not_added[krs] = refs
         counts = manifest.table_counts(conn)
         personal_data = _personal_data_check(conn, store)
 
@@ -479,6 +490,7 @@ def rdf_manual_import(
             "details_this_run": details,
             "downloads_this_run": downloads,
             "missing_documents": missing,
+            "listed_not_added": not_added,
             **{f"{table}_rows": n for table, n in counts.items()},
         },
         check_results=[personal_data],
@@ -556,6 +568,81 @@ def rdf_auditor_report_import(
     )
 
 
+class RdfScriptImportConfig(dg.Config):
+    inbox: str | None = None  # default RDF_SCRIPT_INBOX
+
+
+@dg.asset(
+    group_name="acquisition",
+    deps=[rdf_manual_import],
+    required_resource_keys={"postgres", "raw_object_store"},
+    check_specs=[_personal_data_spec("rdf_script_import")],
+)
+def rdf_script_import(
+    context: dg.AssetExecutionContext, config: RdfScriptImportConfig
+) -> dg.MaterializeResult:
+    """A3, scripted downloads tier — what the owner's PAD script downloaded from RDF (ADR 0013).
+
+    Inputs: the inbox (`RDF_SCRIPT_INBOX`, default `.cache/rdf_script_inbox`, gitignored):
+    `documents.csv` (one row per tab of an expanded row), `entities.csv` (one row per search)
+    and `<krs>/<row_document_id>.zip` as RDF delivered them (plan 0014, decision 2);
+    `entity_master`; `config/mappings/rdf_document_types.yaml` (type codes from names and
+    periods, decision 5); stored details and dates lists (the `rdf_document_id` backfill).
+    Outputs: both listings stored raw; `filing_index` rows created or completed from the
+    listing (`rdf_document_id`, `listing_sha256`, the listed "Data dodania" as
+    `submission_date`); `rdf_listed_entities` rows; each ZIP redacted (ADR 0009) and stored in
+    MinIO (sidecar `fetch_tier: pad_script`), its rows' `sha256`. Only rows with nothing
+    recorded are written, so re-materializing adds nothing. Refusals are counted in the
+    metadata and listed in the log: entities not in `entity_master`, unknown type names, rows
+    with no ZIP, ZIPs with no row, incomplete listings, unreadable rows or ZIPs (these fail the
+    asset after the rest is done).
+    Check: `personal_data`, blocking — no stored object holds natural persons' data (a store-wide
+    scan, plan 0011 step F).
+    Partition scheme: none (unpartitioned).
+    """
+    postgres = cast("PostgresResource", context.resources.postgres)
+    object_store = cast("RawObjectStoreResource", context.resources.raw_object_store)
+    inbox = Path(config.inbox) if config.inbox else Settings().rdf_script_inbox
+    store = object_store.store()
+    with postgres.connect() as conn:
+        manifest.ensure_schema(conn)
+        conn.commit()
+        report = import_listing(
+            inbox,
+            conn=conn,
+            store=store,
+            ingestion_run_id=context.run_id,
+            document_types=load_document_types(),
+            resolved=set(manifest.resolved_entities(conn)),
+        )
+        counts = manifest.table_counts(conn)
+        personal_data = _personal_data_check(conn, store)
+
+    listed = {
+        "not_in_entity_master": report.not_in_entity_master,
+        "unknown_types": report.unknown_types,
+        "rows_without_zip": report.rows_without_zip,
+        "zips_without_row": report.zips_without_row,
+        "incomplete_entities": report.incomplete_entities,
+        "disagreements": report.disagreements,
+    }
+    for lines in listed.values():
+        for line in lines:
+            context.log.warning(line)
+    for problem in report.problems:
+        context.log.error(problem)
+    refusals = {f"{name}_count": n for name, n in report.counts().items()}
+    if report.problems:
+        raise dg.Failure(
+            description=f"{len(report.problems)} problems importing the scripted downloads",
+            metadata={"problems": report.problems, **refusals},
+        )
+    return dg.MaterializeResult(
+        metadata={**refusals, **{f"{table}_rows": n for table, n in counts.items()}},
+        check_results=[personal_data],
+    )
+
+
 acquisition_assets = [
     universe_candidates,
     entity_master,
@@ -563,4 +650,5 @@ acquisition_assets = [
     raw_filing_documents,
     rdf_manual_import,
     rdf_auditor_report_import,
+    rdf_script_import,
 ]

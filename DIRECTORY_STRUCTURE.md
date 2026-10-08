@@ -227,6 +227,7 @@ src/distress_radar/
 │   ├── document_retrieval.py    # A3
 │   ├── har_import.py            # A3, manual tier (HAR captures)
 │   ├── report_import.py         # A3, manual files tier: hand-downloaded auditor reports, listed dates
+│   ├── script_import.py         # A3, scripted downloads tier: the PAD script's listings and ZIPs (plan 0014)
 │   ├── redaction.py             # invariant 6: signer data, file names, PDF metadata out before storing (ADR 0009)
 │   ├── redaction_migration.py   # re-store objects under the current redaction; the store-wide scan
 │   ├── personal_data_scan.py    # pre-commit scan of staged files (`make hooks`)

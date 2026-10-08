@@ -21,7 +21,7 @@ import base64
 import json
 import logging
 from collections.abc import Callable, Collection, Iterable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime
 from functools import partial
 from typing import Any, cast
@@ -353,6 +353,9 @@ class HarImportReport:
     downloads: int = 0
     not_resolved: list[str] = field(default_factory=list[str])  # searched, not in entity_master
     missing: dict[str, list[str]] = field(default_factory=dict[str, list[str]])  # krs -> refs
+    # krs -> listed documents not added: the entity has scripted rows, and only a detail tells
+    # whether a listed document is one of them (plan 0014, decision 1).
+    not_added: dict[str, list[str]] = field(default_factory=dict[str, list[str]])
     problems: list[str] = field(default_factory=list[str])
 
 
@@ -398,6 +401,7 @@ def import_har(
             return None
 
     unindexed = set(manifest.unindexed_entities(conn))
+    scripted = manifest.scripted_entities(conn)
     for krs in capture.krs_numbers:
         if krs not in resolved:
             report.not_resolved.append(krs)
@@ -410,6 +414,21 @@ def import_har(
         result = attempt(f"filing list for {krs}", partial(index_filings, krs, **flow))
         if result is None:
             continue
+        if krs in scripted:
+            # The list carries RDF's id, the script's rows the numeric one: a listed document
+            # is told from a scripted row only by its detail, so only expanded ones are added
+            # (plan 0014, decision 1). The rest would be second rows of documents already held.
+            unexpanded = [
+                e.document_ref
+                for e in result.entries
+                if e.document_ref not in known and not browser.has_detail(e.document_ref)
+            ]
+            if unexpanded:
+                report.not_added[krs] = unexpanded
+            result = replace(
+                result,
+                entries=[e for e in result.entries if e.document_ref not in unexpanded],
+            )
         manifest.record_a3_index_result(conn, result)
         conn.commit()
         if krs in unindexed:
@@ -429,9 +448,18 @@ def import_har(
                 f"detail of {ref} ({row.krs})", partial(fetch_filing_detail, row.krs, ref, **flow)
             )
             if fetched is not None:
-                manifest.record_a3_detail(conn, fetched)
+                try:
+                    aliases = manifest.record_a3_detail(conn, fetched)
+                except manifest.ManifestConflict as exc:
+                    conn.rollback()
+                    report.problems.append(f"detail of {ref} ({row.krs}): {exc}")
+                    continue
                 conn.commit()
                 report.details += 1 + len(fetched.related)
+                if ref in aliases:
+                    # Completed a scripted row, which has its own download (or is owed one by
+                    # the script); this capture's row for it is gone.
+                    continue
                 type_id, bundle = fetched.detail.rdf_type_id, fetched.detail.correction_refs
                 names = fetched.original_names
         wants_download = (

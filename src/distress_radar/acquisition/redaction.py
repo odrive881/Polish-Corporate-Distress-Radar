@@ -71,8 +71,9 @@ KEPT_EXTENSIONS = frozenset(
     }
 )
 _EXT = r"(?:\.[a-z]{2,5})?"
-# A token's stem is a 16-byte `document_ref` in URL-safe base64 without padding.
-_TOKEN_NAME = re.compile(rf"[A-Za-z0-9_-]{{22}}{_EXT}")
+# A token's stem is a 16-byte `document_ref` in URL-safe base64 without padding, or the key of a
+# row only the scripted downloads know, `id-<idDokumentu>` (plan 0014, decision 1): digits only.
+_TOKEN_NAME = re.compile(rf"(?:[A-Za-z0-9_-]{{22}}|id-\d{{1,20}}){_EXT}")
 _UNMATCHED_NAME = re.compile(rf"unmatched-\d+{_EXT}")
 _ATTACHMENT_NAME = {
     "Plik": re.compile(rf"plik-\d+{_EXT}"),

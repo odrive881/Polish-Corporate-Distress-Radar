@@ -21,8 +21,17 @@
 #
 # A code missing here is not an error: the document is indexed and detailed,
 # not downloaded, and its code/name pair should be added after review.
-version: 3
-effective_from: 2026-09-16
+#
+# Version 4 (plan 0014, decision 5): the scripted downloads see a type's name, never its code,
+# so `name` is also how the page shows it, and codes sharing a name are told apart by the
+# reporting period: `period_end_before` / `period_end_from` bound the period end each code
+# applies to (codes 1 and 5 on periods ending before 2018-01-01, 18, 19 and 20 from then on;
+# on the seed, they split by period, not by filing date: three type-1 rows were filed in 2020).
+# A code with no bound applies to any period. A name and period no code fits, or several fit,
+# get no code (`RdfDocumentTypes.code_for`), never a guess. Code 2 (pre-2018 auditor report) is
+# not here: its name on RDF is not confirmed yet (plan 0013, open item 2).
+version: 4
+effective_from: 2026-10-08
 observed:
   krs: "0000209396"
   captured: 2026-09-15
@@ -32,10 +41,12 @@ types:
     name: Roczne sprawozdanie finansowe
     canonical: statement
     download: true
+    period_end_from: 2018-01-01
   "19":
     name: Opinia biegłego rewidenta / Sprawozdanie z badania rocznego sprawozdania finansowego
     canonical: auditor_report
     download: false
+    period_end_from: 2018-01-01
   "20":
     # Possible future employment source for size classification (data_inventory §8):
     # not downloaded in v1. Distressed seed entities file it late or never; micro
@@ -43,14 +54,17 @@ types:
     name: Sprawozdanie z działalności
     canonical: management_report
     download: false
+    period_end_from: 2018-01-01
   "1":
     name: Roczne sprawozdanie finansowe
     canonical: statement
     download: false  # pre-2018, PDF parts; out of v1 scope
+    period_end_before: 2018-01-01
   "5":
     name: Sprawozdanie z działalności
     canonical: management_report
     download: false
+    period_end_before: 2018-01-01
   "3":
     name: Uchwała lub postanowienie o zatwierdzeniu rocznego sprawozdania finansowego
     canonical: approval_resolution

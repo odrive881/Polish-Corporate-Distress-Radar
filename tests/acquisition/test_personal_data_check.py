@@ -37,5 +37,10 @@ def test_every_a3_storing_asset_blocks_on_the_scan() -> None:
         for key in graph.asset_check_keys
         if key.name == PERSONAL_DATA_CHECK
     }
-    assert set(checks) == {"raw_filing_documents", "rdf_manual_import", "rdf_auditor_report_import"}
+    assert set(checks) == {
+        "raw_filing_documents",
+        "rdf_manual_import",
+        "rdf_auditor_report_import",
+        "rdf_script_import",
+    }
     assert all(spec.blocking for spec in checks.values())
