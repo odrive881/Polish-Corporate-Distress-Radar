@@ -293,7 +293,7 @@ Five adapters, one module each under `src/distress_radar/acquisition/`. All shar
 |---|---|---|---|
 | A1 | Registry aggregators | HTTPS | `universe_candidates` (krs, discovery_source, discovered_at) |
 | A2 | GUS REGON BIR1 | SOAP (`zeep`) | `entity_master` — validated identifiers, PKD codes, legal form, status |
-| A3 | Financial document repository | HTTPS, per-entity lookup | Raw documents → object store; `filing_index` |
+| A3 | Financial document repository (RDF) | Per-entity lookup through the public UI; four tiers, below | Raw documents → object store; `filing_index`, `rdf_listed_entities` |
 | A4 | Full KRS extract (open KRS API) + MSiG notice search API; KRZ not built (WAF, ADR 0011) | HTTPS JSON (`krs_extract.py`, `msig_client.py`) | Redacted extracts and person-free notice records → object store; `legal_source_fetches`, `msig_notices` |
 | A5 | NBP, GUS BDL | HTTPS JSON | Reference and macro series |
 
@@ -304,6 +304,17 @@ Requirements:
 - A2 session token acquisition and refresh is handled inside the adapter; callers never see it.
 - PKD codes are mapped across classification versions via `config/mappings/pkd_crosswalk.yaml`. The segment spec (`config/segments/<segment_name>.yaml`, e.g. `construction_sme_v1.yaml`) declares whether matching is on the predominant code only or any registered code.
 - Source conflicts (e.g. differing PKD between registries) resolve by documented precedence and are logged to `entity_reconciliation_log`.
+
+**A3 tiers.** RDF blocks automated clients (ADR 0007), so documents arrive through four tiers. Each is named in its stored objects' `fetch_tier`. All of them redact before hashing (ADR 0009), write the same `filing_index`, and key a document by RDF's id, with `rdf_document_id` holding the numeric `idDokumentu` (plan 0014, decision 1):
+
+| Tier | Module | Input | Use |
+|---|---|---|---|
+| `playwright` | `document_retrieval.py` | a human-paced browser inside the pipeline | built (plan 0003), blocked by hCaptcha since 2026-09-16; not run |
+| `manual_har` | `har_import.py` | browser recordings captured by hand (`rdf_manual_import`) | the seed; single entities and documents the script misses |
+| `manual_files` | `report_import.py` | hand-downloaded auditor reports and a dates list (`rdf_auditor_report_import`) | the seed's auditor reports; superseded by `pad_script` for new captures |
+| `pad_script` | `script_import.py` | the owner's Power Automate Desktop script: a listing per tab, a listing per search, ZIPs (`rdf_script_import`) | the route at scale (ADR 0013, plan 0014) |
+
+The listed "Data dodania" of a tab is a document's `known_from` wherever no detail response was captured. It points back to the stored listing (`listing_sha256`); a detail captured later replaces it.
 
 **Do not** implement bulk enumeration of any source. Acquisition is per-entity, seeded from `universe_candidates`.
 

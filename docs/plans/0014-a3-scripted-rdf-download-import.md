@@ -12,7 +12,7 @@
 **Order:** after ADR 0013's decision. It does not wait for plan 0013 (Phase 7). A1 is the owner's
 Rejestr.io list (ADR 0014, accepted 2026-10-06), loaded in step 0.
 
-## Status: active (2026-10-08): owner decisions 1–6 accepted as recommended; steps B–D built and tested; step A's two seed checks run (decision 5's rule agrees on all placeable rows, decision 3's pairing exact on all 8 groups, so pairing is on); step A's field-by-field comparison waits on a listing from the script; a sample of the script's output received; step 0 waits on the list the script runs on
+## Status: active (2026-10-08): owner decisions 1–6 accepted as recommended; steps B–D built and tested, step F's docs written; step A's two seed checks run (decision 5's rule agrees on all placeable rows, decision 3's pairing exact on all 8 groups, so pairing is on); step A's field-by-field comparison waits on a listing from the script; a sample of the script's output received; step 0 waits on the list the script runs on
 
 ### Where this stands (2026-10-07)
 
@@ -79,6 +79,13 @@ the next list representative.
 
 ### Progress
 
+- **Step F, docs (2026-10-08).** README § "Manual RDF capture" gains "Scripted downloads" (the inbox, both
+  listings' columns and formats, the import and its refusal counts). The data inventory updates §2's status, adds
+  `RDF_SCRIPT_INBOX` to §7's RDF row, and states in §2.4 what is no longer indexed (types 3, 4 and 20 beyond the
+  seed, decision 4). DIRECTORY_STRUCTURE names the inbox on `script_import.py`'s line. ADR 0013's rule 1
+  records that the pace is the owner's, below the ceiling (decision 6), rule 5 points to decision 2's contract,
+  and § Consequences records the importer as built. AGENT_SPEC §6A gets a table of A3's four fetch tiers. Once
+  step E has run, its results are added to the inventory's status.
 - **Step A's seed checks (2026-10-08, `notebooks/exploration/script_import_seed_checks.py`), counts only.**
   - **Decision 5, type codes:** of the 538 rows, the rule gives each its own code wherever it can place one: 134
     by the detail's type name (131 of code 18, 3 of code 1) and 396 by their code's configured name (codes 1, 3,
@@ -415,7 +422,8 @@ progress section before this plan closes.
 - [ ] Step A's census in the progress section; the decisions revisited with it.
 - [ ] `rdf_script_import` built, with the manifest changes, the `personal_data` check passing after it.
 - [ ] The seed reproduced through the script (step E), every difference explained.
-- [ ] `make check` and `make test-integration` green; docs from step F updated.
+- [ ] `make check` and `make test-integration` green; docs from step F updated. *(Green and written,
+  2026-10-08; to be swept again after step E.)*
 
 ## Risks
 
