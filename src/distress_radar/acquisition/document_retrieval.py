@@ -349,6 +349,16 @@ def _optional_str(value: object, what: str) -> str | None:
     return _str(value, what)
 
 
+def _document_id(value: object) -> str | None:
+    """`idDokumentu`: digits, sent as a string (an int is accepted); None when absent."""
+    if value is None or value == "":
+        return None
+    text = str(value) if isinstance(value, int) and not isinstance(value, bool) else value
+    if not isinstance(text, str) or not text.isdigit():
+        raise RdfShapeError(f"idDokumentu: expected digits, got {value!r}")
+    return text
+
+
 @dataclass(frozen=True)
 class ListPage:
     """Paging metadata and entries of one `dokumenty/wyszukiwanie` response."""
@@ -505,6 +515,7 @@ def parse_document_detail(
         deleted_on=_optional_date(
             detail.get("dataUsunieciaDokumentuPrzezSad"), "dataUsunieciaDokumentuPrzezSad"
         ),
+        rdf_document_id=_document_id(detail.get("idDokumentu")),
     )
 
 

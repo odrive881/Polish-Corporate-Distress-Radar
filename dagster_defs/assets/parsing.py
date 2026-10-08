@@ -16,7 +16,11 @@ from typing import TYPE_CHECKING, cast
 import dagster as dg
 import polars as pl
 
-from dagster_defs.assets.acquisition import raw_filing_documents, rdf_manual_import
+from dagster_defs.assets.acquisition import (
+    raw_filing_documents,
+    rdf_manual_import,
+    rdf_script_import,
+)
 from distress_radar.acquisition import manifest as acquisition_manifest
 from distress_radar.acquisition.document_retrieval import load_document_types
 from distress_radar.acquisition.models import QuarantineRecord, QuarantineStage
@@ -131,7 +135,7 @@ def _record(
 
 @dg.asset(
     group_name="parsing",
-    deps=[rdf_manual_import, raw_filing_documents],
+    deps=[rdf_manual_import, rdf_script_import, raw_filing_documents],
     required_resource_keys={"postgres", "raw_object_store"},
 )
 def financial_statements_canonical(context: dg.AssetExecutionContext) -> dg.MaterializeResult:

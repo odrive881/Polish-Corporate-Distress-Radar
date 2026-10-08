@@ -12,7 +12,7 @@
 **Order:** after ADR 0013's decision. It does not wait for plan 0013 (Phase 7). A1 is the owner's
 Rejestr.io list (ADR 0014, accepted 2026-10-06), loaded in step 0.
 
-## Status: active (2026-10-07): owner decisions 1–6 accepted as recommended; nothing built; a sample of the script's output received (progress); step 0 waits on the list the script runs on
+## Status: active (2026-10-08): owner decisions 1–6 accepted as recommended; steps B–D built and their unit tests green, the Postgres tests and step A's seed checks not yet run (progress); a sample of the script's output received; step 0 waits on the list the script runs on
 
 ### Where this stands (2026-10-07)
 
@@ -78,6 +78,41 @@ statement tier, and the share of scans; and, from ADR 0014, the list's compositi
 the next list representative.
 
 ### Progress
+
+- **Built, 2026-10-08: steps B, C and D, and step A's two seed checks as a notebook.** Not yet run: the
+  `integration` tests (`tests/acquisition/test_script_import.py`, 6 of them) and the seed checks, both waiting on
+  `make dev-up`. Unit tests (22) and the leakage tests are green.
+  - **B:** `filing_index.rdf_document_id` (unique per KRS where set) and `listing_sha256`; `rdf_type_code` may be
+    null (decision 5); `rdf_listed_entities`. A row from the listing counts as detailed (`needs_detail`). The
+    backfill (`script_import.backfill_document_ids`) reads `idDokumentu` from each stored detail, then the ids in
+    the stored `filing_dates.csv` for the auditor-report rows it dated, and runs at the start of every import.
+  - **C:** `acquisition/script_import.py`, fetch tier `pad_script`, to the specifications of § "Progress" below
+    (16 columns, `Tak` / `Nie`, "NIEUSUNIĘTY" as the page writes it). Both listings are stored raw before they are
+    read. A row is refused, with its line, when a value cannot be read or its dates are out of order; readings of
+    one id that disagree are refused together, a correction whose original tab is missing too. Rows match by
+    id, then by the single candidate, else become `id-<idDokumentu>`. Refusals are counted in the asset's
+    metadata, as `har_import.py` and `report_import.py` report theirs; none is written to `quarantine_events`,
+    whose A-stage entries the `quarantine` model keeps for good.
+  - **Decision 1's HAR side:** a detail carrying an `idDokumentu` a scripted row holds completes that row and
+    removes the list row the capture added (`record_a3_detail` returns the map); for an entity with scripted
+    rows, `har_import.py` adds only the listed documents the capture expanded and reports the rest.
+  - **Decision 3:** `pair_by_prepared_date` is built, and off (`PAIR_BY_PREPARED_DATE = False`) until the seed
+    check pairs all 8 groups exactly as the HAR import did; meanwhile a group's members are stored as
+    `unmatched-<n>`. When it pairs a group, each row's `file_name` is set to its member's token, which parsing
+    matches on.
+  - **Decision 5:** `rdf_document_types.yaml` version 4: `period_end_before` / `period_end_from` per code;
+    `RdfDocumentTypes.code_for(name, period_end)`.
+  - **Tokens:** `id-<digits>` is a file-name token beside the base64 form (`redaction._TOKEN_NAME`), so a
+    scripted row's stored members pass the `personal_data` check.
+  - **D:** `RDF_SCRIPT_INBOX` (default `.cache/rdf_script_inbox`); the `rdf_script_import` asset after
+    `rdf_manual_import`, with the blocking `personal_data` check; parsing depends on it. `report_import.py` notes
+    that the new importer supersedes it for new captures.
+  - **Step A's checks:** `notebooks/exploration/script_import_seed_checks.py` (counts and ids only, read-only).
+  - **Leakage:** a third synthetic entity, keyed `id-…`, with no file name and dated by a listing, a correction
+    included (`test_a_statement_dated_by_the_listing_is_known_from_its_listed_date`).
+  - **Not handled, for step A to see:** the sample's `.xml` and `.xades` of one period in one ZIP. If the `.xades`
+    is an enveloping signature, both are statements and the pair stays unpaired for a single row (two content
+    members, no names). The listing's `language` is read but not stored (it stays in the raw listing).
 
 - **The script's output, as it writes it (sample, 2026-10-07).** One entity's folder (`0000563676`) and the
   listing so far (`filing_dates.csv`, 76 entities of ADR 0014's list v1, the 611 companies the script is still running on), both

@@ -46,6 +46,8 @@ class Settings(BaseSettings):
     # Auditor reports downloaded by hand, with their hand-collected filing dates (gitignored;
     # `acquisition/report_import.py`).
     rdf_report_inbox: Path = Path(".cache/rdf_auditor_reports")
+    # The owner's scripted RDF downloads: listings and ZIPs (gitignored; `acquisition/script_import.py`).
+    rdf_script_inbox: Path = Path(".cache/rdf_script_inbox")
     # Derived data (C2 output onward): Parquet written by the pipeline (ADR 0008).
     warehouse_dir: Path = Path(".data/warehouse")
 

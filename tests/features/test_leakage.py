@@ -45,6 +45,9 @@ from distress_radar.parsing.mapping_engine import CANONICAL_COLUMNS
 from distress_radar.parsing.statement_introduction import DISCLOSURE_COLUMNS
 
 A, B = "0000000001", "0000000002"  # A files the full form, B the micro form
+# C's rows come from the scripted downloads' listing (plan 0014): keyed `id-<idDokumentu>`, with
+# no file name, dated by the listed "Data dodania" rather than a detail. Full form.
+C = "0000000003"
 
 FULL = {
     "total_assets": 1000,
@@ -98,6 +101,27 @@ STATEMENTS: list[Statement] = [
     (A, "a23", 2023, date(2024, 10, 20), False, None, _scaled(FULL, "1.4"), _scaled(FULL, "1.3")),
     (B, "b21", 2021, date(2022, 3, 15), False, None, _scaled(MICRO, "1"), _scaled(MICRO, "0.8")),
     (B, "b22", 2022, date(2023, 12, 1), False, None, _scaled(MICRO, "0.7"), _scaled(MICRO, "1")),
+    # Trap: dated by the listing the day before a month-end, and corrected later.
+    (
+        C,
+        "id-48972241680",
+        2022,
+        date(2023, 6, 29),
+        False,
+        None,
+        _scaled(FULL, "0.5"),
+        _scaled(FULL, "0.45"),
+    ),
+    (
+        C,
+        "id-48972241695",
+        2022,
+        date(2023, 11, 6),
+        True,
+        None,
+        _scaled(FULL, "0.6"),
+        _scaled(FULL, "0.45"),
+    ),
 ]
 
 # (krs, event type, stage, decision date, known_from, removed_on)
@@ -284,7 +308,17 @@ def _canonical(config: FeatureConfig) -> pl.DataFrame:
 
 def _filing_index() -> pl.DataFrame:
     rows = [
-        (krs, ref, "18", date(y, 1, 1), date(y, 12, 31), filed, deleted, corr, f"{ref}.xml")
+        (
+            krs,
+            ref,
+            "18",
+            date(y, 1, 1),
+            date(y, 12, 31),
+            filed,
+            deleted,
+            corr,
+            None if krs == C else f"{ref}.xml",
+        )
         for krs, ref, y, filed, corr, deleted, _, _ in STATEMENTS
     ]
     # An auditor's report (not a statement), and a statement row never expanded (no date).
@@ -396,7 +430,7 @@ def sources(config: FeatureConfig) -> FeatureSources:
 def grid() -> pl.DataFrame:
     days = _month_ends(date(2021, 1, 31), date(2025, 6, 30))
     return pl.DataFrame(
-        [(krs, d) for krs in (A, B) for d in days], schema=fd.GRID_SCHEMA, orient="row"
+        [(krs, d) for krs in (A, B, C) for d in days], schema=fd.GRID_SCHEMA, orient="row"
     )
 
 
@@ -460,6 +494,18 @@ def test_a_statement_filed_the_day_after_is_not_known(store: pl.DataFrame) -> No
     assert before["current_ratio"] is None and before["days_to_file_latest"] is None
     assert after["current_ratio"] == 2.0
     assert after["current_ratio__known_from"] == date(2021, 7, 1)
+
+
+def test_a_statement_dated_by_the_listing_is_known_from_its_listed_date(
+    store: pl.DataFrame,
+) -> None:
+    before = _row(store, C, date(2023, 5, 31))
+    after = _row(store, C, date(2023, 6, 30))
+    assert before["current_ratio"] is None
+    assert after["current_ratio"] == 2.0
+    assert after["current_ratio__known_from"] == date(2023, 6, 29)
+    corrected = _row(store, C, date(2023, 11, 30))
+    assert corrected["current_ratio__known_from"] == date(2023, 11, 6)
 
 
 def test_a_statement_filed_on_the_day_is_known(store: pl.DataFrame) -> None:

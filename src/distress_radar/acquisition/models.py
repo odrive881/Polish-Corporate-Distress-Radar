@@ -224,6 +224,18 @@ class RdfDocumentType(_Frozen):
     name: str
     canonical: str
     download: bool
+    # The period ends this code applies to (version 4): codes sharing a name split by period.
+    period_end_before: date | None = None
+    period_end_from: date | None = None
+
+    def applies_to(self, period_end: date) -> bool:
+        return (self.period_end_from is None or period_end >= self.period_end_from) and (
+            self.period_end_before is None or period_end < self.period_end_before
+        )
+
+
+def _type_name_key(name: str) -> str:
+    return " ".join(name.split()).casefold()
 
 
 class RdfDocumentTypes(_Frozen):
@@ -238,6 +250,17 @@ class RdfDocumentTypes(_Frozen):
     @property
     def download_codes(self) -> list[str]:
         return sorted(code for code, t in self.types.items() if t.download)
+
+    def code_for(self, name: str, period_end: date) -> str | None:
+        """The one code whose name (as the page shows it) and period fit; None when none or
+        several do (plan 0014, decision 5: reported, never guessed)."""
+        key = _type_name_key(name)
+        codes = [
+            code
+            for code, t in self.types.items()
+            if _type_name_key(t.name) == key and t.applies_to(period_end)
+        ]
+        return codes[0] if len(codes) == 1 else None
 
 
 class FilingListEntry(_Frozen):
@@ -269,6 +292,8 @@ class FilingDetail(_Frozen):
     is_ifrs: bool | None  # RDF leaves it empty on pre-2018 filings
     file_name: str | None
     correction_refs: list[str]  # the document and its corrections, as RDF lists them
+    # `idDokumentu`, the numeric id the page shows as "Identyfikator dokumentu" (plan 0014).
+    rdf_document_id: str | None = None
     # Also in the detail; the only source of these for corrections, which the list omits.
     status: RdfDocumentStatus | None = None
     period_start: date | None = None
@@ -309,7 +334,7 @@ class FilingDocumentState(_Frozen):
 
     krs: str
     document_ref: str
-    rdf_type_code: str
+    rdf_type_code: str | None  # None: a listed type name no code fits (plan 0014, decision 5)
     status: RdfDocumentStatus
     rdf_type_id: str | None
     file_name: str | None
