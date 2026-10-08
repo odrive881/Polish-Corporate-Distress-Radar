@@ -403,7 +403,7 @@ def _import(conn: psycopg.Connection, inbox: Path, store: InMemoryObjectStore, r
 
 def _rows(conn: psycopg.Connection) -> dict[str, tuple[object, ...]]:
     return {
-        ref: rest
+        ref: tuple(rest)
         for ref, *rest in conn.execute(
             """
             SELECT document_ref, rdf_type_code, rdf_document_id, submission_date, status,
@@ -568,6 +568,7 @@ def test_a_correction_group_is_stored_unpaired_unless_the_rule_pairs_it(
         tmp_path / "a", documents, _entities(_search()), {f"{KRS}/{STATEMENT_ID}.zip": group}
     )
 
+    monkeypatch.setattr(script_import, "PAIR_BY_PREPARED_DATE", False)
     report = _import(conn, inbox, InMemoryObjectStore(), "run-1")
 
     assert (report.indexed, report.downloads, report.unpaired_groups) == (2, 1, 1)

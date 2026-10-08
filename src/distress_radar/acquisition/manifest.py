@@ -589,6 +589,7 @@ def _script_aliases(conn: Connection, krs: str, details: Iterable[FilingDetail])
             """
             SELECT document_ref FROM filing_index
             WHERE krs = %s AND rdf_document_id = %s AND document_ref <> %s
+              AND document_ref LIKE 'id-%%'
             """,
             (krs, detail.rdf_document_id, detail.document_ref),
         ).fetchone()
