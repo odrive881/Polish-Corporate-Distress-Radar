@@ -12,7 +12,7 @@
 **Order:** after ADR 0013's decision. It does not wait for plan 0013 (Phase 7). A1 is the owner's
 Rejestr.io list (ADR 0014, accepted 2026-10-06), loaded in step 0.
 
-## Status: active (2026-10-08): owner decisions 1–6 accepted as recommended; steps B–D built and their unit tests green, the Postgres tests and step A's seed checks not yet run (progress); a sample of the script's output received; step 0 waits on the list the script runs on
+## Status: active (2026-10-08): owner decisions 1–6 accepted as recommended; steps B–D built and tested; step A's two seed checks run (decision 5's rule agrees on all placeable rows, decision 3's pairing exact on all 8 groups, so pairing is on); step A's field-by-field comparison waits on a listing from the script; a sample of the script's output received; step 0 waits on the list the script runs on
 
 ### Where this stands (2026-10-07)
 
@@ -49,7 +49,7 @@ Rejestr.io list (ADR 0014, accepted 2026-10-06), loaded in step 0.
    or those companies are downloaded again once the script writes `documents.csv`. Either way list v1 stays
    outside any weighted result (ADR 0014 addendum).
 
-**What can be built meanwhile (2026-10-07), in this order:**
+**What can be built meanwhile (2026-10-07), in this order** (1–3 done 2026-10-08, § "Progress"):
 
 1. **Step A's two seed checks, from the stores alone:** decision 3's pairing rule (a correction group's members
    paired with their tabs by the statement's header dates against "Data sporządzenia dokumentu") on the seed's 8
@@ -79,9 +79,18 @@ the next list representative.
 
 ### Progress
 
-- **Built, 2026-10-08: steps B, C and D, and step A's two seed checks as a notebook.** Not yet run: the
-  `integration` tests (`tests/acquisition/test_script_import.py`, 6 of them) and the seed checks, both waiting on
-  `make dev-up`. Unit tests (22) and the leakage tests are green.
+- **Step A's seed checks (2026-10-08, `notebooks/exploration/script_import_seed_checks.py`), counts only.**
+  - **Decision 5, type codes:** of the 538 rows, the rule gives each its own code wherever it can place one: 134
+    by the detail's type name (131 of code 18, 3 of code 1) and 396 by their code's configured name (codes 1, 3,
+    4, 5, 19, 20), which tests only the period bounds. The 8 rows of code 2 have no name in config, as expected
+    (plan 0013, item 2). None differs. Only codes 18 and 1 have detail names to test the names themselves; the
+    other names are checked when the script's first listing is compared (step A's remaining part).
+  - **Decision 3, pairing:** all 8 correction groups pair exactly as the HAR import did, so
+    `PAIR_BY_PREPARED_DATE` is on. A group the rule cannot pair is still stored unpaired.
+- **Built, 2026-10-08: steps B, C and D.** `make check` and `make test-integration` (60 tests, 6 of them the
+  importer's) green. Fixing the integration tests showed that the HAR tests' fixture details all carried one
+  `idDokumentu`; each invented document now has its own, and a detail completes only a scripted row
+  (`id-…`), never another RDF-keyed one.
   - **B:** `filing_index.rdf_document_id` (unique per KRS where set) and `listing_sha256`; `rdf_type_code` may be
     null (decision 5); `rdf_listed_entities`. A row from the listing counts as detailed (`needs_detail`). The
     backfill (`script_import.backfill_document_ids`) reads `idDokumentu` from each stored detail, then the ids in
@@ -96,8 +105,7 @@ the next list representative.
   - **Decision 1's HAR side:** a detail carrying an `idDokumentu` a scripted row holds completes that row and
     removes the list row the capture added (`record_a3_detail` returns the map); for an entity with scripted
     rows, `har_import.py` adds only the listed documents the capture expanded and reports the rest.
-  - **Decision 3:** `pair_by_prepared_date` is built, and off (`PAIR_BY_PREPARED_DATE = False`) until the seed
-    check pairs all 8 groups exactly as the HAR import did; meanwhile a group's members are stored as
+  - **Decision 3:** `pair_by_prepared_date`, on since the seed check; a group it cannot pair is stored as
     `unmatched-<n>`. When it pairs a group, each row's `file_name` is set to its member's token, which parsing
     matches on.
   - **Decision 5:** `rdf_document_types.yaml` version 4: `period_end_before` / `period_end_from` per code;
@@ -107,7 +115,6 @@ the next list representative.
   - **D:** `RDF_SCRIPT_INBOX` (default `.cache/rdf_script_inbox`); the `rdf_script_import` asset after
     `rdf_manual_import`, with the blocking `personal_data` check; parsing depends on it. `report_import.py` notes
     that the new importer supersedes it for new captures.
-  - **Step A's checks:** `notebooks/exploration/script_import_seed_checks.py` (counts and ids only, read-only).
   - **Leakage:** a third synthetic entity, keyed `id-…`, with no file name and dated by a listing, a correction
     included (`test_a_statement_dated_by_the_listing_is_known_from_its_listed_date`).
   - **Not handled, for step A to see:** the sample's `.xml` and `.xades` of one period in one ZIP. If the `.xades`

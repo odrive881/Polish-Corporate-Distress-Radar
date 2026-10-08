@@ -5,6 +5,7 @@ Fixtures are RDF's own responses recorded in plan 0003 step A (see
 from the recorded page by rewriting only its paging metadata.
 """
 
+import hashlib
 import io
 import json
 import zipfile
@@ -113,6 +114,7 @@ FULL_LIST = _list_page(_recorded_items(), total=10)  # the recorded 10 rows as a
 def _detail_for(ref: str, type_id: int, type_name: str) -> bytes:
     detail = json.loads(DETAIL)
     detail["identyfikator"] = ref
+    detail["idDokumentu"] = str(int(hashlib.sha256(ref.encode()).hexdigest()[:10], 16))
     detail["rodzajDokumentu"] = {**detail["rodzajDokumentu"], "id": type_id, "nazwa": type_name}
     return json.dumps(detail).encode()
 

@@ -145,6 +145,7 @@ def test_ensure_schema_is_idempotent(conn: psycopg.Connection):
         "entity_reconciliation_log": 0,
         "quarantine_events": 0,
         "filing_index": 0,
+        "rdf_listed_entities": 0,
         "legal_source_fetches": 0,
         "msig_notices": 0,
     }
@@ -166,6 +167,7 @@ def test_reinserts_are_noops(conn: psycopg.Connection):
         "entity_reconciliation_log": 1,
         "quarantine_events": 1,
         "filing_index": 0,
+        "rdf_listed_entities": 0,
         "legal_source_fetches": 0,
         "msig_notices": 0,
     }

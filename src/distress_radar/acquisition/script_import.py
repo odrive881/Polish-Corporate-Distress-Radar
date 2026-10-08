@@ -23,9 +23,9 @@ else it becomes a new row keyed `id-<idDokumentu>`. Type codes come from the typ
 period (decision 5); a name no code fits is indexed with no code and reported.
 
 Each ZIP is redacted (ADR 0009) and checked before it is stored. A correction group's ZIP holds a
-member per document, and the page shows no file names to pair them by (decision 3): unless
-`PAIR_BY_PREPARED_DATE` is on, its members are stored unpaired (`unmatched-<n>`), which parsing
-quarantines, and a HAR capture completes them.
+member per document, and the page shows no file names to pair them by (decision 3): members are
+paired by their header's prepared date (`PAIR_BY_PREPARED_DATE`); a group the rule cannot pair is
+stored unpaired (`unmatched-<n>`), which parsing quarantines, and a HAR capture completes it.
 
 Nothing is dropped silently: every row, ZIP or entity that cannot be used is in the report. Only
 rows with nothing recorded are written, so importing the same inbox twice adds nothing.
@@ -93,9 +93,10 @@ ENTITY_COLUMNS = ("krs", "searched_at", "found", "list_rows", "complete")
 SCRIPT_KEY_PREFIX = "id-"
 LISTING_TIMEZONE = ZoneInfo("Europe/Warsaw")
 # Decision 3: pair a correction group's members with its tabs by the statement header's
-# `DataSporzadzenia` against each tab's "Data sporządzenia dokumentu". Off until step A shows the
-# rule pairs all of the seed's groups exactly as the HAR import did.
-PAIR_BY_PREPARED_DATE = False
+# `DataSporzadzenia` against each tab's "Data sporządzenia dokumentu". On since step A (2026-10-08):
+# the rule paired all 8 of the seed's groups exactly as the HAR import did. A group it cannot pair
+# stays unpaired.
+PAIR_BY_PREPARED_DATE = True
 
 _EMPTY = frozenset({"", "-", "brak danych"})
 _FLAGS = {"tak": True, "nie": False}
@@ -414,7 +415,7 @@ class ScriptImportReport:
     """What one import stored, and everything it could not use (nothing is dropped silently)."""
 
     listings: int = 0
-    searches: int = 0
+    searches: int = 0  # new rdf_listed_entities rows
     indexed: int = 0  # new rows
     completed: int = 0  # existing rows filled from the listing
     updated: int = 0  # deletions seen in a later listing
@@ -926,7 +927,7 @@ def import_listing(
         for search in searches:
             if search.krs not in resolved:
                 continue
-            conn.execute(
+            inserted = conn.execute(
                 """
                 INSERT INTO rdf_listed_entities
                     (krs, searched_at, found, list_rows, complete, listing_sha256,
@@ -943,8 +944,8 @@ def import_listing(
                     entities_record.sha256,
                     ingestion_run_id,
                 ),
-            )
-            report.searches += 1
+            ).rowcount
+            report.searches += inserted
         conn.commit()
     else:
         report.problems.append(f"{ENTITIES_FILE}: not in {inbox}")

@@ -7,6 +7,7 @@ locally (it is gitignored) and skip otherwise.
 """
 
 import base64
+import hashlib
 import io
 import json
 import uuid
@@ -89,11 +90,17 @@ def _list(size: int, page: int, items: list[dict[str, Any]], total: int, pages: 
     )
 
 
+def _document_id(ref: str) -> str:
+    """A numeric `idDokumentu` of its own for each invented document (RDF's are unique)."""
+    return str(int(hashlib.sha256(ref.encode()).hexdigest()[:10], 16))
+
+
 def _detail(ref: str, type_id: int, name: str, krs: str = KRS) -> str:
     return json.dumps(
         {
             **DETAIL,
             "identyfikator": ref,
+            "idDokumentu": _document_id(ref),
             "nrKRS": krs,
             "nazwaPliku": f"{ref[:3]}.xml",
             "rodzajDokumentu": {**DETAIL["rodzajDokumentu"], "id": type_id, "nazwa": name},
