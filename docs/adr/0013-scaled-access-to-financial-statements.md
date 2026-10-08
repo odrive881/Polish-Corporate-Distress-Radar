@@ -110,6 +110,11 @@ Power Automate Desktop (PAD).**
 
 1. **Pace:** at most 3 documents a minute, the rate KRS support confirmed; one browser, one document
    at a time, never two scripts at once. A higher rate needs a new ADR (ADR 0007).
+   *Pace (plan 0014, decision 6; owner, 2026-10-07):* this is a ceiling, not a target. The pace below it
+   is the owner's to set and vary with the situation; at present it is a randomised delay of roughly 45
+   seconds to 2 minutes a download. Plan 0014 had recommended counting every RDF action (search, list
+   page, expansion, download), at one every 20 seconds. Nothing in the import depends on the pace, and it
+   is not recorded.
 2. **A challenge stops the script.** On a CAPTCHA, a WAF block page or any page other than the one it
    expects, the script stops and does not retry. The script never solves a challenge, and no service does;
    no stealth settings, no replayed cookies (ADR 0007's limits). *Amended 2026-10-06 (owner):* the owner,
@@ -128,6 +133,9 @@ Power Automate Desktop (PAD).**
      end, "Data dodania" (the detail's `dataDodania`, never "Data sporządzenia dokumentu") and, for a
      correction, the id of the document it corrects. The listing is stored raw and every date points
      back to it (plan 0013 decision 6, as amended 2026-10-02): it is the documents' `known_from`.
+   - *The exact contract (plan 0014, decision 2):* `documents.csv`, one row per tab of an expanded row,
+     and `entities.csv`, one row per search, with each ZIP at `<krs>/<row_document_id>.zip`
+     (`README.md` § "Scripted downloads").
 6. **Personal data:** the ZIPs as downloaded name people. They stay out of the repository and are
    deleted once imported; only redacted copies are stored (ADR 0009).
 7. ~~**The challenge log is the WAF check**~~ *Withdrawn 2026-10-07 (owner): the script keeps no challenge
@@ -142,7 +150,9 @@ Power Automate Desktop (PAD).**
 
 **Of the decision (2026-10-06):**
 
-- **An importer for the script's output** is the next A3 build, its own plan. `acquisition/report_import.py`
+- **An importer for the script's output** is the next A3 build, its own plan. *Built (plan 0014,
+  2026-10-08): `acquisition/script_import.py`, the `rdf_script_import` asset, fetch tier `pad_script`;
+  the seed reproduced through the script (its step E) is still to come.* `acquisition/report_import.py`
   (the `manual_files` tier) takes only auditor reports, and only onto `filing_index` rows that a HAR
   capture already created. For an entity first reached by the script there is no such row, so the
   listing has to create the `filing_index` rows itself, statements and corrections included, with the
