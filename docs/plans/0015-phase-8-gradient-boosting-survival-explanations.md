@@ -15,7 +15,7 @@ censoring, Optuna tuning, SHAP explanations, and the champion rule.
 this plan does not need). It does not wait for list v2 (ADR 0014 addendum, proposed): weighting is plan
 0014's item 4, and this plan leaves a place for it (decision 9).
 
-## Status: active (2026-10-09): owner decisions 0–9 accepted as recommended; nothing built yet, step A next
+## Status: active (2026-10-09): owner decisions 0–9 accepted as recommended, 10 added from step A's fold table; step A built, step B next
 
 ### Progress
 
@@ -55,6 +55,31 @@ this plan does not need). It does not wait for list v2 (ADR 0014 addendum, propo
   their `as_of_date`: 8,726 of 41,555 (12 months) and 6,699 of 35,139 (24), holding **14 events** (seed 8,
   list v1 6), as the census found. Training events with a statement, by test year 2020–2025: 0, 1, 2, 3, 5,
   7 (12 months); 0, 0, 2, 2, 4, 7 (24).
+- **Step A, the population (2026-10-09, decision 10):** `models/population.py`, the `population` block in a
+  backtest config (none before v5), the backtest refusing a population that does not match its pin, and the
+  report's "Population" section. On today's stores: **186 entities included** (seed 17, list v1 169), entities
+  hash `d27dd39dd13afb35835d465b34deafe7f93765dae97dd37f3c7e774165a437e4`; left out: not searched 368, nothing
+  imported 34 (too few years), statements held back 20; not found and search incomplete 0. Of the left out, 12
+  were ever labelled distress (11 not searched, 1 held back). The fold table on the population (events seed /
+  list v1; evaluable at `min_events` 3):
+
+  | horizon | test year | train rows | unsettled | train entities | train events | test rows | test events | evaluable |
+  |---|---|---|---|---|---|---|---|---|
+  | 12 | 2020 | 5,673 | 0 | 101 | 5 (3 / 2) | 1,386 | 2 (2 / 0) | no |
+  | 12 | 2021 | 6,925 | 0 | 112 | 6 (4 / 2) | 1,546 | 3 (3 / 0) | yes |
+  | 12 | 2022 | 8,191 | 120 | 124 | 7 (5 / 2) | 1,835 | 3 (3 / 0) | yes |
+  | 12 | 2023 | 8,324 | 1,533 | 126 | 8 (6 / 2) | 2,065 | 2 (1 / 1) | no |
+  | 12 | 2024 | 9,857 | 1,835 | 145 | 10 (8 / 2) | 1,608 | 4 (2 / 2) | yes |
+  | 12 | 2025 | 11,702 | 2,055 | 167 | 12 (9 / 3) | 49 | 6 (2 / 4) | yes |
+  | 24 | 2020 | 4,546 | 0 | 91 | 5 (3 / 2) | 1,386 | 3 (3 / 0) | yes |
+  | 24 | 2021 | 5,673 | 0 | 101 | 6 (4 / 2) | 1,546 | 4 (4 / 0) | yes |
+  | 24 | 2022 | 6,819 | 106 | 112 | 7 (5 / 2) | 1,835 | 4 (3 / 1) | yes |
+  | 24 | 2023 | 6,946 | 1,365 | 112 | 7 (5 / 2) | 1,542 | 5 (3 / 2) | yes |
+  | 24 | 2024 | 8,320 | 1,537 | 126 | 9 (7 / 2) | 74 | 7 (2 / 5) | yes |
+  | 24 | 2025 | 9,879 | 1,813 | 145 | 12 (9 / 3) | 55 | 6 (2 / 4) | yes |
+
+  18 events at either horizon (seed 11, list v1 7; bankruptcy 9, liquidation 7, restructuring 2); censored
+  rows left out 4,152 (12 months) and 6,203 (24). The hash is pinned in `backtest_v5` (step B).
 
 ## Why
 
@@ -183,6 +208,19 @@ Two things follow:
    (ADR 0014 addendum's 1/π), and the evaluation an optional weighted Brier score; both unused until list v2 is
    drawn (plan 0014, item 4). No weight is invented for the seed or list v1.
 
+10. **The population: only entities whose acquisition is complete (owner, 2026-10-09, from step A's fold
+    table).** The label set labels every resolved entity from KRS and MSiG, but most of list v1 has no filing
+    imported yet; to a model that reads nulls natively, a company whose filings were never fetched looks like
+    one that never filed, so it would learn the state of the downloads. `backtest_v5` therefore models only the
+    entities whose RDF search is complete and whose downloadable statements are all stored (the seed counts as
+    complete by its hand capture, plan 0003), and the report counts every other one by reason
+    (`models/population.py`): not searched, not found, search incomplete, nothing imported, statements held
+    back. The rule reads acquisition records, never an outcome. It is pinned like the label set, by the SHA-256
+    of the included KRS numbers, so a re-search that changes it is a new backtest version. Excluded entities
+    return when the owner's script has searched them and the held-back ZIPs are fixed.
+    *Alternative, rejected:* keep every labelled entity; "nothing downloaded" would be among the strongest
+    predictors, since 11 of list v1's 19 events sit on unsearched companies.
+
 ## Out of scope
 
 - Per-class models (bankruptcy, restructuring, liquidation apart): wait for events.
@@ -207,7 +245,8 @@ Two things follow:
 
 `config/models/backtest_v5.yaml`: the inputs (decision 0), LightGBM's defaults (decision 1), the tuning gate,
 space and trials (decision 2), the calibration rule (decision 3), the survival horizon and period (decision 4),
-`min_promotion_events` and the promotion margins (decision 7). The loader rejects a feature the set lacks and a
+`min_promotion_events` and the promotion margins (decision 7), the population rule and its pinned entities hash
+(decision 10). The loader rejects a feature the set lacks and a
 key it does not know. Committed before the first run.
 
 ### C. Generation 3: LightGBM

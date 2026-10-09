@@ -69,6 +69,31 @@ def _caveat(result: BacktestResult, horizon: int) -> str:
     )
 
 
+def _population(result: BacktestResult) -> list[str]:
+    """The population rule's exclusions (plan 0015 decision 10), when the config names one."""
+    population = result.population
+    if population is None or result.config.population is None:
+        return []
+    return [
+        "",
+        "## Population",
+        "",
+        (
+            f"Only entities whose acquisition is complete are modelled "
+            f"(`{result.config.population.rule}`, entities `{population.entities_hash}`): "
+            f"{len(population.included)} included, {len(population.excluded)} left out, "
+            f"{result.excluded_distress_entities} of them ever labelled distress. A left-out "
+            "entity's filings are not all in yet, so its nulls would describe the downloads, "
+            "not the company."
+        ),
+        "",
+        *_table(
+            ["left out because", "entities"],
+            [[f"`{reason}`", str(n)] for reason, n in population.reasons().items()],
+        ),
+    ]
+
+
 def render_report(result: BacktestResult, code_commit: str) -> str:
     config = result.config
     k = config.min_events
@@ -105,6 +130,7 @@ def render_report(result: BacktestResult, code_commit: str) -> str:
                 ["runs", "; ".join(f"`{r}`: {_RUN_TITLES[r]}" for r in RUNS)],
             ],
         ),
+        *_population(result),
     ]
     for horizon in config.horizons:
         caveat = _caveat(result, horizon)

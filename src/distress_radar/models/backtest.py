@@ -23,6 +23,7 @@ from distress_radar.models.baselines import ClassicalModel, fit_predict_classica
 from distress_radar.models.classical import FoldPredictions, fit_predict_logistic
 from distress_radar.models.dataset import ModellingDataset, modelling_dataset
 from distress_radar.models.evaluation import METRICS, cell, reliability
+from distress_radar.models.population import Population
 from distress_radar.models.splits import (
     BacktestConfig,
     LabelTiming,
@@ -50,6 +51,9 @@ class BacktestResult:
     reliability: pl.DataFrame  # pooled, per run, horizon and model
     folds: pl.DataFrame  # the fold reports, per run and horizon
     predictions: pl.DataFrame  # every scored test row
+    # The population rule's outcome (plan 0015 decision 10); None when the config has no rule.
+    population: Population | None = None
+    excluded_distress_entities: int = 0  # excluded entities ever labelled distress
 
 
 def _for_run(dataset: ModellingDataset, run: str) -> ModellingDataset:
@@ -79,7 +83,27 @@ def run_backtest(
     config: BacktestConfig,
     timing: LabelTiming,
     models: list[ClassicalModel],
+    population: Population | None = None,
 ) -> BacktestResult:
+    """Every model on every fold. With a `population` rule in the config, only its included
+    entities are modelled; `population` must be the rule's outcome and match its pinned hash."""
+    if (config.population is None) != (population is None):
+        raise ValueError("a population is given exactly when the config names a rule")
+    excluded_distress = 0
+    if config.population is not None and population is not None:
+        if population.entities_hash != config.population.entities_hash:
+            raise ValueError(
+                f"population {population.entities_hash} is not the pinned "
+                f"{config.population.entities_hash}: the acquisition records have changed, "
+                "so this is a new backtest version"
+            )
+        distress = pl.col("outcome_class").is_in(config.distress_classes)
+        excluded_distress = (
+            labels.filter(~pl.col("krs").is_in(list(population.included)) & distress)
+            .get_column("krs")
+            .n_unique()
+        )
+        labels = labels.filter(pl.col("krs").is_in(list(population.included)))
     cells: list[dict[str, object]] = []
     tables: list[pl.DataFrame] = []
     fold_tables: list[pl.DataFrame] = []
@@ -189,6 +213,8 @@ def run_backtest(
         reliability=pl.concat(tables) if tables else pl.DataFrame(),
         folds=pl.concat(fold_tables),
         predictions=pl.concat(scored),
+        population=population,
+        excluded_distress_entities=excluded_distress,
     )
 
 
