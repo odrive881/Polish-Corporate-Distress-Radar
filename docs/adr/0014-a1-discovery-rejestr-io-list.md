@@ -67,6 +67,25 @@ with Rejestr.io's (`rejestr.io`) search filters.**
   - A2 over its KRS numbers;
   - the composition census above, after A2 and the KRS extracts.
 
+**Composition census, list v1 (2026-10-09, `notebooks/exploration/list_v1_composition_census.py`).** Of 609
+KRS numbers, A2 resolved 592; 16 are outside section F (`pkd_section_mismatch`), 1 an ambiguous match. Of the 592:
+
+- **PKD:** division 41: 261, 42: 95, 43: 236 (PKD 2007 for 540, PKD 2025 for 52). **Legal form:** all
+  `sp. z o.o.`. **GUS status:** 578 active, 14 suspended. **None deregistered:** the list holds no company
+  already deleted from KRS, so v1 cannot show an exit that ended in deregistration (survivorship).
+- **Region:** every voivodeship; Mazowieckie 144, then Śląskie 61, Dolnośląskie 58, Małopolskie 52,
+  Wielkopolskie 49, the rest 11–41 each.
+- **Registered in KRS:** before 2010: 82; 2010–2018: 160; 2019–2021: 136; 2022 or later: 214, so over a third
+  cannot have three filed years yet.
+- **Filed years** (the 223 searched and found so far): 1–2: 34, 3–5: 79, 6 or more: 110. 369 not searched yet,
+  or only during the outage.
+- **Size as the filings show it** (186 with a parsed statement; not the §4.4 class, which waits on
+  employment): form filed full 96, small 56, micro 34; total assets < 2m PLN 55, 2–10m 53, 10–50m 69, 50m or
+  more 9; revenue < 2m 12, 2–10m 100, 10–50m 69, 50m or more 5.
+- **Distress, as the pipeline's legal events find it:** 20 companies with a bankruptcy (7), liquidation (9)
+  or restructuring (4) event, by the first; first events before 2019: 3, 2019–2020: 4, 2024–2026: 12, 1 undated.
+  20 of 592 is the list's rate by construction, not the segment's.
+
 ## Addendum, 2026-10-07: the sampling rule for list v2 (proposed)
 
 - **Status:** proposed (2026-10-07). The design is the owner's: a larger group drawn at random and a smaller

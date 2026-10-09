@@ -119,6 +119,8 @@ the next list representative.
     check passes.
   - **Open from it:** the script to write every tab of an expanded row (then the 27 groups import); the 305 companies searched only during the outage and the 74
     not yet searched; the composition census (ADR 0014) over the 592.
+  - **Census done (2026-10-09)** after `krs_extracts`, `msig_notices`, `legal_events` and parsing ran over
+    the list: results in ADR 0014 § Consequences. 20 of the 592 have a distress event; none is deregistered.
 - **Step F, docs (2026-10-08).** README § "Manual RDF capture" gains "Scripted downloads" (the inbox, both
   listings' columns and formats, the import and its refusal counts). The data inventory updates §2's status, adds
   `RDF_SCRIPT_INBOX` to §7's RDF row, and states in §2.4 what is no longer indexed (types 3, 4 and 20 beyond the
@@ -458,7 +460,7 @@ progress section before this plan closes.
 ## Definition of done
 
 - [x] Owner decisions 1–6 made (2026-10-06, as recommended).
-- [ ] Step 0: the list loaded, A2 run over it, its composition census recorded.
+- [x] Step 0: the list loaded, A2 run over it, its composition census recorded (2026-10-09; list v1).
 - [ ] Step A's census in the progress section; the decisions revisited with it.
 - [ ] `rdf_script_import` built, with the manifest changes, the `personal_data` check passing after it.
 - [ ] The seed reproduced through the script (step E), every difference explained.
