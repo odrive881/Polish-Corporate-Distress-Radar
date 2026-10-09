@@ -11,6 +11,8 @@ the owner (plan 0014, decision 2 and § "Progress"):
 
 - `documents.csv`: one row per tab of an expanded row, appended, never rewritten (`DOCUMENT_COLUMNS`).
 - `entities.csv`: one row per search (`ENTITY_COLUMNS`); `complete` is `Nie` on any early stop.
+- `outages.csv` (optional, the owner's): `from;to`, spans when the script ran without a connection.
+  A search that found nothing inside one says nothing about RDF and is not recorded.
 - `<krs>/<row_document_id>.zip`: each expanded row's download exactly as "Pobierz dokumenty"
   delivered it, named in the rows' `file` column.
 
@@ -90,6 +92,8 @@ DOCUMENT_COLUMNS = (
     "language",
 )
 ENTITY_COLUMNS = ("krs", "searched_at", "found", "list_rows", "complete")
+OUTAGES_FILE = "outages.csv"
+OUTAGE_COLUMNS = ("from", "to")
 SCRIPT_KEY_PREFIX = "id-"
 LISTING_TIMEZONE = ZoneInfo("Europe/Warsaw")
 # Decision 3: pair a correction group's members with its tabs by the statement header's
@@ -236,6 +240,18 @@ def _digits(row: Mapping[str, str], column: str) -> str:
     return text
 
 
+def _correction(row: Mapping[str, str]) -> bool:
+    """The listed flag; with none shown (RDF shows none on older filings), the ids decide.
+
+    An expanded row's own tab is the original and every other tab a correction, so the ids alone
+    give the flag; a flag that is shown must agree with them (`_tab`).
+    """
+    flag = _flag(_value(row["is_correction"]), "is_correction")
+    if flag is None:
+        return _digits(row, "document_id") != _digits(row, "row_document_id")
+    return flag
+
+
 def _krs(row: Mapping[str, str]) -> str:
     text = _required(row, "krs")
     if not _KRS.fullmatch(text):
@@ -314,7 +330,7 @@ def _tab(line: int, row: Mapping[str, str]) -> ListedTab:
         period_end=_required_date(row, "period_end"),
         prepared_date=_date(_value(row["prepared_date"]), "prepared_date"),
         is_ifrs=_flag(_value(row["is_ifrs"]), "is_ifrs"),
-        is_correction=_required_flag(row, "is_correction"),
+        is_correction=_correction(row),
         submission_date=_required_date(row, "submission_date"),
         status=_STATUSES[status_text],
         deleted_on=_date(_value(row["deleted_on"]), "deleted_on"),
@@ -361,12 +377,50 @@ def read_entities(data: bytes) -> tuple[list[ListedSearch], list[str]]:
                 list_rows=None if list_rows is None else int(list_rows),
                 complete=_required_flag(row, "complete"),
             )
-            if search.found and search.list_rows is None:
-                raise _RowError("found, but list_rows is empty")
+            if search.found and search.list_rows is None and search.complete:
+                raise _RowError("found and complete, but list_rows is empty")
             searches.append(search)
         except _RowError as exc:
             problems.append(f"{ENTITIES_FILE} line {line}: {exc}; not used")
     return searches, problems
+
+
+def read_outages(data: bytes) -> tuple[list[tuple[datetime, datetime]], list[str]]:
+    """Parse `outages.csv`: the spans without a connection, and each refused row's reason."""
+    spans: list[tuple[datetime, datetime]] = []
+    problems: list[str] = []
+    for line, row in _read(data, OUTAGE_COLUMNS, OUTAGES_FILE):
+        try:
+            if not row:
+                raise _RowError(f"not {len(OUTAGE_COLUMNS)} fields")
+            start = _datetime(_required(row, "from"), "from")
+            end = _datetime(_required(row, "to"), "to")
+            if end < start:
+                raise _RowError(f"{start} .. {end} runs backwards")
+            spans.append((start, end))
+        except _RowError as exc:
+            problems.append(f"{OUTAGES_FILE} line {line}: {exc}; not used")
+    return spans, problems
+
+
+def complete_search(search: ListedSearch, rows_listed: int) -> bool:
+    """Whether a search read the entity's whole list: it says so, or the listing holds every row.
+
+    The page's count of rows is the test: a listing holding as many expanded rows as the page
+    listed is complete whatever its flag says (early listings marked such searches incomplete).
+    """
+    if search.complete:
+        return True
+    return search.found and search.list_rows is not None and rows_listed >= search.list_rows
+
+
+def filed_years(tabs: Iterable[ListedTab]) -> dict[str, int]:
+    """Per KRS, the distinct periods with a listed document not deleted (`min_history_years`)."""
+    periods: dict[str, set[date]] = {}
+    for listed in tabs:
+        if listed.status == "NIEUSUNIETY":
+            periods.setdefault(listed.krs, set()).add(listed.period_end)
+    return {krs: len(ends) for krs, ends in periods.items()}
 
 
 def current_documents(tabs: Iterable[ListedTab]) -> tuple[dict[str, ListedTab], list[str]]:
@@ -422,11 +476,14 @@ class ScriptImportReport:
     downloads: int = 0
     unpaired_groups: int = 0  # correction groups stored with unpaired members
     backfilled: int = 0
+    outage_searches: int = 0  # found nothing while the script had no connection; not recorded
     not_in_entity_master: list[str] = field(default_factory=list[str])
     unknown_types: list[str] = field(default_factory=list[str])
     rows_without_zip: list[str] = field(default_factory=list[str])
     zips_without_row: list[str] = field(default_factory=list[str])
     incomplete_entities: list[str] = field(default_factory=list[str])
+    too_few_years: list[str] = field(default_factory=list[str])  # under `min_history_years`
+    incomplete_groups: list[str] = field(default_factory=list[str])  # tabs missing; ZIP held back
     disagreements: list[str] = field(default_factory=list[str])  # listing vs an earlier source
     problems: list[str] = field(default_factory=list[str])
 
@@ -440,11 +497,14 @@ class ScriptImportReport:
             "downloads": self.downloads,
             "unpaired_groups": self.unpaired_groups,
             "backfilled": self.backfilled,
+            "outage_searches": self.outage_searches,
             "not_in_entity_master": len(self.not_in_entity_master),
             "unknown_types": len(self.unknown_types),
             "rows_without_zip": len(self.rows_without_zip),
             "zips_without_row": len(self.zips_without_row),
             "incomplete_entities": len(self.incomplete_entities),
+            "too_few_years": len(self.too_few_years),
+            "incomplete_groups": len(self.incomplete_groups),
             "disagreements": len(self.disagreements),
             "problems": len(self.problems),
         }
@@ -906,15 +966,33 @@ def import_listing(
     ingestion_run_id: str,
     document_types: RdfDocumentTypes,
     resolved: Collection[str],
+    min_history_years: int | None = None,
 ) -> ScriptImportReport:
-    """Import the script's inbox into the manifest; commits per step."""
+    """Import the script's inbox into the manifest; commits per step.
+
+    An entity listing fewer filed years than `min_history_years` (the segment's) is not imported
+    and is reported; a later listing with enough years imports it.
+    """
     report = ScriptImportReport()
     report.backfilled, problems = backfill_document_ids(conn, store, document_types)
     report.problems.extend(problems)
     conn.commit()
 
+    outages: list[tuple[datetime, datetime]] = []
+    outages_path = inbox / OUTAGES_FILE
+    if outages_path.is_file():
+        data, _ = _store_listing(conn, store, outages_path, ingestion_run_id)
+        conn.commit()
+        report.listings += 1
+        try:
+            outages, problems = read_outages(data)
+            report.problems.extend(problems)
+        except ListingFileError as exc:
+            report.problems.append(str(exc))
+
     searches: list[ListedSearch] = []
     entities_path = inbox / ENTITIES_FILE
+    entities_record: RawFetchRecord | None = None
     if entities_path.is_file():
         data, entities_record = _store_listing(conn, store, entities_path, ingestion_run_id)
         conn.commit()
@@ -924,32 +1002,15 @@ def import_listing(
             report.problems.extend(problems)
         except ListingFileError as exc:
             report.problems.append(str(exc))
-        for search in searches:
-            if search.krs not in resolved:
-                continue
-            inserted = conn.execute(
-                """
-                INSERT INTO rdf_listed_entities
-                    (krs, searched_at, found, list_rows, complete, listing_sha256,
-                     ingestion_run_id)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT DO NOTHING
-                """,
-                (
-                    search.krs,
-                    search.searched_at,
-                    search.found,
-                    search.list_rows,
-                    search.complete,
-                    entities_record.sha256,
-                    ingestion_run_id,
-                ),
-            ).rowcount
-            report.searches += inserted
-        conn.commit()
     else:
         report.problems.append(f"{ENTITIES_FILE}: not in {inbox}")
+    in_outage = [
+        s for s in searches if not s.found and any(a <= s.searched_at <= b for a, b in outages)
+    ]
+    report.outage_searches = len(in_outage)
+    searches = [s for s in searches if s not in in_outage]
 
+    tabs: list[ListedTab] = []
     current: dict[str, ListedTab] = {}
     documents_path = inbox / DOCUMENTS_FILE
     documents_record: RawFetchRecord | None = None
@@ -967,11 +1028,50 @@ def import_listing(
     else:
         report.problems.append(f"{DOCUMENTS_FILE}: not in {inbox}")
 
+    rows_listed: dict[str, set[str]] = {}
+    for listed in tabs:
+        rows_listed.setdefault(listed.krs, set()).add(listed.row_document_id)
+    if entities_record is not None:
+        for search in searches:
+            if search.krs not in resolved:
+                continue
+            complete = complete_search(search, len(rows_listed.get(search.krs, ())))
+            inserted = conn.execute(
+                """
+                INSERT INTO rdf_listed_entities
+                    (krs, searched_at, found, list_rows, complete, listing_sha256,
+                     ingestion_run_id)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT DO NOTHING
+                """,
+                (
+                    search.krs,
+                    search.searched_at,
+                    search.found,
+                    search.list_rows,
+                    complete,
+                    entities_record.sha256,
+                    ingestion_run_id,
+                ),
+            ).rowcount
+            report.searches += inserted
+        conn.commit()
+
+    years = filed_years(current.values())
+    young: set[str] = set()
+    if min_history_years is not None:
+        for krs, n in sorted(years.items()):
+            if krs in resolved and n < min_history_years:
+                young.add(krs)
+                report.too_few_years.append(
+                    f"{krs}: {n} filed years listed, fewer than {min_history_years}; not imported"
+                )
+
     listed_krs = {t.krs for t in current.values()} | {s.krs for s in searches}
     report.not_in_entity_master = sorted(k for k in listed_krs if k not in resolved)
     groups: dict[tuple[str, str], list[ListedTab]] = {}
     for listed in current.values():
-        if listed.krs in resolved:
+        if listed.krs in resolved and listed.krs not in young:
             groups.setdefault((listed.krs, listed.row_document_id), []).append(listed)
 
     refs: dict[str, str] = {}
@@ -1005,6 +1105,14 @@ def import_listing(
         if len({t.krs for t in group}) != 1 or len({t.row_document_id for t in group}) != 1:
             report.problems.append(f"{file}: named by rows of more than one expanded row; not used")
             continue
+        shown = max(t.tabs for t in group)
+        if len({t.tab for t in group}) < shown:
+            # The ZIP holds every tab's document; without each tab's row its members
+            # would be stored with no date of their own. Held until the listing has them.
+            report.incomplete_groups.append(
+                f"{group[0].krs} {file}: {len(group)} of {shown} tabs listed; ZIP not imported"
+            )
+            continue
         _import_zip(
             inbox,
             file,
@@ -1026,9 +1134,11 @@ def import_listing(
     latest: dict[str, ListedSearch] = {}
     for search in sorted(searches, key=lambda s: s.searched_at):
         latest[search.krs] = search
-    for krs in sorted({k for k, _ in groups} | set(latest)):
+    for krs in sorted({k for k, _ in groups} | (set(latest) - young)):
         search = latest.get(krs)
-        if krs in resolved and (search is None or not search.complete):
+        if krs in resolved and (
+            search is None or not complete_search(search, len(rows_listed.get(krs, ())))
+        ):
             report.incomplete_entities.append(
                 f"{krs}: {'no search recorded' if search is None else 'listing incomplete'}"
             )

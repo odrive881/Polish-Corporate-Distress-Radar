@@ -39,12 +39,17 @@ from distress_radar.acquisition.script_import import (
     DOCUMENT_COLUMNS,
     ENTITY_COLUMNS,
     FETCH_TIER,
+    OUTAGE_COLUMNS,
+    ListedSearch,
     ListingFileError,
+    complete_search,
     current_documents,
+    filed_years,
     import_listing,
     pair_by_prepared_date,
     read_documents,
     read_entities,
+    read_outages,
 )
 from distress_radar.settings import Settings
 
@@ -264,6 +269,83 @@ def test_searches_are_read_with_their_flags():
         (OTHER_KRS, False, None, True),
     ]
     assert len(problems) == 1 and "line 4" in problems[0]
+
+
+def test_with_no_flag_shown_the_ids_say_whether_a_tab_is_a_correction():
+    # RDF shows no correction flag on older filings; the ids decide, as they would check a flag.
+    tabs, problems = read_documents(
+        _documents(
+            _tab(is_correction="", tab="1 / 2"),
+            _tab(
+                document_id=CORRECTION_ID,
+                row_document_id=STATEMENT_ID,
+                is_correction="",
+                tab="2 / 2",
+                submission_date="2026-09-01",
+            ),
+        )
+    )
+    assert problems == []
+    assert [t.is_correction for t in tabs] == [False, True]
+
+
+def test_a_found_search_whose_count_was_not_read_is_kept_only_as_incomplete():
+    unread = {"list_rows": ""}
+    searches, problems = read_entities(
+        _entities(_search(complete="Nie") | unread, _search(complete="Tak") | unread)
+    )
+    assert [(s.found, s.list_rows, s.complete) for s in searches] == [(True, None, False)]
+    assert len(problems) == 1 and "line 3" in problems[0]
+
+
+def test_a_search_is_complete_when_the_listing_holds_every_row_the_page_listed():
+    def search(complete: bool, list_rows: int | None = 3, found: bool = True) -> ListedSearch:
+        return ListedSearch(1, KRS, T0, found, list_rows, complete)
+
+    assert complete_search(search(True), 0)
+    assert complete_search(search(False), 3)  # flagged incomplete, yet every row is listed
+    assert not complete_search(search(False), 2)
+    assert not complete_search(search(False, list_rows=None), 5)
+
+
+def test_outages_are_read_as_spans():
+    data = _csv(
+        OUTAGE_COLUMNS,
+        [
+            {"from": "2026-10-08 13:57:00", "to": "2026-10-08 23:52:00"},
+            {"from": "2026-10-08 12:00:00", "to": "2026-10-08 11:00:00"},
+        ],
+    )
+    spans, problems = read_outages(data)
+    assert spans == [
+        (datetime(2026, 10, 8, 11, 57, tzinfo=UTC), datetime(2026, 10, 8, 21, 52, tzinfo=UTC))
+    ]
+    assert len(problems) == 1 and "backwards" in problems[0]
+
+
+def test_filed_years_count_periods_not_deleted():
+    tabs, _ = read_documents(
+        _documents(
+            _tab(),
+            _tab(
+                document_id=OTHER_ID,
+                period_start="2024-01-01",
+                period_end="2024-12-31",
+                submission_date="2025-06-30",
+                prepared_date="2025-03-31",
+            ),
+            _tab(
+                document_id=REPORT_ID,
+                period_start="2023-01-01",
+                period_end="2023-12-31",
+                submission_date="2024-06-30",
+                prepared_date="2024-03-31",
+                status="USUNIĘTY",
+                deleted_on="2024-07-01",
+            ),
+        )
+    )
+    assert filed_years(tabs) == {KRS: 2}
 
 
 # --- Decision 5: type codes from names and periods -----------------------------------------
@@ -702,3 +784,67 @@ def test_the_backfill_reads_the_stored_detail(conn: psycopg.Connection, tmp_path
     assert report.backfilled == 1
     assert _rows(conn)[HAR_REF][1] == STATEMENT_ID
     assert _import(conn, tmp_path, store, "run-2").backfilled == 0
+
+
+@pytest.mark.integration
+def test_outages_completeness_young_entities_and_missing_tabs(
+    conn: psycopg.Connection, tmp_path: Path
+):
+    def year(n: int, **values: str) -> dict[str, str]:
+        y = 2025 - n
+        return _tab(
+            document_id=f"{STATEMENT_ID[:-2]}{n:02d}",
+            period_start=f"{y}-01-01",
+            period_end=f"{y}-12-31",
+            prepared_date=f"{y + 1}-03-31",
+            submission_date=f"{y + 1}-06-30",
+            file=f"{KRS}/{y}.zip",
+            **values,
+        )
+
+    one, two = (
+        _zip(**{"sf.xml": _statement()}),
+        _zip(**{"sf.xml": _statement(), "sf korekta.xml": _statement("2026-09-01")}),
+    )
+    # Three filed years, the newest a group whose correction tab the listing lacks.
+    documents = _documents(year(0, tab="1 / 2"), year(1), year(2))
+    searches = [
+        _search(complete="Nie") | {"list_rows": "3", "searched_at": "2026-10-07 10:00:00"},
+        _search(found="Nie") | {"searched_at": "2026-10-08 15:00:00"},  # in the outage
+    ]
+    _inbox(
+        tmp_path,
+        documents,
+        _entities(*searches),
+        {f"{KRS}/2025.zip": two, f"{KRS}/2024.zip": one, f"{KRS}/2023.zip": one},
+    )
+    (tmp_path / "outages.csv").write_bytes(
+        _csv(OUTAGE_COLUMNS, [{"from": "2026-10-08 13:57:00", "to": "2026-10-08 23:52:00"}])
+    )
+
+    def run(name: str, min_years: int) -> script_import.ScriptImportReport:
+        return import_listing(
+            tmp_path,
+            conn=conn,
+            store=InMemoryObjectStore(),
+            ingestion_run_id=name,
+            document_types=load_document_types(),
+            resolved=set(manifest.resolved_entities(conn)),
+            min_history_years=min_years,
+        )
+
+    young = run("run-1", 4)
+    assert young.too_few_years == [f"{KRS}: 3 filed years listed, fewer than 4; not imported"]
+    assert young.indexed == 0 and young.incomplete_entities == []
+
+    report = run("run-2", 3)
+    assert report.outage_searches == 1 and report.too_few_years == []
+    # Flagged incomplete, but the listing holds all 3 rows the page listed.
+    assert conn.execute("SELECT found, complete FROM rdf_listed_entities").fetchall() == [
+        (True, True)
+    ]
+    assert report.incomplete_entities == []
+    assert (report.indexed, report.downloads) == (3, 2)
+    assert report.incomplete_groups == [
+        f"{KRS} {KRS}/2025.zip: 1 of 2 tabs listed; ZIP not imported"
+    ]

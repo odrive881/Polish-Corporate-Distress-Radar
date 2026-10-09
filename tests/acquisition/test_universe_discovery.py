@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from pathlib import Path
 
-from distress_radar.acquisition.universe_discovery import load_seed, load_segment
+from distress_radar.acquisition.universe_discovery import load_krs_list, load_seed, load_segment
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SEGMENTS = REPO_ROOT / "config" / "segments"
@@ -97,3 +97,28 @@ def test_committed_seed_and_segment_are_valid():
     assert segment.min_history_years == 3
     assert result.quarantine == []
     assert 15 <= len(result.candidates) <= 25
+
+
+def test_a_krs_list_gives_candidates_from_its_krs_column_alone(tmp_path: Path):
+    path = tmp_path / "list.csv"
+    # Invented names; a name is never carried into a candidate or a quarantine row.
+    path.write_text(
+        "\ufeffkrs_num,company_name\n"
+        "0000163893,FIRMA TESTOWA\n"
+        "163893,JAN TESTOWY BUDOWNICTWO\n"
+        "0000163893,FIRMA TESTOWA\n"
+        "0000507997,INNA FIRMA\n",
+        encoding="utf-8",
+    )
+
+    result = load_krs_list(
+        path, discovery_source="rejestr_io_v1", ingestion_run_id="run-1", discovered_at=NOW
+    )
+
+    assert [(c.krs, c.discovery_source) for c in result.candidates] == [
+        ("0000163893", "rejestr_io_v1"),
+        ("0000507997", "rejestr_io_v1"),
+    ]
+    [bad] = result.quarantine
+    assert (bad.entity_key, bad.reason_code, bad.krs) == ("list.csv#3", "malformed_krs", None)
+    assert "TESTOWY" not in bad.detail
