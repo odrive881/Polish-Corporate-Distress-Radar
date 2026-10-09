@@ -43,6 +43,12 @@ dependencies = [
     # Stage G2 (plan 0013 decision 2): constrained extraction through the Anthropic SDK; every
     # response is stored and replayed (decision 3), so a rerun makes no call.
     "anthropic>=1.0",
+    # Stage I generation 3 (plan 0015): gradient boosting with native missing values, discrete-time
+    # survival metrics, gated tuning, tree explanations.
+    "lightgbm>=4.5",
+    "scikit-survival>=0.24",
+    "optuna>=4.1",
+    "shap>=0.46",
 ]
 
 [project.optional-dependencies]

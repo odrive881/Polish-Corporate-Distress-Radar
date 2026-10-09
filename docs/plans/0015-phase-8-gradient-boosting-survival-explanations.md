@@ -17,6 +17,16 @@ this plan does not need). It does not wait for list v2 (ADR 0014 addendum, propo
 
 ## Status: active (2026-10-09): owner decisions 0–9 accepted as recommended; nothing built yet, step A next
 
+### Progress
+
+- **Step A, dependencies (2026-10-09):** `lightgbm` 4.7.0, `scikit-survival` 0.28.0, `optuna` 5.0.0 and
+  `shap` 0.53.0 locked; scikit-learn stays 1.9.1. `scikit-survival` pulls `ecos`, which has no wheel for
+  Python 3.14: `make install` now needs a C compiler and Python's headers (README). Checks on synthetic data:
+  - LightGBM with decision 1's settings (deterministic, row-wise, one thread, fixed seed) gives byte-identical
+    predictions and model text twice;
+  - `scikit-survival`'s `RandomSurvivalForest` accepts missing values, so by decision 4 it joins as a
+    comparison model; `concordance_index_ipcw` and `integrated_brier_score` are available.
+
 ## Why
 
 Phase 6 built the harness and the first two generations, and proved the machinery: purged, settled,
