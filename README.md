@@ -23,7 +23,7 @@ Phase 4 (`docs/plans/0008-phase-4-legal-events-outcome-labels.md`, close-out 202
 
 ## Setup (WSL / Ubuntu)
 
-Requires [uv](https://docs.astral.sh/uv/). `.venv` is created and kept in sync with `uv.lock` by `make install` — don't create it by hand or `pip install` into it directly.
+Requires [uv](https://docs.astral.sh/uv/), and a C compiler with Python's headers (`sudo apt install build-essential python3.14-dev` under WSL): `scikit-survival` depends on `ecos`, which has no prebuilt wheel for Python 3.14 and is compiled on install. `.venv` is created and kept in sync with `uv.lock` by `make install` — don't create it by hand or `pip install` into it directly.
 
 ```bash
 make install   # uv sync --locked --extra dev
