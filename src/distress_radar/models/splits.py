@@ -35,6 +35,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from distress_radar.features.config import DisclosureFlagFeature, RatioFeature, load_feature_set
 from distress_radar.labels import load_label_config
 from distress_radar.models.dataset import TARGET, ModellingDataset, event_day
+from distress_radar.models.population import PopulationConfig
 from distress_radar.parsing.canonical_schema import CONFIG_DIR
 from distress_radar.parsing.legal_taxonomy import load_procedure_taxonomy
 
@@ -77,6 +78,9 @@ class BacktestConfig(BaseModel):
     logistic_regression: LogisticConfig
     bootstrap: BootstrapConfig
     reliability_bins: int = Field(ge=2, le=20)
+    # Plan 0015 owner decision 10: the entities whose acquisition is complete (`population.py`);
+    # absent before backtest_v5, where every labelled entity is modelled.
+    population: PopulationConfig | None = None
 
     @model_validator(mode="after")
     def _ordered(self) -> BacktestConfig:

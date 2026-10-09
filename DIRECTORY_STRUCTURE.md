@@ -287,6 +287,7 @@ src/distress_radar/
 ├── models/
 │   ├── dataset.py                 # feature_store joined to one frozen label set, the binary target
 │   ├── splits.py                  # purged expanding-window folds and their per-fold report
+│   ├── population.py              # entities whose acquisition is complete (plan 0015 decision 10)
 │   ├── baselines.py               # Altman, Polish discriminant models: config/models/ loader
 │   ├── classical.py               # logistic regression
 │   ├── evaluation.py              # metrics, entity bootstrap, reliability, the n/a rule per cell
