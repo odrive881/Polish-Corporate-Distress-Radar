@@ -26,6 +26,35 @@ this plan does not need). It does not wait for list v2 (ADR 0014 addendum, propo
     predictions and model text twice;
   - `scikit-survival`'s `RandomSurvivalForest` accepts missing values, so by decision 4 it joins as a
     comparison model; `concordance_index_ipcw` and `integrated_brier_score` are available.
+- **Step A, rebuild (2026-10-09):** the text job over list v1: 1,998 new requests through the Batches API,
+  all succeeded, $8.83 (3.95M input, 0.09M output tokens), `evidence_masked` passed; text signals now cover
+  154 entities. `label_models` (every audit passed) froze label set
+  `19bf5d2f1d6656152bdad457ade8911317b8889bf279ff11dabdc2122c87701b` (111,088 rows, 608 entities);
+  `feature_store` on `feature_set_v6`, `leakage` passed. The fold table, `backtest_v4`'s folds on that set,
+  before any model runs (events by list: seed / `rejestr_io_v1`):
+
+  | horizon | test year | train rows | unsettled | train events (seed / v1) | test rows | test events (seed / v1) |
+  |---|---|---|---|---|---|---|
+  | 12 | 2020 | 14,140 | 0 | 7 (3 / 4) | 3,728 | 4 (2 / 2) |
+  | 12 | 2021 | 17,418 | 0 | 10 (4 / 6) | 4,301 | 3 (3 / 0) |
+  | 12 | 2022 | 20,818 | 328 | 11 (5 / 6) | 5,044 | 3 (3 / 0) |
+  | 12 | 2023 | 21,159 | 4,288 | 12 (6 / 6) | 5,913 | 3 (1 / 2) |
+  | 12 | 2024 | 25,447 | 5,044 | 14 (8 / 6) | 5,038 | 8 (2 / 6) |
+  | 12 | 2025 | 30,512 | 5,892 | 17 (9 / 8) | 95 | 13 (2 / 11) |
+  | 24 | 2020 | 11,172 | 0 | 7 (3 / 4) | 3,728 | 5 (3 / 2) |
+  | 24 | 2021 | 14,140 | 0 | 10 (4 / 6) | 4,301 | 4 (4 / 0) |
+  | 24 | 2022 | 17,136 | 282 | 11 (5 / 6) | 5,044 | 5 (3 / 2) |
+  | 24 | 2023 | 17,450 | 3,696 | 11 (5 / 6) | 4,370 | 9 (3 / 6) |
+  | 24 | 2024 | 21,155 | 4,292 | 13 (7 / 6) | 147 | 15 (2 / 13) |
+  | 24 | 2025 | 25,480 | 5,011 | 17 (9 / 8) | 113 | 13 (2 / 11) |
+
+  Events: 30 at either horizon (seed 11: bankruptcy 6, liquidation 3, restructuring 2; list v1 19:
+  bankruptcy 7, liquidation 8, restructuring 4). Censored rows left out: 13,989 (12 months), 20,405 (24).
+  **Most of it has no filing behind it:** only 207 of the 608 labelled entities have a `filing_index` row
+  (list v1's 369 unsearched companies are labelled from KRS and MSiG alone). Rows with a statement known by
+  their `as_of_date`: 8,726 of 41,555 (12 months) and 6,699 of 35,139 (24), holding **14 events** (seed 8,
+  list v1 6), as the census found. Training events with a statement, by test year 2020–2025: 0, 1, 2, 3, 5,
+  7 (12 months); 0, 0, 2, 2, 4, 7 (24).
 
 ## Why
 
