@@ -15,7 +15,7 @@ censoring, Optuna tuning, SHAP explanations, and the champion rule.
 this plan does not need). It does not wait for list v2 (ADR 0014 addendum, proposed): weighting is plan
 0014's item 4, and this plan leaves a place for it (decision 9).
 
-## Status: draft (2026-10-09): owner decisions 0–9 open, with recommendations; nothing built
+## Status: active (2026-10-09): owner decisions 0–9 accepted as recommended; nothing built yet, step A next
 
 ## Why
 
@@ -60,7 +60,7 @@ Two things follow:
 - **No champion is crowned on this data.** The rule is written and tested now (decision 7), so promotion is a
   check, not a judgement, when the data can pass it.
 
-## Owner decisions (open; recommendations given)
+## Owner decisions (accepted as recommended, 2026-10-09)
 
 0. **The data: rebuild the labels and features over the seed and list v1 now.** A new label set (same label
    version, new hash, frozen like the seed's) and `feature_store` rebuilt over both lists; the text job run
@@ -224,7 +224,7 @@ it; `docs/data_inventory.md`; this plan's status.
 
 ## Definition of done
 
-- [ ] Owner decisions 0–9 made.
+- [x] Owner decisions 0–9 made (2026-10-09, as recommended).
 - [ ] Labels and features rebuilt over the seed and list v1, the fold table recorded before any model runs.
 - [ ] `backtest_v5` committed before the first run.
 - [ ] LightGBM, calibrated, and the discrete-time survival model evaluated on every fold, both horizons, the
