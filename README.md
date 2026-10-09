@@ -98,26 +98,31 @@ Recordings are gitignored (`*.har`, `.cache/`). They contain session data and th
 - `entities.csv`: one row per search, with the columns `krs`, `searched_at`, `found`, `list_rows` and `complete`.
   - `complete` is `Nie` on any early stop or doubt.
   - A number RDF does not find is written `found` = `Nie`, `complete` = `Tak`.
+- `outages.csv` (optional, `from;to`): spans when the script ran without a connection. A search inside one that found nothing is not recorded, since it says nothing about RDF.
 - `<krs>/<row_document_id>.zip`: each expanded row's download, exactly as **Pobierz dokumenty** delivered it.
 
-Both files use the same format:
+All three files use the same format:
 
 - `;`-separated UTF-8 (a BOM is allowed);
 - flags as `Tak` / `Nie`, as RDF shows them;
 - dates as `YYYY-MM-DD` or `DD.MM.YYYY`, and a time with no offset is read as Warsaw time.
 
-A2 must have run first, since only entities in `entity_master` are imported.
+A2 must have run first, since only entities in `entity_master` are imported. A list of KRS numbers kept outside the repository (ADR 0014) is loaded as candidates with `universe_candidates`' `krs_list` and `krs_list_source` config (e.g. `rejestr_io_v1`); only its KRS column is read.
 
 Import: `uv run dagster asset materialize -m dagster_defs.definitions --select rdf_script_import`. The import:
 
 - stores both listings as received;
 - matches each row to `filing_index` by RDF's document id, then by the single row it can only be, and otherwise adds a row keyed `id-<document id>`;
 - points each listed date back to the stored listing;
-- gives each row its type code from the type name and the period (`rdf_document_types.yaml`).
+- gives each row its type code from the type name and the period (`rdf_document_types.yaml`);
+- judges a search complete when the listing holds as many expanded rows as the page listed, whatever its `complete` flag says;
+- reads a missing correction flag (RDF shows none on older filings) from the ids;
+- skips entities with fewer filed years than the segment's `min_history_years` (a later listing with enough years imports them);
+- holds back the ZIP of an expanded row whose tabs the listing does not all have, until a listing does.
 
 Each ZIP is redacted like a captured download. When it holds a correction group, its files are paired with their tabs by the prepared date in each statement's header. A group that cannot be paired is stored unpaired, and a HAR capture completes it.
 
-The run's metadata counts what could not be used: `not_in_entity_master`, `unknown_types`, `rows_without_zip`, `zips_without_row`, `incomplete_entities` and `disagreements` (one document id read two ways). Each item is listed in the run's log. A row or file that cannot be read fails the asset, after everything else is imported.
+The run's metadata counts what could not be used: `not_in_entity_master`, `unknown_types`, `rows_without_zip`, `zips_without_row`, `incomplete_entities`, `too_few_years`, `incomplete_groups`, `outage_searches` and `disagreements` (one document id read two ways). Each item is listed in the run's log. A row or file that cannot be read fails the asset, after everything else is imported.
 
 Importing the same inbox again adds nothing, so append the script's newer rows and import again: a later deletion is recorded on its row, and a new correction becomes a row of its own. A HAR captured later completes the script's row rather than adding a second one. For an entity with scripted rows, `rdf_manual_import` adds only the documents the capture expanded, and lists the rest as `listed_not_added`. Like the recordings, the ZIPs name people, so keep them out of the repository.
 

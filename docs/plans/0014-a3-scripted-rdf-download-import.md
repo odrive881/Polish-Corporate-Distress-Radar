@@ -93,6 +93,28 @@ the next list representative.
 
 ### Progress
 
+- **Step 0 and list v1's first import (2026-10-09).** The owner's first listing in decision 2's format:
+  `documents.csv` (1,242 rows, 231 entities) and `entities.csv` (671 searches), 535 of list v1's 609 companies
+  searched. Owner's notes: entities with fewer than three filed years are left aside; a run of not-found searches
+  (2026-10-08, 13:57 to 23:52, 405 searches) was the connection dropping, not RDF; early searches marked
+  incomplete whenever more files came than the page listed.
+  - **Built from it** (`make check` and `make test-integration` green): `load_krs_list` (step 0, KRS column
+    only) and `universe_candidates`' `krs_list` config; in the importer, a missing correction flag read from
+    the ids (older filings show none), a found search with no count kept as incomplete, `outages.csv` (the
+    span above, written to the inbox), completeness judged by the rows listed against the page's count, the
+    segment's `min_history_years`, and a group's ZIP held back while the listing lacks some of its tabs.
+  - **Step 0:** list v1 loaded as `rejestr_io_v1`, 609 KRS numbers (ADR 0014 records its SHA-256). A2: 592
+    resolved, 16 quarantined `pkd_section_mismatch` (7 of them with downloads), 1 `ambiguous_match`.
+  - **Import:** 190 entities, 1,150 rows indexed, 1,118 with their document stored; 34 entities with fewer
+    than three filed years not imported; 405 outage searches not recorded; 258 searches recorded, 254
+    complete. Not stored: 27 groups whose correction tabs the listing lacks (their ZIPs held), 4 ZIPs the
+    redactor left personal data in (a qualified certificate's PESEL, a certificate, a trusted-profile
+    attachment inside `DaneZalacznika`), refused by the post-redaction scan, and 1 deleted row. The store-wide
+    `personal_data` scan finds nothing. One entity (0000681661) has listed documents but only an outage
+    search.
+  - **Open from it:** the script to write every tab of an expanded row (then the 27 groups import); the
+    redactor to cover the 4 ZIPs' signature forms; the 305 companies searched only during the outage and the 74
+    not yet searched; the composition census (ADR 0014) over the 592.
 - **Step F, docs (2026-10-08).** README § "Manual RDF capture" gains "Scripted downloads" (the inbox, both
   listings' columns and formats, the import and its refusal counts). The data inventory updates §2's status, adds
   `RDF_SCRIPT_INBOX` to §7's RDF row, and states in §2.4 what is no longer indexed (types 3, 4 and 20 beyond the

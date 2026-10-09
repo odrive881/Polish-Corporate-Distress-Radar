@@ -26,7 +26,8 @@ with Rejestr.io's (`rejestr.io`) search filters.**
   `636f4bab25f04cbd16be951958abb8422c7714773b49a2b4c73c34578aa2362a`).
 - **The list the script actually runs on differs slightly.** A few companies were skipped or removed; the shape
   is the same. The list of record is the one the script runs on, and it is the one loaded into
-  `universe_candidates`.
+  `universe_candidates`. *Loaded 2026-10-09* as `discovery_source` `rejestr_io_v1`: 609 rows, 609 distinct well-formed KRS
+  numbers, SHA-256 `d69e8866cf9db774a8c0abfa2fe0edde5e567bb164cce8611e4f375d29ca492e` (plan 0014, step 0).
 - **Only KRS numbers enter the pipeline.** `discovery_source` names the list and its version. Company names are
   not taken from it: `entity_master` takes the name from GUS (A2). A few names in the file contain a person's
   name, so the file is not committed. It stays outside the repository, like the inboxes.
