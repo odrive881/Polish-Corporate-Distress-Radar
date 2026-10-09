@@ -28,12 +28,12 @@ from distress_radar.acquisition.document_retrieval import (
     retrieve_document,
 )
 from distress_radar.acquisition.har_import import import_har
-from distress_radar.acquisition.raw_store import S3ObjectStore
+from distress_radar.acquisition.raw_store import S3ObjectStore, sha256_hex
 from distress_radar.acquisition.redaction_migration import stored_markers
 from distress_radar.acquisition.regon_client import resolve_entity
 from distress_radar.acquisition.report_import import import_reports
 from distress_radar.acquisition.script_import import import_listing
-from distress_radar.acquisition.universe_discovery import load_seed, load_segment
+from distress_radar.acquisition.universe_discovery import load_krs_list, load_seed, load_segment
 from distress_radar.settings import Settings
 
 if TYPE_CHECKING:
@@ -51,15 +51,24 @@ class SegmentConfig(dg.Config):
     segment: str = "construction_sme_v1"
 
 
+class UniverseConfig(SegmentConfig):
+    # A list of KRS numbers kept outside the repository (ADR 0014), and the name and version
+    # it is recorded under, e.g. `rejestr_io_v1`. Both or neither.
+    krs_list: str = ""
+    krs_list_source: str = ""
+
+
 @dg.asset(group_name="acquisition", required_resource_keys={"postgres"})
 def universe_candidates(
-    context: dg.AssetExecutionContext, config: SegmentConfig
+    context: dg.AssetExecutionContext, config: UniverseConfig
 ) -> dg.MaterializeResult:
-    """A1 — seed universe from `config/segments/<segment>_seed.yaml`.
+    """A1 — the seed universe from `config/segments/<segment>_seed.yaml`, and a KRS list.
 
-    Inputs: the seed YAML (no network).
-    Outputs: Postgres `universe_candidates` rows (`discovery_source=manual_seed`);
-    malformed entries as `quarantine_events` rows (stage A1, reason-coded). Inserts are
+    Inputs: the seed YAML; optionally a CSV list (`krs_list`, outside the repository) read for
+    its KRS column alone, as `discovery_source=krs_list_source` (ADR 0014). No network.
+    Outputs: Postgres `universe_candidates` rows (`discovery_source=manual_seed`, and the
+    list's); malformed entries as `quarantine_events` rows (stage A1, reason-coded). The
+    list's SHA-256 is in the run's metadata. Inserts are
     `ON CONFLICT DO NOTHING`, so re-materializing adds no rows.
     Partition scheme: none (unpartitioned) for the Phase 1 seed.
     """
@@ -69,17 +78,40 @@ def universe_candidates(
         ingestion_run_id=context.run_id,
         discovered_at=datetime.now(UTC),
     )
+    listed = None
+    list_metadata: dict[str, object] = {}
+    if bool(config.krs_list) != bool(config.krs_list_source):
+        raise dg.Failure(description="krs_list and krs_list_source go together")
+    if config.krs_list:
+        path = Path(config.krs_list)
+        listed = load_krs_list(
+            path,
+            discovery_source=config.krs_list_source,
+            ingestion_run_id=context.run_id,
+            discovered_at=datetime.now(UTC),
+        )
+        list_metadata = {
+            "list_source": config.krs_list_source,
+            "list_sha256": sha256_hex(path.read_bytes()),
+            "list_candidates": len(listed.candidates),
+            "list_quarantined": len(listed.quarantine),
+        }
     with postgres.connect() as conn:
         manifest.ensure_schema(conn)
         manifest.insert_universe_candidates(conn, seed.candidates)
         manifest.insert_quarantine(conn, seed.quarantine)
         conn.commit()
+        if listed is not None:
+            manifest.insert_universe_candidates(conn, listed.candidates)
+            manifest.insert_quarantine(conn, listed.quarantine)
+            conn.commit()
         counts = manifest.table_counts(conn)
     return dg.MaterializeResult(
         metadata={
             "seed_candidates": len(seed.candidates),
             "seed_quarantined": len(seed.quarantine),
             "universe_candidates_rows": counts["universe_candidates"],
+            **list_metadata,
         }
     )
 
@@ -568,7 +600,7 @@ def rdf_auditor_report_import(
     )
 
 
-class RdfScriptImportConfig(dg.Config):
+class RdfScriptImportConfig(SegmentConfig):
     inbox: str | None = None  # default RDF_SCRIPT_INBOX
 
 
@@ -584,8 +616,9 @@ def rdf_script_import(
     """A3, scripted downloads tier — what the owner's PAD script downloaded from RDF (ADR 0013).
 
     Inputs: the inbox (`RDF_SCRIPT_INBOX`, default `.cache/rdf_script_inbox`, gitignored):
-    `documents.csv` (one row per tab of an expanded row), `entities.csv` (one row per search)
-    and `<krs>/<row_document_id>.zip` as RDF delivered them (plan 0014, decision 2);
+    `documents.csv` (one row per tab of an expanded row), `entities.csv` (one row per search),
+    the optional `outages.csv` and the ZIPs as RDF delivered them (plan 0014, decision 2);
+    `config/segments/<segment>.yaml` (`min_history_years`);
     `entity_master`; `config/mappings/rdf_document_types.yaml` (type codes from names and
     periods, decision 5); stored details and dates lists (the `rdf_document_id` backfill).
     Outputs: both listings stored raw; `filing_index` rows created or completed from the
@@ -594,8 +627,9 @@ def rdf_script_import(
     MinIO (sidecar `fetch_tier: pad_script`), its rows' `sha256`. Only rows with nothing
     recorded are written, so re-materializing adds nothing. Refusals are counted in the
     metadata and listed in the log: entities not in `entity_master`, unknown type names, rows
-    with no ZIP, ZIPs with no row, incomplete listings, unreadable rows or ZIPs (these fail the
-    asset after the rest is done).
+    with no ZIP, ZIPs with no row, incomplete listings, entities with too few filed years,
+    groups with tabs missing (their ZIP held back), searches dropped in an outage, unreadable
+    rows or ZIPs (these fail the asset after the rest is done).
     Check: `personal_data`, blocking — no stored object holds natural persons' data (a store-wide
     scan, plan 0011 step F).
     Partition scheme: none (unpartitioned).
@@ -603,6 +637,7 @@ def rdf_script_import(
     postgres = cast("PostgresResource", context.resources.postgres)
     object_store = cast("RawObjectStoreResource", context.resources.raw_object_store)
     inbox = Path(config.inbox) if config.inbox else Settings().rdf_script_inbox
+    segment = load_segment(SEGMENTS_DIR / f"{config.segment}.yaml")
     store = object_store.store()
     with postgres.connect() as conn:
         manifest.ensure_schema(conn)
@@ -614,6 +649,7 @@ def rdf_script_import(
             ingestion_run_id=context.run_id,
             document_types=load_document_types(),
             resolved=set(manifest.resolved_entities(conn)),
+            min_history_years=segment.min_history_years,
         )
         counts = manifest.table_counts(conn)
         personal_data = _personal_data_check(conn, store)
@@ -624,6 +660,8 @@ def rdf_script_import(
         "rows_without_zip": report.rows_without_zip,
         "zips_without_row": report.zips_without_row,
         "incomplete_entities": report.incomplete_entities,
+        "too_few_years": report.too_few_years,
+        "incomplete_groups": report.incomplete_groups,
         "disagreements": report.disagreements,
     }
     for lines in listed.values():
