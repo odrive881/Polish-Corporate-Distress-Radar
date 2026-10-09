@@ -7,6 +7,7 @@ not a valid number), never from real filings.
 import base64
 import io
 import json
+import quopri
 import zipfile
 from pathlib import Path
 
@@ -323,3 +324,73 @@ def test_a_metadata_entry_that_is_not_a_stream_is_removed_too() -> None:
     result = redact_file(pdf, "report.pdf")
     assert result is not None and b"Jan Testowy" not in result.data
     assert personal_data_markers(result.data) == []
+
+
+# --- CMS signatures, quoted-printable and unparseable XML (plan 0014, list v1's import) -------
+
+
+def _tlv(tag: int, content: bytes) -> bytes:
+    n = len(content)
+    length = bytes([n]) if n < 0x80 else bytes([0x84]) + n.to_bytes(4, "big")
+    return bytes([tag]) + length + content
+
+
+def _cms(content: bytes | None) -> bytes:
+    """A CMS SignedData of `data` (RFC 5652) with a fake certificate naming a fake PESEL."""
+    data_oid = _tlv(0x06, bytes.fromhex("2a864886f70d010701"))
+    encap = _tlv(0x30, data_oid + (b"" if content is None else _tlv(0xA0, _tlv(0x04, content))))
+    certificate = _tlv(0xA0, _tlv(0x30, b"PNOPL-00000000000"))
+    signed = _tlv(
+        0x30, _tlv(0x02, b"\x01") + _tlv(0x31, b"") + encap + certificate + _tlv(0x31, b"")
+    )
+    return _tlv(0x30, _tlv(0x06, bytes.fromhex("2a864886f70d010702")) + _tlv(0xA0, signed))
+
+
+def test_a_cms_signature_is_replaced_by_the_document_it_signs() -> None:
+    signed = _cms(_signed(STATEMENT))
+    assert personal_data_markers(signed)
+    result = redact_file(signed, "zip:sf.sig")
+    plain = redact_file(_signed(STATEMENT), "zip:sf.sig>cms")
+    assert result is not None and plain is not None
+    assert result.data == plain.data and personal_data_markers(result.data) == []
+
+
+def test_a_detached_cms_signature_is_dropped_from_the_zip() -> None:
+    result = redact_download(_zip(**{"sf.xml": STATEMENT, "sf.xml.sig": _cms(None)}), NAMES)
+    with zipfile.ZipFile(io.BytesIO(result.data)) as z:
+        assert z.namelist() == [f"{TOKEN}.xml"]
+
+
+def test_quoted_printable_xml_is_decoded_and_redacted() -> None:
+    encoded = quopri.encodestring(_signed(STATEMENT))
+    assert b"=3D" in encoded[:200] and personal_data_markers(encoded)
+    result = redact_file(encoded, "zip:x>DaneZalacznika")
+    assert result is not None and personal_data_markers(result.data) == []
+    assert result.data.startswith(b"<?xml")  # stored decoded
+
+
+def _unparseable(statement: bytes) -> bytes:
+    """A filer's XML with a stray control character, which no XML parser accepts."""
+    end = statement.rindex(b"</")
+    return statement[:end] + b"\x13" + statement[end:]
+
+
+def test_unparseable_xml_loses_signatures_and_names_and_keeps_every_other_byte() -> None:
+    named = STATEMENT.replace(
+        b"<dtsf:Nazwa>plik-1.pdf</dtsf:Nazwa>", b"<dtsf:Nazwa>Notes_Jan_Testowy.pdf</dtsf:Nazwa>"
+    )
+    filed = _unparseable(_with_notes(_signed(named), _signed_pdf()))
+    assert personal_data_markers(filed)
+    result = redact_file(filed, "zip:x")
+    assert result is not None and personal_data_markers(result.data) == []
+    assert b"\x13" in result.data and b"<dtsf:Nazwa>plik-1.pdf</dtsf:Nazwa>" in result.data
+    expected = _unparseable(_with_notes(STATEMENT, b""))
+    head = expected[: expected.index(b"<dtsf:Zawartosc>")]
+    assert result.data.startswith(head)  # nothing before the attachment touched
+
+
+def test_unparseable_xml_naming_a_file_outside_plik_is_refused() -> None:
+    end = STATEMENT.rindex(b"</")
+    stray = STATEMENT[:end] + b"<dtsf:Nazwa>Jan_Testowy.pdf</dtsf:Nazwa>" + STATEMENT[end:]
+    with pytest.raises(RedactionError, match="outside Plik"):
+        redact_file(_unparseable(stray), "zip:x")

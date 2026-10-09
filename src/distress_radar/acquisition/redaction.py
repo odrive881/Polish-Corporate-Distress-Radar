@@ -7,7 +7,12 @@ hashed and stored, so the raw store never holds it:
 
 - XML: every `ds:Signature` element is removed. A signature *container*
   (a `ds:Signature` or `Signatures` root wrapping the statement) is replaced
-  by the statement it wraps; a detached signature file is dropped.
+  by the statement it wraps; a detached signature file is dropped. XML sent
+  quoted-printable is decoded first. XML no parser accepts (a filer's stray
+  control characters) has its `ds:Signature` elements cut out byte for byte,
+  and is refused if it names attachments, which only a parse could rename.
+- CMS (`.sig`, CAdES): the signed data is replaced by the document it carries;
+  one carrying none (a detached signature) is dropped.
 - Base64 payloads inside XML (attached notes, ePUAP attachments) are redacted
   recursively and re-encoded.
 - PDF: signature fields, their appearance streams and signature dictionaries
@@ -42,6 +47,7 @@ import base64
 import binascii
 import io
 import json
+import quopri
 import re
 import zipfile
 from collections.abc import Iterable, Mapping
@@ -52,7 +58,7 @@ from typing import cast
 import pymupdf
 from lxml import etree
 
-REDACTION_VERSION = "2"
+REDACTION_VERSION = "3"
 RDF_DETAIL_REDACTION_VERSION = "rdf-detail-1"
 KEPT_EXTENSIONS = frozenset(
     {
@@ -102,6 +108,20 @@ _MARKERS = {
     "qualified_certificate_pesel": re.compile(rb"PNOPL-\d{11}|504[eE]4[fF]504[cC]2[dD](?:3\d){11}"),
 }
 
+
+# CMS (RFC 5652): ContentInfo's type for SignedData, and the `data` type of its content.
+_CMS_SIGNED_DATA = bytes.fromhex("2a864886f70d010702")  # 1.2.840.113549.1.7.2
+_CMS_DATA = bytes.fromhex("2a864886f70d010701")  # 1.2.840.113549.1.7.1
+_ATTACHMENT_NAME_BYTES = re.compile(rb"<(?:[\w.-]+:)?Nazwa[\s>/]|\snazwaPliku\s*=")
+_PLIK_NAZWA = re.compile(rb"<((?:[\w.-]+:)?)Nazwa>(.*?)</\1Nazwa\s*>", re.DOTALL)
+_PAYLOAD_BYTES = re.compile(
+    rb"<((?:[\w.-]+:)?)(Zawartosc|DaneZalacznika)(?:\s[^>]*)?>([A-Za-z0-9+/=\s]*)</\1\2\s*>"
+)
+_TAG = re.compile(rb"<(/?)([\w.:-]+)[^>]*?(/?)>")
+_PLIK_PLACEHOLDER = re.compile(
+    rb"<(?:[\w.-]+:)?Nazwa>plik-\d+(?:\.[a-z]{2,5})?</(?:[\w.-]+:)?Nazwa\s*>"
+)
+_DS_PREFIX = re.compile(rb'xmlns:([\w.-]+)\s*=\s*["\']' + re.escape(DS_NS.encode()) + rb'["\']')
 
 _BASE64_RUN = re.compile(rb">[A-Za-z0-9+/=\s]{300,}<")
 
@@ -159,15 +179,204 @@ def redact_file(data: bytes, where: str) -> Redaction | None:
     body = data.removeprefix(_UTF8_BOM)
     if body.lstrip().startswith(b"%PDF"):
         return _redact_pdf(data, where)
+    if body.startswith(b"\x30"):
+        return _unwrap_cms(data, where)
     if not body.lstrip().startswith(b"<"):
         return Redaction(data)
     try:
         root = etree.fromstring(body, _parser())
     except etree.XMLSyntaxError:
-        return Redaction(data)  # not XML we can read; the marker check still applies
+        return _redact_unparsed_xml(data, where)
     if _is_signature_container(root):
         return _unwrap_container(root, where)
     return _redact_xml(root, data, where)
+
+
+def _redact_unparsed_xml(data: bytes, where: str) -> Redaction:
+    """XML lxml refuses: quoted-printable is decoded and redacted; otherwise signatures are cut.
+
+    Quoted-printable XML (`=3D` for `=`) is stored decoded when something had to be removed.
+    Anything else keeps every byte but its `ds:Signature` elements; the marker check still runs.
+    """
+    body = data.removeprefix(_UTF8_BOM)
+    if b"=3D" in body[:200]:
+        decoded = quopri.decodestring(body)
+        try:
+            root = etree.fromstring(decoded, _parser())
+        except etree.XMLSyntaxError:
+            pass
+        else:
+            inner = (
+                _unwrap_container(root, where)
+                if _is_signature_container(root)
+                else _redact_xml(root, decoded, where)
+            )
+            if inner is None:
+                raise RedactionError(f"{where}: quoted-printable signature holds no document")
+            if not inner.changed:
+                return Redaction(data)
+            return Redaction(inner.data, [f"{where}: decoded quoted-printable", *inner.actions])
+    actions: list[str] = []
+    body, renamed = _rename_plik_bytes(body)
+    if renamed:
+        actions.append(f"{where}: renamed {renamed} Plik names in unparseable XML")
+    if _ATTACHMENT_NAME_BYTES.search(_PLIK_PLACEHOLDER.sub(b"", body)):
+        raise RedactionError(f"{where}: unparseable XML naming attachments outside Plik")
+    cut = body
+    for prefix in {m[1] for m in _DS_PREFIX.finditer(body)}:
+        tag = re.escape(prefix) + rb":Signature"
+        cut = re.sub(rb"<" + tag + rb"[\s>].*?</" + tag + rb"\s*>", b"", cut, flags=re.DOTALL)
+    default = re.escape(DS_NS.encode())
+    cut = re.sub(
+        rb"<Signature\s[^>]*xmlns\s*=\s*[\"']" + default + rb"[\"'].*?</Signature\s*>",
+        b"",
+        cut,
+        flags=re.DOTALL,
+    )
+    if cut != body:
+        actions.append(f"{where}: cut ds:Signature from unparseable XML")
+    cut, inner_actions = _redact_payload_bytes(cut, where)
+    actions.extend(inner_actions)
+    if not actions:
+        return Redaction(data)
+    return Redaction(cut, actions)
+
+
+def _redact_payload_bytes(body: bytes, where: str) -> tuple[bytes, list[str]]:
+    """Base64 payloads (`Zawartosc`, `DaneZalacznika`) redacted and re-encoded, by bytes."""
+    actions: list[str] = []
+
+    def one(m: re.Match[bytes]) -> bytes:
+        payload = _b64decode(m[3].decode("ascii"))
+        if payload is None:
+            return m[0]
+        inner = redact_file(payload, f"{where}>{m[2].decode()}")
+        if inner is None:
+            raise RedactionError(f"{where}>{m[2].decode()}: payload is only a signature")
+        if not inner.changed:
+            return m[0]
+        actions.extend(inner.actions)
+        return (
+            m[0][: m.start(3) - m.start()]
+            + base64.b64encode(inner.data)
+            + m[0][m.end(3) - m.start() :]
+        )
+
+    return _PAYLOAD_BYTES.sub(one, body), actions
+
+
+def _enclosing(body: bytes, at: int) -> bytes | None:
+    """The local name of the element open at `at`, from the tags before it."""
+    stack: list[bytes] = []
+    for closing, name, empty in _TAG.findall(body, 0, at):
+        if name.startswith((b"?", b"!")) or empty:
+            continue
+        if closing:
+            if stack:
+                stack.pop()
+        else:
+            stack.append(name.split(b":")[-1])
+    return stack[-1] if stack else None
+
+
+def _rename_plik_bytes(body: bytes) -> tuple[bytes, int]:
+    """`Plik/Nazwa` -> `plik-<n>` by bytes, as `_rename_attachments` does on a parsed tree.
+
+    Only a `Nazwa` whose enclosing open element is a `Plik` is renamed; the caller refuses
+    any other attachment name it finds.
+    """
+    out: list[bytes] = []
+    at = renamed = seen = 0
+    for m in _PLIK_NAZWA.finditer(body):
+        if _enclosing(body, m.start()) != b"Plik":
+            continue
+        seen += 1
+        new = _attachment_name("Plik", seen, m[2].decode("utf-8", "replace")).encode()
+        out.append(body[at : m.start(2)] + new)
+        at = m.end(2)
+        renamed += new != m[2]
+    out.append(body[at:])
+    return b"".join(out), renamed
+
+
+def _der(data: bytes, at: int) -> tuple[int, int, int]:
+    """One DER element at `at`: its tag byte, where its content starts, where it ends."""
+    if at + 2 > len(data):
+        raise ValueError("truncated")
+    tag, first = data[at], data[at + 1]
+    if tag & 0x1F == 0x1F:
+        raise ValueError("multi-byte tag")
+    start = at + 2
+    if first < 0x80:
+        length = first
+    else:
+        n = first & 0x7F
+        if n == 0 or n > 4:
+            raise ValueError("indefinite or oversized length")
+        length = int.from_bytes(data[start : start + n], "big")
+        start += n
+    if start + length > len(data):
+        raise ValueError("truncated")
+    return tag, start, start + length
+
+
+def _der_children(data: bytes, start: int, end: int) -> list[tuple[int, int, int]]:
+    children: list[tuple[int, int, int]] = []
+    at = start
+    while at < end:
+        child = _der(data, at)
+        children.append(child)
+        at = child[2]
+    return children
+
+
+def _cms_content(data: bytes) -> bytes | None:
+    """The document a CMS SignedData carries, or `None` for a detached one.
+
+    Raises `ValueError` when the bytes are not a SignedData of `data`.
+    """
+    tag, start, end = _der(data, 0)
+    if tag != 0x30 or end != len(data):
+        raise ValueError("not one SEQUENCE")
+    content_info = _der_children(data, start, end)
+    if len(content_info) != 2:
+        raise ValueError("not a ContentInfo")
+    (oid_tag, oid_start, oid_end), (wrap_tag, wrap_start, wrap_end) = content_info
+    if oid_tag != 0x06 or data[oid_start:oid_end] != _CMS_SIGNED_DATA or wrap_tag != 0xA0:
+        raise ValueError("not SignedData")
+    [(sd_tag, sd_start, sd_end)] = _der_children(data, wrap_start, wrap_end)
+    signed = _der_children(data, sd_start, sd_end)
+    if sd_tag != 0x30 or len(signed) < 4:
+        raise ValueError("not a SignedData")
+    e_tag, e_start, e_end = signed[2]
+    encap = _der_children(data, e_start, e_end)
+    if e_tag != 0x30 or not encap or data[encap[0][1] : encap[0][2]] != _CMS_DATA:
+        raise ValueError("encapsulated content is not `data`")
+    if len(encap) == 1:
+        return None
+    [(octets_tag, octets_start, octets_end)] = _der_children(data, encap[1][1], encap[1][2])
+    if octets_tag == 0x04:
+        return data[octets_start:octets_end]
+    if octets_tag == 0x24:  # constructed: the content split into OCTET STRING parts
+        parts = _der_children(data, octets_start, octets_end)
+        if any(t != 0x04 for t, _, _ in parts):
+            raise ValueError("constructed content of other than OCTET STRINGs")
+        return b"".join(data[a:b] for _, a, b in parts)
+    raise ValueError("encapsulated content is not an OCTET STRING")
+
+
+def _unwrap_cms(data: bytes, where: str) -> Redaction | None:
+    """A CMS signature replaced by the document it signs; a detached one is dropped."""
+    try:
+        content = _cms_content(data.removeprefix(_UTF8_BOM))
+    except ValueError:
+        return Redaction(data)  # not CMS SignedData; the marker check still applies
+    if content is None:
+        return None
+    inner = redact_file(content, f"{where}>cms")
+    if inner is None:
+        return None
+    return Redaction(inner.data, [f"{where}: unwrapped from CMS signature", *inner.actions])
 
 
 def _redact_xml(root: etree._Element, original: bytes, where: str) -> Redaction:  # pyright: ignore[reportPrivateUsage]
@@ -501,6 +710,10 @@ def _file_markers(data: bytes, where: str) -> list[str]:
         try:
             root = etree.fromstring(body, _parser())
         except etree.XMLSyntaxError:
+            if _DS_PREFIX.search(body) and re.search(rb"<(?:[\w.-]+:)?Signature[\s>]", body):
+                found.append(f"{where}: xml_signature")
+            if _ATTACHMENT_NAME_BYTES.search(_PLIK_PLACEHOLDER.sub(b"", body)):
+                found.append(f"{where}: attachment name in unparseable XML")
             return found
         if next(root.iter(f"{{{DS_NS}}}Signature"), None) is not None:
             found.append(f"{where}: xml_signature")

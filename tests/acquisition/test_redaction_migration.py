@@ -241,7 +241,10 @@ def test_a_bundle_and_its_details_lose_the_filers_names(conn: psycopg.Connection
     versions = dict(
         conn.execute("SELECT received_sha256, redaction_version FROM raw_redactions").fetchall()
     )
-    assert versions == {bundle: "2", **{sha: "rdf-detail-1" for sha in details.values()}}
+    assert versions == {
+        bundle: REDACTION_VERSION,
+        **{sha: "rdf-detail-1" for sha in details.values()},
+    }
 
 
 def test_a_detail_before_its_download_leaves_the_download_unnameable(
@@ -275,7 +278,7 @@ def test_a_second_redaction_extends_the_log_of_the_first(conn: psycopg.Connectio
     log = conn.execute(
         "SELECT received_sha256, redacted_sha256, redaction_version FROM raw_redactions ORDER BY 3"
     ).fetchall()
-    assert log == [("e" * 64, bundle, "1"), (bundle, new, "2")]
+    assert log == [("e" * 64, bundle, "1"), (bundle, new, REDACTION_VERSION)]
     assert json.loads(store.get(sidecar_key(new)))["received_sha256"] == bundle
 
 
