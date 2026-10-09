@@ -147,7 +147,12 @@ and 163 XMP metadata: an author is usually the person who wrote the notes.
    rules 1–4); details under their own version, `rdf-detail-1`. The sidecar and `raw_redactions` record them
    as before. Already-stored objects are re-derived once by a migration of the same shape as the signature
    one: the new object written, the manifest repointed in one transaction, the old object deleted only after
-   the new one verifies (plan 0011 step E).
+   the new one verifies (plan 0011 step E). *Version 3 (2026-10-09, plan 0014):* the same rules reach three
+   forms list v1's downloads brought. A CMS signature (`.sig`) is replaced by the document it signs, a detached
+   one dropped; quoted-printable XML is decoded and redacted; XML no parser accepts (a filer's stray control
+   characters) loses its `ds:Signature` elements byte for byte, its `Plik/Nazwa` becomes `plik-<n>` and its
+   base64 payloads are redacted, every other byte kept, and any other attachment name refuses it. The marker
+   check looks into unparseable XML too; one stored object it then found was migrated.
 6. **Fail closed, and a standing check.** A download whose members cannot all be named, or a detail without
    the `document_ref` its token needs, is not stored. The names as received live only in memory, taken from
    the details fetched in the same run: a bundle of several filings whose row was expanded in an earlier run

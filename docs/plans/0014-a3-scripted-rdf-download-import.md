@@ -112,8 +112,12 @@ the next list representative.
     attachment inside `DaneZalacznika`), refused by the post-redaction scan, and 1 deleted row. The store-wide
     `personal_data` scan finds nothing. One entity (0000681661) has listed documents but only an outage
     search.
-  - **Open from it:** the script to write every tab of an expanded row (then the 27 groups import); the
-    redactor to cover the 4 ZIPs' signature forms; the 305 companies searched only during the outage and the 74
+  - **The 4 refused ZIPs, stored the same day** under redaction version 3 (ADR 0009): two CMS `.sig`
+    files, one quoted-printable ePUAP attachment, one with stray control characters. The stricter marker
+    check found one more object from the import (an attachment name in unparseable XML), migrated
+    (`redaction_migration --apply`). Now 1,122 of the 1,150 rows have their document; the `personal_data`
+    check passes.
+  - **Open from it:** the script to write every tab of an expanded row (then the 27 groups import); the 305 companies searched only during the outage and the 74
     not yet searched; the composition census (ADR 0014) over the 592.
 - **Step F, docs (2026-10-08).** README § "Manual RDF capture" gains "Scripted downloads" (the inbox, both
   listings' columns and formats, the import and its refusal counts). The data inventory updates §2's status, adds
