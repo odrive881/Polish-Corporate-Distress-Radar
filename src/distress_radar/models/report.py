@@ -3,7 +3,9 @@
 Every table opens with the seed caveat and its event count, generated rather than written once,
 since a harness that looks finished invites reading its numbers. A cell below `min_events` has the
 verdict `n/a (<k events)` and no numbers; a cell whose model could not be fitted says why. The
-two runs sit on adjacent rows. Nothing time-dependent is written, so the same inputs give the same bytes.
+runs sit on adjacent rows. With generation 3 (plan 0015 step F): its inner year per fold, each
+fold's feature importance (never a company or a row), the survival models' metrics, and the
+champion rule's verdict. Nothing time-dependent is written, so the same inputs give the same bytes.
 """
 
 # polars's signatures reference types pyright cannot resolve; scoped to this module.
@@ -18,6 +20,7 @@ import polars as pl
 
 from distress_radar.models.backtest import POOLED, RUNS, BacktestResult
 from distress_radar.models.evaluation import METRICS
+from distress_radar.models.explain import TOP, top_features
 
 REPORTS = Path("reports") / "backtest"
 _METRIC_TITLES = {
@@ -26,7 +29,11 @@ _METRIC_TITLES = {
     "auc": "AUC",
     "top_decile_precision": "top-decile precision",
 }
-_RUN_TITLES = {"main": "all rows", "no_regime": "2020-21 regime rows left out"}
+_RUN_TITLES = {
+    "main": "all rows",
+    "no_regime": "2020-21 regime rows left out",
+    "entity_disjoint": "`main`'s models, scored only on entities no model of the fold trained on",
+}
 
 
 def _number(value: float | None) -> str:
@@ -61,12 +68,238 @@ def _table(header: list[str], rows: list[list[str]]) -> list[str]:
     ]
 
 
+def _by_list(counts: dict[str, int]) -> str:
+    return " (" + ", ".join(f"{name} {n}" for name, n in counts.items()) + ")" if counts else ""
+
+
 def _caveat(result: BacktestResult, horizon: int) -> str:
     k = result.config.min_events
+    kind = "Purposive lists" if result.lists else "Seed output"
     return (
-        f"_Seed output, not evidence: {result.events[horizon]} distinct events at {horizon} "
-        f"months among {result.entities} entities; cells below {k} events print n/a._"
+        f"_{kind}, not evidence: {result.events[horizon]} distinct events at {horizon} "
+        f"months{_by_list(result.events_by_list.get(horizon, {}))} among {result.entities} "
+        f"entities; cells below {k} events print n/a._"
     )
+
+
+def _opening(result: BacktestResult) -> str:
+    config = result.config
+    k = config.min_events
+    level = round(config.bootstrap.level * 100)
+    counts = ", ".join(f"{n} distinct events at {h} months" for h, n in result.events.items())
+    if result.lists:
+        who = (
+            f"> **Purposive lists, not evidence.** {result.entities} entities"
+            f"{_by_list(result.lists)}, {result.distress_entities} of them ever in distress; "
+            f"{counts}. Each list was chosen with distress status in mind (the seed by distress "
+            "hints, a hand-built list along axes that include it; ADR 0014), so every probability "
+            "below is calibrated on a base rate the population does not have, and no number here "
+            "is a performance claim."
+        )
+    else:
+        who = (
+            f"> **Seed output, not evidence.** {result.entities} hand-picked entities, "
+            f"{result.distress_entities} of them ever in distress; {counts}. The seed was chosen "
+            "with distress hints, so every probability below is calibrated on a base rate the "
+            "population does not have, and no number here is a performance claim."
+        )
+    return (
+        f"{who} A cell with fewer than {k} distinct training or test events prints n/a. "
+        f"Intervals are {level}% percentile intervals over {config.bootstrap.replicates} "
+        "resamples of entities."
+    )
+
+
+def _gbm_folds(result: BacktestResult, horizon: int) -> list[str]:
+    """Generation 3's inner year per fold: tuned or defaults, calibrated or raw, and why."""
+    if result.gbm_folds is None:
+        return []
+    rows = result.gbm_folds.filter(pl.col("horizon_months") == horizon).sort("test_year", "run")
+    return [
+        "",
+        "### Generation 3 per fold",
+        "",
+        (
+            "Tuning and calibration read only the inner validation year, the training rows' last "
+            "settled year; below their gates the defaults and the raw score stand."
+        ),
+        "",
+        *_table(
+            ["test year", "run", "inner year", "inner events", "settings", "calibration"],
+            [
+                [
+                    str(r["test_year"]),
+                    str(r["run"]),
+                    "–" if r["inner_year"] is None else str(r["inner_year"]),
+                    str(r["inner_events"]),
+                    str(r["tuning"]),
+                    str(r["calibration"]),
+                ]
+                for r in rows.iter_rows(named=True)
+            ],
+        ),
+    ]
+
+
+def _importance(result: BacktestResult, horizon: int, caveat: str) -> list[str]:
+    """Each fold's top features by mean absolute SHAP value; no company, no row."""
+    if result.importance is None:
+        return []
+    table = result.importance.filter(pl.col("horizon_months") == horizon)
+    lines = [
+        "",
+        "### Feature importance (generation 3)",
+        "",
+        caveat,
+        "",
+        (
+            f"_Mean absolute SHAP value over each fold's test rows, in log-odds of the raw score; "
+            f"the top {TOP} features, the rest summed. With this few events a ranking is an "
+            "anecdote, not a finding._"
+        ),
+    ]
+    for run in RUNS[:2]:
+        folds = table.filter(pl.col("run") == run)
+        years = sorted(folds.get_column("test_year").unique().to_list())
+        if not years:
+            continue
+        columns = [
+            top_features(folds.filter(pl.col("test_year") == year)).iter_rows() for year in years
+        ]
+        ranked = [list(c) for c in columns]
+        depth = max(len(c) for c in ranked)
+        lines += ["", f"`{run}`:", ""]
+        lines += _table(
+            ["rank", *(str(y) for y in years)],
+            [
+                [
+                    str(i + 1) if i < TOP else "rest",
+                    *(f"{c[i][0]} {c[i][1]:.3f}" if i < len(c) else "" for c in ranked),
+                ]
+                for i in range(depth)
+            ],
+        )
+    return lines
+
+
+def _survival(result: BacktestResult) -> list[str]:
+    """The survival models' time-dependent metrics per run and test year."""
+    if result.survival is None:
+        return []
+    k = result.config.min_events
+    rows = result.survival.sort("model", "test_year", "run")
+    return [
+        "",
+        "## Survival",
+        "",
+        (
+            f"_Uno's concordance (IPCW) and the integrated Brier score of the survival models on "
+            f"each test year's records, censored ones included, with the censoring distribution "
+            f"from the training records; below {k} events, n/a. Their 12- and 24-month "
+            "probabilities are scored in the horizon tables above._"
+        ),
+        "",
+        *_table(
+            [
+                "model",
+                "test year",
+                "run",
+                "train records",
+                "train events",
+                "test records",
+                "test events",
+                "verdict",
+                "concordance (IPCW)",
+                "integrated Brier",
+            ],
+            [
+                [
+                    str(r["model"]),
+                    str(r["test_year"]),
+                    str(r["run"]),
+                    str(r["train_records"]),
+                    str(r["train_events"]),
+                    str(r["test_records"]),
+                    str(r["test_events"]),
+                    "scored" if r["evaluable"] else f"n/a ({r['note']})",
+                    _number(r["concordance_ipcw"]) if r["evaluable"] else "n/a",
+                    _number(r["integrated_brier"]) if r["evaluable"] else "n/a",
+                ]
+                for r in rows.iter_rows(named=True)
+            ],
+        ),
+    ]
+
+
+def _champion(result: BacktestResult) -> list[str]:
+    """The champion rule's comparisons and verdict."""
+    verdict = result.champion
+    rule = result.config.champion
+    if verdict is None or rule is None:
+        return []
+    level = round(result.config.bootstrap.level * 100)
+    if verdict.promoted is not None:
+        outcome = f"**`{verdict.promoted}` is promoted over `{verdict.incumbent}`.**"
+    else:
+        outcome = f"**Nothing is promoted: `{verdict.incumbent}` stays the champion.**"
+    lines = [
+        "",
+        "## Champion rule",
+        "",
+        (
+            f"A challenger replaces `{verdict.incumbent}` only if, at each horizon and in each of "
+            f"{', '.join(f'`{r}`' for r in rule.runs)}, its pooled Brier score is lower with the "
+            f"{level}% paired entity-bootstrap interval of the difference wholly below zero, its "
+            f"AUC is at most {rule.auc_margin} lower, and the paired rows hold at least "
+            f"{rule.min_promotion_events} distinct events. Paired rows: the test rows both models "
+            f"scored, in the folds where both trained on {result.config.min_events}+ events."
+        ),
+        "",
+        outcome,
+        "",
+        *_table(
+            ["challenger", "verdict"],
+            [[f"`{c}`", v] for c, v in verdict.verdicts.items()],
+        ),
+        "",
+    ]
+    lines += _table(
+        [
+            "challenger",
+            "horizon",
+            "run",
+            "paired rows",
+            "events",
+            "Brier, challenger",
+            "Brier, incumbent",
+            "difference",
+            "AUC, challenger",
+            "AUC, incumbent",
+            "outcome",
+        ],
+        [
+            [
+                f"`{c.challenger}`",
+                str(c.horizon_months),
+                c.run,
+                str(c.rows),
+                str(c.events),
+                _number(c.brier_challenger),
+                _number(c.brier_incumbent),
+                (
+                    f"{_number(c.brier_difference)} "
+                    f"[{_number(c.difference_low)}–{_number(c.difference_high)}]"
+                    if c.evaluable
+                    else "n/a"
+                ),
+                _number(c.auc_challenger),
+                _number(c.auc_incumbent),
+                "passes" if c.passes else ("n/a: " if not c.evaluable else "fails: ") + c.reason,
+            ]
+            for c in verdict.comparisons
+        ],
+    )
+    return lines
 
 
 def _population(result: BacktestResult) -> list[str]:
@@ -97,20 +330,10 @@ def _population(result: BacktestResult) -> list[str]:
 def render_report(result: BacktestResult, code_commit: str) -> str:
     config = result.config
     k = config.min_events
-    level = round(config.bootstrap.level * 100)
     lines = [
         f"# Backtest report: {config.backtest}",
         "",
-        (
-            f"> **Seed output, not evidence.** {result.entities} hand-picked entities, "
-            f"{result.distress_entities} of them ever in distress; "
-            + ", ".join(f"{n} distinct events at {h} months" for h, n in result.events.items())
-            + ". The seed was chosen with distress hints, so every probability below is "
-            "calibrated on a base rate the population does not have, and no number here is a "
-            f"performance claim. A cell with fewer than {k} distinct training or test events "
-            f"prints n/a. Intervals are {level}% percentile intervals over "
-            f"{config.bootstrap.replicates} resamples of entities."
-        ),
+        _opening(result),
         "",
         *_table(
             ["input", "value"],
@@ -242,6 +465,10 @@ def render_report(result: BacktestResult, code_commit: str) -> str:
                 for r in folds.iter_rows(named=True)
             ],
         )
+        lines += _gbm_folds(result, horizon)
+        lines += _importance(result, horizon, caveat)
+    lines += _survival(result)
+    lines += _champion(result)
     return "\n".join(lines) + "\n"
 
 

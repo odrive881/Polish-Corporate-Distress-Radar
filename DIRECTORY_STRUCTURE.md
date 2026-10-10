@@ -206,6 +206,8 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
     │   ├── test_gbm.py                 # nulls never filled, the inner year inside training, the gates
     │   ├── test_survival.py            # the target agrees with the labels, purged by month, 1 − ∏ survival
     │   ├── test_explain.py             # values sum to the score, importance, nothing per-row in the report
+    │   ├── test_champion.py            # synthetic results that pass, fail each condition, or fall short
+    │   ├── test_report_generation3.py  # the entity-disjoint run, events per list, the report's new sections
     │   ├── test_population.py          # the acquisition-complete rule, its pin, the report's section
     │   ├── test_evaluation.py          # hand-computed metrics, bootstrap, the report's bytes
     │   ├── test_registry.py            # the four identifiers, a dirty tree refused
@@ -296,11 +298,12 @@ src/distress_radar/
 │   ├── baselines.py               # Altman, Polish discriminant models: config/models/ loader
 │   ├── classical.py               # logistic regression
 │   ├── evaluation.py              # metrics, entity bootstrap, reliability, the n/a rule per cell
-│   ├── backtest.py                # every model on every fold, horizon and run (main, no_regime)
+│   ├── backtest.py                # every model on every fold, horizon and run (main, no_regime, entity_disjoint)
 │   ├── report.py                  # the backtest report as generated Markdown
 │   ├── gbm.py                     # LightGBM: nulls kept, inner validation year, gated Optuna, Platt
 │   ├── survival.py                # discrete-time hazard model, survival forest, IPCW metrics
 │   ├── explain.py                 # SHAP per fold: global importance; per-row values to model_explanations/, local only
+│   ├── champion.py                # the champion rule: paired entity bootstrap, AUC margin, event floor
 │   └── registry.py                # MLflow logging wrapper
 │
 └── api/

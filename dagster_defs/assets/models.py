@@ -20,7 +20,7 @@ from distress_radar.models.backtest import POOLED, run_backtest
 from distress_radar.models.baselines import load_classical_model
 from distress_radar.models.dataset import load_feature_store, load_label_set
 from distress_radar.models.explain import write_explanations
-from distress_radar.models.population import Population, read_population
+from distress_radar.models.population import Population, read_lists, read_population
 from distress_radar.models.registry import code_commit, data_snapshot, identifiers, log_backtest
 from distress_radar.models.report import render_report, write_report
 from distress_radar.models.splits import label_timing, load_backtest_config
@@ -40,16 +40,17 @@ CLASSICAL_MODELS = ("altman_z2_2000", "poznan_2004")
     required_resource_keys={"postgres"},
 )
 def backtest(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
-    """I — the out-of-time backtest of the classical models and the logistic regression.
+    """I — the out-of-time backtest: the classical models, the logistic regression and, for a config
+    with generation 3 (plan 0015), LightGBM, the survival models and the champion rule.
 
     Inputs: `feature_store` and the frozen label set pinned in
     `config/models/<BACKTEST_VERSION>.yaml` (by hash, not the latest `outcome_labels`), under
     `WAREHOUSE_DIR`; the label version's timing rules (`config/labels/`, the taxonomy's KRZ launch),
     which decide the training labels settled by each test year; the classical models'
     coefficients in `config/models/`; the code commit of a clean working tree, refused otherwise;
-    for a config with a `population` rule (plan 0015 decision 10), Postgres
-    `rdf_listed_entities`, `filing_index` and `universe_candidates`, which decide the entities
-    modelled, refused unless they give the pinned hash.
+    Postgres `universe_candidates`, whose lists every event count is broken down by; for a config
+    with a `population` rule (plan 0015 decision 10), also `rdf_listed_entities` and
+    `filing_index`, which decide the entities modelled, refused unless they give the pinned hash.
     Outputs: the Markdown report at `WAREHOUSE_DIR/reports/backtest/<BACKTEST_VERSION>.md`,
     replaced whole, the same bytes for the same inputs; one MLflow run per model, horizon and
     run (`main`, `no_regime`) in `MLFLOW_TRACKING_URI`, each with the four identifiers; for a
@@ -64,9 +65,10 @@ def backtest(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
     models = [load_classical_model(m, feature_set) for m in CLASSICAL_MODELS]
     labels = load_label_set(settings.warehouse_dir, config.label_set_hash)
     population: Population | None = None
-    if config.population is not None:
-        postgres = cast("PostgresResource", context.resources.postgres)
-        with postgres.connect() as conn:
+    postgres = cast("PostgresResource", context.resources.postgres)
+    with postgres.connect() as conn:
+        lists = read_lists(conn)
+        if config.population is not None:
             population = read_population(
                 conn,
                 labels.get_column("krs").unique().to_list(),
@@ -80,6 +82,7 @@ def backtest(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
         label_timing(labels),
         models,
         population,
+        lists,
     )
     snapshot, files = data_snapshot(settings.warehouse_dir)
     if result.explanations is not None:  # per-row SHAP: local only, never the report or MLflow

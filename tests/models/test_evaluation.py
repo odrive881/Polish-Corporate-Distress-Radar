@@ -131,8 +131,8 @@ def test_every_model_horizon_run_and_year_has_a_cell(result: BacktestResult) -> 
         "altman_z2_2000",
         "poznan_2004",
     }
-    # 3 models x 2 horizons x 2 runs x (4 years + pooled)
-    assert cells.height == 3 * 2 * 2 * 5
+    # 3 models x 2 horizons x 3 runs x (4 years + pooled)
+    assert cells.height == 3 * 2 * 3 * 5
     assert cells.filter(pl.col("evaluable")).height > 0  # the panel is big enough to score
     evaluable = cells.filter(pl.col("evaluable"))
     assert (evaluable.get_column("test_events") >= 3).all()

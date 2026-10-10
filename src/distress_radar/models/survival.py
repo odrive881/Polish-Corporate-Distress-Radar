@@ -279,6 +279,7 @@ class SurvivalFit:
     train_records: int
     train_person_months: int
     train_events: int
+    train_entities: frozenset[str]  # every entity with a training record: seen by the model
     note: str  # why not fitted, or ""
     hazard: lgb.Booster | None
     forest: RandomSurvivalForest | None
@@ -338,6 +339,7 @@ def fit_survival(
         train_records=train.height,
         train_person_months=int(time.sum()),
         train_events=train_events,
+        train_entities=frozenset(train.get_column("krs").to_list()),
         note=note,
         hazard=hazard,
         forest=forest,

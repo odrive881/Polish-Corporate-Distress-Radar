@@ -177,3 +177,15 @@ def read_population(
         complete_by_capture=config.complete_by_capture,
         download_codes=download_codes,
     )
+
+
+def read_lists(conn: Connection) -> dict[str, frozenset[str]]:
+    """The universe lists, `universe_candidates`' discovery sources, each with its KRS numbers, in
+    name order; an entity may be on several."""
+    rows = conn.execute(
+        "SELECT discovery_source, trim(krs) FROM universe_candidates ORDER BY 1, 2"
+    ).fetchall()
+    lists: dict[str, set[str]] = {}
+    for source, krs in rows:
+        lists.setdefault(str(source), set()).add(str(krs))
+    return {name: frozenset(krs) for name, krs in lists.items()}

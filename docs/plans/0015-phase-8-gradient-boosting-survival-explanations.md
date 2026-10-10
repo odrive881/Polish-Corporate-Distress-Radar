@@ -15,7 +15,7 @@ censoring, Optuna tuning, SHAP explanations, and the champion rule.
 this plan does not need). It does not wait for list v2 (ADR 0014 addendum, proposed): weighting is plan
 0014's item 4, and this plan leaves a place for it (decision 9).
 
-## Status: active (2026-10-09): owner decisions 0–9 accepted as recommended, 10 added from step A's fold table; steps A–E built, step F next
+## Status: active (2026-10-09): owner decisions 0–9 accepted as recommended, 10 added from step A's fold table; steps A–F built, step G next
 
 ### Progress
 
@@ -129,6 +129,31 @@ this plan does not need). It does not wait for list v2 (ADR 0014 addendum, propo
   Tested: a row's values plus the base value equal its raw score (nulls included); importance by hand; the
   report table; no KRS number or per-row value in the report; reruns give identical values, importance and
   file bytes.
+- **Step F (2026-10-10):** the report, the entity-disjoint run and the champion rule.
+  - **`entity_disjoint`** (decision 6), a third run beside `main` and `no_regime` for every backtest
+    version: `main`'s fitted models, scored only on test rows of entities no model of the fold trained on,
+    neither in the binary training rows nor among the survival models' records. Under the `alive` lag a recent
+    entrant's last year is not settled on the eve, so it can be unseen while already labelled. Its folds and
+    cells are reported like the others; MLflow logs it as a run (three per model and horizon).
+  - **Per-list counts** (decision 0): `run_backtest` takes the universe lists (`population.read_lists`, from
+    `universe_candidates`); the opening caveat names them as purposive with entities per list, and every
+    table's caveat gives its events per list.
+  - **`models/champion.py`** (decision 7): each challenger (`lightgbm`, calibrated; `survival_lightgbm`;
+    `survival_forest`) against the regression, at each horizon and in `main` and `no_regime`, on the rows both
+    scored in folds where both trained on `min_events`: the paired entity-bootstrap interval of the Brier
+    difference, the AUC margin, the event floor. A comparison short of the floor makes the challenger not
+    evaluable; of several that pass, the lowest mean `main` Brier score is promoted. The verdict is in the
+    report; setting the MLflow alias is step G.
+  - **The report** gains generation 3's inner year per fold (tuned or defaults, Platt or raw, and why), each
+    fold's top-15 importance per horizon and run (`main`, `no_regime`; the rest summed; "an anecdote, not a
+    finding"), the survival metrics, and the champion section.
+  - **On the real inputs** (a full `run_backtest`, timings and verdict text only): 140 seconds; 294 cells;
+    24,268 explained rows; 8,308 entity-disjoint scored rows; events by list 11 (seed) and 7 (list v1) at
+    both horizons. The champion rule: every challenger not evaluable, the paired rows holding 5–6 events
+    against the 50 it needs; nothing promoted.
+  - Tested: the champion rule on synthetic results that pass, fail on the interval, fail on AUC with a better
+    Brier score, fail in `no_regime`, and fall below the floor; pairing; the entity-disjoint run against the
+    folds; per-list counts; the report's sections; reproducible verdicts and report.
 
 ## Why
 
