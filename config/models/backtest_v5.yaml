@@ -1,0 +1,112 @@
+# The out-of-time backtest, v5 (plan 0015, Phase 8): generation 3 (LightGBM, discrete-time survival)
+# beside generations 1 and 2, on the seed and list v1 (decision 0), restricted to the entities whose
+# acquisition is complete (decision 10). Recorded before any run, as plan 0012 owner decision 5
+# requires: every value below was fixed before a model saw this label set.
+#
+# Loaded by `distress_radar.models.splits.load_backtest_config`. The file name is the version:
+# change a value after seeing results, and it is a new file, never an edit.
+
+backtest: backtest_v5
+# The inputs, pinned (decision 0): feature_set_v6 as it is (decision 8: no new features) and the
+# label set frozen over the seed and list v1 on 2026-10-09 (plan 0015 step A).
+feature_set_version: feature_set_v6
+label_set_hash: 19bf5d2f1d6656152bdad457ade8911317b8889bf279ff11dabdc2122c87701b
+horizons: [12, 24]
+# As in v1–v4 (plan 0012 decisions 1 and 2).
+distress_classes: [bankruptcy, restructuring, liquidation, silent_exit]
+test_years: [2020, 2021, 2022, 2023, 2024, 2025]
+min_events: 3
+
+# Decision 10: only entities whose RDF search is complete and whose downloadable statements are all
+# stored; the seed is complete by its hand capture (plan 0003). The hash is of the 186 included KRS
+# numbers on 2026-10-09 (plan 0015 Progress); a re-search that changes them is a new version.
+population:
+  rule: acquisition_complete
+  complete_by_capture: [manual_seed]
+  entities_hash: d27dd39dd13afb35835d465b34deafe7f93765dae97dd37f3c7e774165a437e4
+
+# Generation 2, the incumbent (decision 7), unchanged from v4.
+logistic_regression:
+  features: [equity_to_assets, working_capital_to_assets, roa, asset_turnover, going_concern_threat]
+  penalty: l2
+  C: 1.0
+  class_weight: none
+
+# Decision 1: one binary model per horizon on every column of the feature set (identifiers, dates,
+# `*__known_from` and `regime_flag` never), nulls kept. Few leaves and a high leaf minimum for a few
+# dozen events; no class weighting (it would distort the probabilities the Brier score judges); no
+# bagging; deterministic, row-wise, one thread and a fixed seed, so a rerun gives the same bytes
+# (checked in step A). `lambda_l2` and `feature_fraction` are LightGBM's own defaults.
+lightgbm:
+  num_leaves: 7
+  min_data_in_leaf: 20
+  learning_rate: 0.05
+  num_iterations: 200
+  lambda_l2: 0.0
+  feature_fraction: 1.0
+  bagging_fraction: 1.0
+  use_missing: true
+  zero_as_missing: false
+  class_weight: none
+  deterministic: true
+  force_row_wise: true
+  num_threads: 1
+  seed: 20261009
+
+# Decision 2: Optuna within a fold, fitted on the training years before the last settled one and
+# scored on that inner validation year's Brier score, never the test year's; only where the inner
+# year holds 30 distinct events, otherwise decision 1's defaults, counted and reported. On today's
+# data no fold clears the gate. The ranges bracket the defaults; engineering choices, not statute.
+tuning:
+  min_tuning_events: 30
+  objective: inner_validation_brier
+  sampler: tpe
+  seed: 20261009
+  trials: 50
+  space:
+    num_leaves: {type: int, low: 3, high: 31}
+    min_data_in_leaf: {type: int, low: 10, high: 200, log: true}
+    learning_rate: {type: float, low: 0.01, high: 0.2, log: true}
+    num_iterations: {type: int, low: 50, high: 500}
+    lambda_l2: {type: float, low: 0.001, high: 10.0, log: true}
+    feature_fraction: {type: float, low: 0.5, high: 1.0}
+
+# Decision 3: a one-variable logistic map from score to probability, fitted on the inner validation
+# year (the rows decision 2 uses); a fold whose inner year holds fewer than `min_events` events keeps
+# the raw score, and the report says so. Raw and calibrated are both scored.
+calibration:
+  method: platt
+  fit_on: inner_validation_year
+
+# Decision 4: monthly person-period rows up to 24 months, event and censoring times from the frozen
+# label set alone; the hazard model takes `lightgbm`'s settings above. The random survival forest is
+# the comparison (it accepts missing values, step A), its leaf minimum matching LightGBM's.
+survival:
+  period: month
+  max_months: 24
+  hazard_model: lightgbm
+  comparison:
+    n_estimators: 200
+    min_samples_leaf: 20
+    max_features: sqrt
+    seed: 20261009
+    n_jobs: 1
+  metrics: [concordance_ipcw, integrated_brier]
+
+# Decision 7, the champion rule: a challenger beats the regression only if, at each horizon, its
+# pooled Brier score is lower with the 95% paired entity-bootstrap interval (`bootstrap` below) of
+# the difference wholly below zero, its AUC is at most 0.02 lower, both in `main` and `no_regime`,
+# and the pooled cells rest on 50 distinct events. On today's data it promotes nothing.
+champion:
+  incumbent: logistic_regression
+  brier: paired_entity_bootstrap
+  auc_margin: 0.02
+  runs: [main, no_regime]
+  min_promotion_events: 50
+
+# As in v1–v4 (plan 0012 decision 8).
+bootstrap:
+  replicates: 1000
+  seed: 20260927
+  level: 0.95
+reliability_bins: 10

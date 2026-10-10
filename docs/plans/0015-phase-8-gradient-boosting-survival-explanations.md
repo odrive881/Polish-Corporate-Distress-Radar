@@ -15,7 +15,7 @@ censoring, Optuna tuning, SHAP explanations, and the champion rule.
 this plan does not need). It does not wait for list v2 (ADR 0014 addendum, proposed): weighting is plan
 0014's item 4, and this plan leaves a place for it (decision 9).
 
-## Status: active (2026-10-09): owner decisions 0–9 accepted as recommended, 10 added from step A's fold table; step A built, step B next
+## Status: active (2026-10-09): owner decisions 0–9 accepted as recommended, 10 added from step A's fold table; steps A and B built, step C next
 
 ### Progress
 
@@ -80,6 +80,15 @@ this plan does not need). It does not wait for list v2 (ADR 0014 addendum, propo
 
   18 events at either horizon (seed 11, list v1 7; bankruptcy 9, liquidation 7, restructuring 2); censored
   rows left out 4,152 (12 months) and 6,203 (24). The hash is pinned in `backtest_v5` (step B).
+- **Step B (2026-10-10):** `config/models/backtest_v5.yaml`, committed before any run: step A's label set and
+  population hash; v4's regression, folds and bootstrap unchanged; decision 1's LightGBM defaults; decision
+  2's gate (30 events), objective, TPE sampler, seed, 50 trials and a search space over six parameters that
+  brackets the defaults; decision 3's Platt map on the inner validation year; decision 4's monthly hazard model
+  up to 24 months with a random survival forest (200 trees, leaf minimum 20) as the comparison; decision 7's
+  rule (paired entity bootstrap, AUC margin 0.02, `main` and `no_regime`, 50 events). The loader refuses an
+  unknown key, a value decisions 1 fixes (nulls dropped, class weighting, bagging, threads), generation 3's
+  sections named only in part, a search over a parameter decision 1 fixes, and a survival horizon shorter than
+  the longest label horizon. `BACKTEST_VERSION` stays `backtest_v4` until step G wires generation 3 in.
 
 ## Why
 
