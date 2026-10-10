@@ -12,9 +12,9 @@
 **Order:** after ADR 0013's decision. It does not wait for plan 0013 (Phase 7). A1 is the owner's
 Rejestr.io list (ADR 0014, accepted 2026-10-06), loaded in step 0.
 
-## Status: active (2026-10-08): owner decisions 1–6 accepted as recommended; steps B–D built and tested, step F's docs written; step A's two seed checks run (decision 5's rule agrees on all placeable rows, decision 3's pairing exact on all 8 groups, so pairing is on); step A's field-by-field comparison waits on a listing from the script; a sample of the script's output received; step 0 waits on the list the script runs on
+## Status: active (2026-10-09): owner decisions 1–6 accepted as recommended; steps 0 and B–D built, step F's docs written; list v1's first listing imported (2026-10-09, Progress); step A's seed checks run (decision 5's rule agrees on all placeable rows, decision 3's pairing exact on all 8 groups, so pairing is on); open: the script writing every tab of an expanded row, re-searching list v1's unsearched companies, and step A's field-by-field comparison and step E on the seed
 
-### Where this stands (2026-10-09)
+### Where this stands (2026-10-10)
 
 - **Built (2026-10-08), with nothing more to build before the owner's next items:**
   - the manifest columns (step B);
@@ -24,9 +24,11 @@ Rejestr.io list (ADR 0014, accepted 2026-10-06), loaded in step 0.
   - the docs (step F).
 
   `make check` and `make test-integration` are green.
-- **The importer has not met real data yet.** Its input is the format of decision 2, which the script does not
-  write yet. The next step is the owner's: the script updated to write `documents.csv` and `entities.csv`, run
-  on two seed entities (step A), then on all 17 (step E).
+- **The importer has met real data (2026-10-09):** the script's first listing in decision 2's format, over list
+  v1 (step 0 and the import, § "Progress"): 190 entities imported, 1,122 of 1,150 rows with their document.
+- **Next, the owner's:** the script to write every tab of an expanded row (27 groups are held back without
+  them); re-searching list v1's 386 companies with no search (most searched only during the 2026-10-08
+  outage); and the seed through the script for step A's field-by-field comparison and step E.
 
 As of 2026-10-07:
 

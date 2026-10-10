@@ -298,7 +298,6 @@ src/distress_radar/
 │   ├── report.py                  # the backtest report as generated Markdown
 │   ├── gbm.py                     # LightGBM: nulls kept, inner validation year, gated Optuna, Platt
 │   ├── survival.py                # scikit-survival
-│   ├── calibration.py
 │   └── registry.py                # MLflow logging wrapper
 │
 └── api/
