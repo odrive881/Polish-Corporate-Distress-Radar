@@ -51,7 +51,7 @@ this plan does not need). It does not wait for list v2 (ADR 0014 addendum, propo
   Events: 30 at either horizon (seed 11: bankruptcy 6, liquidation 3, restructuring 2; list v1 19:
   bankruptcy 7, liquidation 8, restructuring 4). Censored rows left out: 13,989 (12 months), 20,405 (24).
   **Most of it has no filing behind it:** only 207 of the 608 labelled entities have a `filing_index` row
-  (list v1's 369 unsearched companies are labelled from KRS and MSiG alone). Rows with a statement known by
+  (list v1's 368 labelled companies with no RDF search are labelled from KRS and MSiG alone). Rows with a statement known by
   their `as_of_date`: 8,726 of 41,555 (12 months) and 6,699 of 35,139 (24), holding **14 events** (seed 8,
   list v1 6), as the census found. Training events with a statement, by test year 2020–2025: 0, 1, 2, 3, 5,
   7 (12 months); 0, 0, 2, 2, 4, 7 (24).
@@ -122,9 +122,9 @@ censored rows Phase 6 had to leave out used by a survival model, and each score 
 - **The universe beyond the seed** (plan 0014, 2026-10-09): list v1, 592 companies resolved, 190 imported, 186
   with a parsed statement; KRS extracts, MSiG notices and `legal_events` built over all of them. ADR 0014's
   census: **20 of the 592 have a distress event; 8 of those are imported, and 6 have a statement public before
-  their first event.** 369 companies are not yet searched on RDF.
-- **Not yet rebuilt over list v1:** the label set (the frozen `066d18bbd4cd…` is the seed's), `feature_store`,
-  and the text job. Step A does it.
+  their first event.** 386 of list v1's 609 companies are not yet searched on RDF (368 of them labelled).
+- **Not yet rebuilt over list v1 when this plan was written:** the label set (the frozen `066d18bbd4cd…` is
+  the seed's), `feature_store`, and the text job. Step A rebuilt them (Progress).
 - **Not installed:** `lightgbm`, `scikit-survival`, `optuna`, `shap`.
 
 ## The constraint that decides what this phase can show
@@ -133,7 +133,7 @@ censored rows Phase 6 had to leave out used by a survival model, and each score 
 are too few for any AUC, Brier score or SHAP ranking to mean more than the machinery working: moving one event
 between years moves a result more than any modelling choice. And both lists are purposive (the seed by
 distress hints, list v1 by hand along axes that include distress status), so no probability from them is
-calibrated for the population (ADR 0014). Re-searching list v1's 369 adds events; list v2, drawn by a written
+calibrated for the population (ADR 0014). Re-searching list v1's unsearched companies adds events; list v2, drawn by a written
 rule and weighted, is the first universe whose rates mean something.
 
 So Phase 8, like Phase 6, proves the **machinery**, and every number it prints says so, with its event count.
@@ -248,7 +248,7 @@ Two things follow:
 - New features; size class (waits on employment, AGENT_SPEC §4.4).
 - Serving the champion, the Quarto report, drift monitoring (Phase 9 and later).
 - List v2's draw and the weighted results (plan 0014, items 4 and 5).
-- Re-searching list v1's 369 companies on RDF (the owner's script); this plan reruns on whatever is imported.
+- Re-searching list v1's 386 unsearched companies on RDF (the owner's script); this plan reruns on whatever is imported.
 
 ## Steps
 
