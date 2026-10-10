@@ -65,6 +65,137 @@ class BootstrapConfig(BaseModel):
     level: float = Field(gt=0.5, lt=1)
 
 
+class LightGbmConfig(BaseModel):
+    """Plan 0015 decision 1: generation 3's defaults, fixed before the first run. The values the
+    decision fixes outright (nulls kept, no class weighting, no bagging, byte-reproducible) are
+    literals; the rest are the defaults decision 2's search may move, where it runs."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    num_leaves: int = Field(ge=2)
+    min_data_in_leaf: int = Field(ge=1)
+    learning_rate: float = Field(gt=0, le=1)
+    num_iterations: int = Field(ge=1)
+    lambda_l2: float = Field(ge=0)
+    feature_fraction: float = Field(gt=0, le=1)
+    bagging_fraction: float = Field(ge=1, le=1)  # bagging off: decision 1
+    use_missing: Literal[True]
+    zero_as_missing: Literal[False]
+    class_weight: Literal["none"]
+    deterministic: Literal[True]
+    force_row_wise: Literal[True]
+    num_threads: Literal[1]
+    seed: int = Field(ge=0)
+
+
+class SearchRange(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    type: Literal["int", "float"]
+    low: float
+    high: float
+    log: bool = False
+
+    @model_validator(mode="after")
+    def _range(self) -> SearchRange:
+        if self.low >= self.high:
+            raise ValueError("a search range needs low < high")
+        if self.log and self.low <= 0:
+            raise ValueError("a log-scaled range needs low > 0")
+        if self.type == "int" and not (self.low.is_integer() and self.high.is_integer()):
+            raise ValueError("an int range needs whole bounds")
+        return self
+
+
+# The LightGBM parameters decision 2's search may move; every other one is fixed by decision 1.
+TUNABLE = frozenset(
+    {
+        "num_leaves",
+        "min_data_in_leaf",
+        "learning_rate",
+        "num_iterations",
+        "lambda_l2",
+        "feature_fraction",
+    }
+)
+
+
+class TuningConfig(BaseModel):
+    """Plan 0015 decision 2: Optuna inside a fold, on the inner validation year's Brier score,
+    only where that year holds `min_tuning_events` distinct events."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    min_tuning_events: int = Field(ge=1)
+    objective: Literal["inner_validation_brier"]
+    sampler: Literal["tpe"]
+    seed: int = Field(ge=0)
+    trials: int = Field(ge=1)
+    space: dict[str, SearchRange] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def _tunable(self) -> TuningConfig:
+        unknown = sorted(set(self.space) - TUNABLE)
+        if unknown:
+            raise ValueError(f"tuning.space names parameters that are not tunable: {unknown}")
+        return self
+
+
+class CalibrationConfig(BaseModel):
+    """Plan 0015 decision 3: Platt scaling fitted on the inner validation year, never the test
+    year; below `min_events` events there, the raw score is kept and reported."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    method: Literal["platt"]
+    fit_on: Literal["inner_validation_year"]
+
+
+class SurvivalForestConfig(BaseModel):
+    """Decision 4's comparison model: scikit-survival's random survival forest, which accepts
+    missing values in the installed version (step A)."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    n_estimators: int = Field(ge=1)
+    min_samples_leaf: int = Field(ge=1)
+    max_features: Literal["sqrt"]
+    seed: int = Field(ge=0)
+    n_jobs: Literal[1]
+
+
+class SurvivalConfig(BaseModel):
+    """Plan 0015 decision 4: a discrete-time hazard model in LightGBM on monthly person-period
+    rows up to `max_months`, with LightGBM's defaults; scikit-survival's metrics beside it."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    period: Literal["month"]
+    max_months: int = Field(ge=1)
+    hazard_model: Literal["lightgbm"]
+    comparison: SurvivalForestConfig
+    metrics: tuple[Literal["concordance_ipcw", "integrated_brier"], ...] = Field(min_length=1)
+
+
+class ChampionConfig(BaseModel):
+    """Plan 0015 decision 7: a challenger beats the incumbent only if, at each horizon, its pooled
+    Brier score is lower with the paired entity-bootstrap interval of the difference wholly below
+    zero, its AUC is at most `auc_margin` lower, both hold in every run of `runs`, and the pooled
+    cells rest on `min_promotion_events` distinct events."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    incumbent: Literal["logistic_regression"]
+    brier: Literal["paired_entity_bootstrap"]
+    auc_margin: float = Field(ge=0, lt=1)
+    runs: tuple[Literal["main", "no_regime"], ...] = Field(min_length=1)
+    min_promotion_events: int = Field(ge=1)
+
+
+# Generation 3's sections (plan 0015): a config names all of them or none (before backtest_v5).
+GENERATION_3 = ("lightgbm", "tuning", "calibration", "survival", "champion")
+
+
 class BacktestConfig(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -81,6 +212,21 @@ class BacktestConfig(BaseModel):
     # Plan 0015 owner decision 10: the entities whose acquisition is complete (`population.py`);
     # absent before backtest_v5, where every labelled entity is modelled.
     population: PopulationConfig | None = None
+    lightgbm: LightGbmConfig | None = None
+    tuning: TuningConfig | None = None
+    calibration: CalibrationConfig | None = None
+    survival: SurvivalConfig | None = None
+    champion: ChampionConfig | None = None
+
+    @model_validator(mode="after")
+    def _generation_3(self) -> BacktestConfig:
+        named = [s for s in GENERATION_3 if getattr(self, s) is not None]
+        if named and len(named) != len(GENERATION_3):
+            missing = [s for s in GENERATION_3 if s not in named]
+            raise ValueError(f"generation 3 needs every one of its sections; missing: {missing}")
+        if self.survival is not None and self.survival.max_months < max(self.horizons):
+            raise ValueError("survival.max_months must reach the longest horizon")
+        return self
 
     @model_validator(mode="after")
     def _ordered(self) -> BacktestConfig:

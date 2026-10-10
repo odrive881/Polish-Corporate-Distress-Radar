@@ -10,6 +10,7 @@ import shutil
 from dataclasses import replace
 from datetime import date
 from pathlib import Path
+from typing import Any
 
 import polars as pl
 import pytest
@@ -218,3 +219,84 @@ def test_the_regression_may_only_read_ratio_features_and_flags(tmp_path: Path) -
     path.write_text(yaml.safe_dump(raw), "utf-8")
     with pytest.raises(ValueError, match="late_filings_3y"):
         load_backtest_config("backtest_v1", config_dir)
+
+
+def test_backtest_v5_records_plan_0015s_decisions() -> None:
+    """Plan 0015, recorded before any run: v4's regression and folds on the new label set, the
+    population of decision 10, and generation 3's values from decisions 1-4 and 7."""
+    v4 = load_backtest_config("backtest_v4")
+    v5 = load_backtest_config("backtest_v5")
+    assert v5.label_set_hash.startswith("19bf5d2f1d66")  # step A's set, seed and list v1
+    assert v5.population is not None and v5.population.complete_by_capture == ("manual_seed",)
+    assert v5.population.entities_hash.startswith("d27dd39dd13a")
+    unchanged = {"feature_set_version", "horizons", "distress_classes", "test_years", "min_events"}
+    unchanged |= {"logistic_regression", "bootstrap", "reliability_bins"}
+    assert v5.model_dump(include=unchanged) == v4.model_dump(include=unchanged)
+    gbm = v5.lightgbm
+    assert gbm is not None
+    assert (gbm.num_leaves, gbm.min_data_in_leaf, gbm.learning_rate, gbm.num_iterations) == (
+        7,
+        20,
+        0.05,
+        200,
+    )
+    assert v5.tuning is not None
+    assert (v5.tuning.min_tuning_events, v5.tuning.trials) == (30, 50)
+    assert v5.survival is not None and v5.survival.max_months == 24
+    assert v5.champion is not None
+    assert (v5.champion.auc_margin, v5.champion.min_promotion_events) == (0.02, 50)
+    assert v5.champion.runs == ("main", "no_regime")
+
+
+REMOVE = object()  # the edit removes the key
+
+
+def _v5_with(tmp_path: Path, path: tuple[str, ...], value: object) -> None:
+    """Load backtest_v5 with one value set (or removed) at `path` in its YAML."""
+    config_dir = tmp_path / "config"
+    shutil.copytree(CONFIG_DIR, config_dir)
+    file = config_dir / "models" / "backtest_v5.yaml"
+    raw: dict[str, Any] = yaml.safe_load(file.read_text("utf-8"))
+    node = raw
+    for key in path[:-1]:
+        node = node[key]
+    if value is REMOVE:
+        del node[path[-1]]
+    else:
+        node[path[-1]] = value
+    file.write_text(yaml.safe_dump(raw), "utf-8")
+    load_backtest_config("backtest_v5", config_dir)
+
+
+@pytest.mark.parametrize(
+    ("path", "value", "match"),
+    [
+        (("lightgbm", "min_child_samples"), 5, "min_child_samples"),
+        (("lightgbm", "use_missing"), False, "use_missing"),
+        (("lightgbm", "class_weight"), "balanced", "class_weight"),
+        (("lightgbm", "num_threads"), 4, "num_threads"),
+        (("lightgbm", "bagging_fraction"), 0.8, "bagging_fraction"),
+        (("champion",), REMOVE, "missing: \\['champion'\\]"),
+        (("tuning", "space", "seed"), {"type": "int", "low": 1, "high": 9}, "seed"),
+        (("tuning", "space", "learning_rate", "low"), 0.0, "log-scaled"),
+        (("tuning", "space", "num_leaves", "high"), 2, "low < high"),
+        (("survival", "max_months"), 12, "longest horizon"),
+    ],
+    ids=[
+        "unknown-key",
+        "nulls-dropped",
+        "class-weighting",
+        "threads",
+        "bagging",
+        "partial-generation-3",
+        "untunable",
+        "log-from-zero",
+        "empty-range",
+        "survival-short",
+    ],
+)
+def test_backtest_v5_refuses_what_its_decisions_rule_out(
+    tmp_path: Path, path: tuple[str, ...], value: object, match: str
+) -> None:
+    with pytest.raises(ValueError, match=match):
+        _v5_with(tmp_path, path, value)
