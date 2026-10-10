@@ -20,7 +20,7 @@ window closed before it and settled on its eve. That inner split, never the test
   out-of-sample. Elsewhere the raw probability stands, and the summary says so.
 
 Both versions are scored: `lightgbm_raw`, and `lightgbm`, the calibrated one, which is the
-model's result. Every fit is byte-reproducible: deterministic, row-wise, one thread, fixed seeds.
+model's result; the latter carries each test row's SHAP values (`explain.py`, step E). Every fit is byte-reproducible: deterministic, row-wise, one thread, fixed seeds.
 The fitting functions take an optional per-row weight (decision 9), unused until list v2.
 """
 
@@ -52,6 +52,7 @@ from distress_radar.models.classical import (
 )
 from distress_radar.models.dataset import LABEL_COLUMNS, TARGET
 from distress_radar.models.evaluation import brier
+from distress_radar.models.explain import explanation_frame, shap_values
 from distress_radar.models.splits import (
     BacktestConfig,
     Fold,
@@ -284,9 +285,14 @@ def fit_predict_gbm(
     x = feature_matrix(fold.test, columns)
     raw = probability(booster, x)
     mapped = platt.apply(raw_score(booster, x)) if platt is not None else raw
+    values, base = shap_values(booster, x)
     return (
         FoldPredictions(summary, with_probability(fold.test, raw)),
-        FoldPredictions(calibrated, with_probability(fold.test, mapped)),
+        FoldPredictions(
+            calibrated,
+            with_probability(fold.test, mapped),
+            explanation_frame(fold.test, columns, values, base),
+        ),
     )
 
 
