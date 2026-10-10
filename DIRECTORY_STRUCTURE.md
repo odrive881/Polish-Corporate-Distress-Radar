@@ -115,6 +115,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │   ├── backtest_v2.yaml           # v1 on feature_set_v4, plus the going-concern flag (plan 0013)
 │   │   ├── backtest_v3.yaml           # v2 on feature_set_v5, the regression unchanged (plan 0013)
 │   │   ├── backtest_v4.yaml           # v3 on feature_set_v6 (plan 0013)
+│   │   ├── backtest_v5.yaml           # generation 3 and the acquisition-complete population (plan 0015)
 │   │   └── poznan_2004.yaml           # the Poznań model, Hamrol, Czajka, Piechocki (2004)
 │   ├── labels/
 │   │   ├── outcome_labels_v1.yaml     # label parameters; the file name is the label_version
@@ -202,6 +203,8 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
     │   ├── test_splits.py              # purged folds, labels settled by each test year — blocking
     │   ├── test_classical.py           # complete cases, fold-fitted ranks, a score mapped to a probability
     │   ├── test_baselines.py           # published coefficients and zones; a model its feature set can't feed
+    │   ├── test_gbm.py                 # nulls never filled, the inner year inside training, the gates
+    │   ├── test_population.py          # the acquisition-complete rule, its pin, the report's section
     │   ├── test_evaluation.py          # hand-computed metrics, bootstrap, the report's bytes
     │   ├── test_registry.py            # the four identifiers, a dirty tree refused
     │   └── test_backtest_asset.py      # the models group and its hand-run job
@@ -293,7 +296,7 @@ src/distress_radar/
 │   ├── evaluation.py              # metrics, entity bootstrap, reliability, the n/a rule per cell
 │   ├── backtest.py                # every model on every fold, horizon and run (main, no_regime)
 │   ├── report.py                  # the backtest report as generated Markdown
-│   ├── gbm.py                     # LightGBM
+│   ├── gbm.py                     # LightGBM: nulls kept, inner validation year, gated Optuna, Platt
 │   ├── survival.py                # scikit-survival
 │   ├── calibration.py
 │   └── registry.py                # MLflow logging wrapper

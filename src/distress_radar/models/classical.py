@@ -81,6 +81,12 @@ class FitSummary:
     note: str = ""  # why not fitted
     coefficients: tuple[tuple[str, float], ...] = field(default=())
     intercept: float | None = None
+    # Generation 3 (`gbm.py`): the settings fitted with, and what its inner validation year allowed.
+    hyperparameters: tuple[tuple[str, float], ...] = field(default=())
+    inner_year: int | None = None
+    inner_events: int = 0
+    tuning: str = ""  # tuned, or the defaults and why
+    calibration: str = ""  # Platt-mapped, or raw and why
 
 
 @dataclass(frozen=True)

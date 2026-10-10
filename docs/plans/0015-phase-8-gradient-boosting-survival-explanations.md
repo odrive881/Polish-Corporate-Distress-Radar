@@ -15,7 +15,7 @@ censoring, Optuna tuning, SHAP explanations, and the champion rule.
 this plan does not need). It does not wait for list v2 (ADR 0014 addendum, proposed): weighting is plan
 0014's item 4, and this plan leaves a place for it (decision 9).
 
-## Status: active (2026-10-09): owner decisions 0–9 accepted as recommended, 10 added from step A's fold table; steps A and B built, step C next
+## Status: active (2026-10-09): owner decisions 0–9 accepted as recommended, 10 added from step A's fold table; steps A–C built, step D next
 
 ### Progress
 
@@ -89,6 +89,18 @@ this plan does not need). It does not wait for list v2 (ADR 0014 addendum, propo
   unknown key, a value decisions 1 fixes (nulls dropped, class weighting, bagging, threads), generation 3's
   sections named only in part, a search over a parameter decision 1 fixes, and a survival horizon shorter than
   the longest label horizon. `BACKTEST_VERSION` stays `backtest_v4` until step G wires generation 3 in.
+- **Step C (2026-10-10):** `models/gbm.py`. Each fold gives `lightgbm_raw` and `lightgbm` (calibrated), run by
+  `backtest.py` whenever the config has a `lightgbm` section. Inputs are every column with a `*__known_from`
+  companion (63 on `feature_set_v6`), keys and label columns never; nulls reach LightGBM as NaN. **Decision
+  2's "last settled training year", made precise:** the latest year whose `alive` rows were all settled on
+  the fold's eve, not simply the training rows' last year. Under label v2's
+  12-month `alive` lag the last year's training rows are almost all events (an event settles when it is
+  known), so validating there would score a year selected by its label. `splits.split` (factored out of
+  `purged_folds`) splits the training rows at that year. On the real population every fold fits; no fold
+  reaches the tuning gate (inner years hold 1–4 events); the Platt map applies on 3 of 12 folds (12 months
+  2025, 24 months 2020 and 2025), the rest keep the raw score and say so. Tested on the synthetic panel: nulls
+  never filled, the inner split inside the training rows and before the test year, tuning and calibration
+  reading only it, both gates, Platt recovering a known map, identical reruns tuned or not.
 
 ## Why
 

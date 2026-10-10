@@ -308,23 +308,23 @@ class Fold:
 def purged_folds(
     dataset: ModellingDataset, test_years: tuple[int, ...], timing: LabelTiming
 ) -> list[Fold]:
-    frame = dataset.frame
-    closes = window_end(dataset.horizon_months)
-    folds: list[Fold] = []
-    for year in test_years:
-        closed = frame.filter(closes < date(year, 1, 1))
-        settled = settled_by(date(year - 1, 12, 31), dataset.horizon_months, timing)
-        train = closed.filter(settled)
-        folds.append(
-            Fold(
-                horizon_months=dataset.horizon_months,
-                test_year=year,
-                train=train,
-                test=frame.filter(pl.col("as_of_date").dt.year() == year),
-                train_rows_unsettled=closed.height - train.height,
-            )
-        )
-    return folds
+    return [split(dataset.frame, dataset.horizon_months, year, timing) for year in test_years]
+
+
+def split(frame: pl.DataFrame, horizon_months: int, year: int, timing: LabelTiming) -> Fold:
+    """One purged fold of `frame`: train on the rows whose window closed before `year` and whose
+    label was settled on its eve, test on the rows dated in `year`. Generation 3 splits a fold's
+    own training rows the same way for its inner validation year (`gbm.py`)."""
+    closes = window_end(horizon_months)
+    closed = frame.filter(closes < date(year, 1, 1))
+    train = closed.filter(settled_by(date(year - 1, 12, 31), horizon_months, timing))
+    return Fold(
+        horizon_months=horizon_months,
+        test_year=year,
+        train=train,
+        test=frame.filter(pl.col("as_of_date").dt.year() == year),
+        train_rows_unsettled=closed.height - train.height,
+    )
 
 
 def events(rows: pl.DataFrame) -> pl.DataFrame:

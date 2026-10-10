@@ -23,6 +23,7 @@ from distress_radar.models.baselines import ClassicalModel, fit_predict_classica
 from distress_radar.models.classical import FoldPredictions, fit_predict_logistic
 from distress_radar.models.dataset import ModellingDataset, modelling_dataset
 from distress_radar.models.evaluation import METRICS, cell, reliability
+from distress_radar.models.gbm import fit_predict_gbm
 from distress_radar.models.population import Population
 from distress_radar.models.splits import (
     BacktestConfig,
@@ -71,6 +72,8 @@ def _fold_results(
     out: list[FoldPredictions] = []
     for fold in purged_folds(dataset, config.test_years, timing):
         out.append(fit_predict_logistic(fold, config.logistic_regression))
+        if config.lightgbm is not None:
+            out.extend(fit_predict_gbm(fold, config, timing))
         out.extend(
             fit_predict_classical(fold, model, config.logistic_regression) for model in models
         )
