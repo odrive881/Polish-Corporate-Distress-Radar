@@ -15,7 +15,7 @@ censoring, Optuna tuning, SHAP explanations, and the champion rule.
 this plan does not need). It does not wait for list v2 (ADR 0014 addendum, proposed): weighting is plan
 0014's item 4, and this plan leaves a place for it (decision 9).
 
-## Status: active (2026-10-09): owner decisions 0–9 accepted as recommended, 10 added from step A's fold table; steps A–C built, step D next
+## Status: active (2026-10-09): owner decisions 0–9 accepted as recommended, 10 added from step A's fold table; steps A–D built, step E next
 
 ### Progress
 
@@ -101,6 +101,22 @@ this plan does not need). It does not wait for list v2 (ADR 0014 addendum, propo
   2025, 24 months 2020 and 2025), the rest keep the raw score and say so. Tested on the synthetic panel: nulls
   never filled, the inner split inside the training rows and before the test year, tuning and calibration
   reading only it, both gates, Platt recovering a known map, identical reruns tuned or not.
+- **Step D (2026-10-10):** `models/survival.py`. One record per labelled `as_of_date` from its 24-month label
+  row, censored rows included: the month of its first distress event, a merger's month (which censors, as in
+  the label grid), and the months observed, month k counting as observed when its month-end is within the
+  label rules' `alive` limit (the cutoff, less the 12-month lag for months ending after KRZ's launch). A fold
+  trains on the records as its eve knew them: months cut at the eve's `alive` limit, an event or merger counted
+  once known, an event not yet known censoring the record before its month; so no training month ends in the
+  test year. Two models: `survival_lightgbm` (decision 1's LightGBM on monthly person-period rows, the month an
+  extra input) and `survival_forest` (scikit-survival's forest on the records, nulls kept), each fitted once per
+  run and test year, predicting the binary test rows at 12 and 24 months, so both enter the same cells; beside
+  them, Uno's concordance (IPCW) and the integrated Brier score per run and test year
+  (`BacktestResult.survival`; the report's table is step F). In `no_regime` the records whose 24-month window
+  overlaps the regime window are left out. On the real population: 19,572 records; the 2025 fold trains on
+  13,588 (277,385 person-months, 12 events) against the binary 12-month fold's 11,702 rows, in 22 seconds.
+  Tested: hand-built records stop at the event, the lag or the merger; every record agrees with its binary
+  labels in the label set and with the binary fold's training labels on each eve; no training month in the
+  test year; the probability is one minus the product of the monthly survival; reruns identical.
 
 ## Why
 
