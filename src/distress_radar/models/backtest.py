@@ -23,6 +23,7 @@ from distress_radar.models.baselines import ClassicalModel, fit_predict_classica
 from distress_radar.models.classical import FoldPredictions, fit_predict_logistic
 from distress_radar.models.dataset import ModellingDataset, modelling_dataset
 from distress_radar.models.evaluation import METRICS, cell, reliability
+from distress_radar.models.explain import KEYS, importance
 from distress_radar.models.gbm import fit_predict_gbm
 from distress_radar.models.population import Population
 from distress_radar.models.splits import (
@@ -66,6 +67,11 @@ class BacktestResult:
     # The survival models' time-dependent metrics per run and test year (plan 0015 decision 4);
     # empty when the config has no survival section.
     survival: pl.DataFrame | None = None
+    # Generation 3's SHAP values (plan 0015 decision 5): per scored row, local only (never the
+    # report or MLflow), and the global mean absolute value per fold and feature, which may be shown.
+    # None when the config has no `lightgbm` section.
+    explanations: pl.DataFrame | None = None
+    importance: pl.DataFrame | None = None
 
 
 def _for_run(dataset: ModellingDataset, run: str) -> ModellingDataset:
@@ -143,6 +149,7 @@ def run_backtest(
     tables: list[pl.DataFrame] = []
     fold_tables: list[pl.DataFrame] = []
     scored: list[pl.DataFrame] = []
+    explained: list[pl.DataFrame] = []
     totals: dict[int, int] = {}
     identity: ModellingDataset | None = None
     for horizon in config.horizons:
@@ -180,6 +187,16 @@ def run_backtest(
                         ),
                     }
                 )
+                if result.explanation is not None:
+                    explained.append(
+                        result.explanation.select(
+                            pl.lit(config.backtest).alias("backtest"),
+                            *(pl.lit(v).alias(k) for k, v in key.items()),
+                            pl.lit(s.model).alias("model"),
+                            pl.lit(s.test_year).alias("test_year"),
+                            pl.all(),
+                        )
+                    )
                 scored.append(
                     result.predictions.select(
                         *(pl.lit(v).alias(k) for k, v in key.items()),
@@ -231,6 +248,11 @@ def run_backtest(
                         )
                     )
     assert identity is not None  # horizons are non-empty
+    explanations = (
+        pl.concat(explained).with_columns(pl.col(k).cast(v) for k, v in KEYS.items())
+        if explained
+        else None
+    )
     label_versions = labels.get_column("label_version").unique().to_list()
     return BacktestResult(
         config=config,
@@ -261,6 +283,8 @@ def run_backtest(
         )
         if records is not None
         else None,
+        explanations=explanations,
+        importance=importance(explanations) if explanations is not None else None,
     )
 
 

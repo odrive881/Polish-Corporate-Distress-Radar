@@ -93,6 +93,8 @@ class FitSummary:
 class FoldPredictions:
     summary: FitSummary
     predictions: pl.DataFrame  # PREDICTION_SCHEMA, one row per scored test row
+    # Generation 3: per scored row, its SHAP values (`explain.explanation_frame`); local only.
+    explanation: pl.DataFrame | None = None
 
 
 def fit_rank_logistic(

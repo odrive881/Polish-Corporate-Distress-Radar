@@ -15,7 +15,7 @@ censoring, Optuna tuning, SHAP explanations, and the champion rule.
 this plan does not need). It does not wait for list v2 (ADR 0014 addendum, proposed): weighting is plan
 0014's item 4, and this plan leaves a place for it (decision 9).
 
-## Status: active (2026-10-09): owner decisions 0–9 accepted as recommended, 10 added from step A's fold table; steps A–D built, step E next
+## Status: active (2026-10-09): owner decisions 0–9 accepted as recommended, 10 added from step A's fold table; steps A–E built, step F next
 
 ### Progress
 
@@ -117,6 +117,18 @@ this plan does not need). It does not wait for list v2 (ADR 0014 addendum, propo
   Tested: hand-built records stop at the event, the lag or the merger; every record agrees with its binary
   labels in the label set and with the binary fold's training labels on each eve; no training month in the
   test year; the probability is one minus the product of the monthly survival; reruns identical.
+- **Step E (2026-10-10):** `models/explain.py`. `shap.TreeExplainer` on each fold's LightGBM model over its
+  test rows, in the raw score's log-odds (the Platt map is monotone, so it changes no ranking); the values
+  ride on the calibrated `lightgbm` model's fold result. `BacktestResult` gains `explanations` (per row: the
+  backtest, run, horizon, model, test year, KRS, `as_of_date`, base value and one column per feature) and
+  `importance` (mean absolute value per fold and feature); `top_features` gives the report's table (top 15,
+  the rest summed in one row), which step F renders. The `backtest` asset writes the per-row values to
+  `WAREHOUSE_DIR/model_explanations/` (one file per test year, replaced whole); nothing per-row reaches the
+  report or MLflow, which logs only the report and the file manifest. The survival models are not explained:
+  decision 5 names the binary model. On the real population SHAP adds well under a second per fold.
+  Tested: a row's values plus the base value equal its raw score (nulls included); importance by hand; the
+  report table; no KRS number or per-row value in the report; reruns give identical values, importance and
+  file bytes.
 
 ## Why
 

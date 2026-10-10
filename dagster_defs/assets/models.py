@@ -19,6 +19,7 @@ from distress_radar.features.config import load_feature_set
 from distress_radar.models.backtest import POOLED, run_backtest
 from distress_radar.models.baselines import load_classical_model
 from distress_radar.models.dataset import load_feature_store, load_label_set
+from distress_radar.models.explain import write_explanations
 from distress_radar.models.population import Population, read_population
 from distress_radar.models.registry import code_commit, data_snapshot, identifiers, log_backtest
 from distress_radar.models.report import render_report, write_report
@@ -51,7 +52,9 @@ def backtest(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
     modelled, refused unless they give the pinned hash.
     Outputs: the Markdown report at `WAREHOUSE_DIR/reports/backtest/<BACKTEST_VERSION>.md`,
     replaced whole, the same bytes for the same inputs; one MLflow run per model, horizon and
-    run (`main`, `no_regime`) in `MLFLOW_TRACKING_URI`, each with the four identifiers.
+    run (`main`, `no_regime`) in `MLFLOW_TRACKING_URI`, each with the four identifiers; for a
+    config with generation 3, each scored row's SHAP values at `WAREHOUSE_DIR/model_explanations/`
+    (local only, replaced whole, one file per test year; plan 0015 decision 5).
     Partition scheme: none (unpartitioned).
     """
     settings = Settings()
@@ -79,6 +82,8 @@ def backtest(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
         population,
     )
     snapshot, files = data_snapshot(settings.warehouse_dir)
+    if result.explanations is not None:  # per-row SHAP: local only, never the report or MLflow
+        write_explanations(result.explanations, settings.warehouse_dir)
     report = write_report(render_report(result, commit), settings.warehouse_dir, config.backtest)
     ids = identifiers(result, commit, snapshot)
     with TemporaryDirectory() as workdir:
