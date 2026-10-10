@@ -1,8 +1,14 @@
 """The backtest run (plan 0012 steps E and G): every model on every fold, horizon and run.
 
-Two runs, side by side (owner decision 9): `main` on every labelled row, and `no_regime`, which
-leaves out the rows whose label window overlaps 2020-21 from both training and test. The flag is
-a row filter only; no model reads it.
+Three runs, side by side: `main` on every labelled row; `no_regime` (plan 0012 owner decision 9),
+which leaves out the rows whose label window overlaps 2020-21 from both training and test (the flag
+is a row filter only; no model reads it); and `entity_disjoint` (plan 0015 owner decision 6),
+`main`'s fitted models scored only on the test rows of entities no model of the fold has seen in
+training, which shows how much of a result is recognising a company rather than reading its state.
+
+With `lists` (the universe lists each entity came from), every event count is also given per list,
+since each list is purposive. With a `champion` section, the rule of `champion.py` judges generation
+3 against the regression on the pooled rows.
 
 The result holds each model's fit summary and scored rows per fold, the metrics per test year and
 pooled, the reliability tables, and the fold reports. Pooled cells gather a model's test rows from
@@ -15,12 +21,13 @@ not allowed to speak for the pool.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 
 import polars as pl
 
 from distress_radar.models.baselines import ClassicalModel, fit_predict_classical
-from distress_radar.models.classical import FoldPredictions, fit_predict_logistic
+from distress_radar.models.champion import ChampionVerdict, decide
+from distress_radar.models.classical import FoldPredictions, empty_predictions, fit_predict_logistic
 from distress_radar.models.dataset import ModellingDataset, modelling_dataset
 from distress_radar.models.evaluation import METRICS, cell, reliability
 from distress_radar.models.explain import KEYS, importance
@@ -28,6 +35,7 @@ from distress_radar.models.gbm import fit_predict_gbm
 from distress_radar.models.population import Population
 from distress_radar.models.splits import (
     BacktestConfig,
+    Fold,
     LabelTiming,
     events,
     fold_report,
@@ -42,7 +50,7 @@ from distress_radar.models.survival import (
     survival_records,
 )
 
-RUNS = ("main", "no_regime")
+RUNS = ("main", "no_regime", "entity_disjoint")
 POOLED = 0  # the `test_year` of a pooled cell
 
 
@@ -72,6 +80,13 @@ class BacktestResult:
     # None when the config has no `lightgbm` section.
     explanations: pl.DataFrame | None = None
     importance: pl.DataFrame | None = None
+    # Entities per universe list among the labelled ones, and distinct events per horizon and list
+    # (main run); empty when no lists are given.
+    lists: dict[str, int] = field(default_factory=dict[str, int])
+    events_by_list: dict[int, dict[str, int]] = field(default_factory=dict[int, dict[str, int]])
+    # Generation 3 per fold and run: the inner year, its events, tuning and calibration (GBM_FOLDS).
+    gbm_folds: pl.DataFrame | None = None
+    champion: ChampionVerdict | None = None
 
 
 def _for_run(dataset: ModellingDataset, run: str) -> ModellingDataset:
@@ -80,15 +95,27 @@ def _for_run(dataset: ModellingDataset, run: str) -> ModellingDataset:
     return replace(dataset, frame=dataset.frame.filter(~pl.col("regime_flag")))
 
 
+GBM_FOLDS: dict[str, pl.DataType | type[pl.DataType]] = {
+    "run": pl.String,
+    "horizon_months": pl.Int32,
+    "test_year": pl.Int32,
+    "inner_year": pl.Int32,
+    "inner_events": pl.Int64,
+    "tuning": pl.String,
+    "calibration": pl.String,
+    "hyperparameters": pl.String,
+}
+
+
 def _fold_results(
-    dataset: ModellingDataset,
+    folds: list[Fold],
     config: BacktestConfig,
     timing: LabelTiming,
     models: list[ClassicalModel],
     survival: dict[int, SurvivalFit],
 ) -> list[FoldPredictions]:
     out: list[FoldPredictions] = []
-    for fold in purged_folds(dataset, config.test_years, timing):
+    for fold in folds:
         out.append(fit_predict_logistic(fold, config.logistic_regression))
         if config.lightgbm is not None:
             out.extend(fit_predict_gbm(fold, config, timing))
@@ -112,6 +139,34 @@ def _survival_fits(
     return {year: fit_survival(records, year, config, timing) for year in config.test_years}
 
 
+def _entity_disjoint(
+    folds: list[Fold], results: list[FoldPredictions], survival: dict[int, SurvivalFit]
+) -> tuple[list[Fold], list[FoldPredictions]]:
+    """`main`'s folds and fitted models, scored only on the test rows of entities no model of the
+    fold trained on: not in the binary training rows, nor among the survival models' records."""
+    seen: dict[int, set[str]] = {
+        f.test_year: {str(k) for k in f.train.get_column("krs").to_list()}
+        | (survival[f.test_year].train_entities if f.test_year in survival else frozenset())
+        for f in folds
+    }
+    unseen = {year: ~pl.col("krs").is_in(sorted(krs)) for year, krs in seen.items()}
+    kept = [replace(f, test=f.test.filter(unseen[f.test_year])) for f in folds]
+    tests = {f.test_year: f.test for f in kept}
+    out: list[FoldPredictions] = []
+    for r in results:
+        s = r.summary
+        test = tests[s.test_year]
+        scored = r.predictions.filter(unseen[s.test_year]) if s.fitted else empty_predictions()
+        summary = replace(
+            s,
+            test_rows=scored.height if s.fitted else test.height,
+            test_events=events(test).height,
+            test_rows_left_out=test.height - scored.height if s.fitted else 0,
+        )
+        out.append(FoldPredictions(summary, scored))
+    return kept, out
+
+
 def run_backtest(
     features: pl.DataFrame,
     labels: pl.DataFrame,
@@ -119,6 +174,7 @@ def run_backtest(
     timing: LabelTiming,
     models: list[ClassicalModel],
     population: Population | None = None,
+    lists: dict[str, frozenset[str]] | None = None,
 ) -> BacktestResult:
     """Every model on every fold. With a `population` rule in the config, only its included
     entities are modelled; `population` must be the rule's outcome and match its pinned hash."""
@@ -144,7 +200,11 @@ def run_backtest(
         if config.survival is not None
         else None
     )
-    survival = {run: _survival_fits(records, config, timing, run) for run in RUNS}
+    survival = {run: _survival_fits(records, config, timing, run) for run in RUNS[:2]}
+    labelled = set(labels.get_column("krs").unique().to_list())
+    members = {name: krs & labelled for name, krs in (lists or {}).items()}
+    events_by_list: dict[int, dict[str, int]] = {}
+    gbm_folds: list[dict[str, object]] = []
     cells: list[dict[str, object]] = []
     tables: list[pl.DataFrame] = []
     fold_tables: list[pl.DataFrame] = []
@@ -155,20 +215,46 @@ def run_backtest(
     for horizon in config.horizons:
         base = modelling_dataset(features, labels, horizon, config.distress_classes)
         identity = base
-        totals[horizon] = events(base.frame).height
+        found = events(base.frame)
+        totals[horizon] = found.height
+        events_by_list[horizon] = {
+            name: found.filter(pl.col("krs").is_in(sorted(krs))).height
+            for name, krs in members.items()
+        }
+        main: tuple[list[Fold], list[FoldPredictions]] | None = None
         for run in RUNS:
-            dataset = _for_run(base, run)
             key = {"run": run, "horizon_months": horizon}
+            folds: list[Fold]
+            results: list[FoldPredictions]
+            if run == "entity_disjoint":
+                assert main is not None  # `main` runs first
+                folds, results = _entity_disjoint(main[0], main[1], survival["main"])
+            else:
+                folds = purged_folds(_for_run(base, run), config.test_years, timing)
+                results = _fold_results(folds, config, timing, models, survival[run])
+                if run == "main":
+                    main = (folds, results)
             fold_tables.append(
-                fold_report(
-                    purged_folds(dataset, config.test_years, timing),
-                    config.distress_classes,
-                    config.min_events,
-                ).select(pl.lit(run).alias("run"), pl.all())
+                fold_report(folds, config.distress_classes, config.min_events).select(
+                    pl.lit(run).alias("run"), pl.all()
+                )
             )
-            results = _fold_results(dataset, config, timing, models, survival[run])
             for result in results:
                 s = result.summary
+                if s.tuning and run != "entity_disjoint" and s.model == "lightgbm":
+                    gbm_folds.append(
+                        {
+                            **key,
+                            "test_year": s.test_year,
+                            "inner_year": s.inner_year,
+                            "inner_events": s.inner_events,
+                            "tuning": s.tuning,
+                            "calibration": s.calibration,
+                            "hyperparameters": ", ".join(
+                                f"{k} {v:g}" for k, v in s.hyperparameters
+                            ),
+                        }
+                    )
                 cells.append(
                     {
                         **key,
@@ -254,6 +340,23 @@ def run_backtest(
         else None
     )
     label_versions = labels.get_column("label_version").unique().to_list()
+    cell_frame = pl.DataFrame(cells, schema=_cell_schema())
+    predictions = pl.concat(scored)
+    verdict = (
+        decide(
+            predictions,
+            cell_frame.filter(
+                (pl.col("test_year") != POOLED)
+                & pl.col("fitted")
+                & (pl.col("train_events") >= config.min_events)
+            ).select("run", "horizon_months", "model", "test_year"),
+            config.horizons,
+            config.champion,
+            config.bootstrap,
+        )
+        if config.champion is not None
+        else None
+    )
     return BacktestResult(
         config=config,
         timing=timing,
@@ -266,10 +369,10 @@ def run_backtest(
         .get_column("krs")
         .n_unique(),
         events=totals,
-        cells=pl.DataFrame(cells, schema=_cell_schema()),
+        cells=cell_frame,
         reliability=pl.concat(tables) if tables else pl.DataFrame(),
         folds=pl.concat(fold_tables),
-        predictions=pl.concat(scored),
+        predictions=predictions,
         population=population,
         excluded_distress_entities=excluded_distress,
         survival=pl.DataFrame(
@@ -285,6 +388,12 @@ def run_backtest(
         else None,
         explanations=explanations,
         importance=importance(explanations) if explanations is not None else None,
+        lists={name: len(krs) for name, krs in members.items()},
+        events_by_list=events_by_list if members else {},
+        gbm_folds=pl.DataFrame(gbm_folds, schema=GBM_FOLDS)
+        if config.lightgbm is not None
+        else None,
+        champion=verdict,
     )
 
 

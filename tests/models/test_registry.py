@@ -121,7 +121,7 @@ def test_every_model_horizon_and_run_is_logged_with_its_identifiers(
     run_ids = log_backtest(
         result, ids, report, {"a.parquet": "e" * 64}, uri, tmp_path / "artifacts", tmp_path
     )
-    assert len(run_ids) == 3 * 2 * 2  # models x horizons x runs
+    assert len(run_ids) == 3 * 2 * 3  # models x horizons x runs (main, no_regime, entity_disjoint)
 
     client = MlflowClient(tracking_uri=uri)
     for run_id in run_ids:
