@@ -32,6 +32,14 @@ from distress_radar.models.splits import (
     fold_report,
     purged_folds,
 )
+from distress_radar.models.survival import (
+    SURVIVAL_METRICS_SCHEMA,
+    SurvivalFit,
+    SurvivalRecords,
+    fit_survival,
+    fold_predictions,
+    survival_records,
+)
 
 RUNS = ("main", "no_regime")
 POOLED = 0  # the `test_year` of a pooled cell
@@ -55,6 +63,9 @@ class BacktestResult:
     # The population rule's outcome (plan 0015 decision 10); None when the config has no rule.
     population: Population | None = None
     excluded_distress_entities: int = 0  # excluded entities ever labelled distress
+    # The survival models' time-dependent metrics per run and test year (plan 0015 decision 4);
+    # empty when the config has no survival section.
+    survival: pl.DataFrame | None = None
 
 
 def _for_run(dataset: ModellingDataset, run: str) -> ModellingDataset:
@@ -68,16 +79,31 @@ def _fold_results(
     config: BacktestConfig,
     timing: LabelTiming,
     models: list[ClassicalModel],
+    survival: dict[int, SurvivalFit],
 ) -> list[FoldPredictions]:
     out: list[FoldPredictions] = []
     for fold in purged_folds(dataset, config.test_years, timing):
         out.append(fit_predict_logistic(fold, config.logistic_regression))
         if config.lightgbm is not None:
             out.extend(fit_predict_gbm(fold, config, timing))
+        if fold.test_year in survival:
+            out.extend(fold_predictions(survival[fold.test_year], fold))
         out.extend(
             fit_predict_classical(fold, model, config.logistic_regression) for model in models
         )
     return out
+
+
+def _survival_fits(
+    records: SurvivalRecords | None, config: BacktestConfig, timing: LabelTiming, run: str
+) -> dict[int, SurvivalFit]:
+    """The survival models of a run, one per test year, serving every horizon. `no_regime` leaves
+    out the records whose `max_months` window overlaps the regime window."""
+    if records is None:
+        return {}
+    if run != "main":
+        records = replace(records, frame=records.frame.filter(~pl.col("regime_flag")))
+    return {year: fit_survival(records, year, config, timing) for year in config.test_years}
 
 
 def run_backtest(
@@ -107,6 +133,12 @@ def run_backtest(
             .n_unique()
         )
         labels = labels.filter(pl.col("krs").is_in(list(population.included)))
+    records = (
+        survival_records(features, labels, config.survival.max_months, config.distress_classes)
+        if config.survival is not None
+        else None
+    )
+    survival = {run: _survival_fits(records, config, timing, run) for run in RUNS}
     cells: list[dict[str, object]] = []
     tables: list[pl.DataFrame] = []
     fold_tables: list[pl.DataFrame] = []
@@ -127,7 +159,7 @@ def run_backtest(
                     config.min_events,
                 ).select(pl.lit(run).alias("run"), pl.all())
             )
-            results = _fold_results(dataset, config, timing, models)
+            results = _fold_results(dataset, config, timing, models, survival[run])
             for result in results:
                 s = result.summary
                 cells.append(
@@ -218,6 +250,17 @@ def run_backtest(
         predictions=pl.concat(scored),
         population=population,
         excluded_distress_entities=excluded_distress,
+        survival=pl.DataFrame(
+            [
+                {"run": run, **row}
+                for run, fits in survival.items()
+                for fit in fits.values()
+                for row in fit.metrics
+            ],
+            schema={"run": pl.String, **SURVIVAL_METRICS_SCHEMA},
+        )
+        if records is not None
+        else None,
     )
 
 

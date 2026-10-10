@@ -204,6 +204,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
     │   ├── test_classical.py           # complete cases, fold-fitted ranks, a score mapped to a probability
     │   ├── test_baselines.py           # published coefficients and zones; a model its feature set can't feed
     │   ├── test_gbm.py                 # nulls never filled, the inner year inside training, the gates
+    │   ├── test_survival.py            # the target agrees with the labels, purged by month, 1 − ∏ survival
     │   ├── test_population.py          # the acquisition-complete rule, its pin, the report's section
     │   ├── test_evaluation.py          # hand-computed metrics, bootstrap, the report's bytes
     │   ├── test_registry.py            # the four identifiers, a dirty tree refused
@@ -297,7 +298,7 @@ src/distress_radar/
 │   ├── backtest.py                # every model on every fold, horizon and run (main, no_regime)
 │   ├── report.py                  # the backtest report as generated Markdown
 │   ├── gbm.py                     # LightGBM: nulls kept, inner validation year, gated Optuna, Platt
-│   ├── survival.py                # scikit-survival
+│   ├── survival.py                # discrete-time hazard model, survival forest, IPCW metrics
 │   └── registry.py                # MLflow logging wrapper
 │
 └── api/
