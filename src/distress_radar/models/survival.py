@@ -35,6 +35,7 @@ score, with the censoring distribution estimated from the training records.
 
 from __future__ import annotations
 
+import pickle
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from datetime import date
@@ -51,6 +52,7 @@ from distress_radar.features.contracts import KEY_COLUMNS
 from distress_radar.models.classical import (
     Array,
     FitSummary,
+    FittedModel,
     FoldPredictions,
     empty_predictions,
     with_probability,
@@ -423,10 +425,39 @@ def fold_predictions(fit: SurvivalFit, fold: Fold) -> list[FoldPredictions]:
             fitted=not fit.note,
             note=fit.note,
         )
-        if fit.note or fold.test.is_empty():
+        if fit.note:
             out.append(FoldPredictions(summary, empty_predictions()))
+            continue
+        fitted = fitted_model(fit, model, fold.horizon_months)
+        if fold.test.is_empty():
+            out.append(FoldPredictions(summary, empty_predictions(), fitted_model=fitted))
             continue
         curves = survival_curves(fit, model, fold.test)
         probability = 1.0 - curves[:, fold.horizon_months - 1]
-        out.append(FoldPredictions(summary, with_probability(fold.test, probability)))
+        out.append(
+            FoldPredictions(summary, with_probability(fold.test, probability), fitted_model=fitted)
+        )
     return out
+
+
+def fitted_model(fit: SurvivalFit, model: str, horizon: int) -> FittedModel:
+    """A fitted survival model as registry files, read at `horizon` months: the hazard booster's
+    text (the month its last input), or the forest's pickle."""
+    description: dict[str, object] = {
+        "horizon_months": horizon,
+        "max_months": fit.max_months,
+        "inputs": fit.columns,
+        "probability": "1 - S(horizon_months)",
+    }
+    hazard, forest = fit.hazard, fit.forest
+    if model == HAZARD and hazard is not None:
+        return FittedModel(
+            {**description, "kind": "discrete_time_hazard_lightgbm", "month_input": "last"},
+            lambda: {"model.txt": hazard.model_to_string().encode()},
+        )
+    if model == FOREST and forest is not None:
+        return FittedModel(
+            {**description, "kind": "random_survival_forest"},
+            lambda: {"model.pkl": pickle.dumps(forest, protocol=5)},
+        )
+    raise ValueError(f"{model} is not fitted for {fit.test_year}")

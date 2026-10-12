@@ -124,7 +124,7 @@ def test_every_model_horizon_and_run_is_logged_with_its_identifiers(
     assert len(run_ids) == 3 * 2 * 3  # models x horizons x runs (main, no_regime, entity_disjoint)
 
     client = MlflowClient(tracking_uri=uri)
-    for run_id in run_ids:
+    for run_id in run_ids.values():
         run = client.get_run(run_id)
         params = run.data.params
         for name, value in ids.params().items():

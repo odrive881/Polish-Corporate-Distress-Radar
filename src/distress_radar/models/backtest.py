@@ -27,7 +27,12 @@ import polars as pl
 
 from distress_radar.models.baselines import ClassicalModel, fit_predict_classical
 from distress_radar.models.champion import ChampionVerdict, decide
-from distress_radar.models.classical import FoldPredictions, empty_predictions, fit_predict_logistic
+from distress_radar.models.classical import (
+    FittedModel,
+    FoldPredictions,
+    empty_predictions,
+    fit_predict_logistic,
+)
 from distress_radar.models.dataset import ModellingDataset, modelling_dataset
 from distress_radar.models.evaluation import METRICS, cell, reliability
 from distress_radar.models.explain import KEYS, importance
@@ -87,6 +92,13 @@ class BacktestResult:
     # Generation 3 per fold and run: the inner year, its events, tuning and calibration (GBM_FOLDS).
     gbm_folds: pl.DataFrame | None = None
     champion: ChampionVerdict | None = None
+    # Optuna's trials per run, horizon and tuned fold (TRIALS), for the registry's child runs.
+    trials: pl.DataFrame | None = None
+    # Per horizon and model, the `main` run's latest fold allowed to speak for the pool: its test
+    # year and fitted model, the version the registry registers (plan 0015 step G).
+    latest: dict[tuple[int, str], tuple[int, FittedModel]] = field(
+        default_factory=dict[tuple[int, str], tuple[int, FittedModel]]
+    )
 
 
 def _for_run(dataset: ModellingDataset, run: str) -> ModellingDataset:
@@ -104,6 +116,16 @@ GBM_FOLDS: dict[str, pl.DataType | type[pl.DataType]] = {
     "tuning": pl.String,
     "calibration": pl.String,
     "hyperparameters": pl.String,
+}
+
+TRIALS: dict[str, pl.DataType | type[pl.DataType]] = {
+    "run": pl.String,
+    "horizon_months": pl.Int32,
+    "test_year": pl.Int32,
+    "trial": pl.Int32,
+    "parameter": pl.String,
+    "value": pl.Float64,
+    "inner_brier": pl.Float64,
 }
 
 
@@ -205,6 +227,8 @@ def run_backtest(
     members = {name: krs & labelled for name, krs in (lists or {}).items()}
     events_by_list: dict[int, dict[str, int]] = {}
     gbm_folds: list[dict[str, object]] = []
+    trials: list[dict[str, object]] = []
+    latest: dict[tuple[int, str], tuple[int, FittedModel]] = {}
     cells: list[dict[str, object]] = []
     tables: list[pl.DataFrame] = []
     fold_tables: list[pl.DataFrame] = []
@@ -255,6 +279,18 @@ def run_backtest(
                             ),
                         }
                     )
+                    trials.extend(
+                        dict[str, object](
+                            **key,
+                            test_year=s.test_year,
+                            trial=t.number,
+                            parameter=name,
+                            value=value,
+                            inner_brier=t.inner_brier,
+                        )
+                        for t in s.trials
+                        for name, value in t.values
+                    )
                 cells.append(
                     {
                         **key,
@@ -302,6 +338,11 @@ def run_backtest(
                 pooled = pl.concat(
                     [r.predictions for r in speaking] or [results[0].predictions.clear()]
                 )
+                registrable = [r for r in speaking if r.fitted_model is not None]
+                if run == "main" and registrable:
+                    last = max(registrable, key=lambda r: r.summary.test_year)
+                    assert last.fitted_model is not None
+                    latest[(horizon, model)] = (last.summary.test_year, last.fitted_model)
                 cells.append(
                     {
                         **key,
@@ -394,6 +435,8 @@ def run_backtest(
         if config.lightgbm is not None
         else None,
         champion=verdict,
+        trials=pl.DataFrame(trials, schema=TRIALS) if config.lightgbm is not None else None,
+        latest=latest,
     )
 
 

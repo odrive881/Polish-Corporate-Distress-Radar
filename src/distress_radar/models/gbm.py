@@ -45,7 +45,9 @@ from distress_radar.features.contracts import KEY_COLUMNS, KNOWN_FROM_SUFFIX
 from distress_radar.models.classical import (
     Array,
     FitSummary,
+    FittedModel,
     FoldPredictions,
+    TuningTrial,
     empty_predictions,
     one_class_note,
     with_probability,
@@ -164,9 +166,9 @@ def tune(
     validation: tuple[Array, npt.NDArray[np.bool_]],
     config: LightGbmConfig,
     tuning: TuningConfig,
-) -> dict[str, float]:
-    """The settings of the trial with the lowest Brier score on `validation`; untuned settings
-    keep decision 1's values."""
+) -> tuple[dict[str, float], tuple[TuningTrial, ...]]:
+    """The settings of the trial with the lowest Brier score on `validation` (untuned settings
+    keep decision 1's values), and every trial, for the registry's child run."""
 
     def objective(trial: optuna.Trial) -> float:
         values = hyperparameters(config)
@@ -185,7 +187,16 @@ def tune(
         direction="minimize", sampler=optuna.samplers.TPESampler(seed=tuning.seed)
     )
     study.optimize(objective, n_trials=tuning.trials)
-    return {**hyperparameters(config), **study.best_params}
+    trials = tuple(
+        TuningTrial(
+            t.number,
+            tuple((k, float(v)) for k, v in sorted(t.params.items())),
+            float(t.value),
+        )
+        for t in study.trials
+        if t.value is not None
+    )
+    return {**hyperparameters(config), **study.best_params}, trials
 
 
 def inner_split(fold: Fold, timing: LabelTiming) -> Fold | None:
@@ -238,6 +249,7 @@ def fit_predict_gbm(
     inner_year = inner.test_year if inner is not None else None
     inner_events = events(inner.test).height if inner is not None else 0
     values = hyperparameters(config.lightgbm)
+    trials: tuple[TuningTrial, ...] = ()
     platt: PlattMap | None = None
     if inner is not None:
         inner_train = (
@@ -253,7 +265,7 @@ def fit_predict_gbm(
             inner.test_year, inner_events, inner_note, config.tuning.min_tuning_events, "tuning"
         )
         if not tuning_note:
-            values = tune(inner_train, inner_validation, config.lightgbm, config.tuning)
+            values, trials = tune(inner_train, inner_validation, config.lightgbm, config.tuning)
             tuning_note = (
                 f"tuned on {inner.test_year} ({inner_events} events, {config.tuning.trials} trials)"
             )
@@ -275,24 +287,52 @@ def fit_predict_gbm(
         inner_events=inner_events,
         tuning=tuning_note,
         calibration=calibration_note,
+        trials=trials,
     )
     calibrated = replace(summary, model=CALIBRATED)
+    raw_model, calibrated_model = (
+        _fitted(booster, columns, fold.horizon_months, values, None),
+        _fitted(booster, columns, fold.horizon_months, values, platt),
+    )
     if fold.test.is_empty():
         return (
-            FoldPredictions(summary, empty_predictions()),
-            FoldPredictions(calibrated, empty_predictions()),
+            FoldPredictions(summary, empty_predictions(), fitted_model=raw_model),
+            FoldPredictions(calibrated, empty_predictions(), fitted_model=calibrated_model),
         )
     x = feature_matrix(fold.test, columns)
     raw = probability(booster, x)
     mapped = platt.apply(raw_score(booster, x)) if platt is not None else raw
     values, base = shap_values(booster, x)
     return (
-        FoldPredictions(summary, with_probability(fold.test, raw)),
+        FoldPredictions(summary, with_probability(fold.test, raw), fitted_model=raw_model),
         FoldPredictions(
             calibrated,
             with_probability(fold.test, mapped),
             explanation_frame(fold.test, columns, values, base),
+            calibrated_model,
         ),
+    )
+
+
+def _fitted(
+    booster: lgb.Booster,
+    columns: list[str],
+    horizon: int,
+    values: dict[str, float],
+    platt: PlattMap | None,
+) -> FittedModel:
+    """The booster as registry files: its model text, and the Platt map on its raw score."""
+    return FittedModel(
+        {
+            "kind": "lightgbm_binary",
+            "horizon_months": horizon,
+            "inputs": columns,
+            "hyperparameters": values,
+            "platt": None
+            if platt is None
+            else {"slope": platt.slope, "intercept": platt.intercept, "on": "raw_score"},
+        },
+        lambda: {"model.txt": booster.model_to_string().encode()},
     )
 
 

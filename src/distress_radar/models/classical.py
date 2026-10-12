@@ -15,6 +15,8 @@ Every fit is deterministic: `lbfgs` has no random state, and rows arrive sorted.
 
 from __future__ import annotations
 
+import json
+from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 
 import numpy as np
@@ -65,6 +67,34 @@ class RankTransform:
 
 
 @dataclass(frozen=True)
+class TuningTrial:
+    """One Optuna trial of a fold's search (plan 0015 decision 2): its settings and the inner
+    validation year's Brier score."""
+
+    number: int
+    values: tuple[tuple[str, float], ...]
+    inner_brier: float
+
+
+def _no_files() -> dict[str, bytes]:
+    return {}
+
+
+@dataclass(frozen=True)
+class FittedModel:
+    """A fold's fitted model as the files a registered model version holds (plan 0015 step G):
+    `model.json` describes it (its kind, inputs in order, and parameters), and `payload` gives the
+    files beside it (a booster's text, a forest's pickle), serialised only when registered."""
+
+    description: dict[str, object]
+    payload: Callable[[], dict[str, bytes]] = _no_files
+
+    def files(self) -> dict[str, bytes]:
+        body = json.dumps(self.description, indent=2, sort_keys=True) + "\n"
+        return {"model.json": body.encode(), **self.payload()}
+
+
+@dataclass(frozen=True)
 class FitSummary:
     """What a model saw in one fold: the rows it used, the rows it could not, and its fit."""
 
@@ -87,6 +117,7 @@ class FitSummary:
     inner_events: int = 0
     tuning: str = ""  # tuned, or the defaults and why
     calibration: str = ""  # Platt-mapped, or raw and why
+    trials: tuple[TuningTrial, ...] = field(default=())  # Optuna's, where the fold was tuned
 
 
 @dataclass(frozen=True)
@@ -95,6 +126,8 @@ class FoldPredictions:
     predictions: pl.DataFrame  # PREDICTION_SCHEMA, one row per scored test row
     # Generation 3: per scored row, its SHAP values (`explain.explanation_frame`); local only.
     explanation: pl.DataFrame | None = None
+    # The fitted model, for the registry (step G); None for an unfitted fold or a classical model.
+    fitted_model: FittedModel | None = None
 
 
 def fit_rank_logistic(
@@ -169,10 +202,21 @@ def fit_predict_logistic(fold: Fold, config: LogisticConfig) -> FoldPredictions:
         coefficients=tuple(zip(columns, coefficients, strict=True)),
         intercept=intercept,
     )
+    fitted = FittedModel(
+        {
+            "kind": "rank_logistic",
+            "horizon_months": fold.horizon_months,
+            "inputs": columns,
+            "coefficients": coefficients,
+            "intercept": intercept,
+            # Each input's sorted training values: the rank transform a new row is scored through.
+            "rank_reference": [v.tolist() for v in ranks.sorted_columns],
+        }
+    )
     if test.is_empty():
-        return FoldPredictions(summary, empty_predictions())
+        return FoldPredictions(summary, empty_predictions(), fitted_model=fitted)
     probability = distress_probability(model, ranks, _matrix(test, columns))
-    return FoldPredictions(summary, with_probability(test, probability))
+    return FoldPredictions(summary, with_probability(test, probability), fitted_model=fitted)
 
 
 def with_probability(
