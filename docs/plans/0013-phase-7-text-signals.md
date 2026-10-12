@@ -11,7 +11,7 @@
 **Order:** after plan 0012 (complete). It does not wait for ADR 0013: like Phase 6, it builds and measures
 machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set this plan adds.
 
-## Status: active (2026-10-12): owner decisions 0–9 accepted; every step built, J's docs included; the model runs on the seed under `extractor_v4` (the default) with the provider's terms confirmed; all nine signals accepted on the 127-page golden set (2026-10-12) and held by the gate in `make check`; open: enough labelled positives per signal to close the plan (`covenant_breach` and `key_customer_loss` have none), and the owner's items below
+## Status: active (2026-10-13): owner decisions 0–9 accepted; every step built, J's docs included; the model runs on the seed under `extractor_v4` (the default) with the provider's terms confirmed; all nine signals accepted on the 127-page golden set (2026-10-12) and held by the gate in `make check`; open: enough labelled positives per signal to close the plan (`covenant_breach` and `key_customer_loss` have none), `opinion_type`'s labels on the 148-page set (open item 2), and the owner's items below
 
 ### Where this stands (2026-10-12)
 
@@ -40,18 +40,42 @@ re-scored and accepted on the 127 pages (2026-10-12, Progress).
    (`rules_v3`) is the weak result: precision 0.67, recall 0.50 end to end. Labelling is done in the
    notebook from a WSL terminal (`uv run marimo run notebooks/labelling/golden_set.py`, not through Claude Code,
    whose background tasks stop after 30 minutes), then `make label-export`.
-2. **Auditor reports, loose ends (decision 0c, below):**
+2. **`opinion_type`'s labels and rule, on the 148-page set (found 2026-10-13; blocks the next acceptance).** The
+   owner labelled and exported 21 more report pages (uncommitted). `make eval` on all 148 (no call, 109
+   responses replayed) leaves eight signals unchanged and `opinion_type` worse: 23 positives, P 0.58 R 0.48
+   (from 0.67 and 0.50). The gate in `make check` fails on all nine until the new golden file is accepted. Of
+   `opinion_type`'s 20 errors, most look like labels at odds with the guide ("an auditor's opinion on **these
+   statements**"), not the rule:
+   - **8 of the 12 misses are the opinion on the management report** ("Opinia o Sprawozdaniu z działalności
+     … zostało sporządzone zgodnie z art. 49"), labelled present: `03326649f4f74cf1`, `3451d053c15709a2`,
+     `3ddaece502915634`, `4afa8877b9d36bb3`, `582768fe1a870f9b`, `5f74e03320bb40c7`, `64ac4a7b6333aa43`,
+     `716cb8c3a346d7cc`. Under the guide, absent. If the owner means them present, the guide changes first.
+   - **2 false positives open with the opinion itself** ("Naszym zdaniem, załączone sprawozdanie finansowe:
+     przedstawia rzetelny i jasny obraz…") and are labelled absent: `1ccee85107d6bd87`, `2cf282edb8bc710b`.
+     Either label slips, or a rule that only the page where the opinion begins is labelled, which the guide
+     would then have to say.
+   - **The rule's own errors** (a `rules_v4`, measured like any change): 6 false positives fired on a
+     "Podstawa opinii" or "Opinia" heading (`345848ea297ce9dc`, `4fd187325fc2d3ec`, `5fc02c50952e42c7`,
+     `6d76503207b95db9`, `719c79efe2ebb443`, `859e426644fdea49`; the first also carries the end of an opinion
+     begun on the page before, so it bears on the second label question too); a disclaimer missed (`849ad5ac45e57759`); and
+     financial-statement opinions not read (`52364f6780866fb5`, `571b4ba5d0ebab52`, and `313e615575838470`
+     under an "Opinia z badania" heading).
+
+   To resolve: the owner settles the two label questions (relabel in the notebook and `make label-export`, or
+   amend the guide), `make eval` again, then `make eval-accept` per signal and one commit of the golden files,
+   the results and this plan's numbers. `rules_v4` can follow separately.
+3. **Auditor reports, loose ends (decision 0c, below):**
    - 0000181328's 2019 report is `unknown` in the dates list;
    - 0000291203's 2024 and 2025 reports are not in the list;
    - 0000507997's "2019" file is a statement XML, not a report: to check on RDF;
    - the five pre-2018 reports wait on RDF's name for document type 2, to add as `canonical: auditor_report`
      in a new version of `rdf_document_types.yaml`.
-3. **A new prefilter version for `continued_existence_vote`?** Its one golden positive (`2c4d7e30c1579a17`,
+4. **A new prefilter version for `continued_existence_vote`?** Its one golden positive (`2c4d7e30c1579a17`,
    "uchwała o prowadzeniu dalszej działalności") is not selected by `prefilter_v2`, so recall is 0.00 end to end.
    A term for that wording is a new prefilter version, measured like any change.
-4. **The auditor's own going-concern paragraph as a feature?** Recommended: park it. On the seed it was absent on
+5. **The auditor's own going-concern paragraph as a feature?** Recommended: park it. On the seed it was absent on
    all 89 report pages read; revisit once the universe grows.
-5. **The model (not urgent):** `claude-opus-5-5` stays unless a cheaper model is compared on the golden set first
+6. **The model (not urgent):** `claude-opus-5-5` stays unless a cheaper model is compared on the golden set first
    (decision 2).
 
 **Known, not a decision:**
@@ -605,7 +629,7 @@ re-scored and accepted on the 127 pages (2026-10-12, Progress).
 
   Masker recall 0.9912 (113 of 114 persons; one masked by hand). `opinion_type` is the weak one: of its 16
   positives the prefilter selects 15 and the rule reads 8 correctly, with 4 false positives.
-  `continued_existence_vote`'s recall is still the prefilter's miss (open item 3).
+  `continued_existence_vote`'s recall is still the prefilter's miss (open item 4).
 
 ## Why
 
