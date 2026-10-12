@@ -1,7 +1,7 @@
 {
  "accepted": {
   "by": "owner",
-  "on": "2026-10-06"
+  "on": "2026-10-12"
  },
  "examples": [
   {
@@ -11,6 +11,15 @@
    "page_id": "0001677ef4418388",
    "response_key": null,
    "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "0089d05749906fed",
+   "response_key": null,
+   "selected": true,
    "value": null
   },
   {
@@ -43,6 +52,24 @@
   {
    "discard_reason": null,
    "evidence": null,
+   "outcome": "absent",
+   "page_id": "02ee45ca5cc6caff",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "03326649f4f74cf1",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
    "outcome": "not_selected",
    "page_id": "0362fe4377b44c51",
    "response_key": null,
@@ -61,10 +88,46 @@
   {
    "discard_reason": null,
    "evidence": null,
+   "outcome": "absent",
+   "page_id": "04c2e619f364a431",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "04e80c28223e383b",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
    "outcome": "not_selected",
    "page_id": "0867ca843ac8694a",
    "response_key": null,
    "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "08cfd47613599d26",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "096fd74570652468",
+   "response_key": null,
+   "selected": true,
    "value": null
   },
   {
@@ -119,6 +182,24 @@
    "page_id": "0e7990b30ac177eb",
    "response_key": null,
    "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": "Opinia",
+   "outcome": "present",
+   "page_id": "0f24b5c78f26bd5e",
+   "response_key": null,
+   "selected": true,
+   "value": "unqualified"
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "0f5245d8ce5df69d",
+   "response_key": null,
+   "selected": true,
    "value": null
   },
   {
@@ -214,6 +295,15 @@
   {
    "discard_reason": null,
    "evidence": null,
+   "outcome": "absent",
+   "page_id": "16fa2a220f211cc3",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
    "outcome": "not_selected",
    "page_id": "19f66265da6bb4a2",
    "response_key": null,
@@ -240,6 +330,15 @@
   },
   {
    "discard_reason": null,
+   "evidence": "Podstawa opinii",
+   "outcome": "present",
+   "page_id": "1ccee85107d6bd87",
+   "response_key": null,
+   "selected": true,
+   "value": "unqualified"
+  },
+  {
+   "discard_reason": null,
    "evidence": null,
    "outcome": "not_selected",
    "page_id": "1ce548ecb3008a9f",
@@ -251,7 +350,61 @@
    "discard_reason": null,
    "evidence": null,
    "outcome": "not_selected",
+   "page_id": "1d8a7b7971ab8429",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": "Opinia",
+   "outcome": "present",
+   "page_id": "1f0c9c5333ceaf5a",
+   "response_key": null,
+   "selected": true,
+   "value": "unqualified"
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
    "page_id": "21669f7b37a280f6",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "219d65c5ae6f1a59",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "21a61c3ef54684f6",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "21be6426510e88ca",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "22750210ca70035f",
    "response_key": null,
    "selected": false,
    "value": null
@@ -366,9 +519,27 @@
   },
   {
    "discard_reason": null,
+   "evidence": "Opinia",
+   "outcome": "present",
+   "page_id": "2b0b35462341ad85",
+   "response_key": null,
+   "selected": true,
+   "value": "unqualified"
+  },
+  {
+   "discard_reason": null,
    "evidence": null,
    "outcome": "not_selected",
    "page_id": "2c4d7e30c1579a17",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "2c74225bd9a18c03",
    "response_key": null,
    "selected": false,
    "value": null
@@ -381,6 +552,24 @@
    "response_key": null,
    "selected": false,
    "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "2cec205f9b1dd81d",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": "Podstawa opinii",
+   "outcome": "present",
+   "page_id": "2cf282edb8bc710b",
+   "response_key": null,
+   "selected": true,
+   "value": "unqualified"
   },
   {
    "discard_reason": null,
@@ -407,6 +596,15 @@
    "page_id": "2ee059e227d106b9",
    "response_key": null,
    "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "2ef6c789fe1eb050",
+   "response_key": null,
+   "selected": true,
    "value": null
   },
   {
@@ -448,11 +646,38 @@
   {
    "discard_reason": null,
    "evidence": null,
+   "outcome": "absent",
+   "page_id": "313e615575838470",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
    "outcome": "not_selected",
    "page_id": "31c6dc6aa81a3085",
    "response_key": null,
    "selected": false,
    "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "3451d053c15709a2",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": "Podstawa opinii",
+   "outcome": "present",
+   "page_id": "345848ea297ce9dc",
+   "response_key": null,
+   "selected": true,
+   "value": "unqualified"
   },
   {
    "discard_reason": null,
@@ -538,6 +763,15 @@
   {
    "discard_reason": null,
    "evidence": null,
+   "outcome": "absent",
+   "page_id": "3bc39ba6118bde13",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
    "outcome": "not_selected",
    "page_id": "3bfa3becb15c835e",
    "response_key": null,
@@ -556,11 +790,38 @@
   {
    "discard_reason": null,
    "evidence": null,
+   "outcome": "absent",
+   "page_id": "3ddaece502915634",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": "Opinia",
+   "outcome": "present",
+   "page_id": "3eaf0476ae314679",
+   "response_key": null,
+   "selected": true,
+   "value": "unqualified"
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
    "outcome": "not_selected",
    "page_id": "415b2c35181855fc",
    "response_key": null,
    "selected": false,
    "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": "Podstawa opinii",
+   "outcome": "present",
+   "page_id": "442e9ef455c6fb25",
+   "response_key": null,
+   "selected": true,
+   "value": "unqualified"
   },
   {
    "discard_reason": null,
@@ -628,11 +889,29 @@
   {
    "discard_reason": null,
    "evidence": null,
+   "outcome": "absent",
+   "page_id": "4afa8877b9d36bb3",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
    "outcome": "not_selected",
    "page_id": "4b1fa277832e2a60",
    "response_key": null,
    "selected": false,
    "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": "Podstawa opinii",
+   "outcome": "present",
+   "page_id": "4ba112af65d0fb91",
+   "response_key": null,
+   "selected": true,
+   "value": "unqualified"
   },
   {
    "discard_reason": null,
@@ -672,11 +951,29 @@
   },
   {
    "discard_reason": null,
+   "evidence": "Podstawa opinii",
+   "outcome": "present",
+   "page_id": "4fd187325fc2d3ec",
+   "response_key": null,
+   "selected": true,
+   "value": "unqualified"
+  },
+  {
+   "discard_reason": null,
    "evidence": null,
    "outcome": "not_selected",
    "page_id": "521be011091c25a2",
    "response_key": null,
    "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "52364f6780866fb5",
+   "response_key": null,
+   "selected": true,
    "value": null
   },
   {
@@ -708,6 +1005,33 @@
   },
   {
    "discard_reason": null,
+   "evidence": "Opinia z zastrzeżeniem",
+   "outcome": "present",
+   "page_id": "5479d9e0f6c6968d",
+   "response_key": null,
+   "selected": true,
+   "value": "qualified"
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "55c1bb0eb7ca78fe",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": "Podstawa opinii z zastrzeżeniem",
+   "outcome": "present",
+   "page_id": "5662c59df98b4033",
+   "response_key": null,
+   "selected": true,
+   "value": "qualified"
+  },
+  {
+   "discard_reason": null,
    "evidence": null,
    "outcome": "not_selected",
    "page_id": "56db8c8a907b1f51",
@@ -718,8 +1042,35 @@
   {
    "discard_reason": null,
    "evidence": null,
+   "outcome": "absent",
+   "page_id": "571b4ba5d0ebab52",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "57cd03642ac17a98",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
    "outcome": "not_selected",
    "page_id": "57f62bda51c0dee7",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "582768fe1a870f9b",
    "response_key": null,
    "selected": false,
    "value": null
@@ -750,12 +1101,57 @@
    "response_key": null,
    "selected": false,
    "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "596d723282a36122",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "59f62eeab7f4fd13",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "5a857b7c8504476b",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "5def0985cace261b",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "610a2eea5fca04ad",
+   "response_key": null,
+   "selected": false,
+   "value": null
   }
  ],
- "extractor_version": "extractor_v3",
+ "extractor_version": "extractor_v4",
  "hashes": {
-  "golden": "5212b78c6d8f98014d557dd935b8c4c0e14ebeb8b805b7dbd511d446357edbb7",
-  "pages": "95080eb9178e11ab475528ef08f64f1340c182465d54ad6be06ea3b6ee0a6fd4",
+  "golden": "8c4cdfc582d576d56aa2ad1217cc5fc4218259270bacc50396a17023d221de13",
+  "pages": "7f40d364ae95f3de1b36025c4f300532e42dd863242bba8be675555b4197432b",
   "prefilter": "5f17c94b3efb4dc568349bf31c4e2f8db7cf22ead670d717df6c3e4aa04ed1e5",
   "rules": "9a187e6a75ec74efb242ab4f2a057129af447ff96ef6adc87df1366d27189fd9"
  },
@@ -765,28 +1161,28 @@
  "scores": {
   "discarded": {},
   "end_to_end": {
-   "f1": null,
-   "fn": 0,
-   "fp": 0,
-   "precision": null,
-   "recall": null,
-   "tn": 83,
-   "tp": 0
+   "f1": 0.5714,
+   "fn": 8,
+   "fp": 4,
+   "precision": 0.6667,
+   "recall": 0.5,
+   "tn": 107,
+   "tp": 8
   },
   "evidence_overlaps": 0,
   "extractor": {
-   "f1": null,
-   "fn": 0,
-   "fp": 0,
-   "precision": null,
-   "recall": null,
-   "tn": 0,
-   "tp": 0
+   "f1": 0.5926,
+   "fn": 7,
+   "fp": 4,
+   "precision": 0.6667,
+   "recall": 0.5333,
+   "tn": 12,
+   "tp": 8
   },
-  "pages": 83,
-  "positives": 0,
-  "prefilter_missed_in_rejected_sample": 0,
-  "prefilter_selected_positives": 0
+  "pages": 127,
+  "positives": 16,
+  "prefilter_missed_in_rejected_sample": 1,
+  "prefilter_selected_positives": 15
  },
  "signal_type": "opinion_type"
 }
