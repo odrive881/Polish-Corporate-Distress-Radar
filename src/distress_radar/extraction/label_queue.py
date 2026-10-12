@@ -4,12 +4,15 @@ reads Postgres and MinIO and writes files. Counts only are printed, never text.
 
     uv run python -m distress_radar.extraction.label_queue build [golden_sample_v<n>]
     uv run python -m distress_radar.extraction.label_queue export
+    uv run python -m distress_radar.extraction.label_queue clear
 
 `build` needs `make dev-up` and `make models`. For each sample version (`golden_sample_v*.yaml`),
 or the one named, it writes `<LABELLING_DIR>/<version>.jsonl`, local and gitignored, and keeps
 every row already there as it is: labels and hand masking survive a rebuild. `export` writes the
 labelled pages of every local queue to `evals/text_signals/`, after the masking check, and refuses
-to drop a page already exported. Labelling itself is `notebooks/labelling/golden_set.py`.
+to drop a page already exported. A span the masker flags that the owner saved a label over without
+masking is recorded as reviewed (`golden.clear_reviewed`) and no longer blocks the export; `clear`
+does the same for every labelled page at once, for pages saved before that. Labelling itself is `notebooks/labelling/golden_set.py`.
 """
 
 from __future__ import annotations
@@ -156,7 +159,7 @@ def export(settings: Settings, out_dir: Path = golden.GOLDEN_DIR) -> dict[str, i
 
 def main(argv: list[str] | None = None) -> int:
     args = sys.argv[1:] if argv is None else argv
-    if not args or args[0] not in {"build", "export"} or len(args) > 2:
+    if not args or args[0] not in {"build", "export", "clear"} or len(args) > 2:
         print(__doc__, file=sys.stderr)
         return 2
     settings = Settings()
@@ -176,6 +179,20 @@ def main(argv: list[str] | None = None) -> int:
             )
             rows = golden.load_queue(queue_path(settings, version).read_bytes())
             print(f"queue: {len(rows)} pages, {sum(r.complete for r in rows)} labelled")
+    elif args[0] == "clear":
+        if len(args) > 1:
+            print("clear takes no version: it reads every local queue", file=sys.stderr)
+            return 2
+        nlp = masking.load_model()
+        for version in versions():
+            path = queue_path(settings, version)
+            if not path.exists():
+                continue
+            rows = golden.load_queue(path.read_bytes())
+            cleared = [golden.clear_reviewed(r, nlp) if r.complete else r for r in rows]
+            added = sum(len(c.cleared) - len(r.cleared) for r, c in zip(rows, cleared, strict=True))
+            path.write_bytes(golden.dump_queue(cleared))
+            print(f"{version}: {added} flagged span(s) recorded as reviewed")
     else:
         if len(args) > 1:
             print("export takes no version: it writes every local queue", file=sys.stderr)

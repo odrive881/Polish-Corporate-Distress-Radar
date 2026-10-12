@@ -112,7 +112,11 @@ def _(golden, html, mo, nlp, picker, rows):
                 f" · by hand {row.hand_masked or {}}"
             ),
             mo.callout(
-                mo.md(f"The masker would still replace {len(remaining)} span(s), in red."),
+                mo.md(
+                    f"The masker would still replace {len(remaining)} span(s), in red. Mask a "
+                    "real name before saving; whatever red you save over is recorded as a "
+                    "reviewed false positive."
+                ),
                 kind="danger",
             )
             if remaining
@@ -208,6 +212,7 @@ def _(
     golden,
     labelled_by,
     mo,
+    nlp,
     path,
     presence,
     row,
@@ -222,11 +227,10 @@ def _(
             _present = [s for s in SIGNAL_TYPES if presence.value[s] == "present"]
             if _present:
                 raise ValueError(f"marked present, so not all absent: {_present}")
+            _all_absent = {s: golden.Label(present=False) for s in SIGNAL_TYPES}
             update_queue(
                 path,
-                golden.label(
-                    row, {s: golden.Label(present=False) for s in SIGNAL_TYPES}, labelled_by.value
-                ),
+                golden.clear_reviewed(golden.label(row, _all_absent, labelled_by.value), nlp),
             )
             set_rev(lambda n: n + 1)
             mo.stop(True)
@@ -243,7 +247,9 @@ def _(
             )
             for s in SIGNAL_TYPES
         }
-        update_queue(path, golden.label(row, _labels, labelled_by.value))
+        update_queue(
+            path, golden.clear_reviewed(golden.label(row, _labels, labelled_by.value), nlp)
+        )
         set_rev(lambda n: n + 1)
     except ValueError as _exc:
         mo.output.replace(mo.callout(str(_exc), kind="warn"))

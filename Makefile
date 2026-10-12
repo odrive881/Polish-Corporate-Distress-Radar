@@ -3,7 +3,7 @@ export UV_LINK_MODE := copy
 
 .PHONY: install lock lint typecheck test test-integration check dev-up dev-down \
 	transform-setup transform-plan transform-run transform-test docs-check hooks models \
-	label-queue label-export eval eval-accept
+	label-queue label-clear label-export eval eval-accept
 
 install:    ## create/sync .venv exactly from uv.lock (fails if lock is stale)
 	$(UV) sync --locked --extra dev
@@ -44,6 +44,9 @@ models:     ## fetch and unpack the pinned Polish spaCy model (resumable; checks
 # `uv run marimo edit notebooks/labelling/golden_set.py`; the export writes evals/text_signals/.
 label-queue:  ## build or refresh the local labelling queues, keeping labels (needs make dev-up, make models)
 	$(UV) run --locked python -m distress_radar.extraction.label_queue build
+
+label-clear: ## record what the masker still flags on labelled pages as reviewed false positives (owner's call)
+	$(UV) run --locked python -m distress_radar.extraction.label_queue clear
 
 label-export: ## write the labelled pages to evals/text_signals/, after the masking check
 	$(UV) run --locked python -m distress_radar.extraction.label_queue export

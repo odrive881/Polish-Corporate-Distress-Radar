@@ -51,6 +51,9 @@ from distress_radar.parsing.canonical_schema import CONFIG_DIR
 
 GOLDEN_DIR = CONFIG_DIR.parent / "evals" / "text_signals"
 PAGES_FILE = "pages.jsonl"
+# What the owner saw flagged by the masker and left unmasked, by page: the masking check skips
+# exactly those spans (a span's kind and the hash of its text), nothing it has not been shown.
+CLEARED_FILE = "masking_cleared.json"
 # The fields of an eval file that hold document text, which the masking check reads. Ids and
 # hashes are left out: a hash can hold an 11-digit run that is no PESEL.
 TEXT_KEYS = frozenset({"text", "evidence", "evidence_span"})
@@ -141,6 +144,7 @@ class QueuePage(_Frozen):
     text: str  # masked
     masked: dict[str, int]  # the masker's replacements by kind
     hand_masked: dict[str, int] = {}  # the owner's, by kind: the masker's misses
+    cleared: tuple[str, ...] = ()  # `span_key`s the owner reviewed and left: false positives
     labels: dict[SignalType, Label] = {}
     labelled_by: str | None = None
     proposed_by: str | None = None  # a model id, when a model proposed the labels (decision 5)
@@ -443,6 +447,33 @@ def label(row: QueuePage, labels: dict[SignalType, Label], labelled_by: str) -> 
     )
 
 
+def span_key(kind: str, text: str) -> str:
+    """A flagged span as the masking check remembers it as reviewed: its kind and a hash of its
+    text, never the text."""
+    return f"{kind}:{hashlib.sha256(text.encode()).hexdigest()[:16]}"
+
+
+def _flagged(texts: Iterable[str], nlp: Any) -> Iterator[str]:
+    """The `span_key` of every span the masker would still replace in `texts`."""
+    for text in texts:
+        if text and _TOKEN.sub("", text).strip():
+            for start, end, kind in masking.spans(text, nlp):
+                yield span_key(kind, text[start:end])
+
+
+def _page_texts(row: QueuePage) -> list[str]:
+    return [row.text, *(lb.evidence or "" for lb in row.labels.values())]
+
+
+def clear_reviewed(row: QueuePage, nlp: Any) -> QueuePage:
+    """The page with whatever the masker still flags, in its text and its evidence, recorded as
+    reviewed and not a personal datum. Called when the owner saves a label with the red spans on
+    screen: a span they did not mask is one they judged a false positive. Spans that change the
+    text later (new mask, new evidence) are new and block the export again."""
+    keys = sorted({*row.cleared, *_flagged(_page_texts(row), nlp)})
+    return QueuePage.model_validate({**row.model_dump(), "cleared": keys})
+
+
 # --- files ---------------------------------------------------------------------------------------
 
 
@@ -467,11 +498,7 @@ def export(rows: Iterable[QueuePage], nlp: Any) -> dict[str, bytes]:
     failures = {
         row.page_id: findings
         for row in done
-        if (
-            findings := _unmasked(
-                [row.text, *(lb.evidence or "" for lb in row.labels.values())], nlp
-            )
-        )
+        if (findings := _unmasked(_page_texts(row), nlp, frozenset(row.cleared)))
     }
     if failures:
         raise ValueError(
@@ -509,6 +536,11 @@ def export(rows: Iterable[QueuePage], nlp: Any) -> dict[str, bytes]:
             )
             for row in done
         )
+    # Only the reviewed spans that are still flagged are written: the record never outlives them.
+    cleared = {
+        row.page_id: sorted(set(row.cleared) & set(_flagged(_page_texts(row), nlp))) for row in done
+    }
+    files[CLEARED_FILE] = _line({k: v for k, v in cleared.items() if v})
     return {name: text.encode("utf-8") for name, text in files.items()}
 
 
@@ -524,12 +556,28 @@ def masker_recall(rows: Iterable[QueuePage]) -> tuple[int, int]:
 # --- the masking check ---------------------------------------------------------------------------
 
 
-def _unmasked(texts: Iterable[str], nlp: Any) -> dict[str, int]:
+def _unmasked(
+    texts: Iterable[str], nlp: Any, cleared: frozenset[str] = frozenset()
+) -> dict[str, int]:
+    """What the masker would still replace in `texts`, by kind, minus the spans in `cleared`."""
     found: Counter[str] = Counter()
     for text in texts:
         if text and _TOKEN.sub("", text).strip():
-            found.update(masking.mask(text, nlp).counts)
+            found.update(
+                kind
+                for start, end, kind in masking.spans(text, nlp)
+                if span_key(kind, text[start:end]) not in cleared
+            )
     return dict(sorted(found.items()))
+
+
+def load_cleared(directory: Path = GOLDEN_DIR) -> dict[str, frozenset[str]]:
+    """The reviewed spans by page id, from the committed record beside the eval files."""
+    path = directory / CLEARED_FILE
+    if not path.exists():
+        return {}
+    raw = cast(dict[str, list[str]], json.loads(path.read_text(encoding="utf-8")))
+    return {page: frozenset(keys) for page, keys in raw.items()}
 
 
 def _texts(obj: object) -> Iterator[str]:
@@ -550,9 +598,17 @@ def remaining(text: str, nlp: Any) -> list[tuple[int, int, str]]:
     return masking.spans(text, nlp)
 
 
-def masking_findings(name: str, data: bytes, nlp: Any) -> list[str]:
+def _page_id_of(doc: object) -> str:
+    return str(cast(dict[str, object], doc).get("page_id")) if isinstance(doc, dict) else ""
+
+
+def masking_findings(
+    name: str, data: bytes, nlp: Any, cleared: dict[str, frozenset[str]] | None = None
+) -> list[str]:
     """What the masker would still replace in an eval file's text fields, by line and kind; never
-    the text. A `.jsonl` file is read line by line, anything else as one JSON document."""
+    the text. A `.jsonl` file is read line by line, anything else as one JSON document. Spans the
+    owner reviewed and left (`masking_cleared.json`, by the line's `page_id`) are not findings."""
+    cleared = load_cleared() if cleared is None else cleared
     try:
         text = data.decode("utf-8")
         docs = (
@@ -565,5 +621,5 @@ def masking_findings(name: str, data: bytes, nlp: Any) -> list[str]:
     return [
         f"line {n}: would mask {kinds}"
         for n, doc in enumerate(docs, start=1)
-        if (kinds := _unmasked(_texts(doc), nlp))
+        if (kinds := _unmasked(_texts(doc), nlp, cleared.get(_page_id_of(doc), frozenset())))
     ]
