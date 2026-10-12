@@ -5,7 +5,8 @@ Reads and writes a local queue `<LABELLING_DIR>/<version>.jsonl` that
 (`golden_sample_v1`) or the auditor reports (`golden_sample_v2`), chosen at the top. For each page: read the masked
 text, mask by hand any name the masker missed (highlighted in red when the masker itself would
 still replace it), then label every signal_type as present or absent, with a verbatim evidence
-span for each present one. Definitions: `evals/text_signals/labelling_guide.md`. Candidate
+span for each present one. "All absent" saves a page with no signal in one click; it refuses
+while any signal is marked present. Definitions: `evals/text_signals/labelling_guide.md`. Candidate
 sentences the prefilter matched are highlighted in yellow; they are hints, not labels.
 
 Nothing here leaves the machine. `label_queue export` writes the labelled pages to `evals/`.
@@ -178,6 +179,7 @@ def _(SIGNAL_TYPES, golden, mo, row):
     )
     labelled_by = mo.ui.text(value=row.labelled_by or "owner", label="labelled by")
     save_button = mo.ui.run_button(label="Save labels")
+    absent_button = mo.ui.run_button(label="All absent", kind="neutral")
     mo.vstack(
         [
             *(
@@ -192,15 +194,16 @@ def _(SIGNAL_TYPES, golden, mo, row):
                 )
                 for s in SIGNAL_TYPES
             ),
-            mo.hstack([labelled_by, save_button]),
+            mo.hstack([labelled_by, save_button, absent_button]),
         ]
     )
-    return evidence, labelled_by, presence, save_button, values
+    return absent_button, evidence, labelled_by, presence, save_button, values
 
 
 @app.cell
 def _(
     SIGNAL_TYPES,
+    absent_button,
     evidence,
     golden,
     labelled_by,
@@ -213,8 +216,20 @@ def _(
     update_queue,
     values,
 ):
-    mo.stop(not save_button.value)
+    mo.stop(not save_button.value and not absent_button.value)
     try:
+        if absent_button.value:
+            _present = [s for s in SIGNAL_TYPES if presence.value[s] == "present"]
+            if _present:
+                raise ValueError(f"marked present, so not all absent: {_present}")
+            update_queue(
+                path,
+                golden.label(
+                    row, {s: golden.Label(present=False) for s in SIGNAL_TYPES}, labelled_by.value
+                ),
+            )
+            set_rev(lambda n: n + 1)
+            mo.stop(True)
         _missing = [s for s in SIGNAL_TYPES if presence.value[s] is None]
         if _missing:
             raise ValueError(f"not labelled yet: {_missing}")
