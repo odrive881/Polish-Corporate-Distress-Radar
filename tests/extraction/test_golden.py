@@ -222,7 +222,12 @@ def test_export_writes_labelled_pages_once_and_a_file_per_signal(
         *(r for r in queue if r.page != 1),
     ]
     files = golden.export(rows, mask_nlp)
-    assert set(files) == {"pages.jsonl", *(f"{s}.jsonl" for s in preprocessing.SIGNAL_TYPES)}
+    assert set(files) == {
+        "pages.jsonl",
+        golden.CLEARED_FILE,
+        *(f"{s}.jsonl" for s in preprocessing.SIGNAL_TYPES),
+    }
+    assert json.loads(files[golden.CLEARED_FILE]) == {}
     [page] = [json.loads(line) for line in files["pages.jsonl"].splitlines()]
     assert page["text"] == GOING_CONCERN and page["labelled_by"] == "owner"
     [gc] = [json.loads(line) for line in files["going_concern_uncertainty.jsonl"].splitlines()]
@@ -250,6 +255,38 @@ def test_export_refuses_a_page_the_masker_would_still_change(
     with pytest.raises(ValueError, match="fail the masking check") as exc:
         golden.export([_labelled(leaked)], mask_nlp)
     assert "Kowalski" not in str(exc.value)
+
+
+def test_a_reviewed_false_positive_no_longer_blocks_the_export(
+    queue: list[QueuePage], mask_nlp: Any
+) -> None:
+    leaked = QueuePage.model_validate(
+        {**_row(queue, 2).model_dump(), "text": f"{LITIGATION} Pozew podpisał Jan Kowalski."}
+    )
+    reviewed = golden.clear_reviewed(_labelled(leaked), mask_nlp)
+    assert reviewed.cleared and "Kowalski" not in "".join(reviewed.cleared)
+    files = golden.export([reviewed], mask_nlp)
+    cleared = json.loads(files[golden.CLEARED_FILE])
+    assert cleared == {reviewed.page_id: list(reviewed.cleared)}
+    # the committed files pass the downstream check only with the record beside them
+    pages = files["pages.jsonl"]
+    assert golden.masking_findings("pages.jsonl", pages, mask_nlp, {})
+    loaded = {k: frozenset(v) for k, v in cleared.items()}
+    assert golden.masking_findings("pages.jsonl", pages, mask_nlp, loaded) == []
+
+
+def test_a_reviewed_page_blocks_again_on_anything_new(
+    queue: list[QueuePage], mask_nlp: Any
+) -> None:
+    leaked = QueuePage.model_validate(
+        {**_row(queue, 2).model_dump(), "text": f"{LITIGATION} Pozew podpisał Jan Kowalski."}
+    )
+    reviewed = golden.clear_reviewed(_labelled(leaked), mask_nlp)
+    other = QueuePage.model_validate(
+        {**reviewed.model_dump(), "text": f"{reviewed.text} Dodał też Anna Nowak."}
+    )
+    with pytest.raises(ValueError, match="fail the masking check"):
+        golden.export([other], mask_nlp)
 
 
 def test_the_masking_check_reads_text_fields_and_quotes_nothing(mask_nlp: Any) -> None:

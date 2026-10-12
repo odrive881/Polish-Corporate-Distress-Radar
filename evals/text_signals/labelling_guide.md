@@ -54,3 +54,10 @@ corrects every proposal, and the row records who proposed (`proposed_by`) and wh
 
 `[osoba]` a person, `[pesel]` a PESEL, `[email]` an e-mail address, `[telefon]` a phone number. The export refuses
 any page on which the masker would still replace something; mask it in the queue first.
+
+**A flag that is not a person** (tooling, 2026-10-12): the masker also flags company names and other words it
+reads as a person. In the notebook such a span is red. If it is not a person, save the label without masking it:
+the span (its kind and a hash of its text, per page) is recorded as reviewed in `masking_cleared.json` beside the
+eval files, and the export and `make check` skip exactly that span. Anything else the masker finds on the page,
+including a span added later, still blocks. For pages saved before this existed, `make label-clear` records
+what is flagged on every labelled page at once.
