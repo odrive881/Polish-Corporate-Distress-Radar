@@ -30,7 +30,6 @@ from distress_radar.parsing.accounting_identities import (
     filed_bodies,
     grade,
     identity_check_results,
-    prior_year_consistency,
     run_identity_checks,
     unresolved_bodies,
 )
@@ -38,10 +37,10 @@ from distress_radar.parsing.canonical_schema import MappingConfig, load_mapping_
 from distress_radar.parsing.contracts import (
     FINANCIAL_STATEMENTS_CANONICAL,
     IDENTITY_CHECK_RESULTS,
-    RESTATEMENT_EVENTS,
     STATEMENT_DISCLOSURES,
 )
 from distress_radar.parsing.mapping_engine import SORT_KEY, MappingError, empty_frame
+from distress_radar.parsing.restatements import restatement_events as build_restatement_events
 from distress_radar.parsing.statements import (
     FileOutcome,
     classify_download,
@@ -358,18 +357,8 @@ def restatement_events(context: dg.AssetExecutionContext) -> dg.MaterializeResul
     Partition scheme: none (unpartitioned).
     """
     settings = Settings()
-    facts = read_dataset(settings.warehouse_dir, CANONICAL).filter(
-        pl.col("quality_grade") != "quarantined"
-    )
-    events = RESTATEMENT_EVENTS.validate(
-        prior_year_consistency(facts, settings.identity_tolerance_pln).sort(
-            "krs",
-            "period_end",
-            "restating_document_ref",
-            "restating_source_member",
-            "restated_column",
-            "line_item",
-        )
+    events = build_restatement_events(
+        read_dataset(settings.warehouse_dir, CANONICAL), settings.identity_tolerance_pln
     )
     write_dataset(events, settings.warehouse_dir, RESTATEMENTS, "fiscal_year")
     context.log.info(f"{events.height} restatement events")

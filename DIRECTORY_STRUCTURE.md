@@ -211,6 +211,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
     │   ├── test_population.py          # the acquisition-complete rule, its pin, the report's section
     │   ├── test_evaluation.py          # hand-computed metrics, bootstrap, the report's bytes
     │   ├── test_registry.py            # the four identifiers, a dirty tree refused
+    │   ├── test_registry_generation3.py  # generation 3's parameters, tuning child runs, versions and aliases
     │   └── test_backtest_asset.py      # the models group and its hand-run job
     ├── transform/                      # SQLMesh boundary and Dagster DQ wiring (pytest side)
     ├── fixtures/                       # golden XML/PDF documents for mapping tests
@@ -256,6 +257,7 @@ src/distress_radar/
 │   ├── statements.py            # C1 + C2 for one stored download, no I/O
 │   ├── statement_introduction.py  # the introduction's disclosures → statement_disclosures (plan 0013)
 │   ├── accounting_identities.py # E2 — identity rules and grading, pure functions
+│   ├── restatements.py          # restatement_events from the facts; a copy built from older facts is stale
 │   ├── contracts.py             # E1 — Pandera schemas for C2 output
 │   ├── manifest.py              # parsed_documents (Postgres)
 │   └── pdf/
@@ -304,7 +306,7 @@ src/distress_radar/
 │   ├── survival.py                # discrete-time hazard model, survival forest, IPCW metrics
 │   ├── explain.py                 # SHAP per fold: global importance; per-row values to model_explanations/, local only
 │   ├── champion.py                # the champion rule: paired entity bootstrap, AUC margin, event floor
-│   └── registry.py                # MLflow logging wrapper
+│   └── registry.py                # MLflow runs with the four identifiers; registered versions per horizon
 │
 └── api/
     ├── main.py
