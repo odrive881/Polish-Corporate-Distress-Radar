@@ -21,7 +21,13 @@ from distress_radar.models.baselines import load_classical_model
 from distress_radar.models.dataset import load_feature_store, load_label_set
 from distress_radar.models.explain import write_explanations
 from distress_radar.models.population import Population, read_lists, read_population
-from distress_radar.models.registry import code_commit, data_snapshot, identifiers, log_backtest
+from distress_radar.models.registry import (
+    code_commit,
+    data_snapshot,
+    identifiers,
+    log_backtest,
+    register_models,
+)
 from distress_radar.models.report import render_report, write_report
 from distress_radar.models.splits import label_timing, load_backtest_config
 from distress_radar.settings import Settings
@@ -53,9 +59,12 @@ def backtest(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
     `filing_index`, which decide the entities modelled, refused unless they give the pinned hash.
     Outputs: the Markdown report at `WAREHOUSE_DIR/reports/backtest/<BACKTEST_VERSION>.md`,
     replaced whole, the same bytes for the same inputs; one MLflow run per model, horizon and
-    run (`main`, `no_regime`) in `MLFLOW_TRACKING_URI`, each with the four identifiers; for a
-    config with generation 3, each scored row's SHAP values at `WAREHOUSE_DIR/model_explanations/`
-    (local only, replaced whole, one file per test year; plan 0015 decision 5).
+    run (`main`, `no_regime`, `entity_disjoint`) in `MLFLOW_TRACKING_URI`, each with the four
+    identifiers; for a config with generation 3, each scored row's SHAP values at
+    `WAREHOUSE_DIR/model_explanations/` (local only, replaced whole, one file per test year; plan
+    0015 decision 5), a child run per fold Optuna tuned, and, with a champion rule, a registered
+    model version per horizon of the incumbent (alias `incumbent`) and of a promoted challenger
+    (alias `champion`) in MLflow's registry (plan 0015 step G).
     Partition scheme: none (unpartitioned).
     """
     settings = Settings()
@@ -99,10 +108,14 @@ def backtest(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
             settings.mlflow_artifact_dir,
             Path(workdir),
         )
+        registered = register_models(
+            result, ids, run_ids, settings.mlflow_tracking_uri, Path(workdir)
+        )
     scored = result.cells.filter(pl.col("evaluable"))
     context.log.info(
         f"backtest {config.backtest}: {result.cells.height} cells, {scored.height} scored, "
-        f"{len(run_ids)} MLflow runs; seed output, not evidence"
+        f"{len(run_ids)} MLflow runs, {len(registered)} model versions registered; "
+        "seed output, not evidence"
     )
     return dg.MaterializeResult(
         metadata={
@@ -121,6 +134,14 @@ def backtest(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
                 or "none: every cell is below min_events"
             ),
             "events_by_horizon": {str(h): n for h, n in result.events.items()},
+            "champion": result.champion.champion if result.champion is not None else "no rule",
+            "registered": dg.MetadataValue.md(
+                "\n".join(
+                    f"- {r.name} v{r.version} @{r.alias}: {r.model}, fold {r.test_year}"
+                    for r in registered
+                )
+                or "none"
+            ),
         }
     )
 

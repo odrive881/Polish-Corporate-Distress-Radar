@@ -12,6 +12,18 @@ four identifiers that make it reproducible (CLAUDE.md):
 
 `RunIdentifiers` refuses to exist without all four, so a run missing one is never started, rather
 than logged incomplete. The report goes with every run as an artifact.
+
+Generation 3 (plan 0015 step G): its runs also carry their configuration (LightGBM's settings, the
+tuning gate, the calibration rule, the survival models'); each fold Optuna tuned gets a child run of
+the `lightgbm` run, its trials as parameters and their inner Brier scores as a metric by trial.
+
+The registry (`register_models`): one registered model per horizon, `distress_radar_<h>m`. Each
+backtest registers a version of the incumbent there, with the alias `incumbent`, and, when the
+champion rule promotes a challenger, a version of it with the alias `champion` (decision 7: only a
+promotion sets it, and a backtest that promotes nothing leaves an earlier one where it is). A
+version is the model the `main` run fitted for its latest fold allowed to speak for the pool, so it
+was trained on the labels settled on that test year's eve; its files are logged under `model/` in
+that MLflow run, beside the champion rule's comparisons (`champion.json`).
 """
 
 # polars's and mlflow's signatures reference types pyright cannot resolve; scoped to this module.
@@ -32,10 +44,17 @@ from mlflow.entities import Metric, Param
 from mlflow.tracking import MlflowClient
 
 from distress_radar.models.backtest import POOLED, BacktestResult
+from distress_radar.models.champion import ChampionVerdict
 from distress_radar.models.dataset import FEATURE_STORE
 from distress_radar.models.evaluation import METRICS
+from distress_radar.models.gbm import CALIBRATED, RAW
+from distress_radar.models.splits import BacktestConfig
+from distress_radar.models.survival import FOREST, HAZARD
 
 EXPERIMENT = "phase6_backtest"
+MAX_PARAMS = 100  # MLflow's limit per `log_batch`
+INCUMBENT_ALIAS = "incumbent"
+CHAMPION_ALIAS = "champion"
 _COMMIT = re.compile(r"^[0-9a-f]{40}$")
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 
@@ -143,6 +162,104 @@ def _cell_metrics(cells: pl.DataFrame) -> list[tuple[str, float]]:
     return out
 
 
+def model_params(config: BacktestConfig, model: str) -> dict[str, str]:
+    """A model's configuration as run parameters."""
+    if model == "logistic_regression":
+        lr = config.logistic_regression
+        return {
+            "features": ",".join(lr.features),
+            "penalty": lr.penalty,
+            "C": str(lr.c),
+            "class_weight": "none",
+        }
+    params: dict[str, str] = {}
+    if model in (RAW, CALIBRATED, HAZARD) and config.lightgbm is not None:
+        params.update({f"lightgbm.{k}": str(v) for k, v in config.lightgbm.model_dump().items()})
+    if model in (RAW, CALIBRATED) and config.tuning is not None:
+        tuning = config.tuning
+        params.update(
+            {
+                "tuning.min_tuning_events": str(tuning.min_tuning_events),
+                "tuning.trials": str(tuning.trials),
+                "tuning.sampler": tuning.sampler,
+                "tuning.seed": str(tuning.seed),
+                "tuning.space": ",".join(sorted(tuning.space)),
+            }
+        )
+    if model == CALIBRATED and config.calibration is not None:
+        params.update(
+            {
+                "calibration.method": config.calibration.method,
+                "calibration.fit_on": config.calibration.fit_on,
+            }
+        )
+    if model in (HAZARD, FOREST) and config.survival is not None:
+        params["survival.max_months"] = str(config.survival.max_months)
+        params["survival.period"] = config.survival.period
+    if model == FOREST and config.survival is not None:
+        params.update(
+            {f"forest.{k}": str(v) for k, v in config.survival.comparison.model_dump().items()}
+        )
+    return params
+
+
+def _log_params(client: MlflowClient, run_id: str, params: dict[str, str]) -> None:
+    items = [Param(k, v) for k, v in params.items()]
+    for start in range(0, len(items), MAX_PARAMS):
+        client.log_batch(run_id, params=items[start : start + MAX_PARAMS])
+
+
+def _log_trials(
+    client: MlflowClient,
+    experiment_id: str,
+    parent: str,
+    name: str,
+    ids: RunIdentifiers,
+    trials: pl.DataFrame,
+) -> list[str]:
+    """One child run per tuned fold: each trial's settings as `trial_<n>.<setting>`, its inner
+    Brier score as the metric `inner_brier` at step n."""
+    out: list[str] = []
+    for (year,), rows in trials.sort("test_year", "trial", "parameter").group_by(
+        "test_year", maintain_order=True
+    ):
+        created = client.create_run(
+            experiment_id,
+            tags={
+                "mlflow.parentRunId": parent,
+                "mlflow.runName": f"{name}/tuning/{year}",
+                "mlflow.source.git.commit": ids.code_commit,
+            },
+        )
+        run_id = str(created.info.run_id)
+        _log_params(
+            client,
+            run_id,
+            {
+                **ids.params(),
+                "test_year": str(year),
+                **{
+                    f"trial_{r['trial']:03d}.{r['parameter']}": f"{r['value']:g}"
+                    for r in rows.iter_rows(named=True)
+                },
+            },
+        )
+        scores = rows.unique("trial", keep="first").sort("trial")
+        client.log_batch(
+            run_id,
+            metrics=[
+                Metric("inner_brier", float(r["inner_brier"]), 0, int(r["trial"]))
+                for r in scores.iter_rows(named=True)
+            ],
+        )
+        client.set_terminated(run_id)
+        out.append(run_id)
+    return out
+
+
+RunKey = tuple[str, int, str]  # backtest run, horizon, model
+
+
 def log_backtest(
     result: BacktestResult,
     ids: RunIdentifiers,
@@ -151,8 +268,9 @@ def log_backtest(
     tracking_uri: str,
     artifact_dir: Path,
     workdir: Path,
-) -> list[str]:
-    """One MLflow run per model, horizon and backtest run; returns the MLflow run ids."""
+) -> dict[RunKey, str]:
+    """One MLflow run per model, horizon and backtest run, and a child run per tuned fold;
+    returns the MLflow run ids by backtest run, horizon and model (child runs not among them)."""
     client = MlflowClient(tracking_uri=tracking_uri)
     experiment_id = _experiment(client, artifact_dir)
     manifest = workdir / "data_snapshot.json"
@@ -160,7 +278,7 @@ def log_backtest(
         json.dumps({"feature_store": snapshot_files}, indent=2, sort_keys=True) + "\n", "utf-8"
     )
     config = result.config
-    run_ids: list[str] = []
+    run_ids: dict[RunKey, str] = {}
     keys = result.cells.select("run", "horizon_months", "model").unique(maintain_order=True)
     for run, horizon, model in keys.iter_rows():
         cells = result.cells.filter(
@@ -180,12 +298,8 @@ def log_backtest(
             # When a training label counts as settled (`splits.py`), from the label version.
             "label_alive_lag_months": str(result.timing.alive_lag_months),
             "krz_launch": result.timing.krz_launch.isoformat(),
+            **model_params(config, model),
         }
-        if model == "logistic_regression":
-            lr = config.logistic_regression
-            params.update(
-                features=",".join(lr.features), penalty=lr.penalty, C=str(lr.c), class_weight="none"
-            )
         tags = {
             "mlflow.runName": f"{config.backtest}/{model}/{horizon}m/{run}",
             "mlflow.source.git.commit": ids.code_commit,
@@ -193,13 +307,103 @@ def log_backtest(
         }
         created = client.create_run(experiment_id, tags=tags)
         run_id = str(created.info.run_id)
-        client.log_batch(
-            run_id,
-            metrics=[Metric(k, v, 0, 0) for k, v in _cell_metrics(cells)],
-            params=[Param(k, v) for k, v in params.items()],
-        )
+        client.log_batch(run_id, metrics=[Metric(k, v, 0, 0) for k, v in _cell_metrics(cells)])
+        _log_params(client, run_id, params)
         client.log_artifact(run_id, str(report))
         client.log_artifact(run_id, str(manifest))
+        if model == CALIBRATED and result.trials is not None:
+            tuned = result.trials.filter(
+                (pl.col("run") == run) & (pl.col("horizon_months") == horizon)
+            )
+            if not tuned.is_empty():
+                _log_trials(client, experiment_id, run_id, tags["mlflow.runName"], ids, tuned)
         client.set_terminated(run_id)
-        run_ids.append(run_id)
+        run_ids[(run, horizon, model)] = run_id
     return run_ids
+
+
+@dataclass(frozen=True)
+class Registration:
+    """A registered model version and the alias the backtest set on it."""
+
+    name: str
+    version: str
+    model: str
+    horizon_months: int
+    test_year: int  # the fold whose model it is: trained on labels settled on this year's eve
+    alias: str
+    run_id: str
+
+
+def registered_name(horizon: int) -> str:
+    return f"distress_radar_{horizon}m"
+
+
+def _comparisons(verdict: ChampionVerdict) -> str:
+    body = {
+        "incumbent": verdict.incumbent,
+        "promoted": verdict.promoted,
+        "verdicts": verdict.verdicts,
+        "comparisons": [c.__dict__ for c in verdict.comparisons],
+    }
+    return json.dumps(body, indent=2, sort_keys=True) + "\n"
+
+
+def register_models(
+    result: BacktestResult,
+    ids: RunIdentifiers,
+    run_ids: dict[RunKey, str],
+    tracking_uri: str,
+    workdir: Path,
+) -> list[Registration]:
+    """Per horizon, a version of the incumbent (alias `incumbent`) and, on a promotion, of the
+    champion (alias `champion`). Nothing for a config with no champion rule, nor for a model with
+    no fold allowed to speak for the pool."""
+    verdict = result.champion
+    if verdict is None:
+        return []
+    client = MlflowClient(tracking_uri=tracking_uri)
+    workdir.mkdir(parents=True, exist_ok=True)
+    comparisons = workdir / "champion.json"
+    comparisons.write_text(_comparisons(verdict), "utf-8")
+    roles = [(verdict.incumbent, INCUMBENT_ALIAS)]
+    if verdict.promoted is not None:
+        roles.append((verdict.promoted, CHAMPION_ALIAS))
+    out: list[Registration] = []
+    for horizon in result.config.horizons:
+        name = registered_name(horizon)
+        for model, alias in roles:
+            found = result.latest.get((horizon, model))
+            if found is None:
+                continue
+            test_year, fitted = found
+            run_id = run_ids[("main", horizon, model)]
+            files = workdir / f"{horizon}m_{model}" / "model"
+            files.mkdir(parents=True)
+            for file_name, data in fitted.files().items():
+                (files / file_name).write_bytes(data)
+            client.log_artifacts(run_id, str(files), "model")
+            client.log_artifact(run_id, str(comparisons))
+            if not client.search_registered_models(filter_string=f"name = '{name}'"):
+                client.create_registered_model(
+                    name, description=f"P(distress within {horizon} months), plan 0015"
+                )
+            source = f"{client.get_run(run_id).info.artifact_uri}/model"
+            version = client.create_model_version(
+                name,
+                source,
+                run_id=run_id,
+                tags={
+                    **ids.params(),
+                    "backtest": result.config.backtest,
+                    "model": model,
+                    "test_year": str(test_year),
+                    "verdict": verdict.verdicts.get(model, "incumbent"),
+                    "seed_output": "true",  # machinery, not evidence (plan 0015)
+                },
+            )
+            client.set_registered_model_alias(name, alias, str(version.version))
+            out.append(
+                Registration(name, str(version.version), model, horizon, test_year, alias, run_id)
+            )
+    return out

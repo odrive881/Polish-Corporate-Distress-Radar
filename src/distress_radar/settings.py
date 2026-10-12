@@ -88,8 +88,9 @@ class Settings(BaseSettings):
     # plan 0012) plus the statement's going-concern flags, employment and the notes' signals
     # (plan 0013).
     feature_set_version: str = "feature_set_v6"
-    # Which `config/models/<backtest_version>.yaml` the `backtest` job runs (plans 0012, 0013).
-    backtest_version: str = "backtest_v4"
+    # Which `config/models/<backtest_version>.yaml` the `backtest` job runs (plans 0012, 0013,
+    # 0015: v5 adds generation 3, the population rule and the champion rule).
+    backtest_version: str = "backtest_v5"
 
     # The Polish spaCy model, unpacked by `make models` (plan 0013; ADR 0009, third addendum).
     spacy_model_dir: Path = Path(".cache/models")
