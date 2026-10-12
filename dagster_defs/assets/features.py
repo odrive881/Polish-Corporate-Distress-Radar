@@ -21,7 +21,9 @@ from distress_radar.features.config import load_feature_set
 from distress_radar.features.coverage import coverage, latest_forms
 from distress_radar.features.leakage import known_from_violations, truncation_differences
 from distress_radar.labels import load_label_config
+from distress_radar.parsing.restatements import StaleInputError, stale_restatements
 from distress_radar.settings import Settings
+from distress_radar.warehouse import read_dataset
 
 if TYPE_CHECKING:
     from dagster_defs.definitions import PostgresResource
@@ -79,6 +81,8 @@ def feature_store(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
     Outputs: Parquet under `WAREHOUSE_DIR/feature_store/`, one file per `as_of_year`, rebuilt
     whole and replaced atomically (ADR 0008), validated by the feature-set contract; equal
     inputs write equal bytes.
+    Refused before any work when the stored `restatement_events` is not what the current
+    canonical facts give (built from older facts), since its features would be wrong silently.
     Checks: `leakage` (blocking) and `feature_coverage` (report only).
     Partition scheme: none (unpartitioned); files split by `as_of_year`.
     """
@@ -86,6 +90,13 @@ def feature_store(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
     settings = Settings()
     config = load_feature_set(settings.feature_set_version)
     grid_start: date = load_label_config(settings.label_version).as_of_grid.start
+    stale = stale_restatements(
+        read_dataset(settings.warehouse_dir, "restatement_events"),
+        read_dataset(settings.warehouse_dir, "financial_statements_canonical"),
+        settings.identity_tolerance_pln,
+    )
+    if stale:  # before any work: features over restatements older than the facts are wrong
+        raise StaleInputError(f"restatement_events is not built from the current facts: {stale}")
     with postgres.connect() as conn:
         build = build_feature_store(conn, settings.warehouse_dir, config, grid_start=grid_start)
     frame = build.frame
