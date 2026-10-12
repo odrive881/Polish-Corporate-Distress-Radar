@@ -15,7 +15,7 @@ censoring, Optuna tuning, SHAP explanations, and the champion rule.
 this plan does not need). It does not wait for list v2 (ADR 0014 addendum, proposed): weighting is plan
 0014's item 4, and this plan leaves a place for it (decision 9).
 
-## Status: active (2026-10-09): owner decisions 0–9 accepted as recommended, 10 added from step A's fold table; steps A–F built, step G next
+## Status: active (2026-10-09): owner decisions 0–9 accepted as recommended, 10 added from step A's fold table; steps A–G built, step H next
 
 ### Progress
 
@@ -154,6 +154,35 @@ this plan does not need). It does not wait for list v2 (ADR 0014 addendum, propo
   - Tested: the champion rule on synthetic results that pass, fail on the interval, fail on AUC with a better
     Brier score, fail in `no_regime`, and fall below the floor; pairing; the entity-disjoint run against the
     folds; per-list counts; the report's sections; reproducible verdicts and report.
+- **Step G (2026-10-12):** tracking and wiring.
+  - **Fitted models kept for the registry:** each fold result carries its model as registry files
+    (`classical.FittedModel`): `model.json` (kind, inputs in order, parameters; the regression's rank
+    reference, LightGBM's settings and Platt map) and the booster's text or the forest's pickle,
+    serialised only when registered. A test rebuilds the regression's and LightGBM's scores from the
+    files and matches what the backtest scored.
+  - **Runs:** generation 3's runs carry their configuration (`lightgbm.*`, `tuning.*`,
+    `calibration.*`, `survival.*`, `forest.*`). Each fold Optuna tuned is a child run of its
+    `lightgbm` run (`<run name>/tuning/<year>`): the four identifiers, each trial's settings as
+    `trial_<n>.<setting>`, and its inner Brier score as `inner_brier` at step n.
+  - **The registry:** one registered model per horizon, `distress_radar_<h>m`. Each backtest adds a
+    version of the incumbent with the alias `incumbent`, and on a promotion a version of the champion
+    with the alias `champion`. Only a promotion sets that alias (decision 7), and a backtest that
+    promotes nothing leaves an earlier champion where it is. A version is the `main` run's model
+    for its latest fold allowed to speak for the pool, so it was trained on the labels settled on
+    that test year's eve. Its files are under `model/` in that run, with `champion.json` (the
+    rule's comparisons) beside them. Version tags: the four identifiers, backtest, model, fold
+    year and verdict. Which version Phase 9 serves, and whether it refits on everything settled at
+    the cutoff, is for plan 0016.
+  - **Wiring:** `BACKTEST_VERSION` defaults to `backtest_v5`; the asset's metadata lists the
+    champion and the registered versions.
+  - **On the real inputs** (commit 77256f1, 5 minutes): 294 cells, 103 scored; 42 MLflow runs (7
+    models, 2 horizons, 3 runs); no child run, since no fold reaches the tuning gate;
+    `distress_radar_12m` and `distress_radar_24m` version 1, the regression from the 2025 fold,
+    alias `incumbent`; no `champion` alias, since nothing was promoted.
+  - Tested: generation 3's parameters; the child runs and their trials on a tuned synthetic run;
+    the incumbent registered per horizon with its identifiers and files; a promotion setting
+    `champion` and a later non-promotion leaving it; every challenger registrable; the files
+    reproducing the backtest's scores.
 
 ## Why
 
@@ -378,7 +407,7 @@ it; `docs/data_inventory.md`; this plan's status.
 
 - [x] Owner decisions 0–9 made (2026-10-09, as recommended).
 - [ ] Labels and features rebuilt over the seed and list v1, the fold table recorded before any model runs.
-- [ ] `backtest_v5` committed before the first run.
+- [x] `backtest_v5` committed before the first run.
 - [ ] LightGBM, calibrated, and the discrete-time survival model evaluated on every fold, both horizons, the
       `main`, `no_regime` and entity-disjoint runs; Brier score beside AUC; survival metrics.
 - [ ] Optuna gated as decided, its outcome per fold reported (run, or defaults with the reason).
