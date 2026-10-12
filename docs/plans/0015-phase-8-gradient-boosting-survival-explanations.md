@@ -15,7 +15,7 @@ censoring, Optuna tuning, SHAP explanations, and the champion rule.
 this plan does not need). It does not wait for list v2 (ADR 0014 addendum, proposed): weighting is plan
 0014's item 4, and this plan leaves a place for it (decision 9).
 
-## Status: active (2026-10-09): owner decisions 0–9 accepted as recommended, 10 added from step A's fold table; steps A–G built, step H next
+## Status: complete (2026-10-12): owner decisions 0–9 accepted as recommended, 10 added from step A's fold table; steps A–H built; the feature store corrected and the backtest re-run (Progress, 2026-10-12); nothing promoted, every challenger short of the rule's event floor
 
 ### Progress
 
@@ -183,6 +183,31 @@ this plan does not need). It does not wait for list v2 (ADR 0014 addendum, propo
     the incumbent registered per horizon with its identifiers and files; a promotion setting
     `champion` and a later non-promotion leaving it; every challenger registrable; the files
     reproducing the backtest's scores.
+- **Correction, 2026-10-12: stale restatements under the feature store.** An offline rebuild of every
+  stage from the stored bytes (parsing to `feature_store`, the text job replaying its stored responses with
+  no call) found `restatement_events` last built on 2026-10-06, before list v1's statements were parsed
+  on 2026-10-09: 130 rows where the current facts give 5,586. Step A's `feature_store` read it, so
+  `restating_filings` and `restatement_max_to_assets` were wrong for list v1, and steps C–G's runs on the
+  real inputs (above) used them. Nothing else moved: the canonical facts, identity results, disclosures,
+  legal events, text signals and coverage, auditor reports and the label set rebuilt byte-identical, and
+  the label set and population hashes match their pins. The dq marts were stale for the same reason
+  (`quarantine` 29 → 334 rows, `dq_mart` 148 → 216), and now rebuilt.
+  - **The guard:** `parsing/restatements.py` builds the dataset for its asset, and `feature_store` rebuilds
+    it in memory and refuses a stored copy that differs, before any work (it passes on the rebuilt one and
+    refuses the 2026-10-06 copy).
+  - **Re-run** on the corrected store (commit d6112a8): 294 cells, 103 scored, 42 MLflow runs,
+    `distress_radar_12m` and `_24m` version 2 at `incumbent`. The regression and the classical models are
+    unchanged (they read no restatement feature); generation 3 moves within its intervals (pooled
+    `lightgbm`, `main`: Brier 0.017, AUC 0.636 → 0.645; `no_regime` 0.290 → 0.324). The champion rule:
+    every challenger not evaluable, 5–6 paired events against 50; nothing promoted. A second, in-process
+    computation of the backtest gave the report byte for byte, and a second `feature_store` run gave all
+    116 files byte for byte.
+- **Step H (2026-10-12):** AGENT_SPEC §6I as built (population, generation 3, survival, explanations, the
+  champion rule, the registry; default `backtest_v5`); README's backtest section; TECHNICAL_ARCHITECTURE's
+  "as built" notes where the build departs from the pick (the hazard model in LightGBM, scikit-survival for
+  the forest and the metrics; Platt on the inner year rather than `CalibratedClassifierCV`; per-row SHAP
+  local); DIRECTORY_STRUCTURE (the new modules and tests). `docs/data_inventory.md` needs nothing: the
+  phase adds no input, and its MLflow row stands.
 
 ## Why
 
@@ -406,15 +431,15 @@ it; `docs/data_inventory.md`; this plan's status.
 ## Definition of done
 
 - [x] Owner decisions 0–9 made (2026-10-09, as recommended).
-- [ ] Labels and features rebuilt over the seed and list v1, the fold table recorded before any model runs.
+- [x] Labels and features rebuilt over the seed and list v1, the fold table recorded before any model runs.
 - [x] `backtest_v5` committed before the first run.
-- [ ] LightGBM, calibrated, and the discrete-time survival model evaluated on every fold, both horizons, the
+- [x] LightGBM, calibrated, and the discrete-time survival model evaluated on every fold, both horizons, the
       `main`, `no_regime` and entity-disjoint runs; Brier score beside AUC; survival metrics.
-- [ ] Optuna gated as decided, its outcome per fold reported (run, or defaults with the reason).
-- [ ] SHAP importance in the report; per-row values local only.
-- [ ] The champion rule implemented and tested; its verdict in the report.
-- [ ] Every run in MLflow with its four identifiers; the report byte-reproducible.
-- [ ] `make check` and `make test-integration` green; docs from step H updated.
+- [x] Optuna gated as decided, its outcome per fold reported (run, or defaults with the reason).
+- [x] SHAP importance in the report; per-row values local only.
+- [x] The champion rule implemented and tested; its verdict in the report.
+- [x] Every run in MLflow with its four identifiers; the report byte-reproducible.
+- [x] `make check` and `make test-integration` green; docs from step H updated.
 
 ## Risks
 

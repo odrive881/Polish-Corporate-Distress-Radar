@@ -64,6 +64,22 @@ As of 2026-10-07:
    inferred from the `_2` suffixes and shared ids, the missing fields completed later from details or a re-run),
    or those companies are downloaded again once the script writes `documents.csv`. Either way list v1 stays
    outside any weighted result (ADR 0014 addendum).
+7. **(2026-10-12) Legal records over list v1 that no rule maps** (`quarantine_events`, stage C4, 88 rows, all
+   from 2026-10-09): the notice kinds and the taxonomy were written against the seed's 49 notices, and list
+   v1 brings forms they have not met. Quarantined, never guessed, as designed; mapping them is a new version
+   of `msig_notice_kinds.yaml` or `procedure_taxonomy.yaml`, and so label version 3. By what they could do to
+   a label:
+   - **Probably a wrong label:** 0000370981, a simplified restructuring announced 2021-12-07, after the
+     mapping's end date (2021-11-30); MSiG is its only source, and the company is labelled `alive` across it.
+     0001011389, a KRS dissolution section (`rozwiazanieUniewaznienie`) not mapped, labelled `alive` through
+     2024-09. Neither is in `backtest_v5`'s population, so no result so far is affected.
+   - **The class already right, a detail lost:** 0000205656 (a composition proceeding, `postepowanieUkladowe`,
+     and 9 chapter IX notices; labelled restructuring); 0000270998 and 0000793180 (a bankruptcy petition
+     dismissed, `oddalenieWnioskuOUpadlosc`; both labelled bankruptcy); 0000214769 (a 2000 merger notice).
+   - **Most likely no event:** 22 notices of chapter IV (19 entities) carrying "wpis do rejestru" with
+     liquidation terms, most likely MSiG's publication of KRS entries; the KRS extracts, which record a
+     liquidation in dział 6, hold none for them. And 36 KRS suspensions of business (`zawieszenieWznowienie`),
+     which the taxonomy does not treat as distress.
 
 **What can be built meanwhile (2026-10-07), in this order** (1–3 done 2026-10-08, § "Progress"):
 
