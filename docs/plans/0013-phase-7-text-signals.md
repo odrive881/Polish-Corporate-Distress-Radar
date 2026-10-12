@@ -11,15 +11,17 @@
 **Order:** after plan 0012 (complete). It does not wait for ADR 0013: like Phase 6, it builds and measures
 machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set this plan adds.
 
-## Status: active (2026-10-07): owner decisions 0–9 accepted; every step built, J's docs included; the model runs on the seed under `extractor_v4` (the default) with the provider's terms confirmed; all nine signals accepted on the 83-page golden set and held by the gate in `make check`; open: enough labelled positives per signal to close the plan, and the owner's items below
+## Status: active (2026-10-12): owner decisions 0–9 accepted; every step built, J's docs included; the model runs on the seed under `extractor_v4` (the default) with the provider's terms confirmed; all nine signals accepted on the 127-page golden set (2026-10-12) and held by the gate in `make check`; open: enough labelled positives per signal to close the plan (`covenant_breach` and `key_customer_loss` have none), and the owner's items below
 
-### Where this stands (2026-10-07)
+### Where this stands (2026-10-12)
 
 **Done since 2026-10-05** (each in the progress section): the provider's terms confirmed and the key set up
 (decision 2; the client sends `ANTHROPIC_WORKSPACE_ID`); the first model run, and its seven disputed results
 resolved by the owner; all nine signals accepted on the 83-page golden set; the model run over the whole seed and
 the notes' features filled in; step I's departures and the 2026-10-05 choices approved as built; decision 9
 (`post_balance_sheet_event_v2`, dated and valued) built, labelled, accepted and the default; step J's docs.
+Since 2026-10-07: 44 more pages labelled (40 of the auditor reports' queue, 4 of the notes'), all nine signals
+re-scored and accepted on the 127 pages (2026-10-12, Progress).
 
 **Open for the owner, in order:**
 
@@ -29,12 +31,13 @@ the notes' features filled in; step I's departures and the 2026-10-05 choices ap
    population). In that order:
    - the auditor reports' queue (`golden_sample_v2`, 102 pages of 20 reports, 15 with a span to mask by hand):
      the only source of positives for `opinion_type`, `emphasis_of_matter` and the auditor's going-concern
-     paragraph;
+     paragraph; 40 pages labelled and committed (2026-10-12), 62 to go;
    - then a new golden sample drawn from ADR 0014's list v2 (its random and distress groups, addendum of
      2026-10-07) once plan 0014 has imported it, instead of finishing the seed's notes queue.
 
-   Today five signals have no positive, or one: `opinion_type`, `emphasis_of_matter`, `covenant_breach`,
-   `key_customer_loss` none; `litigation` and `continued_existence_vote` one each. Labelling is done in the
+   Today (127 pages) four signals have no positive, or one: `covenant_breach` and `key_customer_loss` none;
+   `emphasis_of_matter` and `continued_existence_vote` one each. `opinion_type` has 16, but its rule
+   (`rules_v3`) is the weak result: precision 0.67, recall 0.50 end to end. Labelling is done in the
    notebook from a WSL terminal (`uv run marimo run notebooks/labelling/golden_set.py`, not through Claude Code,
    whose background tasks stop after 30 minutes), then `make label-export`.
 2. **Auditor reports, loose ends (decision 0c, below):**
@@ -583,6 +586,26 @@ the notes' features filled in; step I's departures and the 2026-10-05 choices ap
     has no API for RDF yet; documents are downloaded by the owner's Power Automate Desktop script through the
     public UI, at most 3 a minute, with a listing of each document's "Data dodania" as `known_from`, the route
     decision 0(c) took for the seed's auditor reports.
+- **The golden set at 127 pages (2026-10-12, owner; commit `5c0ec41`).** 44 more pages labelled: 40 of the
+  auditor reports' queue (`golden_sample_v2`) and 4 of the notes' queue; six masker false positives recorded as
+  reviewed in `masking_cleared.json`. `make eval` re-scored all nine signals with no new call (95 model responses
+  replayed from the store), and the owner accepted each result. End to end:
+
+  | Signal | Method | Positives | Precision | Recall |
+  |---|---|---|---|---|
+  | `going_concern_uncertainty` | `_v1`, model | 9 | 0.90 | 1.00 |
+  | `opinion_type` | `rules_v3`, rule | 16 | 0.67 | 0.50 |
+  | `post_balance_sheet_event` | `_v2`, model | 4 | 1.00 | 1.00 |
+  | `litigation` | `_v1`, model | 3 | 1.00 | 1.00 |
+  | `loss_coverage_resolution` | `_v1`, model | 3 | 1.00 | 1.00 |
+  | `emphasis_of_matter` | `_v1`, model | 1 | 0.33 | 1.00 |
+  | `continued_existence_vote` | `_v1`, model | 1 | — | 0.00 |
+  | `covenant_breach` | `_v1`, model | 0 | — | — |
+  | `key_customer_loss` | `_v1`, model | 0 | — | — |
+
+  Masker recall 0.9912 (113 of 114 persons; one masked by hand). `opinion_type` is the weak one: of its 16
+  positives the prefilter selects 15 and the rule reads 8 correctly, with 4 false positives.
+  `continued_existence_vote`'s recall is still the prefilter's miss (open item 3).
 
 ## Why
 
