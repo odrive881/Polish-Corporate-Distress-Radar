@@ -445,11 +445,15 @@ This is the most important test in the repository. It is the mechanism that turn
 
 *As built (plan 0012):* the classical models proved not to need estimation. Altman's Z'' and the Poznań model are applied with their published coefficients from `config/models/`, and their scores are mapped to probabilities per fold with scikit-learn, as is the logistic regression. `statsmodels` stays in the stack, unused so far.
 
+*As built (plan 0015):* the discrete-time hazard model is LightGBM on person-month rows, not a scikit-survival estimator: scikit-survival's Cox and gradient-boosted survival models need complete inputs, which here would mean imputation. scikit-survival supplies the random survival forest (it accepts missing values) as the comparison, and the time-dependent metrics (IPCW concordance, integrated Brier score).
+
 Two specific reasons. **LightGBM** handles missing values natively, which matters here because absent line items are *legitimately* missing — a small entity filing the simplified form genuinely does not report them, and imputing them would fabricate information. **scikit-survival** over `lifelines` because its sklearn-compatible API reuses the same pipeline and cross-validation machinery as everything else; reach for `lifelines` only if you want classical statistical output tables.
 
 #### I3 — Calibration and explainability
 
 **→ Pick:** `CalibratedClassifierCV` with reliability curves and Brier scores; `SHAP` for per-prediction attribution feeding the user-facing explanations.
+
+*As built (plan 0015):* the Platt map is a one-variable logistic fit on each fold's inner validation year (the last settled training year), not `CalibratedClassifierCV`'s cross-validation, which would mix years and break the out-of-time rule; isotonic is rejected while events are few. SHAP's per-row values are kept local (`WAREHOUSE_DIR/model_explanations/`); only global importance is reported.
 
 Calibration matters more than discrimination for this product. A user acting on "18% probability of restructuring within 12 months" needs that number to mean what it says, so report calibration alongside AUC everywhere and never lead with AUC alone.
 
