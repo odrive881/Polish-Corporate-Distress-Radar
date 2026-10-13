@@ -3,7 +3,8 @@
 - **Status:** accepted (2026-10-06, owner). The list's composition is not yet measured, and it is not yet a
   representative sample (§ Consequences).
   *2026-10-07:* list v2's sampling rule, a random group and a distress group from one recorded frame, is proposed
-  (§ "Addendum, 2026-10-07").
+  (§ "Addendum, 2026-10-07"). *2026-10-13:* the owner's two list v2 files are received and recorded there
+  (§ "Lists received, 2026-10-13"); they were not drawn by its rule, so the addendum stays proposed.
 - **Date:** 2026-10-06
 - **Follows up:** 0013 (A1 was left open; ADR 0013's scripted downloads need a list of KRS numbers)
 
@@ -175,3 +176,34 @@ Its weight is 1/π. Each company carries its group, π and the list version (`di
 - **List v1 (the 611) and the seed** stay separate, purposive lists. A company of theirs that the draw picks
   counts in its group like any other, and its documents already downloaded are reused; no other company of
   theirs enters a weighted result.
+
+### Lists received, 2026-10-13
+
+The owner's two files for list v2, kept outside the repository like v1's (in `.cache/universe_lists/`, ignored by
+git; some company names name people). Columns `krs, company_name` and a status column; only the KRS numbers
+enter the pipeline. Both have well-formed, distinct KRS numbers and no company in common.
+
+| Group | File | Rows | Status column | SHA-256 |
+|---|---|---|---|---|
+| A (random) | `Merged sample (600).csv` | 600 | `in_distress`: 494 `False`, 106 `True` | `6d58ee4379aa58bae97d8a973a03a856216f912f6a15d84f0f6114f8cfc9fa48` |
+| B (distress) | `Merged distress sample (65-35 split).csv` | 200 | `distress_type`: 130 `w upadlosci`, 70 `w likwidacji` | `a8fc9cfb99a11406e963449ee9efc6a6530075d569472fd10e1c5acc16c33a4b` |
+
+They replace two earlier drafts (2026-10-09: 660 rows; 199 rows that included `w zawieszeniu`).
+
+- **The owner's rule for A:** at least three years of continuous operation.
+- **B's split is the owner's choice,** 65% bankruptcy, 35% liquidation. Rejestr.io's status filter offers only
+  W zawieszeniu, W likwidacji and W upadłości, so restructuring cannot be selected and D is in practice
+  "bankrupt or in liquidation, as Rejestr.io shows them now". Restructuring events still come from the
+  pipeline's labels (KRS extract, MSiG), for companies in either group. Suspension (`w zawieszeniu`) is left
+  out: it is dormancy, not an outcome class of AGENT_SPEC §4.6. Two of B's companies are seed entities.
+- **Not drawn by the rule above.** No frame file, N_F, N_D, seed or permutation is recorded, so π and the weights
+  cannot be computed from these files. What the files show:
+  - A is four contiguous runs of KRS numbers, not a spread over a frame: 0000645842–0000656620 (165),
+    0000756893–0000764849 (149), 0000868333–0000876804 (180), 0001001976–0001011163 (106), roughly four
+    registration cohorts from late 2016 to early 2023. The last run was registered after the frame's
+    2022-01-01 cut, so at most two or three statements fall inside v1's years.
+  - B's KRS numbers spread from 0000004617 to 0001006534. Whether its companies' entries were first made on or
+    after 2019-01-01 is not checked yet; the KRS extract (A4) tells, once they are downloaded.
+- **Until the frame is recorded,** these lists are used like v1: purposive, their results stated as the lists',
+  not the segment's. To weight them, the owner records the filter settings and the count each search returned
+  (per status for B, per search for A), and how the rows were chosen from each search's results.
