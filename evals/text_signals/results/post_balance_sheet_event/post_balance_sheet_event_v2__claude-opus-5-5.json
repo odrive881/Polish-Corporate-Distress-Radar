@@ -1337,19 +1337,19 @@
    "value": null
   }
  ],
- "extractor_version": "extractor_v4",
+ "extractor_version": "extractor_v6",
  "hashes": {
   "effort": "c082456a7766e23a18db084cd34b6ff510baef506548b897cc80e9b7d3e121c8",
   "golden": "2dd85de3e5ffe5fa77573d7f395ffca270f88de6716e3b912a124a2a45e3d5a1",
   "model": "005912bee6ee4543cec4404b5a02b9bcb11a6f1dcc134b6693c7ccde5fdd2f69",
   "pages": "98d0cf9624654ee1d348dfadccee37607118a2830ed33eff0377f8cb356f44dc",
-  "prefilter": "5f17c94b3efb4dc568349bf31c4e2f8db7cf22ead670d717df6c3e4aa04ed1e5",
+  "prefilter": "5c34e01d2f3d157d46c505c7f823dfb433aff38d639682a3607e92fa3cdbd537",
   "prompt": "49802eea160b0bdf2c2e6247958f420c5670de964b25d5dc0f254087d7d0d4f2",
   "schema": "3092fa6e7704cd444822db6ed3d8c5f8a2fe641d5441005aa7c6a2eb5ff10711"
  },
  "method": "llm",
  "method_id": "post_balance_sheet_event_v2__claude-opus-5-5",
- "prefilter_version": "prefilter_v2",
+ "prefilter_version": "prefilter_v3",
  "scores": {
   "discarded": {},
   "end_to_end": {

@@ -739,3 +739,19 @@ def test_extractor_v5_reads_the_opinion_by_sentences_and_keeps_v4_s_requests() -
             assert ex.request_params(v4, signal, "x", end) == ex.request_params(
                 v5, signal, "x", end
             )
+
+
+def test_extractor_v6_changes_only_the_prefilter_and_keeps_v5_s_requests() -> None:
+    v5, v6 = ex.load_extractor("extractor_v5"), ex.load_extractor("extractor_v6")
+    assert (v5.config.prefilter_version, v6.config.prefilter_version) == (
+        "prefilter_v2",
+        "prefilter_v3",
+    )
+    assert v6.rules == v5.rules
+    end = date(2023, 12, 31)
+    for signal, method in v6.config.signals.items():
+        assert method == v5.config.signals[signal]
+        if method.method == "llm":
+            assert ex.request_params(v5, signal, "x", end) == ex.request_params(
+                v6, signal, "x", end
+            )

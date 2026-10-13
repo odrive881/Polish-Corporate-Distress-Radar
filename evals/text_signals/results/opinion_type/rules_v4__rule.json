@@ -1337,16 +1337,16 @@
    "value": null
   }
  ],
- "extractor_version": "extractor_v5",
+ "extractor_version": "extractor_v6",
  "hashes": {
   "golden": "5a2197627eb74b5896ee9ec3bf83a22254e749059986ba2136e7fe2c21b0c025",
   "pages": "98d0cf9624654ee1d348dfadccee37607118a2830ed33eff0377f8cb356f44dc",
-  "prefilter": "5f17c94b3efb4dc568349bf31c4e2f8db7cf22ead670d717df6c3e4aa04ed1e5",
+  "prefilter": "5c34e01d2f3d157d46c505c7f823dfb433aff38d639682a3607e92fa3cdbd537",
   "rules": "87507302a492bbc503d471315200e7b6e2e36c2c0358848888103fbec563d148"
  },
  "method": "rule",
  "method_id": "rules_v4__rule",
- "prefilter_version": "prefilter_v2",
+ "prefilter_version": "prefilter_v3",
  "scores": {
   "discarded": {},
   "end_to_end": {

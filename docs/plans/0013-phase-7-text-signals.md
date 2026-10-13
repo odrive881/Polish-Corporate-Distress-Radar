@@ -11,7 +11,7 @@
 **Order:** after plan 0012 (complete). It does not wait for ADR 0013: like Phase 6, it builds and measures
 machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set this plan adds.
 
-## Status: active (2026-10-13): owner decisions 0–9 accepted; every step built, J's docs included; the model runs on the seed under `extractor_v5` (the default since 2026-10-13; v4 before) with the provider's terms confirmed; all nine signals accepted on the 148-page golden set (2026-10-13) and held by the gate in `make check`; open: enough labelled positives per signal to close the plan (`covenant_breach` and `key_customer_loss` have none), the `text` job re-run under `extractor_v5`, and the owner's items below
+## Status: active (2026-10-13): owner decisions 0–9 accepted; every step built, J's docs included; the model runs on the seed under `extractor_v6` (the default since 2026-10-13; v4 before) with the provider's terms confirmed; all nine signals accepted on the 148-page golden set (2026-10-13) and held by the gate in `make check`; open: enough labelled positives per signal to close the plan (`covenant_breach` and `key_customer_loss` have none), the `text` and `features` jobs re-run under `extractor_v6`, and the owner's items below
 
 ### Where this stands (2026-10-13)
 
@@ -41,10 +41,10 @@ settled against the guide, and all nine accepted on the 148 pages (2026-10-13, P
    (`rules_v3`) is the weak result: precision 0.47, recall 0.69 end to end. Labelling is done in the
    notebook from a WSL terminal (`uv run marimo run notebooks/labelling/golden_set.py`, not through Claude Code,
    whose background tasks stop after 30 minutes), then `make label-export`.
-2. ~~**`opinion_type`: accept `rules_v4` and make `extractor_v5` the default.**~~ Done 2026-10-13 (owner):
-   `rules_v4` accepted on the 148-page set (13 of 13, no false positive) and `extractor_v5` the default
-   (Progress). The 13 of 13 is optimistic: the patterns were written looking at these pages; the reports' 41
-   unlabelled pages and list v2's sample are its real test, and no adverse opinion has been seen yet.
+2. ~~**`extractor_v6`: accept the nine results and make it the default.**~~ Done 2026-10-13 (owner): all
+   nine accepted under `extractor_v6`, the default since (Progress). `rules_v4`'s 13 of 13 stays optimistic:
+   its patterns were written looking at these pages; the reports' 41 unlabelled pages and list v2's sample
+   are its real test, and no adverse opinion has been seen yet.
 3. **Auditor reports, loose ends (decision 0c, below):**
    - 0000181328's 2019 report is `unknown` in the dates list;
    - 0000291203's 2024 and 2025 reports are not in the list;
@@ -648,13 +648,30 @@ settled against the guide, and all nine accepted on the 148 pages (2026-10-13, P
     that pattern is unmeasured. `audit_firm` is v3's. `extractor_v5` is v4 with `rules_v4`; every model
     signal's request is v4's.
   - **Measured:** golden set 13 of 13 end to end, no false positive (no call; 109 responses replayed); the
-    other eight signals unchanged. Seed's 44 text reports, each report's first page stating an opinion: the same
-    opinion as `rules_v3` in 44 (40 unqualified, 3 qualified, 1 disclaimer), on another page in 14, which is
-    the point: v3 stopped at a heading. One report is a sole practitioner's ("Moim zdaniem, sprawozdanie
+    other eight signals unchanged. Seed's 44 text reports, each report's first page stating an opinion, with
+    the rule run on **every** page: the same opinion as `rules_v3` in 44 (40 unqualified, 3 qualified, 1
+    disclaimer), on another page in 14, which is the point: v3 stopped at a heading. *Corrected below:* the job
+    reads only the pages the prefilter selects, and through `prefilter_v2` it is 43 of 44 (this entry and
+    commit `2557cec` said 44 of 44). One report is a sole practitioner's ("Moim zdaniem, sprawozdanie
     finansowe :"), found by this check and added to the patterns before anything was accepted.
   - **Accepted (owner) and the default:** `rules_v4`'s result accepted on the 148-page set; `extractor_v5` is
     the default (`settings.py`, `.env.example`), AGENT_SPEC §6G2, the glossary, `data_inventory.md` and the
     README updated.
+  - **The `text` job under `extractor_v5` (2026-10-13), and the prefilter it showed up.** No model call (2,421
+    responses stored, none written), 2,608 rows, the `evidence_masked` check passed. `auditor_reports`: 39
+    unqualified, 3 qualified, 1 disclaimer, 5 none (v4: 40, 3, 1, 4); the opinion on another page in 14 reports,
+    its confidence from `medium` to `high` in 13, firm and auditor change unchanged. The one lost opinion is the
+    sole practitioner's report (`97409c1bdc24`, FY2024): its sentence is on page 3, which has no word whose
+    lemma is `opinia`, so `prefilter_v2` never let the rule see it; v3 had read page 4's basis heading. The
+    check above ran the rule on every page and missed this. The `features` job was not run on this output.
+  - **`prefilter_v3` and `extractor_v6`:** v3 adds one `opinion_type` term, a sentence with `zdanie` and
+    `sprawozdanie` ("Moim zdaniem, sprawozdanie finansowe"); every other signal's terms are v2's, so no model
+    request and no other signal's selection changes. `extractor_v6` is v5 with `prefilter_v3`. The report check,
+    now through the prefilter as the job reads: `rules_v3` with `prefilter_v2` 40, 3, 1; `rules_v4` with
+    `prefilter_v2` 39, 3, 1 and one none (the job's result, reproduced); `rules_v4` with `prefilter_v3` 40, 3,
+    1, the same opinion as `rules_v3` in all 44, the lost one read on page 3. Golden set under `extractor_v6`:
+    all nine scores unchanged (no call); each result records the prefilter's hash, so all nine were accepted
+    again (owner), and `extractor_v6` is the default.
 
 ## Why
 
