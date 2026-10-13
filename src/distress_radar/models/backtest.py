@@ -11,7 +11,9 @@ since each list is purposive. With a `champion` section, the rule of `champion.p
 3 against the regression on the pooled rows.
 
 The result holds each model's fit summary and scored rows per fold, the metrics per test year and
-pooled, the reliability tables, and the fold reports. Pooled cells gather a model's test rows from
+pooled, the reliability tables, and the fold reports. The scored rows, which name companies, are
+also written locally (`write_predictions`, plan 0016 decision 3): each past month-end's out-of-time
+prediction, from the fold whose test year holds it, for the explorer's score history. Pooled cells gather a model's test rows from
 the folds whose fitted model trained on at least `min_events` events; a fold trained on fewer is
 not allowed to speak for the pool.
 """
@@ -22,6 +24,7 @@ not allowed to speak for the pool.
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
+from pathlib import Path
 
 import polars as pl
 
@@ -54,9 +57,11 @@ from distress_radar.models.survival import (
     fold_predictions,
     survival_records,
 )
+from distress_radar.warehouse import write_dataset
 
 RUNS = ("main", "no_regime", "entity_disjoint")
 POOLED = 0  # the `test_year` of a pooled cell
+PREDICTIONS = "model_predictions"  # the scored test rows' dataset: local only
 
 
 @dataclass(frozen=True)
@@ -458,3 +463,13 @@ def _cell_schema() -> dict[str, pl.DataType | type[pl.DataType]]:
     for name in METRICS:
         schema.update({name: pl.Float64, f"{name}_low": pl.Float64, f"{name}_high": pl.Float64})
     return schema
+
+
+def write_predictions(result: BacktestResult, warehouse_dir: Path) -> list[Path]:
+    """Every scored test row, of every run, horizon, model and fold, to
+    `WAREHOUSE_DIR/model_predictions/`, replaced whole, one file per test year; local only, like
+    `model_explanations/` (company-level output: never the report, MLflow or anything published)."""
+    frame = result.predictions.select(
+        pl.lit(result.config.backtest).alias("backtest"), pl.all()
+    ).sort("run", "horizon_months", "model", "test_year", "krs", "as_of_date")
+    return write_dataset(frame, warehouse_dir, PREDICTIONS, "test_year")
