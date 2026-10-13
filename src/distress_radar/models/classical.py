@@ -131,16 +131,19 @@ class FoldPredictions:
 
 
 def fit_rank_logistic(
-    x: Array, y: npt.NDArray[np.bool_], config: LogisticConfig
+    x: Array, y: npt.NDArray[np.bool_], config: LogisticConfig, weight: Array | None = None
 ) -> tuple[RankTransform, LogisticRegression]:
-    """The configured penalised fit on fold-fitted ranks."""
+    """The configured penalised fit on fold-fitted ranks. An optional per-row weight (plan 0014
+    item 4, unused until list v2) weights the fit, each row counting as that many rows. The rank
+    transform stays unweighted: fitted on the training rows as drawn, it is a monotone recoding of
+    each input, which keeps every ordering whatever the weights."""
     ranks = RankTransform.fit(x)
     # scikit-learn 1.8 deprecated `penalty`: an L2 penalty is `l1_ratio=0` with strength 1/C.
     l1_ratio = {"l2": 0.0}[config.penalty]
     model = LogisticRegression(
         l1_ratio=l1_ratio, C=config.c, solver="lbfgs", class_weight=None, max_iter=1000
     )
-    model.fit(ranks.transform(x), y)
+    model.fit(ranks.transform(x), y, sample_weight=weight)
     return ranks, model
 
 

@@ -98,6 +98,11 @@ Once the owner accepts ADR 0014's sampling addendum:
 
 4. **Weighted models:** sample weights in training (`models/classical.py`, today unweighted) and in the
    evaluation (Brier score, reliability, base rates), with group A alone reported beside them.
+   *Built in part (2026-10-13), ahead of the addendum:* `fit_rank_logistic` and the Brier score, log loss, AUC,
+   base rate and reliability table take an optional per-row weight (an integer weight is exactly a repeated
+   row; no weight changes nothing), as LightGBM's and the survival models' fits already did. The regression's
+   rank transform stays unweighted. Still waiting on the addendum: where the weights come from, a weighted
+   top-decile precision, passing weights through the folds, cells and entity bootstrap, and group A's column.
 5. **Step 0's draw:** the seeded permutation of a frame file, groups A and B, each company's probability of
    being drawn, loaded into `universe_candidates`; tested on a synthetic frame, the export's format read from
    Rejestr.io's.
