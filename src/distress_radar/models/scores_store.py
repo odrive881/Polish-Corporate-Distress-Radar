@@ -1,0 +1,70 @@
+"""Postgres `scores_history` and `watchlists` (plan 0016 step A, AGENT_SPEC §5). Same DDL
+conventions as `acquisition/manifest.py` (ADR 0006): plain idempotent DDL, natural keys.
+
+`scores_history` holds one row per company, month-end, horizon and served model version, so a
+rerun of the scoring job adds nothing (decision 5, invariant 5). Beside §5's columns, every row
+carries decision 7's metadata, so a score traces to its MLflow run:
+- the served version: `model_name`, `model_version`, `model_alias`, its `mlflow_run_id`, and its
+  `training_eve` (labels settled on that day trained it);
+- the identifiers: `code_commit` (the scoring code's; the model's own is on its version),
+  `data_snapshot_hash` (the `feature_store` scored), `label_version` and `label_set_hash`,
+  `feature_set_version` and `feature_set_hash`, `population_hash` (null for a backtest config
+  without a population rule);
+- `not_scored_reason`: a row of the modelled population the served model cannot score (the
+  regression's incomplete inputs) is kept with its reason and no probability, never imputed
+  (decision 2).
+
+Every row names a company: local only (AGENT_SPEC §6K), never published.
+"""
+
+from __future__ import annotations
+
+from typing import LiteralString
+
+from psycopg import Connection
+
+SCHEMA_DDL: tuple[LiteralString, ...] = (
+    """
+    CREATE TABLE IF NOT EXISTS scores_history (
+        krs                  char(10) NOT NULL,
+        as_of_date           date NOT NULL,
+        horizon_months       integer NOT NULL CHECK (horizon_months > 0),
+        probability          double precision CHECK (probability BETWEEN 0 AND 1),
+        not_scored_reason    text,
+        model_name           text NOT NULL,
+        model_version        text NOT NULL,
+        model_alias          text NOT NULL,
+        mlflow_run_id        text NOT NULL,
+        training_eve         date NOT NULL CHECK (training_eve < as_of_date),
+        code_commit          char(40) NOT NULL,
+        data_snapshot_hash   char(64) NOT NULL,
+        label_version        text NOT NULL,
+        label_set_hash       char(64) NOT NULL,
+        feature_set_version  text NOT NULL,
+        feature_set_hash     char(64) NOT NULL,
+        population_hash      text,
+        top_drivers          jsonb,
+        scored_at            timestamptz NOT NULL,
+        PRIMARY KEY (krs, as_of_date, horizon_months, model_version),
+        CHECK ((probability IS NULL) = (not_scored_reason IS NOT NULL)),
+        CHECK (probability IS NOT NULL OR top_drivers IS NULL)
+    )
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS scores_history_as_of
+        ON scores_history (as_of_date, horizon_months)
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS watchlists (
+        name      text NOT NULL CHECK (name <> ''),
+        krs       char(10) NOT NULL,
+        added_at  timestamptz NOT NULL,
+        PRIMARY KEY (name, krs)
+    )
+    """,
+)
+
+
+def ensure_schema(conn: Connection) -> None:
+    for statement in SCHEMA_DDL:
+        conn.execute(statement)
