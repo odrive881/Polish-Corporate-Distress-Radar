@@ -39,6 +39,47 @@ registry holds and says so, and the public site's population-level pages wait fo
   served model cannot score is kept with `not_scored_reason` and no probability (decision 2), and a check refuses
   a score dated on or before the version's training eve. Not built: dependencies, the threshold's check.
 
+### Buildable now, without further input from the owner (2026-10-13)
+
+With decisions 0–13 accepted, the following need nothing more from the owner. They are listed in build order;
+each is committed on its own and recorded in Progress when done.
+
+1. **Decision 12's count and named inputs.** Count, over the 43 incomplete rows at 2026-09-30, which inputs are
+   missing and how often, split by the size class and form filed. The question is whether a line is legitimately
+   absent from a short form (AGENT_SPEC §4) or missing because of a gap in the line-item map (as with the
+   `.R2025` codes in plan 0012). The result goes here. Then the scorer names the missing inputs on the row: a
+   `missing_inputs` column in `SCORE_SCHEMA` and in `scores_history` (`text[]`, null unless the reason is
+   "inputs incomplete"). A mapping gap, if one is found, is reported and not fixed in this plan: a fix changes
+   the feature set, which is plan 0012's to version.
+2. **Storing the excluded entities' reasons (decision 6).** Today they go only to Dagster metadata. Each
+   feature-store entity at the scored month-end gets one row with its reason (the population rule's, or
+   `not_at_risk`) and the population hash, in a Postgres table beside `scores_history` (`scoring_exclusions`,
+   keyed like it, idempotent), so the API can say why a company is not scored.
+3. **The first real scoring run (decision 5).** Run the `scoring` job on a clean tree at the latest month-end,
+   writing to local Postgres, and record the counts here. This is local and company-level, nothing leaves the
+   machine. A rerun adds nothing.
+4. **Step A, the rest:** `fastapi`, `uvicorn`, `streamlit`, `altair` in `pyproject.toml` (`make lock`). The
+   threshold check (decision 9): `DQ_MART_MIN_CELL_ENTITIES=10` in `.env.example`, and a settings check that
+   refuses a value below 5 before anything is published.
+5. **Step D, the API** (decisions 6 and 7), as specified. It is bound to `127.0.0.1` and tested against Postgres
+   in the integration suite.
+6. **Step E, the explorer** (decision 8): Streamlit, local only, the disclaimer on every page. Score history
+   comes from `model_predictions/` before the training eve and from `scores_history` after it (decision 3).
+7. **Step F, the `publish` asset** (decision 9): the fixed aggregate queries into `site/sources/publish.duckdb`,
+   and the test that no identifier reaches it. Then the Evidence pages of decision 0, written as source.
+8. **Step G, the report's figures:** the backtest's pooled metrics, event counts and reliability tables,
+   computed under `src/` from the warehouse and stamped with their identifiers. Then `report/methodology.qmd`.
+9. **Step H, the docs sweep.**
+
+**What waits on the machine, not on a decision:** building the site and rendering the report (`make site`,
+`make report`). Node.js is not on WSL's `PATH` (only a Windows `npm` under `/mnt/e` is visible), and the Quarto
+CLI is not installed. Steps F and G are written and tested up to that point. Installing both inside WSL is the
+owner's to do, as a documented prerequisite (decision 10). Nothing is deployed (decision 10).
+
+**Not in this list:** plan 0014 item 4's remaining work, weights through the backtest's folds, cells and
+bootstrap. Building it needs no input, but it has no use until list v2's frame is recorded (ADR 0014,
+§ "Lists received, 2026-10-13"). Until then the lists are used unweighted, like v1.
+
 ## Why
 
 Phases 1–8 built a pipeline whose output lives in Parquet files, a SQLite MLflow store and a Markdown report. Phase

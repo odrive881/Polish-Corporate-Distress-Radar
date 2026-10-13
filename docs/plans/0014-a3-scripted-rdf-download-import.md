@@ -103,6 +103,9 @@ Once the owner accepts ADR 0014's sampling addendum:
    row; no weight changes nothing), as LightGBM's and the survival models' fits already did. The regression's
    rank transform stays unweighted. Still waiting on the addendum: where the weights come from, a weighted
    top-decile precision, passing weights through the folds, cells and entity bootstrap, and group A's column.
+   *2026-10-13:* list v2 arrived without a frame (ADR 0014, § "Lists received, 2026-10-13"), so there
+   are no weights to pass yet. Carrying them through the folds, cells and bootstrap needs no input, but it is
+   left until the frame is recorded (plan 0016, § "Buildable now").
 5. **Step 0's draw:** the seeded permutation of a frame file, groups A and B, each company's probability of
    being drawn, loaded into `universe_candidates`; tested on a synthetic frame, the export's format read from
    Rejestr.io's.
