@@ -1,0 +1,87 @@
+# Rules v4 (plan 0013, 2026-10-13): `opinion_type` by the sentence that states the opinion, not by headings;
+# `audit_firm` is v3's, unchanged.
+#
+# Engineering config, not statute; measured on the golden set like any extractor.
+# Loaded by `distress_radar.extraction.rules.load_rules`.
+#
+# The file name is the `rules_version`. A change is a new file, never an edit.
+#
+# Why sentences: v3's headings agree with each other over a whole report, but scored page by page they
+# mark the page where a heading stands, and the basis section ("Podstawa opinii") often runs onto the page
+# after the opinion. On the 148-page golden set (2026-10-13) every one of v3's errors was of that kind, or a
+# heading it does not list ("Opinia z badania"). The labelling guide labels the page on which the opinion
+# sentence begins; the auditing standards (KSB 700 and 705) fix that sentence's wording, so it also says
+# which opinion it is.
+#
+# How it reads a page (`rules._by_pattern`): each pattern is searched in the masked page as it is,
+# ignoring case, with `\s+` between words so a sentence broken across lines still matches. The most
+# severe opinion found wins (disclaimer, adverse, qualified, unqualified), with its earliest match as
+# evidence. A page with none is `absent`: no opinion stated there, which is not an unqualified opinion.
+#
+# The subject must be the financial statements ("sprawozdanie finansowe"): the opinion on the
+# management report ("Naszym zdaniem, sprawozdanie z działalności…") is not this signal. A sole
+# practitioner writes in the first person singular ("Moim zdaniem", "Nie wyrażam opinii"): one seed report
+# does, so every pattern takes both. Each pattern's
+# example must read as its own opinion and every `opinion_not_stated` text as none, or the file does not
+# load. The examples are invented. No adverse opinion and no "odmawiamy" disclaimer is in the golden set
+# yet: those patterns follow the standards' wording and are unmeasured.
+
+rules_version: rules_v4
+
+opinion_sentences:
+  disclaimer:
+    - pattern: 'nie\s+wyrażam(?:y)?\s+opinii\s+o\s+(?:(?:załączonym|badanym|zbadanym)\s+)?(?:rocznym\s+)?sprawozdaniu\s+finansowym'
+      example: Nie wyrażamy opinii o załączonym sprawozdaniu finansowym Spółki.
+    - pattern: 'odmawiam(?:y)?\s+wyrażenia\s+opinii\s+o\s+(?:(?:załączonym|badanym|zbadanym)\s+)?(?:rocznym\s+)?sprawozdaniu\s+finansowym'
+      example: Odmawiamy wyrażenia opinii o zbadanym sprawozdaniu finansowym.
+  adverse:
+    - pattern: '(?:naszym|moim)\s+zdaniem\s*,?[^.;]{0,300}?sprawozdanie\s+finansowe[\s:•–−-]*nie\s+przedstawia'
+      example: >-
+        Naszym zdaniem, ze względu na znaczenie sprawy opisanej w sekcji Podstawa opinii negatywnej,
+        załączone sprawozdanie finansowe nie przedstawia rzetelnego i jasnego obrazu sytuacji Spółki.
+  qualified:
+    - pattern: '(?:naszym|moim)\s+zdaniem\s*,?\s+(?:za|z)\s+wyjątkiem[^.;:]{0,300}?sprawozdanie\s+finansowe'
+      example: >-
+        Naszym zdaniem, za wyjątkiem możliwych skutków sprawy opisanej w sekcji Podstawa opinii
+        z zastrzeżeniem, załączone roczne sprawozdanie finansowe:
+  unqualified:
+    - pattern: '(?:naszym|moim)\s+zdaniem\s*,?\s+(?:(?:załączone|badane|zbadane|powyższe)\s+)?(?:roczne\s+)?sprawozdanie\s+finansowe'
+      example: "Naszym zdaniem, badane sprawozdanie finansowe:\n- przedstawia rzetelny i jasny obraz"
+
+opinion_not_stated:
+  - Naszym zdaniem, sprawozdanie z działalności zostało sporządzone zgodnie z art. 49 ustawy o rachunkowości.
+  - Moim zdaniem, sprawozdanie z działalności zostało sporządzone zgodnie z obowiązującymi przepisami.
+  - Naszym zdaniem, informacje zawarte w sprawozdaniu z działalności są zgodne z załączonym sprawozdaniem finansowym.
+  - >-
+    Sprawozdanie finansowe Spółki za poprzedni rok obrotowy zostało zbadane przez naszą firmę audytorską,
+    która wyraziła opinię bez zastrzeżeń na temat tego sprawozdania finansowego.
+  - >-
+    Uważamy, że dowody badania, które uzyskaliśmy są wystarczające i odpowiednie, aby stanowić podstawę
+    dla naszej opinii z zastrzeżeniem.
+  - >-
+    Zarząd jest odpowiedzialny za sporządzenie sprawozdania finansowego, które przedstawia rzetelny i
+    jasny obraz sytuacji majątkowej i finansowej Spółki.
+  - >-
+    Jednakże, ze względu na sprawę opisaną w sekcji Podstawa odmowy wyrażenia opinii, nie byliśmy w stanie
+    uzyskać wystarczających i odpowiednich dowodów badania.
+  - Nasza opinia o sprawozdaniu finansowym nie obejmuje Innych informacji.
+  - "Opinia z zastrzeżeniem\n\nPodstawa opinii\n\nOpinia z badania"
+
+# `audit_firm`: the audit firm's number on the list of audit firms (lista firm audytorskich), read
+# from a report's masked pages only to tell whether the firm changed between reports
+# (`auditor_reports.auditor_changed`). The number is never stored: a firm can be a sole
+# practitioner, a natural person (owner, 2026-10-05). A report stating no number or more than one
+# has no firm, and its change is null.
+#
+# The pattern is the list's phrase, then up to 60 characters with no digit and no "rewident", then
+# "numer"/"nr" and a number of at most four digits. Each guard is there for a reason found on the
+# seed by counts (plan 0013 progress, 2026-10-05): without them, a pattern ran past the firm to the
+# key auditor's own registration number (five digits, after "biegły rewident ... nr"), which names a
+# person; and "z dnia 11 maja" is a date, not a number. On the seed's 44 text reports this finds one
+# number in 39, three or four digits, none with "rewident" or "dnia" before it.
+audit_firm:
+  - pattern: '(?:list[aęy]\s+firm\s+audytorskich|podmiot[óo]w\s+uprawnionych\s+do\s+badania)(?:(?!rewident)[^0-9]){0,60}?\b(?:numerem|numer|nr\.?)\s*(?:ewidencyjn\w*\s*)?(\d{1,4})\b'
+    example: >-
+      Firma audytorska wpisana na listę firm audytorskich pod numerem 1234. Kluczowy biegły
+      rewident: [osoba], nr w rejestrze 12345.
+    number: "1234"

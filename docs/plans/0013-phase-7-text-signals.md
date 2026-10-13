@@ -11,7 +11,7 @@
 **Order:** after plan 0012 (complete). It does not wait for ADR 0013: like Phase 6, it builds and measures
 machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set this plan adds.
 
-## Status: active (2026-10-13): owner decisions 0–9 accepted; every step built, J's docs included; the model runs on the seed under `extractor_v4` (the default) with the provider's terms confirmed; all nine signals accepted on the 148-page golden set (2026-10-13) and held by the gate in `make check`; open: enough labelled positives per signal to close the plan (`covenant_breach` and `key_customer_loss` have none), `opinion_type`'s rule (`rules_v4`, open item 2), and the owner's items below
+## Status: active (2026-10-13): owner decisions 0–9 accepted; every step built, J's docs included; the model runs on the seed under `extractor_v5` (the default since 2026-10-13; v4 before) with the provider's terms confirmed; all nine signals accepted on the 148-page golden set (2026-10-13) and held by the gate in `make check`; open: enough labelled positives per signal to close the plan (`covenant_breach` and `key_customer_loss` have none), the `text` job re-run under `extractor_v5`, and the owner's items below
 
 ### Where this stands (2026-10-13)
 
@@ -41,17 +41,10 @@ settled against the guide, and all nine accepted on the 148 pages (2026-10-13, P
    (`rules_v3`) is the weak result: precision 0.47, recall 0.69 end to end. Labelling is done in the
    notebook from a WSL terminal (`uv run marimo run notebooks/labelling/golden_set.py`, not through Claude Code,
    whose background tasks stop after 30 minutes), then `make label-export`.
-2. **`opinion_type`'s rule: `rules_v4` (labels settled 2026-10-13, Progress).** On the 148-page set every one of
-   `rules_v3`'s 14 errors is the rule's, of two kinds:
-   - **10 false positives fired on a heading** ("Podstawa opinii", "Opinia"), not an opinion: `345848ea297ce9dc`,
-     `442e9ef455c6fb25`, `4ba112af65d0fb91`, `4fd187325fc2d3ec`, `5662c59df98b4033`, `5fc02c50952e42c7`,
-     `6124c536c129cd4a`, `6d76503207b95db9`, `719c79efe2ebb443`, `859e426644fdea49`;
-   - **4 opinions missed:** "Naszym zdaniem, **badane** sprawozdanie" (`52364f6780866fb5`, `571b4ba5d0ebab52`),
-     one under an "Opinia z badania" heading (`313e615575838470`), and a disclaimer (`849ad5ac45e57759`).
-
-   A `rules_v4` reading the opinion sentence ("Naszym zdaniem … sprawozdanie finansowe", "nie wyrażamy opinii")
-   instead of headings, as the guide now labels, is a new rules version measured against the accepted
-   `rules_v3` result (P 0.47, R 0.69).
+2. ~~**`opinion_type`: accept `rules_v4` and make `extractor_v5` the default.**~~ Done 2026-10-13 (owner):
+   `rules_v4` accepted on the 148-page set (13 of 13, no false positive) and `extractor_v5` the default
+   (Progress). The 13 of 13 is optimistic: the patterns were written looking at these pages; the reports' 41
+   unlabelled pages and list v2's sample are its real test, and no adverse opinion has been seen yet.
 3. **Auditor reports, loose ends (decision 0c, below):**
    - 0000181328's 2019 report is `unknown` in the dates list;
    - 0000291203's 2024 and 2025 reports are not in the list;
@@ -638,6 +631,30 @@ settled against the guide, and all nine accepted on the 148 pages (2026-10-13, P
     `opinion_type` (`rules_v3`) 13 positives, P 0.47 R 0.69 (tp 9, fp 10, fn 4). Lower precision than at 127
     pages because the labels no longer cover the rule's heading errors: all 14 errors are now the rule's (open
     item 2, `rules_v4`). Masker recall 0.993 (142 of 143 persons; one masked by hand).
+- **`opinion_type`: two labels and the guide tightened, `rules_v4` built (2026-10-13, owner's go).**
+  - **Guide:** the page on which the opinion sentence *begins* is labelled; a page carrying only its
+    continuation is absent, and so are sections referring to the opinion. One page per opinion, which is also
+    what `auditor_reports` takes.
+  - **Relabelled:** `719c79efe2ebb443` present, `unqualified` (the sentence begins at its foot; its
+    continuation page `345848ea297ce9dc` stays absent); `849ad5ac45e57759` absent (its evidence was the
+    auditor's-responsibility section; the disclaimer itself is on `85c9a5332e574bbc`, present). Still 13
+    positives. `rules_v3` on them: P 0.53, R 0.77.
+  - **`rules_v4`** (`config/extraction/rules_v4.yaml`, a third form in `rules.py`, `opinion_sentences`): one
+    pattern per opinion in the standards' wording, "Naszym/Moim zdaniem, … sprawozdanie finansowe" (qualified:
+    "za wyjątkiem"; adverse: "nie przedstawia"), "Nie wyrażam(y) opinii o … sprawozdaniu finansowym"; the most
+    severe found wins, its earliest match as evidence. The subject must be the financial statements, so the
+    management report's opinion is not read. Each pattern's invented example must read as its own opinion and
+    each `opinion_not_stated` text as none, or the file does not load. No adverse opinion is in the golden set:
+    that pattern is unmeasured. `audit_firm` is v3's. `extractor_v5` is v4 with `rules_v4`; every model
+    signal's request is v4's.
+  - **Measured:** golden set 13 of 13 end to end, no false positive (no call; 109 responses replayed); the
+    other eight signals unchanged. Seed's 44 text reports, each report's first page stating an opinion: the same
+    opinion as `rules_v3` in 44 (40 unqualified, 3 qualified, 1 disclaimer), on another page in 14, which is
+    the point: v3 stopped at a heading. One report is a sole practitioner's ("Moim zdaniem, sprawozdanie
+    finansowe :"), found by this check and added to the patterns before anything was accepted.
+  - **Accepted (owner) and the default:** `rules_v4`'s result accepted on the 148-page set; `extractor_v5` is
+    the default (`settings.py`, `.env.example`), AGENT_SPEC §6G2, the glossary, `data_inventory.md` and the
+    README updated.
 
 ## Why
 

@@ -91,14 +91,16 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │   ├── extractor_v1.yaml          # model, effort, prefilter, and the method (llm + prompt, or rule) per signal_type
 │   │   ├── extractor_v2.yaml          # v1 with rules_v2 and prefilter_v2
 │   │   ├── extractor_v3.yaml          # v2 with rules_v3
-│   │   ├── extractor_v4.yaml          # v3 with post_balance_sheet_event_v2: dated and valued (decision 9; the default, EXTRACTOR_VERSION)
+│   │   ├── extractor_v4.yaml          # v3 with post_balance_sheet_event_v2: dated and valued (decision 9)
+│   │   ├── extractor_v5.yaml          # v4 with rules_v4 (the default, EXTRACTOR_VERSION)
 │   │   ├── golden_sample_v1.yaml      # which pages go to the labeller: all selected, a fixed rejected sample
 │   │   ├── golden_sample_v2.yaml      # the auditor reports' pages: whole reports, every modified opinion and a fixed draw
 │   │   ├── prefilter_v1.yaml          # lemma terms per signal_type; the file name is the prefilter_version
 │   │   ├── prefilter_v2.yaml          # v1 with every page naming an opinion selected for opinion_type
 │   │   ├── rules_v1.yaml              # lemma rules for standard wording (opinion_type)
 │   │   ├── rules_v2.yaml              # opinion_type from the auditor's report's section headings (KSB 700/705)
-│   │   └── rules_v3.yaml              # v2 + the audit firm's list number, for auditor change (never stored)
+│   │   ├── rules_v3.yaml              # v2 + the audit firm's list number, for auditor change (never stored)
+│   │   └── rules_v4.yaml              # opinion_type from the sentence stating the opinion, not headings; v3's audit_firm
 │   ├── features/                      # feature-set definitions (plan 0010, ADR 0012)
 │   │   ├── feature_set_v1.yaml        # features, families, inputs; the file name is the feature_set_version
 │   │   ├── feature_set_v2.yaml        # v1 + the classical models' ratios (plan 0012)

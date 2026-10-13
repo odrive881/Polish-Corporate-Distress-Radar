@@ -1,6 +1,6 @@
 """Rules for signals with standard wording (plan 0013 step F, decision 2; AGENT_SPEC §6 G2).
 
-`config/extraction/rules_<version>.yaml` holds them, in one of two forms for `opinion_type`:
+`config/extraction/rules_<version>.yaml` holds them, in one of three forms for `opinion_type`:
 - **terms** (`rules_v1`): lemma terms over a masked page's sentences (`preprocessing.analyse`);
   the page's most severe opinion wins, with its sentence as evidence;
 - **headings** (`rules_v2`, plan 0013 decision 0c): the section headings of an auditor's report
@@ -8,6 +8,13 @@
   ("Opinia z zastrzeżeniem") gives the opinion; failing one, a basis heading ("Podstawa opinii z
   zastrzeżeniem") does, at `medium` confidence. The first such line on the page wins, with the
   line as evidence. A sentence that only mentions an opinion is never read as one.
+- **sentences** (`rules_v4`, plan 0013, 2026-10-13): patterns for the sentence that states the
+  opinion on the financial statements, in the standards' fixed wording ("Naszym zdaniem, załączone
+  sprawozdanie finansowe…", "Nie wyrażamy opinii o…"). The page on which it begins is the page
+  with the opinion, as the labelling guide labels it; a heading or a section that refers to the
+  opinion is not. The most severe opinion found wins, with its earliest match as evidence. Each
+  pattern carries an invented example it must read as its own opinion, and the file invented texts
+  no pattern may match (the opinion on the management report, the basis, "Inna sprawa").
 A rule answers like an extractor, present or absent, so the eval harness scores it the same way.
 
 `audit_firm` (`rules_v3`, plan 0013 decision 0c): patterns that find the audit firm's number on
@@ -92,19 +99,49 @@ class FirmPattern(BaseModel):
         return self
 
 
+class OpinionPattern(BaseModel):
+    """A regular expression for the sentence stating one opinion, with an invented example. Matched
+    case-insensitively against the masked page as it is, so words are joined by `\\s+`: a sentence
+    broken across lines still matches."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    pattern: str
+    example: str
+
+    @cached_property
+    def compiled(self) -> re.Pattern[str]:
+        return re.compile(self.pattern, re.IGNORECASE)
+
+    @model_validator(mode="after")
+    def _finds_its_example(self) -> OpinionPattern:
+        if self.compiled.search(self.example) is None:
+            raise ValueError(f"{self.pattern!r} does not match its example")
+        return self
+
+
 class Rules(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     rules_version: str
-    # Exactly one of the two forms (module docstring).
+    # Exactly one of the three forms (module docstring).
     opinion_type: dict[OpinionValue, tuple[Term, ...]] | None = None
     opinion_headings: dict[OpinionValue, OpinionHeadings] | None = None
+    opinion_sentences: dict[OpinionValue, tuple[OpinionPattern, ...]] | None = None
+    # With `opinion_sentences`: invented texts that refer to an opinion without stating one.
+    opinion_not_stated: tuple[str, ...] = ()
     audit_firm: tuple[FirmPattern, ...] = ()
 
     @model_validator(mode="after")
     def _one_form_covering_every_opinion(self) -> Rules:
-        if (self.opinion_type is None) == (self.opinion_headings is None):
-            raise ValueError("give exactly one of `opinion_type` (terms) and `opinion_headings`")
+        forms = (self.opinion_type, self.opinion_headings, self.opinion_sentences)
+        if sum(f is not None for f in forms) != 1:
+            raise ValueError(
+                "give exactly one of `opinion_type` (terms), `opinion_headings` and "
+                "`opinion_sentences`"
+            )
+        if self.opinion_not_stated and self.opinion_sentences is None:
+            raise ValueError("`opinion_not_stated` checks `opinion_sentences` only")
         if self.opinion_type is not None:
             missing = [v for v in SEVERITY if not self.opinion_type.get(v)]
             if missing:
@@ -117,6 +154,20 @@ class Rules(BaseModel):
             twice = sorted({k for k in keys if keys.count(k) > 1})
             if twice:
                 raise ValueError(f"opinion_headings: {twice} listed more than once")
+        if self.opinion_sentences is not None:
+            missing = [v for v in SEVERITY if not self.opinion_sentences.get(v)]
+            if missing:
+                raise ValueError(f"opinion_sentences: no patterns for {missing}")
+            if not self.opinion_not_stated:
+                raise ValueError("opinion_sentences: give `opinion_not_stated` examples")
+            for value, patterns in self.opinion_sentences.items():
+                for p in patterns:
+                    read = _by_pattern(p.example, self.opinion_sentences).value
+                    if read != value:
+                        raise ValueError(f"{p.pattern!r}: its example reads as {read}, not {value}")
+            for text in self.opinion_not_stated:
+                if _by_pattern(text, self.opinion_sentences).present:
+                    raise ValueError(f"an opinion is read in `opinion_not_stated`: {text[:60]!r}")
         return self
 
 
@@ -143,6 +194,8 @@ def opinion_type(text: str, sentences: list[Sentence], rules: Rules) -> Extracti
     """The page's opinion, by the rules' form (module docstring)."""
     if rules.opinion_headings is not None:
         return _by_heading(text, rules.opinion_headings)
+    if rules.opinion_sentences is not None:
+        return _by_pattern(text, rules.opinion_sentences)
     return _by_sentence(text, sentences, rules)
 
 
@@ -180,6 +233,25 @@ def _by_heading(text: str, headings: dict[OpinionValue, OpinionHeadings]) -> Ext
                     method="rule",
                     response_key=None,
                 )
+    return _ABSENT
+
+
+def _by_pattern(text: str, patterns: dict[OpinionValue, tuple[OpinionPattern, ...]]) -> Extraction:
+    """The most severe opinion whose sentence is on the page, its earliest match as evidence."""
+    for value in SEVERITY:
+        matches = [m for p in patterns.get(value, ()) if (m := p.compiled.search(text))]
+        if matches:
+            first = min(matches, key=lambda m: m.start())
+            return Extraction(
+                signal_type="opinion_type",
+                present=True,
+                value=value,
+                evidence=first.group(0),
+                evidence_start=first.start(),
+                confidence="high",
+                method="rule",
+                response_key=None,
+            )
     return _ABSENT
 
 
