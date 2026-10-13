@@ -213,6 +213,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
     │   ├── test_registry.py            # the four identifiers, a dirty tree refused
     │   ├── test_registry_generation3.py  # generation 3's parameters, tuning child runs, versions and aliases
     │   ├── test_serving.py             # the alias rule, a loaded version reproduces its fold, drivers, predictions written
+    │   ├── test_scoring.py             # population, risk set, incomplete inputs, metadata, in-sample refused
     │   ├── test_scores_store.py        # a rerun adds nothing, not-scored rows, the training eve (integration)
     │   └── test_backtest_asset.py      # the models group and its hand-run job
     ├── transform/                      # SQLMesh boundary and Dagster DQ wiring (pytest side)
@@ -310,7 +311,8 @@ src/distress_radar/
 │   ├── champion.py                # the champion rule: paired entity bootstrap, AUC margin, event floor
 │   ├── registry.py                # MLflow runs with the four identifiers; registered versions per horizon
 │   ├── serving.py                 # the served version (champion, else incumbent), a scorer per kind, top_drivers
-│   └── scores_store.py            # Postgres scores_history and watchlists (DDL)
+│   ├── scoring.py                 # the latest month-end: who is scored, why the rest are not, each row's metadata
+│   └── scores_store.py            # Postgres scores_history and watchlists
 │
 └── api/
     ├── main.py

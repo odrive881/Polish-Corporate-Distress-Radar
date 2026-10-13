@@ -25,8 +25,16 @@ registry holds and says so, and the public site's population-level pages wait fo
   LightGBM, both survival kinds). `top_drivers` as decision 4 recommends. **For the owner:** decision 4 defines
   no contribution for the survival kinds (plan 0015 explains only the binary booster), so a survival champion's
   scores would carry no drivers until one is chosen.
-- **Step C, in part:** the backtest writes every scored test row to `WAREHOUSE_DIR/model_predictions/` (decision
-  3's source; local only). Not built: the `scores` asset and `scoring` job.
+- **Step C:** the backtest writes every scored test row to `WAREHOUSE_DIR/model_predictions/` (decision 3's
+  source; local only). The `scores` asset and `scoring` job (`models/scoring.py`), on decisions 2, 5 and 7 as
+  recommended. **For the owner:** decision 2 does not say what happens to an entity already in a proceeding or
+  deregistered: it has a feature row at the latest month-end, but the label rules leave it off the grid, so no
+  model was trained on rows like it. Built: not scored, reason `not_at_risk`, the grid read from the latest
+  frozen label set of the served version's label version. Read-only dry run on the real stores (2026-10-13, not
+  written): at 2026-09-30, of 186 population entities, 12 not at risk, 43 with inputs incomplete, 131 scored
+  per horizon (`incumbent`, the regression, training eve 2024-12-31). The 43 are a quarter of the at-risk
+  population: the regression's complete-case rule, worth a look before the explorer shows them. Not built:
+  storing the excluded entities' reasons for the API (decision 6), which today go only to the run's metadata.
 - **Step A, tables only:** `scores_history` and `watchlists` (`models/scores_store.py`). Beyond §5, a row the
   served model cannot score is kept with `not_scored_reason` and no probability (decision 2), and a check refuses
   a score dated on or before the version's training eve. Not built: dependencies, the threshold's check.
