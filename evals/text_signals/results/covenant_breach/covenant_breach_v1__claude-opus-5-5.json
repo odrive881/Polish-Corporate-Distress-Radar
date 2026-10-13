@@ -1337,19 +1337,19 @@
    "value": null
   }
  ],
- "extractor_version": "extractor_v4",
+ "extractor_version": "extractor_v6",
  "hashes": {
   "effort": "c082456a7766e23a18db084cd34b6ff510baef506548b897cc80e9b7d3e121c8",
   "golden": "23022f0f622ed48aab659ac78569395e0b12958013cd7e9c2b053b341aed0493",
   "model": "005912bee6ee4543cec4404b5a02b9bcb11a6f1dcc134b6693c7ccde5fdd2f69",
   "pages": "98d0cf9624654ee1d348dfadccee37607118a2830ed33eff0377f8cb356f44dc",
-  "prefilter": "5f17c94b3efb4dc568349bf31c4e2f8db7cf22ead670d717df6c3e4aa04ed1e5",
+  "prefilter": "5c34e01d2f3d157d46c505c7f823dfb433aff38d639682a3607e92fa3cdbd537",
   "prompt": "6edc2feb9308a2cfdec38cb1ded9c46f71221272ae34aa3877011f85e8524b7c",
   "schema": "e27451486a2e74945b3941cb1c9d8f726eda8a94f53493adbc9bf1abc73e04d3"
  },
  "method": "llm",
  "method_id": "covenant_breach_v1__claude-opus-5-5",
- "prefilter_version": "prefilter_v2",
+ "prefilter_version": "prefilter_v3",
  "scores": {
   "discarded": {},
   "end_to_end": {
