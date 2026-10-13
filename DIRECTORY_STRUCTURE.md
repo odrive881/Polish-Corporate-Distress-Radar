@@ -210,6 +210,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
     │   ├── test_report_generation3.py  # the entity-disjoint run, events per list, the report's new sections
     │   ├── test_population.py          # the acquisition-complete rule, its pin, the report's section
     │   ├── test_evaluation.py          # hand-computed metrics, bootstrap, the report's bytes
+    │   ├── test_weights.py             # an integer weight is a repeated row: metrics, reliability, the regression
     │   ├── test_registry.py            # the four identifiers, a dirty tree refused
     │   ├── test_registry_generation3.py  # generation 3's parameters, tuning child runs, versions and aliases
     │   ├── test_serving.py             # the alias rule, a loaded version reproduces its fold, drivers, predictions written

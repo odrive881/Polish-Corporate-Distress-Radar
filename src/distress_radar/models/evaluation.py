@@ -10,6 +10,12 @@ and 8); otherwise its metrics are None and the report prints `n/a (<k events)`.
 
 Intervals resample entities, not rows: a company's month-ends move together, since one event
 labels up to `horizon` of them. The draws come from a fixed seed, so a report is reproducible.
+
+Weights (plan 0014 item 4, for list v2's weighted results, ADR 0014 addendum): the Brier score, log
+loss, AUC, the base rate and the reliability table take an optional per-row weight, each row
+counting as that many rows (an integer weight gives exactly the result of repeating the row).
+Without one they compute exactly as before. Top-decile precision has no weighted form yet, and no
+cell, interval or report reads a weight until list v2 supplies one.
 """
 
 # polars's signatures reference types pyright cannot resolve; scoped to this module.
@@ -35,13 +41,40 @@ Metric = Callable[[Labels, Probabilities], float | None]
 _EPSILON = 1e-15
 
 
-def brier(y: Labels, p: Probabilities) -> float:
-    return float(np.mean((p - y.astype(np.float64)) ** 2))
+Weights = npt.NDArray[np.float64]
 
 
-def log_loss(y: Labels, p: Probabilities) -> float:
+def _check_weight(y: Labels, weight: Weights) -> None:
+    if weight.shape != y.shape:
+        raise ValueError(f"{weight.shape[0]} weights for {y.shape[0]} rows")
+    if not np.all(np.isfinite(weight)) or bool((weight < 0).any()):
+        raise ValueError("weights must be finite and non-negative")
+
+
+def brier(y: Labels, p: Probabilities, weight: Weights | None = None) -> float:
+    errors = (p - y.astype(np.float64)) ** 2
+    if weight is None:
+        return float(np.mean(errors))
+    _check_weight(y, weight)
+    return float(np.average(errors, weights=weight))
+
+
+def log_loss(y: Labels, p: Probabilities, weight: Weights | None = None) -> float:
     q = np.clip(p, _EPSILON, 1 - _EPSILON)
-    return float(-np.mean(np.where(y, np.log(q), np.log(1 - q))))
+    losses = np.where(y, np.log(q), np.log(1 - q))
+    if weight is None:
+        return float(-np.mean(losses))
+    _check_weight(y, weight)
+    return float(-np.average(losses, weights=weight))
+
+
+def base_rate(y: Labels, weight: Weights | None = None) -> float | None:
+    """The (weighted) share of distress rows; None with no rows or no weight."""
+    if weight is None:
+        return float(y.mean()) if y.size else None
+    _check_weight(y, weight)
+    total = float(weight.sum())
+    return float(weight[y].sum()) / total if total > 0 else None
 
 
 def _mid_ranks(values: Probabilities) -> Probabilities:
@@ -59,14 +92,25 @@ def _mid_ranks(values: Probabilities) -> Probabilities:
     return ranks
 
 
-def auc(y: Labels, p: Probabilities) -> float | None:
-    """The Mann-Whitney AUC, ties counted half; None when only one class is present."""
+def auc(y: Labels, p: Probabilities, weight: Weights | None = None) -> float | None:
+    """The Mann-Whitney AUC, ties counted half; None when only one class is present (or, weighted,
+    carries weight). Weighted, each positive-negative pair counts the product of their weights."""
     positives = int(y.sum())
     negatives = y.size - positives
     if positives == 0 or negatives == 0:
         return None
-    rank_sum = float(_mid_ranks(p)[y].sum())
-    return (rank_sum - positives * (positives + 1) / 2) / (positives * negatives)
+    if weight is None:
+        rank_sum = float(_mid_ranks(p)[y].sum())
+        return (rank_sum - positives * (positives + 1) / 2) / (positives * negatives)
+    _check_weight(y, weight)
+    w_pos, w_neg = float(weight[y].sum()), float(weight[~y].sum())
+    if w_pos == 0 or w_neg == 0:
+        return None
+    values, group = np.unique(p, return_inverse=True)
+    pos = np.bincount(group, weights=np.where(y, weight, 0.0), minlength=values.size)
+    neg = np.bincount(group, weights=np.where(y, 0.0, weight), minlength=values.size)
+    below = np.concatenate([[0.0], np.cumsum(neg)[:-1]])  # negative weight under each value
+    return float((pos * (below + neg / 2)).sum()) / (w_pos * w_neg)
 
 
 def top_decile_precision(y: Labels, p: Probabilities) -> float | None:
@@ -126,8 +170,28 @@ def bootstrap_intervals(
     return intervals
 
 
-def reliability(predictions: pl.DataFrame, bins: int) -> pl.DataFrame:
-    """Rows, mean predicted probability and observed distress rate per probability bin."""
+def reliability(predictions: pl.DataFrame, bins: int, weight: str | None = None) -> pl.DataFrame:
+    """Rows, mean predicted probability and observed distress rate per probability bin. With
+    `weight` (a column of `predictions`), the mean and the rate are weighted, and the bin's total
+    weight is added as `weight_sum`; the row counts stay counts."""
+    if weight is None:
+        means = [
+            pl.col("probability").mean().alias("mean_predicted"),
+            pl.col(TARGET).cast(pl.Float64).mean().alias("observed_rate"),
+        ]
+        extra: list[str] = []
+    else:
+        w = pl.col(weight)
+        _check_weight(
+            predictions.get_column(TARGET).to_numpy().astype(np.bool_),
+            predictions.get_column(weight).to_numpy().astype(np.float64),
+        )
+        means = [
+            ((pl.col("probability") * w).sum() / w.sum()).alias("mean_predicted"),
+            ((pl.col(TARGET).cast(pl.Float64) * w).sum() / w.sum()).alias("observed_rate"),
+            w.sum().cast(pl.Float64).alias("weight_sum"),
+        ]
+        extra = ["weight_sum"]
     return (
         predictions.with_columns(
             (pl.col("probability") * bins).floor().clip(0, bins - 1).cast(pl.Int32).alias("bin")
@@ -136,14 +200,21 @@ def reliability(predictions: pl.DataFrame, bins: int) -> pl.DataFrame:
         .agg(
             pl.len().cast(pl.Int64).alias("rows"),
             pl.col(TARGET).sum().cast(pl.Int64).alias("distress_rows"),
-            pl.col("probability").mean().alias("mean_predicted"),
-            pl.col(TARGET).cast(pl.Float64).mean().alias("observed_rate"),
+            *means,
         )
         .with_columns(
             (pl.col("bin") / bins).alias("bin_low"), ((pl.col("bin") + 1) / bins).alias("bin_high")
         )
         .sort("bin")
-        .select("bin_low", "bin_high", "rows", "distress_rows", "mean_predicted", "observed_rate")
+        .select(
+            "bin_low",
+            "bin_high",
+            "rows",
+            "distress_rows",
+            "mean_predicted",
+            "observed_rate",
+            *extra,
+        )
     )
 
 
