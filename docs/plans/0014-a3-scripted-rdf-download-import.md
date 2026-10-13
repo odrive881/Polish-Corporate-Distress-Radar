@@ -141,8 +141,10 @@ the next list representative.
   - **Rebuilt after it (2026-10-13):** `krs_extracts` and `msig_notices` over all 609 entities, `legal_events`
     (2 records `legal_event_type_unmapped`), the label models (label set `821d4ab3…`, `outcome_labels_v2`,
     111,088 rows, outcome classes unchanged from the 2026-10-09 set), the `features` job (`leakage` passed)
-    and the `dq` models (all audits passed). Canonical facts now cover 320 entities. Backtest and scoring not
-    re-run.
+    and the `dq` models (all audits passed). Canonical facts now cover 320 entities. Then `backtest_v6` (v5 on
+    that label set and the 300-entity population, recorded before the run): 18 entities ever in distress,
+    20 distinct events per horizon (v5: 186, 16, 18); the champion rule promotes nothing (at most 8 paired
+    events, it needs 50). Scoring not re-run.
 
 - **Step 0 and list v1's first import (2026-10-09).** The owner's first listing in decision 2's format:
   `documents.csv` (1,242 rows, 231 entities) and `entities.csv` (671 searches), 535 of list v1's 609 companies
