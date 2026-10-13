@@ -37,10 +37,12 @@ corrects every proposal, and the row records who proposed (`proposed_by`) and wh
 
 **`opinion_type`, which page** (owner, 2026-10-13):
 
-- Label the page that **states** the opinion on the financial statements: *"Naszym zdaniem, załączone
-  sprawozdanie finansowe…"*, or a disclaimer's *"nie wyrażamy opinii"*. The page with the "Opinia" heading
-  and the list of what was audited, but not the opinion itself, is absent; a page that opens with the opinion
-  begun under a heading on the page before is present.
+- Label the page on which the opinion sentence on the financial statements **begins**: *"Naszym zdaniem,
+  załączone sprawozdanie finansowe…"*, or a disclaimer's *"Nie wyrażamy opinii…"*, with that sentence as
+  evidence. One page per opinion: a page carrying only the sentence's continuation (its bullets after a page
+  break) is absent, and so is the page with the "Opinia" heading and the list of what was audited but not the
+  sentence. Other sections that refer to the opinion (its basis, the auditor's responsibility, "Inna sprawa"
+  on an earlier year's audit) are absent. (Tightened 2026-10-13, the same day.)
 - The opinion on the management report (*"Opinia o sprawozdaniu z działalności"*, *"zostało sporządzone
   zgodnie z art. 49"*) is not an opinion on these statements: absent.
 

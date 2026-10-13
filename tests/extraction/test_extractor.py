@@ -592,3 +592,150 @@ def test_extractor_v2_reads_the_opinion_by_headings_and_keeps_v1_s_requests() ->
     for signal, method in v2.config.signals.items():
         if method.method == "llm":
             assert ex.request_params(v1, signal, "x") == ex.request_params(v2, signal, "x")
+
+
+# --- rules_v4: the opinion by the sentence that states it ------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def sentences() -> rules.Rules:
+    return rules.load_rules("rules_v4")
+
+
+@pytest.mark.parametrize(
+    ("text", "value", "evidence"),
+    [
+        # the sentence broken across lines, under a heading v3 did not list
+        (
+            "Opinia z badania\n\nNaszym zdaniem, załączone\nsprawozdanie finansowe:\n- przedstawia rzetelny",
+            "unqualified",
+            "Naszym zdaniem, załączone\nsprawozdanie finansowe",
+        ),
+        # the page begins with the sentence: its heading was on the page before
+        (
+            (
+                "Naszym zdaniem, za wyjątkiem skutków sprawy opisanej w sekcji Podstawa opinii z\n"
+                "zastrzeżeniem, załączone sprawozdanie finansowe:\n• przedstawia rzetelny obraz"
+            ),
+            "qualified",
+            (
+                "Naszym zdaniem, za wyjątkiem skutków sprawy opisanej w sekcji Podstawa opinii z\n"
+                "zastrzeżeniem, załączone sprawozdanie finansowe"
+            ),
+        ),
+        (
+            "Odmowa wyrażenia opinii\nNie wyrażamy opinii o załączonym sprawozdaniu finansowym.",
+            "disclaimer",
+            "Nie wyrażamy opinii o załączonym sprawozdaniu finansowym",
+        ),
+        (
+            (
+                "Naszym zdaniem, ze względu na znaczenie tej sprawy, załączone sprawozdanie finansowe\n"
+                "nie przedstawia rzetelnego i jasnego obrazu."
+            ),
+            "adverse",
+            (
+                "Naszym zdaniem, ze względu na znaczenie tej sprawy, załączone sprawozdanie finansowe\n"
+                "nie przedstawia"
+            ),
+        ),
+        # a sole practitioner writes in the singular, here with a space before the colon
+        (
+            "Moim zdaniem, sprawozdanie finansowe :\n- przedstawia rzetelny i jasny obraz",
+            "unqualified",
+            "Moim zdaniem, sprawozdanie finansowe",
+        ),
+        (
+            "Nie wyrażam opinii o sprawozdaniu finansowym Spółki.",
+            "disclaimer",
+            "Nie wyrażam opinii o sprawozdaniu finansowym",
+        ),
+        # headings, a basis section and a continuation state no opinion: v3 read the first two
+        ("Opinia\n\nPrzeprowadziliśmy badanie sprawozdania finansowego Spółki.", None, None),
+        (
+            (
+                "Podstawa opinii\n\nUważamy, że dowody badania są wystarczające, aby stanowić podstawę "
+                "dla naszej opinii."
+            ),
+            None,
+            None,
+        ),
+        ("- jest zgodne co do formy i treści z umową Spółki;\n\nPodstawa opinii", None, None),
+        # the opinion on the management report
+        (
+            (
+                "Opinia o sprawozdaniu z działalności\nNaszym zdaniem, sprawozdanie z działalności "
+                "zostało sporządzone zgodnie z art. 49."
+            ),
+            None,
+            None,
+        ),
+    ],
+)
+def test_the_sentence_rule_reads_the_sentence_that_states_the_opinion(
+    text: str, value: str | None, evidence: str | None, sentences: rules.Rules
+) -> None:
+    got = rules.opinion_type(text, [], sentences)
+    assert (got.value, got.present, got.evidence) == (value, value is not None, evidence)
+    if got.evidence is not None:
+        assert got.evidence_start is not None
+        assert text[got.evidence_start :].startswith(got.evidence)
+
+
+def test_the_most_severe_sentence_on_a_page_wins(sentences: rules.Rules) -> None:
+    text = (
+        "Naszym zdaniem, załączone sprawozdanie finansowe przedstawia rzetelny obraz.\n"
+        "Nie wyrażamy opinii o sprawozdaniu finansowym za rok poprzedni."
+    )
+    got = rules.opinion_type(text, [], sentences)
+    assert (got.value, got.confidence) == ("disclaimer", "high")
+
+
+def test_a_sentence_rule_file_checks_its_own_examples(sentences: rules.Rules) -> None:
+    assert sentences.opinion_sentences is not None
+    patterns = {**sentences.opinion_sentences}
+    not_stated = sentences.opinion_not_stated
+
+    def build(**kw: Any) -> rules.Rules:
+        args: dict[str, Any] = {
+            "rules_version": "x",
+            "opinion_sentences": patterns,
+            "opinion_not_stated": not_stated,
+        }
+        return rules.Rules(**{**args, **kw})
+
+    build()
+    with pytest.raises(ValidationError, match="does not match its example"):
+        rules.OpinionPattern(pattern="naszym zdaniem", example="Opinia")
+    # an example a more severe pattern reads first
+    swapped = {**patterns, "unqualified": patterns["disclaimer"]}
+    with pytest.raises(ValidationError, match="reads as disclaimer, not unqualified"):
+        build(opinion_sentences=swapped)
+    with pytest.raises(ValidationError, match="read in `opinion_not_stated`"):
+        build(opinion_not_stated=("Naszym zdaniem, załączone sprawozdanie finansowe:",))
+    with pytest.raises(ValidationError, match="give `opinion_not_stated`"):
+        build(opinion_not_stated=())
+    with pytest.raises(ValidationError, match="no patterns for"):
+        build(opinion_sentences={k: v for k, v in patterns.items() if k != "adverse"})
+    with pytest.raises(ValidationError, match="checks `opinion_sentences` only"):
+        rules.Rules(
+            rules_version="x",
+            opinion_headings=rules.load_rules("rules_v2").opinion_headings,
+            opinion_not_stated=("x",),
+        )
+    with pytest.raises(ValidationError, match="exactly one"):
+        build(opinion_headings=rules.load_rules("rules_v2").opinion_headings)
+
+
+def test_extractor_v5_reads_the_opinion_by_sentences_and_keeps_v4_s_requests() -> None:
+    v4, v5 = ex.load_extractor("extractor_v4"), ex.load_extractor("extractor_v5")
+    assert v5.rules.opinion_sentences is not None
+    assert v5.rules.audit_firm == v4.rules.audit_firm
+    assert v5.config.prefilter_version == v4.config.prefilter_version
+    end = date(2023, 12, 31)
+    for signal, method in v5.config.signals.items():
+        assert method == v4.config.signals[signal]
+        if method.method == "llm":
+            assert ex.request_params(v4, signal, "x", end) == ex.request_params(
+                v5, signal, "x", end
+            )

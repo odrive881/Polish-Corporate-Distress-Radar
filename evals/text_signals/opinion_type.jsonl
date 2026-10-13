@@ -134,9 +134,9 @@
 {"evidence":null,"page_id":"66362cf541052282","prefilter_selected":true,"present":false,"value":null}
 {"evidence":null,"page_id":"6d76503207b95db9","prefilter_selected":true,"present":false,"value":null}
 {"evidence":null,"page_id":"716cb8c3a346d7cc","prefilter_selected":true,"present":false,"value":null}
-{"evidence":null,"page_id":"719c79efe2ebb443","prefilter_selected":true,"present":false,"value":null}
+{"evidence":"Naszym zdaniem, załączone sprawozdanie finansowe:","page_id":"719c79efe2ebb443","prefilter_selected":true,"present":true,"value":"unqualified"}
 {"evidence":null,"page_id":"71c9c542822f696a","prefilter_selected":true,"present":false,"value":null}
-{"evidence":"Jednakże, ze względu na\nsprawę opisaną w naszym sprawozdaniu w sekcji Podstawa odmowy wyrażenia opinii, nie\nbyliśmy w stanie uzyskać wystarczających i odpowiednich dowodów badania, aby stanowiły\none podstawę dla opinii z badania na temat tego sprawozdania finansowego.","page_id":"849ad5ac45e57759","prefilter_selected":true,"present":true,"value":"disclaimer"}
+{"evidence":null,"page_id":"849ad5ac45e57759","prefilter_selected":true,"present":false,"value":null}
 {"evidence":null,"page_id":"84b739ca4c2f6937","prefilter_selected":false,"present":false,"value":null}
 {"evidence":null,"page_id":"859e426644fdea49","prefilter_selected":true,"present":false,"value":null}
 {"evidence":"Nie wyrażamy opinii o załączonym sprawozdaniu finansowym.","page_id":"85c9a5332e574bbc","prefilter_selected":true,"present":true,"value":"disclaimer"}
