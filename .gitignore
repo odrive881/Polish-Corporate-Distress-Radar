@@ -55,3 +55,7 @@ __marimo__/
 /filing_dates.csv
 *.xades
 *.zip
+
+# The owner's Rejestr.io universe lists (ADR 0014): kept outside the repository; some company names
+# name people. They live in .cache/universe_lists/ (ignored above); this catches copies dropped at the root.
+/Merged*sample*.csv
