@@ -16,24 +16,24 @@
 **Order:** after plan 0015 (complete, 2026-10-12). It does not wait for list v2 or a champion: it serves what the
 registry holds and says so, and the public site's population-level pages wait for list v2 (decision 0).
 
-## Status: draft (2026-10-12): owner decisions 0–10 open
+## Status: active (2026-10-13): owner decisions 0–10 accepted as recommended, 11–13 added from building steps B and C (accepted the same day); steps A–C built in part (Progress)
 
 ### Progress (2026-10-13), built ahead of the decisions, on the parts every alternative shares
 
 - **Step B:** `models/serving.py` resolves `champion`, else `incumbent` (decision 1), and rebuilds a scorer per
   kind from the version's `model/` files; a loaded version reproduces its fold's backtest scores (regression,
-  LightGBM, both survival kinds). `top_drivers` as decision 4 recommends. **For the owner:** decision 4 defines
-  no contribution for the survival kinds (plan 0015 explains only the binary booster), so a survival champion's
-  scores would carry no drivers until one is chosen.
+  LightGBM, both survival kinds). `top_drivers` as decision 4 recommends. Decision 4 defines no contribution
+  for the survival kinds (plan 0015 explains only the binary booster): decision 13 leaves them without drivers
+  until a survival model is promoted.
 - **Step C:** the backtest writes every scored test row to `WAREHOUSE_DIR/model_predictions/` (decision 3's
   source; local only). The `scores` asset and `scoring` job (`models/scoring.py`), on decisions 2, 5 and 7 as
-  recommended. **For the owner:** decision 2 does not say what happens to an entity already in a proceeding or
-  deregistered: it has a feature row at the latest month-end, but the label rules leave it off the grid, so no
+  recommended. Decision 2 did not say what happens to an entity already in a proceeding or deregistered
+  (decision 11, accepted as built): it has a feature row at the latest month-end, but the label rules leave it off the grid, so no
   model was trained on rows like it. Built: not scored, reason `not_at_risk`, the grid read from the latest
   frozen label set of the served version's label version. Read-only dry run on the real stores (2026-10-13, not
   written): at 2026-09-30, of 186 population entities, 12 not at risk, 43 with inputs incomplete, 131 scored
   per horizon (`incumbent`, the regression, training eve 2024-12-31). The 43 are a quarter of the at-risk
-  population: the regression's complete-case rule, worth a look before the explorer shows them. Not built:
+  population: the regression's complete-case rule (decision 12: stay not scored, the missing inputs named). Not built:
   storing the excluded entities' reasons for the API (decision 6), which today go only to the run's metadata.
 - **Step A, tables only:** `scores_history` and `watchlists` (`models/scores_store.py`). Beyond §5, a row the
   served model cannot score is kept with `not_scored_reason` and no probability (decision 2), and a check refuses
@@ -73,7 +73,7 @@ The same as Phase 8's, now in front of readers. The models rest on 18 events acr
 - **The publish gate:** `DQ_MART_MIN_CELL_ENTITIES` is null; the SQLMesh audits already refuse a suppressed cell
   without a threshold and an unsuppressed cell below it.
 
-## Owner decisions (open, 2026-10-12)
+## Owner decisions (accepted by the owner, 2026-10-13, as recommended)
 
 0. **What the public site holds in this phase.** Recommended: a methodology page; data quality (`dq_mart`,
    `dq_mart_coverage`); pipeline coverage (entities searched, imported, parsed, labelled, modelled, by list, as
@@ -143,6 +143,22 @@ The same as Phase 8's, now in front of readers. The models rest on 18 events acr
     deployed in this plan. Deploying to GitHub Pages is the owner's separate go, after reading the built site,
     because it is outward-facing and the repository is public. Node.js (pinned in `site/package-lock.json`) and
     the Quarto CLI become documented prerequisites, like the C compiler `scikit-survival` needs.
+
+### Added from building steps B and C (accepted by the owner 2026-10-13, as recommended)
+
+11. **An entity already in a proceeding or deregistered is not scored** (reason `not_at_risk`), as built: it
+    has a feature row at the latest month-end, but the label rules leave it off the grid, so no model was
+    trained on rows like it, and a probability of entering a proceeding it is already in means nothing.
+
+12. **Inputs incomplete stay not scored, and say which.** The 43 of 174 at-risk entities (2026-09-30 dry run)
+    the regression cannot score for a missing input are never imputed; their row names the inputs missing, so
+    the explorer and the API can show why. Before the explorer shows them, the most often missing inputs are
+    counted (their share of a quarter of the at-risk population is a finding about the regression, not a
+    detail). A tree model handles missing inputs natively, so this narrows if one is promoted.
+
+13. **No drivers for a survival model until one is promoted.** Today only the regression serves, and nothing is
+    promoted before list v2 gives the champion rule enough events. A survival champion's scores carry an empty
+    `top_drivers` and say so; how to explain them is decided when one wins.
 
 ## Out of scope
 
@@ -217,7 +233,7 @@ DIRECTORY_STRUCTURE; `docs/data_inventory.md` (Node.js and Quarto as prerequisit
 
 ## Definition of done
 
-- [ ] Owner decisions 0–10 made.
+- [x] Owner decisions 0–10 made (2026-10-13, as recommended; 11–13 added the same day).
 - [ ] The served versions resolve from the registry and reproduce their backtest scores.
 - [ ] `scores_history` filled for the modelled population at the latest month-end, every row traceable to its
       MLflow run; the out-of-time history stored locally.
