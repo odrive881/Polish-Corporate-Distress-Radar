@@ -1,8 +1,5 @@
 {
- "accepted": {
-  "by": "owner",
-  "on": "2026-10-13"
- },
+ "accepted": null,
  "examples": [
   {
    "discard_reason": null,
@@ -1335,12 +1332,174 @@
    "response_key": null,
    "selected": true,
    "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "93c2b1b4fd448b1d",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "962a432f691a96ca",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "9c70511574d10e7c",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "9d45a2c4cfedc8ca",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "a23652198b75260d",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": "Naszym zdaniem, za wyjątkiem możliwych skutków spraw opisanych w sekcji Podstawa opinii\nz zastrzeżeniem, załączone roczne sprawozdanie finansowe",
+   "outcome": "present",
+   "page_id": "a6a78137868d6725",
+   "response_key": null,
+   "selected": true,
+   "value": "qualified"
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "a826d31c44b497d1",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "ab1a80ba23a108ba",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": "Naszym zdaniem, załączone sprawozdanie finansowe",
+   "outcome": "present",
+   "page_id": "adb863c6c16bd9cc",
+   "response_key": null,
+   "selected": true,
+   "value": "unqualified"
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "af19ca047f99d414",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "afbce0fd556b36bd",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "b15cd2ce1dc509ee",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "b2cafff3c70f7bd0",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "b33efd36e9ac3e0b",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "b713042617384e9f",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "b9a797c39dc1341a",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "b9c3b5663453891a",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "b9cdbd48ce439b01",
+   "response_key": null,
+   "selected": true,
+   "value": null
   }
  ],
  "extractor_version": "extractor_v6",
  "hashes": {
-  "golden": "5a2197627eb74b5896ee9ec3bf83a22254e749059986ba2136e7fe2c21b0c025",
-  "pages": "98d0cf9624654ee1d348dfadccee37607118a2830ed33eff0377f8cb356f44dc",
+  "golden": "025caaac33a066e351c7745f21cc88244f2dab5e9d9d79b87d3ac28d9eb4e055",
+  "pages": "d78374553402c8c016bab99dc7072ba0dc8514b15d0e2973b303488a86983f36",
   "prefilter": "5c34e01d2f3d157d46c505c7f823dfb433aff38d639682a3607e92fa3cdbd537",
   "rules": "87507302a492bbc503d471315200e7b6e2e36c2c0358848888103fbec563d148"
  },
@@ -1350,28 +1509,28 @@
  "scores": {
   "discarded": {},
   "end_to_end": {
-   "f1": 1.0,
-   "fn": 0,
-   "fp": 0,
-   "precision": 1.0,
-   "recall": 1.0,
-   "tn": 135,
-   "tp": 13
+   "f1": 0.8485,
+   "fn": 4,
+   "fp": 1,
+   "precision": 0.9333,
+   "recall": 0.7778,
+   "tn": 147,
+   "tp": 14
   },
-  "evidence_overlaps": 12,
+  "evidence_overlaps": 13,
   "extractor": {
-   "f1": 1.0,
-   "fn": 0,
-   "fp": 0,
-   "precision": 1.0,
-   "recall": 1.0,
-   "tn": 37,
-   "tp": 13
+   "f1": 0.8485,
+   "fn": 4,
+   "fp": 1,
+   "precision": 0.9333,
+   "recall": 0.7778,
+   "tn": 45,
+   "tp": 14
   },
-  "pages": 148,
-  "positives": 13,
+  "pages": 166,
+  "positives": 18,
   "prefilter_missed_in_rejected_sample": 0,
-  "prefilter_selected_positives": 13
+  "prefilter_selected_positives": 18
  },
  "signal_type": "opinion_type"
 }
