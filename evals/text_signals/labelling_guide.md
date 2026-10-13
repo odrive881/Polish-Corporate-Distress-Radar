@@ -35,6 +35,15 @@ corrects every proposal, and the row records who proposed (`proposed_by`) and wh
 | `loss_coverage_resolution` | how a loss is (to be) covered: from future profits, reserve capital, shareholders' payments | profit distribution with no loss |
 | `continued_existence_vote` | the shareholders' vote on whether the company continues (KSH art. 233), called or held | the loss exceeding half the capital, stated without the vote |
 
+**`opinion_type`, which page** (owner, 2026-10-13):
+
+- Label the page that **states** the opinion on the financial statements: *"Naszym zdaniem, załączone
+  sprawozdanie finansowe…"*, or a disclaimer's *"nie wyrażamy opinii"*. The page with the "Opinia" heading
+  and the list of what was audited, but not the opinion itself, is absent; a page that opens with the opinion
+  begun under a heading on the page before is present.
+- The opinion on the management report (*"Opinia o sprawozdaniu z działalności"*, *"zostało sporządzone
+  zgodnie z art. 49"*) is not an opinion on these statements: absent.
+
 **`post_balance_sheet_event`, its kind and its date** (decision 9, 2026-10-06):
 
 - `adverse`: the event worsens the company's position or prospects: a bankruptcy or restructuring petition

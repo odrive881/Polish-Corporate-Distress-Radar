@@ -11,9 +11,9 @@
 **Order:** after plan 0012 (complete). It does not wait for ADR 0013: like Phase 6, it builds and measures
 machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set this plan adds.
 
-## Status: active (2026-10-13): owner decisions 0–9 accepted; every step built, J's docs included; the model runs on the seed under `extractor_v4` (the default) with the provider's terms confirmed; all nine signals accepted on the 127-page golden set (2026-10-12) and held by the gate in `make check`; open: enough labelled positives per signal to close the plan (`covenant_breach` and `key_customer_loss` have none), `opinion_type`'s labels on the 148-page set (open item 2), and the owner's items below
+## Status: active (2026-10-13): owner decisions 0–9 accepted; every step built, J's docs included; the model runs on the seed under `extractor_v4` (the default) with the provider's terms confirmed; all nine signals accepted on the 148-page golden set (2026-10-13) and held by the gate in `make check`; open: enough labelled positives per signal to close the plan (`covenant_breach` and `key_customer_loss` have none), `opinion_type`'s rule (`rules_v4`, open item 2), and the owner's items below
 
-### Where this stands (2026-10-12)
+### Where this stands (2026-10-13)
 
 **Done since 2026-10-05** (each in the progress section): the provider's terms confirmed and the key set up
 (decision 2; the client sends `ANTHROPIC_WORKSPACE_ID`); the first model run, and its seven disputed results
@@ -21,49 +21,37 @@ resolved by the owner; all nine signals accepted on the 83-page golden set; the 
 the notes' features filled in; step I's departures and the 2026-10-05 choices approved as built; decision 9
 (`post_balance_sheet_event_v2`, dated and valued) built, labelled, accepted and the default; step J's docs.
 Since 2026-10-07: 44 more pages labelled (40 of the auditor reports' queue, 4 of the notes'), all nine signals
-re-scored and accepted on the 127 pages (2026-10-12, Progress).
+re-scored and accepted on the 127 pages (2026-10-12, Progress). Then 21 more report pages, `opinion_type`'s labels
+settled against the guide, and all nine accepted on the 148 pages (2026-10-13, Progress).
 
 **Open for the owner, in order:**
 
 1. **How this plan closes (recommended, not yet decided).** The definition of done asks for the golden set
    "labelled". Recommended: close once each signal has a handful of labelled positives, rather than after the
-   whole seed queue (163 of the notes' 240 pages are still unlabelled, and the seed is a poor sample of the
+   whole seed queue (153 of the notes' 240 pages are still unlabelled, and the seed is a poor sample of the
    population). In that order:
    - the auditor reports' queue (`golden_sample_v2`, 102 pages of 20 reports, 15 with a span to mask by hand):
      the only source of positives for `opinion_type`, `emphasis_of_matter` and the auditor's going-concern
-     paragraph; 40 pages labelled and committed (2026-10-12), 62 to go;
+     paragraph; 61 pages labelled and committed (2026-10-13), 41 to go;
    - then a new golden sample drawn from ADR 0014's list v2 (its random and distress groups, addendum of
      2026-10-07) once plan 0014 has imported it, instead of finishing the seed's notes queue.
 
-   Today (127 pages) four signals have no positive, or one: `covenant_breach` and `key_customer_loss` none;
-   `emphasis_of_matter` and `continued_existence_vote` one each. `opinion_type` has 16, but its rule
-   (`rules_v3`) is the weak result: precision 0.67, recall 0.50 end to end. Labelling is done in the
+   Today (148 pages) four signals have no positive, or one: `covenant_breach` and `key_customer_loss` none;
+   `emphasis_of_matter` and `continued_existence_vote` one each. `opinion_type` has 13, but its rule
+   (`rules_v3`) is the weak result: precision 0.47, recall 0.69 end to end. Labelling is done in the
    notebook from a WSL terminal (`uv run marimo run notebooks/labelling/golden_set.py`, not through Claude Code,
    whose background tasks stop after 30 minutes), then `make label-export`.
-2. **`opinion_type`'s labels and rule, on the 148-page set (found 2026-10-13; blocks the next acceptance).** The
-   owner labelled and exported 21 more report pages (uncommitted). `make eval` on all 148 (no call, 109
-   responses replayed) leaves eight signals unchanged and `opinion_type` worse: 23 positives, P 0.58 R 0.48
-   (from 0.67 and 0.50). The gate in `make check` fails on all nine until the new golden file is accepted. Of
-   `opinion_type`'s 20 errors, most look like labels at odds with the guide ("an auditor's opinion on **these
-   statements**"), not the rule:
-   - **8 of the 12 misses are the opinion on the management report** ("Opinia o Sprawozdaniu z działalności
-     … zostało sporządzone zgodnie z art. 49"), labelled present: `03326649f4f74cf1`, `3451d053c15709a2`,
-     `3ddaece502915634`, `4afa8877b9d36bb3`, `582768fe1a870f9b`, `5f74e03320bb40c7`, `64ac4a7b6333aa43`,
-     `716cb8c3a346d7cc`. Under the guide, absent. If the owner means them present, the guide changes first.
-   - **2 false positives open with the opinion itself** ("Naszym zdaniem, załączone sprawozdanie finansowe:
-     przedstawia rzetelny i jasny obraz…") and are labelled absent: `1ccee85107d6bd87`, `2cf282edb8bc710b`.
-     Either label slips, or a rule that only the page where the opinion begins is labelled, which the guide
-     would then have to say.
-   - **The rule's own errors** (a `rules_v4`, measured like any change): 6 false positives fired on a
-     "Podstawa opinii" or "Opinia" heading (`345848ea297ce9dc`, `4fd187325fc2d3ec`, `5fc02c50952e42c7`,
-     `6d76503207b95db9`, `719c79efe2ebb443`, `859e426644fdea49`; the first also carries the end of an opinion
-     begun on the page before, so it bears on the second label question too); a disclaimer missed (`849ad5ac45e57759`); and
-     financial-statement opinions not read (`52364f6780866fb5`, `571b4ba5d0ebab52`, and `313e615575838470`
-     under an "Opinia z badania" heading).
+2. **`opinion_type`'s rule: `rules_v4` (labels settled 2026-10-13, Progress).** On the 148-page set every one of
+   `rules_v3`'s 14 errors is the rule's, of two kinds:
+   - **10 false positives fired on a heading** ("Podstawa opinii", "Opinia"), not an opinion: `345848ea297ce9dc`,
+     `442e9ef455c6fb25`, `4ba112af65d0fb91`, `4fd187325fc2d3ec`, `5662c59df98b4033`, `5fc02c50952e42c7`,
+     `6124c536c129cd4a`, `6d76503207b95db9`, `719c79efe2ebb443`, `859e426644fdea49`;
+   - **4 opinions missed:** "Naszym zdaniem, **badane** sprawozdanie" (`52364f6780866fb5`, `571b4ba5d0ebab52`),
+     one under an "Opinia z badania" heading (`313e615575838470`), and a disclaimer (`849ad5ac45e57759`).
 
-   To resolve: the owner settles the two label questions (relabel in the notebook and `make label-export`, or
-   amend the guide), `make eval` again, then `make eval-accept` per signal and one commit of the golden files,
-   the results and this plan's numbers. `rules_v4` can follow separately.
+   A `rules_v4` reading the opinion sentence ("Naszym zdaniem … sprawozdanie finansowe", "nie wyrażamy opinii")
+   instead of headings, as the guide now labels, is a new rules version measured against the accepted
+   `rules_v3` result (P 0.47, R 0.69).
 3. **Auditor reports, loose ends (decision 0c, below):**
    - 0000181328's 2019 report is `unknown` in the dates list;
    - 0000291203's 2024 and 2025 reports are not in the list;
@@ -537,7 +525,8 @@ re-scored and accepted on the 127 pages (2026-10-12, Progress).
     by headings there are 3 qualified opinions. An `absent` opinion on a page means no heading there, never an
     unqualified opinion. The evidence is the heading, so when labelling a report page the guide's
     `opinion_type` evidence may be the heading or the "Naszym zdaniem" sentence: the eval scores the value, and
-    counts evidence overlap only as a statistic.
+    counts evidence overlap only as a statistic. *Superseded 2026-10-13:* the guide labels the page that states
+    the opinion, with that sentence as evidence (Progress, "The golden set at 148 pages").
 - **Decision 0(c), the report pages' labelling sample (2026-10-05): `golden_sample_v2`.**
   - **The design, chosen by the owner** from four with their page counts: every text page of 20 whole
     reports, those `rules_v2` reads as a modified opinion on some page (4) and 16 drawn by hashing each
@@ -630,6 +619,25 @@ re-scored and accepted on the 127 pages (2026-10-12, Progress).
   Masker recall 0.9912 (113 of 114 persons; one masked by hand). `opinion_type` is the weak one: of its 16
   positives the prefilter selects 15 and the rule reads 8 correctly, with 4 false positives.
   `continued_existence_vote`'s recall is still the prefilter's miss (open item 4).
+- **The golden set at 148 pages (2026-10-13, owner).** 21 more pages of the auditor reports' queue labelled
+  (61 of its 102 now). `make eval` (no call, 109 responses replayed) left eight signals unchanged and
+  `opinion_type` at 23 positives, P 0.58 R 0.48: most of its errors were labels at odds with the guide, which
+  the owner settled:
+  - **The guide, amended** (`labelling_guide.md`, "`opinion_type`, which page"): the page that states the
+    opinion on the statements is labelled, not the page with the heading; the opinion on the management report
+    is absent.
+  - **15 labels changed, all in `golden_sample_v2`'s local queue, then `make label-export`:** 8 management-report
+    opinions to absent (`03326649f4f74cf1`, `3451d053c15709a2`, `3ddaece502915634`, `4afa8877b9d36bb3`,
+    `582768fe1a870f9b`, `5f74e03320bb40c7`, `64ac4a7b6333aa43`, `716cb8c3a346d7cc`); 2 pages opening with the
+    opinion, labelled absent, to present, `unqualified` (`1ccee85107d6bd87`, `2cf282edb8bc710b`; the page
+    before each lists only what was audited); 3 "Inna sprawa" paragraphs on the prior year's audit to absent
+    (`442e9ef455c6fb25`, `4ba112af65d0fb91`, `6124c536c129cd4a`); a basis section with no opinion on its page to
+    absent (`5662c59df98b4033`); and one heading-only evidence replaced by the opinion sentence
+    (`5479d9e0f6c6968d`, still `qualified`).
+  - **Re-scored and accepted (owner, all nine):** the eight other signals as in the 127-page table above;
+    `opinion_type` (`rules_v3`) 13 positives, P 0.47 R 0.69 (tp 9, fp 10, fn 4). Lower precision than at 127
+    pages because the labels no longer cover the rule's heading errors: all 14 errors are now the rule's (open
+    item 2, `rules_v4`). Masker recall 0.993 (142 of 143 persons; one masked by hand).
 
 ## Why
 
