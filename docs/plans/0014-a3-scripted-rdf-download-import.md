@@ -122,8 +122,10 @@ the next list representative.
 - **List v1's second import (2026-10-13).** The script's listing as of 2026-10-13, still on list v1:
   `documents.csv` (2,057 rows, 425 entities) and `entities.csv` (885 searches), imported from the owner's
   folder with the importer unchanged.
-  - **Import:** 685 rows indexed for 121 entities (120 new), 672 with their document stored; 603 searches
-    recorded. 102 entities with fewer than three filed years not imported; 9 not in `entity_master` (all
+  - **Import:** 685 rows indexed for 121 entities (120 new), 672 with their document stored; 207 searches
+    recorded. (The folder had no `outages.csv`, so the import first recorded 603, 396 of them not-found
+    searches inside the 2026-10-08 outage; those were deleted by hand the same day, with the owner's
+    approval, as the first import had left them out. Keep `outages.csv` in every inbox.) 102 entities with fewer than three filed years not imported; 9 not in `entity_master` (all
     quarantined `pkd_section_mismatch` in step 0). Still held: 33 ZIPs whose rows list 1 of 2 or 3 tabs (the
     script still writes only an expanded row's first tab), so the 27 groups of the first import stay held.
   - **Refused, with the asset failing after the rest:** 3 rows the script left empty (no KRS, ids or status)
