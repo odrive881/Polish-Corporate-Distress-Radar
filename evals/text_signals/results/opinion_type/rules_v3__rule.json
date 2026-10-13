@@ -1,7 +1,7 @@
 {
  "accepted": {
   "by": "owner",
-  "on": "2026-10-12"
+  "on": "2026-10-13"
  },
  "examples": [
   {
@@ -1141,17 +1141,206 @@
   {
    "discard_reason": null,
    "evidence": null,
+   "outcome": "absent",
+   "page_id": "5f74e03320bb40c7",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": "Opinia",
+   "outcome": "present",
+   "page_id": "5fc02c50952e42c7",
+   "response_key": null,
+   "selected": true,
+   "value": "unqualified"
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
    "outcome": "not_selected",
    "page_id": "610a2eea5fca04ad",
    "response_key": null,
    "selected": false,
    "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": "Podstawa opinii",
+   "outcome": "present",
+   "page_id": "6124c536c129cd4a",
+   "response_key": null,
+   "selected": true,
+   "value": "unqualified"
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "64ac4a7b6333aa43",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "64b05370f68cd84e",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "65799fa8e3f8b90e",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "66362cf541052282",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": "Podstawa Opinii",
+   "outcome": "present",
+   "page_id": "6d76503207b95db9",
+   "response_key": null,
+   "selected": true,
+   "value": "unqualified"
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "716cb8c3a346d7cc",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": "Opinia",
+   "outcome": "present",
+   "page_id": "719c79efe2ebb443",
+   "response_key": null,
+   "selected": true,
+   "value": "unqualified"
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "71c9c542822f696a",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "849ad5ac45e57759",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "84b739ca4c2f6937",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": "Podstawa opinii",
+   "outcome": "present",
+   "page_id": "859e426644fdea49",
+   "response_key": null,
+   "selected": true,
+   "value": "unqualified"
+  },
+  {
+   "discard_reason": null,
+   "evidence": "Odmowa wyrażenia opinii",
+   "outcome": "present",
+   "page_id": "85c9a5332e574bbc",
+   "response_key": null,
+   "selected": true,
+   "value": "disclaimer"
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "866360337ab4c5ea",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": "Opinia",
+   "outcome": "present",
+   "page_id": "8678d87a352c771c",
+   "response_key": null,
+   "selected": true,
+   "value": "unqualified"
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "87a5243f0e7640de",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "88f11da46f063033",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "8ac704b5d587a213",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "8c81d27725a804d2",
+   "response_key": null,
+   "selected": true,
+   "value": null
   }
  ],
  "extractor_version": "extractor_v4",
  "hashes": {
-  "golden": "8c4cdfc582d576d56aa2ad1217cc5fc4218259270bacc50396a17023d221de13",
-  "pages": "7f40d364ae95f3de1b36025c4f300532e42dd863242bba8be675555b4197432b",
+  "golden": "0da0f1b1c5a9a8717ae3edae2b1488b3f19d860fe19f2cb0decab7d84e2cfe3a",
+  "pages": "98d0cf9624654ee1d348dfadccee37607118a2830ed33eff0377f8cb356f44dc",
   "prefilter": "5f17c94b3efb4dc568349bf31c4e2f8db7cf22ead670d717df6c3e4aa04ed1e5",
   "rules": "9a187e6a75ec74efb242ab4f2a057129af447ff96ef6adc87df1366d27189fd9"
  },
@@ -1161,28 +1350,28 @@
  "scores": {
   "discarded": {},
   "end_to_end": {
-   "f1": 0.5714,
-   "fn": 8,
-   "fp": 4,
-   "precision": 0.6667,
-   "recall": 0.5,
-   "tn": 107,
-   "tp": 8
+   "f1": 0.5625,
+   "fn": 4,
+   "fp": 10,
+   "precision": 0.4737,
+   "recall": 0.6923,
+   "tn": 125,
+   "tp": 9
   },
   "evidence_overlaps": 0,
   "extractor": {
-   "f1": 0.5926,
-   "fn": 7,
-   "fp": 4,
-   "precision": 0.6667,
-   "recall": 0.5333,
-   "tn": 12,
-   "tp": 8
+   "f1": 0.5625,
+   "fn": 4,
+   "fp": 10,
+   "precision": 0.4737,
+   "recall": 0.6923,
+   "tn": 27,
+   "tp": 9
   },
-  "pages": 127,
-  "positives": 16,
-  "prefilter_missed_in_rejected_sample": 1,
-  "prefilter_selected_positives": 15
+  "pages": 148,
+  "positives": 13,
+  "prefilter_missed_in_rejected_sample": 0,
+  "prefilter_selected_positives": 13
  },
  "signal_type": "opinion_type"
 }
