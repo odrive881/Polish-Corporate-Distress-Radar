@@ -120,6 +120,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │   ├── backtest_v3.yaml           # v2 on feature_set_v5, the regression unchanged (plan 0013)
 │   │   ├── backtest_v4.yaml           # v3 on feature_set_v6 (plan 0013)
 │   │   ├── backtest_v5.yaml           # generation 3 and the acquisition-complete population (plan 0015)
+│   │   ├── backtest_v6.yaml           # v5 on the 2026-10-13 label set and population (plan 0014)
 │   │   └── poznan_2004.yaml           # the Poznań model, Hamrol, Czajka, Piechocki (2004)
 │   ├── labels/
 │   │   ├── outcome_labels_v1.yaml     # label parameters; the file name is the label_version
