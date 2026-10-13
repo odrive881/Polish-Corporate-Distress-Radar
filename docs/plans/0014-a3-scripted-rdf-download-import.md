@@ -12,23 +12,62 @@
 **Order:** after ADR 0013's decision. It does not wait for plan 0013 (Phase 7). A1 is the owner's
 Rejestr.io list (ADR 0014, accepted 2026-10-06), loaded in step 0.
 
-## Status: active (2026-10-09): owner decisions 1–6 accepted as recommended; steps 0 and B–D built, step F's docs written; list v1's first listing imported (2026-10-09, Progress); step A's seed checks run (decision 5's rule agrees on all placeable rows, decision 3's pairing exact on all 8 groups, so pairing is on); open: the script writing every tab of an expanded row, re-searching list v1's unsearched companies, and step A's field-by-field comparison and step E on the seed
+## Status: active (2026-10-14): owner decisions 1–6 accepted as recommended; steps 0 and B–D built, step F's docs written; list v1 imported twice (2026-10-09 and 2026-10-13, Progress) and everything downstream rebuilt, up to `backtest_v6`; open: the script writing every tab of an expanded row, re-searching list v1's unsearched companies, two importer questions from the second import, and step A's field-by-field comparison and step E on the seed
 
-### Where this stands (2026-10-10)
+### Where this stands (2026-10-14): pick up here
 
-- **Built (2026-10-08), with nothing more to build before the owner's next items:**
-  - the manifest columns (step B);
-  - the importer and its asset (steps C and D), tested on synthetic listings and ZIPs;
-  - step A's two seed checks: type codes agree on every row they can place, and all 8 correction groups pair
-    exactly, so pairing is on;
-  - the docs (step F).
+**The process, each time the owner hands over a new delivery** (README § "Manual RDF capture", "Scripted
+downloads", has the commands): put `outages.csv` in the folder first, import with `rdf_script_import` pointed at
+the folder, parse, fetch the legal sources, rebuild labels, features and DQ, then, if the backtest is to be
+re-run, record a new `backtest_v<n>` before running it. Record each round's counts in § "Progress".
 
-  `make check` and `make test-integration` are green.
-- **The importer has met real data (2026-10-09):** the script's first listing in decision 2's format, over list
-  v1 (step 0 and the import, § "Progress"): 190 entities imported, 1,122 of 1,150 rows with their document.
-- **Next, the owner's:** the script to write every tab of an expanded row (27 groups are held back without
-  them); re-searching list v1's 386 companies with no search (most searched only during the 2026-10-08
-  outage); and the seed through the script for step A's field-by-field comparison and step E.
+**Where the data is (after the 2026-10-13 round):**
+
+- **Last delivery imported:** the owner's folder `E:\RDF download folder — 13.10.2026\financial_statements`,
+  read in place (`/mnt/e/...` from WSL, the asset's `inbox` config); nothing from it is copied into the
+  repository. Its `documents.csv` (2,057 rows, 425 entities) and `entities.csv` (885 searches) are stored raw.
+  The script was still on list v1, not list v2.
+- **Imported so far:** 320 entities have canonical facts (17 seed, the rest list v1); the import skips
+  entities with fewer than three filed years (102 in the last round) until a later listing has three.
+- **Legal sources:** `krs_extracts` and `msig_notices` fetched for all 609 entities in `entity_master` on
+  2026-10-13 (40 min and 1 h 21 min; each run fetches every entity).
+- **Labels:** `outcome_labels_v2`, label set `821d4ab37dcf…` (111,088 rows), frozen 2026-10-13.
+- **Features:** `feature_set_v6`, rebuilt 2026-10-13; `leakage` passed.
+- **Backtest:** `backtest_v6` (`config/models/backtest_v6.yaml`, commit `03f83fe`): v5 with only the label set
+  and the population pinned anew. Population 300 entities, 18 ever in distress, 20 events per horizon. The
+  champion rule promotes nothing (at most 8 paired events; it needs 50), so `logistic_regression` stays
+  champion. The default `BACKTEST_VERSION` is still `backtest_v5`; v6 was run with the variable set. Report:
+  `WAREHOUSE_DIR/reports/backtest/backtest_v6.md`.
+- **Not re-run:** scoring (plan 0016), text signals (no new auditor reports came in this round).
+
+**Open, the owner's (in order of what they unblock):**
+
+1. **The script writes only an expanded row's first tab.** 33 ZIPs of correction groups are held, and 27
+   entities are left out of the backtest for it (`statements_held_back`).
+2. **179 list v1 companies have no search** (`rdf_not_searched`), most searched only during the 2026-10-08
+   outage. Re-searching them is the largest source of new events.
+3. **A correction listed as a row of its own** (3 entities, 4 rows, refused): the importer assumes an expanded
+   row's own tab is the original. Decide whether such a row is read as a correction (a change to
+   `script_import.py`'s `_tab` rule, then a re-import).
+4. **Personal data in a statement's notes** (one entity, 6 ZIPs refused): the filer names shareholders with
+   their PESEL numbers in free text, which no redaction version removes. A decision for ADR 0009: leave the
+   entity out, or redact free text.
+5. **List v2** (ADR 0014 addendum): its two files are received (2026-10-13); the script runs on it next.
+
+**Lessons from the 2026-10-13 round:**
+
+- **Without `outages.csv` an outage's not-found searches are recorded** as "not on RDF". The 2026-10-13 folder
+  had none; 396 such searches were recorded and then deleted by hand (Progress). Check for the file, or write
+  the known spans into it, before importing.
+- **The import fails at the end by design** when any row, search or ZIP is refused. Everything else is imported
+  first, but the failure skips the asset's `personal_data` check, so run the store-wide scan by hand:
+  `uv run python -m distress_radar.acquisition.redaction_migration` (report only; it must say 0).
+- **A CLI run's metadata is not kept** (no `DAGSTER_HOME`): read the counts from Postgres (`filing_index`,
+  `rdf_listed_entities`, `parsed_documents`, `quarantine_events` by `ingestion_run_id`) or from the run's log.
+- **A new label set or population is a new backtest version.** The population's hash is checked against the
+  config, so compute it first (`models.population.read_population` over the label set's entities), write
+  `backtest_v<n>.yaml` from the last one with the two pins changed, commit, then run (the job refuses an
+  unclean tree).
 
 As of 2026-10-07:
 
