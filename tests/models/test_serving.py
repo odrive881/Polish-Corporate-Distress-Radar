@@ -1,5 +1,6 @@
 """Loading a registered version for scoring (plan 0016 step B): the alias rule, served = evaluated,
-the regression's complete cases, and `top_drivers`."""
+the regression's complete cases, and `top_drivers`; and the backtest's per-row predictions, the
+score history's source (step C, decision 3)."""
 
 # polars's and mlflow's signatures reference types pyright cannot resolve; scoped here.
 # pyright: reportUnknownMemberType=false, reportUnknownVariableType=false
@@ -19,7 +20,12 @@ from mlflow.tracking import MlflowClient
 from tests.models.frames import TIMING, panel
 
 from distress_radar.features.config import load_feature_set
-from distress_radar.models.backtest import BacktestResult, run_backtest
+from distress_radar.models.backtest import (
+    PREDICTIONS,
+    BacktestResult,
+    run_backtest,
+    write_predictions,
+)
 from distress_radar.models.baselines import load_classical_model
 from distress_radar.models.gbm import CALIBRATED
 from distress_radar.models.registry import (
@@ -40,6 +46,7 @@ from distress_radar.models.serving import (
 )
 from distress_radar.models.splits import BacktestConfig, BootstrapConfig, load_backtest_config
 from distress_radar.models.survival import FOREST, HAZARD
+from distress_radar.warehouse import read_dataset
 
 COMMIT = "a" * 40
 SNAPSHOT = "b" * 64
@@ -231,3 +238,19 @@ def test_top_drivers_are_the_largest_contributions_with_their_value_and_known_fr
         for d in drivers:
             assert d["value"] == row[d["feature"]]
             assert d["known_from"] == row[f"{d['feature']}__known_from"].isoformat()
+
+
+def test_the_backtest_writes_its_predictions_locally_in_a_fixed_order(
+    result: BacktestResult, tmp_path: Path
+) -> None:
+    """Decision 3's history: every scored row, one file per test year, the same bytes whatever
+    order the rows arrive in."""
+    first = write_predictions(result, tmp_path / "a")
+    shuffled = replace(result, predictions=result.predictions.sample(fraction=1.0, seed=1))
+    second = write_predictions(shuffled, tmp_path / "b")
+    assert [p.parent.name for p in first] == [f"test_year={y}" for y in result.config.test_years]
+    for a, b in zip(first, second, strict=True):
+        assert a.read_bytes() == b.read_bytes()
+    stored = read_dataset(tmp_path / "a", PREDICTIONS)
+    assert stored.height == result.predictions.height
+    assert set(stored.get_column("backtest").to_list()) == {result.config.backtest}

@@ -16,7 +16,7 @@ from dagster_defs.assets.features import feature_store
 from dagster_defs.assets.labels import outcome_labels
 from distress_radar.acquisition.document_retrieval import load_document_types
 from distress_radar.features.config import load_feature_set
-from distress_radar.models.backtest import POOLED, run_backtest
+from distress_radar.models.backtest import POOLED, run_backtest, write_predictions
 from distress_radar.models.baselines import load_classical_model
 from distress_radar.models.dataset import load_feature_store, load_label_set
 from distress_radar.models.explain import write_explanations
@@ -60,9 +60,10 @@ def backtest(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
     Outputs: the Markdown report at `WAREHOUSE_DIR/reports/backtest/<BACKTEST_VERSION>.md`,
     replaced whole, the same bytes for the same inputs; one MLflow run per model, horizon and
     run (`main`, `no_regime`, `entity_disjoint`) in `MLFLOW_TRACKING_URI`, each with the four
-    identifiers; for a config with generation 3, each scored row's SHAP values at
-    `WAREHOUSE_DIR/model_explanations/` (local only, replaced whole, one file per test year; plan
-    0015 decision 5), a child run per fold Optuna tuned, and, with a champion rule, a registered
+    identifiers; every scored test row at `WAREHOUSE_DIR/model_predictions/` (local only, replaced
+    whole, one file per test year; plan 0016 decision 3); for a config with generation 3, each
+    scored row's SHAP values at `WAREHOUSE_DIR/model_explanations/` (local only, replaced whole,
+    one file per test year; plan 0015 decision 5), a child run per fold Optuna tuned, and, with a champion rule, a registered
     model version per horizon of the incumbent (alias `incumbent`) and of a promoted challenger
     (alias `champion`) in MLflow's registry (plan 0015 step G).
     Partition scheme: none (unpartitioned).
@@ -94,7 +95,9 @@ def backtest(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
         lists,
     )
     snapshot, files = data_snapshot(settings.warehouse_dir)
-    if result.explanations is not None:  # per-row SHAP: local only, never the report or MLflow
+    # Per-row predictions and SHAP values name companies: local only, never the report or MLflow.
+    write_predictions(result, settings.warehouse_dir)
+    if result.explanations is not None:
         write_explanations(result.explanations, settings.warehouse_dir)
     report = write_report(render_report(result, commit), settings.warehouse_dir, config.backtest)
     ids = identifiers(result, commit, snapshot)
