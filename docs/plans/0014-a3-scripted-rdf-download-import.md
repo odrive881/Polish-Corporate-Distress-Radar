@@ -119,6 +119,24 @@ the next list representative.
 
 ### Progress
 
+- **List v1's second import (2026-10-13).** The script's listing as of 2026-10-13, still on list v1:
+  `documents.csv` (2,057 rows, 425 entities) and `entities.csv` (885 searches), imported from the owner's
+  folder with the importer unchanged.
+  - **Import:** 685 rows indexed for 121 entities (120 new), 672 with their document stored; 603 searches
+    recorded. 102 entities with fewer than three filed years not imported; 9 not in `entity_master` (all
+    quarantined `pkd_section_mismatch` in step 0). Still held: 33 ZIPs whose rows list 1 of 2 or 3 tabs (the
+    script still writes only an expanded row's first tab), so the 27 groups of the first import stay held.
+  - **Refused, with the asset failing after the rest:** 3 rows the script left empty (no KRS, ids or status)
+    and 1 search with no time; 4 rows flagged as corrections whose own tab is the row's (3 entities' 2018 and
+    2024 periods, listed as rows of their own rather than as tabs of the original). The importer's rule that an
+    expanded row's own tab is the original does not hold for them: open, to decide whether a correction listed
+    as its own row is read as one.
+  - **6 ZIPs of one entity refused by the post-redaction scan:** its statements' notes name its shareholders
+    with their PESEL numbers in free text, which no redaction version removes. Not stored; open, for ADR 0009.
+    The store-wide scan finds nothing.
+  - **Parsing** (`financial_statements_canonical`, `restatement_events`): of the new rows' files, 601 valid,
+    62 quarantined, 8 `needs_pdf_tier`, 1 `not_yet_mapped`; 118 of the 121 entities have valid statements.
+
 - **Step 0 and list v1's first import (2026-10-09).** The owner's first listing in decision 2's format:
   `documents.csv` (1,242 rows, 231 entities) and `entities.csv` (671 searches), 535 of list v1's 609 companies
   searched. Owner's notes: entities with fewer than three filed years are left aside; a run of not-found searches
