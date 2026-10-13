@@ -5,6 +5,7 @@ A thin wrapper: the run is `distress_radar.models.backtest`, the report
 its own `backtest` job, by hand, never on a schedule: a backtest is a decision, not a refresh.
 """
 
+from datetime import UTC, datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, cast
@@ -16,6 +17,7 @@ from dagster_defs.assets.features import feature_store
 from dagster_defs.assets.labels import outcome_labels
 from distress_radar.acquisition.document_retrieval import load_document_types
 from distress_radar.features.config import load_feature_set
+from distress_radar.models import scores_store
 from distress_radar.models.backtest import POOLED, run_backtest, write_predictions
 from distress_radar.models.baselines import load_classical_model
 from distress_radar.models.dataset import load_feature_store, load_label_set
@@ -29,6 +31,16 @@ from distress_radar.models.registry import (
     register_models,
 )
 from distress_radar.models.report import render_report, write_report
+from distress_radar.models.scoring import (
+    ScoreContext,
+    at_risk,
+    feature_set_identity,
+    history_rows,
+    latest_label_set,
+    latest_month_end,
+    score_month_end,
+)
+from distress_radar.models.serving import load_served
 from distress_radar.models.splits import label_timing, load_backtest_config
 from distress_radar.settings import Settings
 
@@ -149,4 +161,88 @@ def backtest(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
     )
 
 
-models_assets = [backtest]
+@dg.asset(
+    group_name="models",
+    deps=[feature_store, outcome_labels, backtest],
+    required_resource_keys={"postgres"},
+)
+def scores(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
+    """J — the served model's scores at the latest month-end (plan 0016 step C, decisions 2, 5, 7).
+
+    Inputs: per horizon of `config/models/<BACKTEST_VERSION>.yaml`, the registered version under
+    the alias `champion`, else `incumbent`, in `MLFLOW_TRACKING_URI` (refused when neither); the
+    stored `feature_store` under `WAREHOUSE_DIR`, refused unless it holds the feature set the
+    version was trained on; the latest frozen label set of the version's label version (Postgres
+    `label_sets`), whose grid at that month-end is the risk set; for a config with a `population`
+    rule, `rdf_listed_entities`, `filing_index` and `universe_candidates`, which decide the
+    entities scored; the code commit of a clean working tree, refused otherwise.
+    Outputs: Postgres `scores_history`, one row per entity of the population at risk, horizon and
+    served version: its probability and `top_drivers`, or "inputs incomplete" and none; inserted
+    with `ON CONFLICT DO NOTHING`, so a rerun adds nothing. Every row names a company: local only.
+    Partition scheme: none (unpartitioned); the month-end is the latest in `feature_store`.
+    """
+    settings = Settings()
+    commit = code_commit(REPO_ROOT)  # before any work: a dirty tree is refused up front
+    config = load_backtest_config(settings.backtest_version)
+    served = {h: load_served(settings.mlflow_tracking_uri, h) for h in config.horizons}
+    versions = {s.tags["feature_set_version"] for s, _ in served.values()}
+    if len(versions) != 1:
+        raise ValueError(f"the served versions were trained on different feature sets: {versions}")
+    features = load_feature_store(settings.warehouse_dir, versions.pop())
+    feature_set_version, feature_set_hash = feature_set_identity(features)
+    as_of_date = latest_month_end(features)
+    entities = features.filter(pl.col("as_of_date") == as_of_date).get_column("krs").to_list()
+    snapshot, _ = data_snapshot(settings.warehouse_dir)
+    scored_at = datetime.now(UTC)
+    postgres = cast("PostgresResource", context.resources.postgres)
+    lines: list[str] = []
+    inserted_total = 0
+    with postgres.connect() as conn:
+        population = (
+            read_population(conn, entities, config.population, load_document_types().download_codes)
+            if config.population is not None
+            else Population(included=frozenset(entities), excluded={})
+        )
+        scores_store.ensure_schema(conn)
+        for horizon, (version, scorer) in served.items():
+            label_hash = latest_label_set(conn, version.tags["label_version"])
+            risk_set = at_risk(load_label_set(settings.warehouse_dir, label_hash), as_of_date)
+            month_end = score_month_end(features, as_of_date, population, risk_set, scorer)
+            rows = history_rows(
+                month_end,
+                ScoreContext(
+                    served=version,
+                    code_commit=commit,
+                    data_snapshot_hash=snapshot,
+                    feature_set_version=feature_set_version,
+                    feature_set_hash=feature_set_hash,
+                    population_hash=population.entities_hash,
+                    scored_at=scored_at,
+                ),
+            )
+            inserted = scores_store.insert_scores(conn, rows)
+            inserted_total += inserted
+            reasons = ", ".join(f"{r} {n}" for r, n in month_end.reasons().items()) or "none"
+            lines.append(
+                f"- {horizon}m: {version.name} v{version.version} @{version.alias} "
+                f"({version.model}, training eve {version.training_eve}); "
+                f"{len(rows)} rows, {inserted} new; risk set from label set {label_hash[:12]}; "
+                f"not scored: {reasons}"
+            )
+        conn.commit()
+    context.log.info(
+        f"scores at {as_of_date}: {inserted_total} rows inserted; seed output, not evidence"
+    )
+    return dg.MaterializeResult(
+        metadata={
+            "as_of_date": as_of_date.isoformat(),
+            "code_commit": commit,
+            "data_snapshot_hash": snapshot,
+            "population_hash": population.entities_hash,
+            "inserted": inserted_total,
+            "horizons": dg.MetadataValue.md("\n".join(lines)),
+        }
+    )
+
+
+models_assets = [backtest, scores]

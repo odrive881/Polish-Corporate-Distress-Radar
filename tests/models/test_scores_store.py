@@ -121,3 +121,40 @@ def test_a_watchlist_holds_a_company_once(conn: psycopg.Connection) -> None:
     assert conn.execute(insert, ("inne", "0000000001", NOW)).rowcount == 1
     with pytest.raises(psycopg.errors.CheckViolation):
         conn.execute(insert, ("", "0000000002", NOW))
+
+
+def test_insert_scores_adds_new_rows_only(conn: psycopg.Connection) -> None:
+    scores_store.ensure_schema(conn)
+    rows = [
+        {**_row(), "top_drivers": '[{"feature": "roa"}]'},
+        {
+            **_row(krs="0000000002"),
+            "probability": None,
+            "not_scored_reason": "inputs incomplete",
+            "top_drivers": None,
+        },
+    ]
+    assert scores_store.insert_scores(conn, rows) == 2
+    assert scores_store.insert_scores(conn, rows) == 0
+    assert scores_store.insert_scores(conn, []) == 0
+    drivers = conn.execute(
+        "SELECT top_drivers FROM scores_history WHERE krs = '0000000001'"
+    ).fetchone()
+    assert drivers == ([{"feature": "roa"}],)
+
+
+def test_the_latest_label_set_of_a_version_is_found(conn: psycopg.Connection) -> None:
+    from distress_radar.labels import LABEL_SETS_DDL
+    from distress_radar.models.scoring import latest_label_set
+
+    conn.execute(LABEL_SETS_DDL)
+    insert = (
+        "INSERT INTO label_sets (label_set_hash, label_version, cutoff_date, row_count,"
+        " parquet_path, created_at, ingestion_run_id) VALUES (%s, %s, %s, 1, 'p', %s, 'r')"
+    )
+    conn.execute(insert, ("old", "label_v2", date(2026, 9, 1), NOW))
+    conn.execute(insert, ("new", "label_v2", date(2026, 10, 9), NOW))
+    conn.execute(insert, ("other", "label_v3", date(2026, 11, 1), NOW))
+    assert latest_label_set(conn, "label_v2") == "new"
+    with pytest.raises(LookupError, match="label_v1"):
+        latest_label_set(conn, "label_v1")

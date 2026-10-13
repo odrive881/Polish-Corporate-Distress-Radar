@@ -180,6 +180,14 @@ backtest = dg.define_asset_job(
     description="The out-of-time backtest: report under WAREHOUSE_DIR, one MLflow run per cell set.",
 )
 
+# Plan 0016 step C: the served model's scores at the latest month-end, by hand like the backtest
+# (scheduling is Phase 10). It reads the registry and the stored datasets; it rebuilds neither.
+scoring = dg.define_asset_job(
+    "scoring",
+    selection=dg.AssetSelection.assets("scores"),
+    description="The served model's scores at the latest month-end → Postgres scores_history.",
+)
+
 # Plan 0013 step H: the notes of every stored statement read into `text_signals` and
 # `text_coverage`. By hand: model signals cost money once confirmed, and responses are stored,
 # so a rerun replays them.
@@ -200,7 +208,7 @@ defs = dg.Definitions(
         *models_assets,
         *text_assets,
     ],
-    jobs=[legal_to_labels, features, backtest, text],
+    jobs=[legal_to_labels, features, backtest, scoring, text],
     asset_checks=accounting_identity_checks,
     resources={
         "postgres": PostgresResource(),

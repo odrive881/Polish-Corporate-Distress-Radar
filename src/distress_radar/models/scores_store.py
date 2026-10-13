@@ -19,6 +19,7 @@ Every row names a company: local only (AGENT_SPEC §6K), never published.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import LiteralString
 
 from psycopg import Connection
@@ -68,3 +69,44 @@ SCHEMA_DDL: tuple[LiteralString, ...] = (
 def ensure_schema(conn: Connection) -> None:
     for statement in SCHEMA_DDL:
         conn.execute(statement)
+
+
+COLUMNS: tuple[LiteralString, ...] = (
+    "krs",
+    "as_of_date",
+    "horizon_months",
+    "probability",
+    "not_scored_reason",
+    "model_name",
+    "model_version",
+    "model_alias",
+    "mlflow_run_id",
+    "training_eve",
+    "code_commit",
+    "data_snapshot_hash",
+    "label_version",
+    "label_set_hash",
+    "feature_set_version",
+    "feature_set_hash",
+    "population_hash",
+    "top_drivers",
+    "scored_at",
+)
+
+
+def insert_scores(conn: Connection, rows: Sequence[dict[str, object]]) -> int:
+    """Insert `scores_history` rows (`top_drivers` as JSON text or None); a row whose key is
+    already there is left as it was. Returns the rows inserted."""
+    if not rows:
+        return 0
+    columns = ", ".join(COLUMNS)
+    values = ", ".join("%s::jsonb" if c == "top_drivers" else "%s" for c in COLUMNS)
+    inserted = 0
+    with conn.cursor() as cursor:
+        for row in rows:
+            cursor.execute(
+                f"INSERT INTO scores_history ({columns}) VALUES ({values}) ON CONFLICT DO NOTHING",
+                tuple(row[c] for c in COLUMNS),
+            )
+            inserted += cursor.rowcount
+    return inserted
