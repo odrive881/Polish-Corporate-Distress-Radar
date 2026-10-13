@@ -136,6 +136,11 @@ the next list representative.
     The store-wide scan finds nothing.
   - **Parsing** (`financial_statements_canonical`, `restatement_events`): of the new rows' files, 601 valid,
     62 quarantined, 8 `needs_pdf_tier`, 1 `not_yet_mapped`; 118 of the 121 entities have valid statements.
+  - **Rebuilt after it (2026-10-13):** `krs_extracts` and `msig_notices` over all 609 entities, `legal_events`
+    (2 records `legal_event_type_unmapped`), the label models (label set `821d4ab3…`, `outcome_labels_v2`,
+    111,088 rows, outcome classes unchanged from the 2026-10-09 set), the `features` job (`leakage` passed)
+    and the `dq` models (all audits passed). Canonical facts now cover 320 entities. Backtest and scoring not
+    re-run.
 
 - **Step 0 and list v1's first import (2026-10-09).** The owner's first listing in decision 2's format:
   `documents.csv` (1,242 rows, 231 entities) and `entities.csv` (671 searches), 535 of list v1's 609 companies
