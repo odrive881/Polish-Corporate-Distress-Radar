@@ -18,6 +18,19 @@ registry holds and says so, and the public site's population-level pages wait fo
 
 ## Status: draft (2026-10-12): owner decisions 0–10 open
 
+### Progress (2026-10-13), built ahead of the decisions, on the parts every alternative shares
+
+- **Step B:** `models/serving.py` resolves `champion`, else `incumbent` (decision 1), and rebuilds a scorer per
+  kind from the version's `model/` files; a loaded version reproduces its fold's backtest scores (regression,
+  LightGBM, both survival kinds). `top_drivers` as decision 4 recommends. **For the owner:** decision 4 defines
+  no contribution for the survival kinds (plan 0015 explains only the binary booster), so a survival champion's
+  scores would carry no drivers until one is chosen.
+- **Step C, in part:** the backtest writes every scored test row to `WAREHOUSE_DIR/model_predictions/` (decision
+  3's source; local only). Not built: the `scores` asset and `scoring` job.
+- **Step A, tables only:** `scores_history` and `watchlists` (`models/scores_store.py`). Beyond §5, a row the
+  served model cannot score is kept with `not_scored_reason` and no probability (decision 2), and a check refuses
+  a score dated on or before the version's training eve. Not built: dependencies, the threshold's check.
+
 ## Why
 
 Phases 1–8 built a pipeline whose output lives in Parquet files, a SQLite MLflow store and a Markdown report. Phase
