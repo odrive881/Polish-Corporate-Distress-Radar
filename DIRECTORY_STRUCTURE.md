@@ -212,6 +212,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
     │   ├── test_evaluation.py          # hand-computed metrics, bootstrap, the report's bytes
     │   ├── test_registry.py            # the four identifiers, a dirty tree refused
     │   ├── test_registry_generation3.py  # generation 3's parameters, tuning child runs, versions and aliases
+    │   ├── test_serving.py             # the alias rule, a loaded version reproduces its fold, complete cases, drivers
     │   └── test_backtest_asset.py      # the models group and its hand-run job
     ├── transform/                      # SQLMesh boundary and Dagster DQ wiring (pytest side)
     ├── fixtures/                       # golden XML/PDF documents for mapping tests
@@ -306,7 +307,8 @@ src/distress_radar/
 │   ├── survival.py                # discrete-time hazard model, survival forest, IPCW metrics
 │   ├── explain.py                 # SHAP per fold: global importance; per-row values to model_explanations/, local only
 │   ├── champion.py                # the champion rule: paired entity bootstrap, AUC margin, event floor
-│   └── registry.py                # MLflow runs with the four identifiers; registered versions per horizon
+│   ├── registry.py                # MLflow runs with the four identifiers; registered versions per horizon
+│   └── serving.py                 # the served version (champion, else incumbent), a scorer per kind, top_drivers
 │
 └── api/
     ├── main.py
