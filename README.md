@@ -124,6 +124,17 @@ Import: `uv run dagster asset materialize -m dagster_defs.definitions --select r
 
 Each ZIP is redacted like a captured download. When it holds a correction group, its files are paired with their tabs by the prepared date in each statement's header. A group that cannot be paired is stored unpaired, and a HAR capture completes it.
 
+**A new delivery, end to end** (as run on 2026-10-13; where the data stands and what is open: plan 0014, § "Where this stands"). All from WSL, with `make dev-up` running:
+
+1. Check the folder has `outages.csv` (`from;to`, Warsaw time); without it, not-found searches made while the script had no connection are recorded as "not on RDF".
+2. Import, reading the owner's folder in place: `uv run dagster asset materialize -m dagster_defs.definitions --select rdf_script_import --config-json '{"ops":{"rdf_script_import":{"config":{"inbox":"/mnt/e/<folder>/financial_statements"}}}}'`. Refused rows or ZIPs fail the run after everything else is imported, which skips the `personal_data` check: then run `uv run python -m distress_radar.acquisition.redaction_migration` (report only; it must find 0 objects).
+3. Parse: `--select financial_statements_canonical,restatement_events`.
+4. Legal sources (network; about two hours for ~600 entities): `--select krs_extracts,msig_notices`.
+5. Legal events and a new frozen label set: `--select legal_events,legal_events_canonical,outcome_label_grid,outcome_label_exclusions,outcome_labels_mart,legal_event_coverage,outcome_labels`.
+6. Features (offline): `uv run dagster job execute -m dagster_defs.definitions -j features`; then DQ: `--select parsed_documents_current,quarantine,dq_mart,dq_mart_coverage`.
+7. Backtest, only as a new version: a new label set or population changes the pins, so write `config/models/backtest_v<n>.yaml` from the last one with `label_set_hash` and `population.entities_hash` changed, commit it, then `BACKTEST_VERSION=backtest_v<n> uv run dagster job execute -m dagster_defs.definitions -j backtest`.
+8. Record the round's counts in plan 0014, § "Progress".
+
 The run's metadata counts what could not be used: `not_in_entity_master`, `unknown_types`, `rows_without_zip`, `zips_without_row`, `incomplete_entities`, `too_few_years`, `incomplete_groups`, `outage_searches` and `disagreements` (one document id read two ways). Each item is listed in the run's log. A row or file that cannot be read fails the asset, after everything else is imported.
 
 Importing the same inbox again adds nothing, so append the script's newer rows and import again: a later deletion is recorded on its row, and a new correction becomes a row of its own. A HAR captured later completes the script's row rather than adding a second one. For an entity with scripted rows, `rdf_manual_import` adds only the documents the capture expanded, and lists the rest as `listed_not_added`. Like the recordings, the ZIPs name people, so keep them out of the repository.
