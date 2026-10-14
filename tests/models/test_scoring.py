@@ -159,9 +159,10 @@ def test_every_row_carries_the_metadata() -> None:
         assert row["scored_at"] == NOW
         assert all(value is not None for key, value in row.items() if key not in _NULLABLE)
     assert rows[0]["top_drivers"] is not None and rows[1]["top_drivers"] is None
+    assert rows[0]["missing_inputs"] is None and rows[1]["missing_inputs"]
 
 
-_NULLABLE = {"probability", "not_scored_reason", "top_drivers"}
+_NULLABLE = {"probability", "not_scored_reason", "top_drivers", "missing_inputs"}
 
 
 def test_a_month_end_on_or_before_the_training_eve_is_refused() -> None:

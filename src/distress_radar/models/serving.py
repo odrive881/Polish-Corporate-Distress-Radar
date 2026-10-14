@@ -10,7 +10,7 @@ text or the forest's pickle), so that a loaded version reproduces the probabilit
 printed:
 - `rank_logistic`: each input through the training fold's rank transform, then the regression.
   Complete cases only (decision 2): a row missing an input is "not scored: inputs incomplete",
-  never imputed;
+  never imputed, and names the inputs it lacks (`missing_inputs`, in the model's input order);
 - `lightgbm_binary`: the booster's probability, or its raw score through the Platt map; nulls are
   inputs, as in training;
 - `discrete_time_hazard_lightgbm` and `random_survival_forest`: one minus the survival at the
@@ -64,6 +64,7 @@ SCORE_SCHEMA: dict[str, pl.DataType | type[pl.DataType]] = {
     "probability": pl.Float64,  # null exactly when `not_scored_reason` is set
     "not_scored_reason": pl.String,
     "top_drivers": pl.String,  # JSON; null when not scored, or for a kind without contributions
+    "missing_inputs": pl.List(pl.String),  # in input order; null unless inputs incomplete
 }
 
 
@@ -146,6 +147,10 @@ class Scorer:
         scorable = (
             ~np.isnan(x).any(axis=1) if self.complete_cases else np.ones(rows.height, dtype=bool)
         )
+        lacking: list[list[str] | None] = [
+            None if s else [name for name, gap in zip(inputs, holes, strict=True) if gap]
+            for s, holes in zip(scorable, np.isnan(x), strict=True)
+        ]
         probability = np.full(rows.height, np.nan)
         drivers: list[str | None] = [None] * rows.height
         if scorable.any():
@@ -163,6 +168,7 @@ class Scorer:
                 "probability": pl.Series(probability, dtype=pl.Float64).fill_nan(None),
                 "not_scored_reason": [None if s else INPUTS_INCOMPLETE for s in scorable],
                 "top_drivers": drivers,
+                "missing_inputs": lacking,
             },
             schema=SCORE_SCHEMA,
         )

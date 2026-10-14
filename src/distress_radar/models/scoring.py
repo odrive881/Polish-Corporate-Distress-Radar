@@ -10,7 +10,8 @@ feature row there:
   was trained on. The grid is read from the latest frozen label set of the served version's label
   version, which knows the most recent proceedings;
 - every other entity is scored, or kept with "inputs incomplete" where the served model needs an
-  input the row lacks (the regression's complete cases), never imputed.
+  input the row lacks (the regression's complete cases), never imputed; the row names the inputs
+  it lacks (decision 12).
 
 **What every row carries** (decision 7): the served version (name, version, alias, MLflow run,
 training eve); the scoring code's commit; the `feature_store` snapshot scored; the label version
@@ -180,6 +181,7 @@ def history_rows(month_end: MonthEndScores, context: ScoreContext) -> list[dict[
             "probability": row["probability"],
             "not_scored_reason": row["not_scored_reason"],
             "top_drivers": row["top_drivers"],
+            "missing_inputs": row["missing_inputs"],
             **fixed,
         }
         for row in month_end.scores.iter_rows(named=True)

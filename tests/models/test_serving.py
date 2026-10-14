@@ -187,6 +187,7 @@ def test_the_regression_scores_complete_cases_only(
     assert scores.get_column("not_scored_reason").to_list() == [INPUTS_INCOMPLETE, None] * 3
     assert scores.get_column("probability").is_null().to_list() == [True, False] * 3
     assert scores.get_column("top_drivers").is_null().to_list() == [True, False] * 3
+    assert scores.get_column("missing_inputs").to_list() == [[gap], None] * 3
     # A scored row's probability does not depend on its neighbours being scored.
     np.testing.assert_allclose(
         scores.get_column("probability").drop_nulls(),
