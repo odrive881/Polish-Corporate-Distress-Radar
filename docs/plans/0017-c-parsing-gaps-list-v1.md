@@ -15,7 +15,7 @@ rows (Progress, 2026-10-14) found these gaps. They lose data for every model and
 remaining work is presentation and loses nothing by waiting. This plan does not wait for list v2. Each new
 delivery brings more files of the same kinds, and this plan makes them parse.
 
-## Status: draft (2026-10-14): owner decisions 1–4 below await the owner; steps A–D and F–G need nothing more
+## Status: active (2026-10-14): owner decisions 1–4 accepted as recommended (2026-10-14); nothing built yet, step A next
 
 ## Why
 
@@ -73,7 +73,7 @@ questions, not here.
    every form. The exception: `BS.EQUITY_LIABILITIES.B` fails only on small 2018 v1-2 (7 files), which is the
    pattern a body formula error would leave. Step F reads it.
 
-## Owner decisions (recommended; flag any you disagree with before step E)
+## Owner decisions (accepted by the owner, 2026-10-14, as recommended)
 
 1. **Map the thousands twins that filers use.** Plan 0005 decision 1 catalogued them unmapped because no seed
    filing used one. List v1 has 11 files in five of them, and 2 in the uncatalogued `SFJINT (2)`.
