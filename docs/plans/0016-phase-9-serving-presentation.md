@@ -39,6 +39,9 @@ registry holds and says so, and the public site's population-level pages wait fo
   served model cannot score is kept with `not_scored_reason` and no probability (decision 2), and a check refuses
   a score dated on or before the version's training eve. Not built: dependencies, the threshold's check.
 
+**Paused after item 1 (owner, 2026-10-14):** plan 0017 (the parsing gaps item 1's count exposed) goes first;
+items 2–9 resume on its rebuilt data.
+
 ### Progress (2026-10-14): decision 12's count and named inputs (buildable item 1)
 
 **The count**, read-only, at 2026-09-30, for the served version (`distress_radar_12m` and `_24m` v3, the
