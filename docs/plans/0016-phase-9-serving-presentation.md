@@ -39,12 +39,57 @@ registry holds and says so, and the public site's population-level pages wait fo
   served model cannot score is kept with `not_scored_reason` and no probability (decision 2), and a check refuses
   a score dated on or before the version's training eve. Not built: dependencies, the threshold's check.
 
+### Progress (2026-10-14): decision 12's count and named inputs (buildable item 1)
+
+**The count**, read-only, at 2026-09-30, for the served version (`distress_radar_12m` and `_24m` v3, the
+regression from `backtest_v6`, training eve 2024-12-31; both horizons take the same five inputs). Postgres was
+down, so the population came from `backtest_v6`'s stored predictions (297 of its 300 entities; the other 3 have
+no grid row in any test year, so they would be `not_at_risk` anyway) and the risk set from the version's own
+label set (`821d4ab37dcf`, the latest frozen). Of 609 entities with features: 312 outside the population, 12
+not at risk, **91 inputs incomplete, 194 scored**. The 43 of the 2026-10-13 dry run were on `backtest_v5`'s 186;
+the population has since grown with list v1's second import.
+
+Inputs missing, over the 91 rows: `working_capital_to_assets` 89, `roa` 14, `asset_turnover` 13,
+`equity_to_assets` 11, `going_concern_threat` 6. The cause, by the latest usable statement (not graded
+`quarantined`, plan 0010 decision 3) known on that day. `entity_size_class_history` is not built, so the split is
+by the form filed, which is the class the filer declared:
+
+| Cause | Rows | Form filed | Missing | Kind |
+|---|---|---|---|---|
+| The micro balance sheet has no short-term liabilities line: UoR annex 4 has only "B. Zobowiązania i rezerwy na zobowiązania" | 75 | micro 2018 v1-2: 12, 2025 v1-3: 29, wariant 2: 34 | `working_capital_to_assets` | legitimately absent |
+| Statement filed, no canonical facts at all | 6 | none | all five | to check with Postgres up (`parsed_documents`, `quarantine_events`): PDF or refused at parsing |
+| Every statement graded `quarantined` (material identity failures, mostly `subtotals_consistent`) | 4 | full, 2024–2025 | the four ratios | excluded by design |
+| A small filer reported only liabilities' total (B), not B.III (0000361585, 2023) | 1 | small 2018 v1-2 | `working_capital_to_assets` | filer's omission |
+| A small filer with no liabilities filed B = 0 and left B.III out (0000934600, 2024) | 1 | small 2025 v1-3 | `working_capital_to_assets` | filer's omission |
+| A dormant micro filer, total assets 0 (0000430957) | 1 | micro 2018 v1-2 | the four ratios | the denominator is zero |
+| The latest usable period is not about a year long (0000690752: 2017-08-14 to 2018-12-31; 0001025363: 2023-03-15 to 2023-12-31) | 2 | full 2018 v1-2 | `roa`, `asset_turnover` | plan 0010 decision 7 |
+| A micro sp. z o.o. filed its net result in `IS.MIKRO.G` (associations' line), not `IS.MIKRO.F` (0000734057, 2022) | 1 | micro 2018 v1-2 | `roa` (and `working_capital_to_assets`, micro) | filer's choice of line |
+
+**No line-item map gap was found.** The only map-adjacent case is the last row: 7 micro statements of 4
+entities carry `IS.MIKRO.G` and no `IS.MIKRO.F`. `line_items_v3` leaves G out on purpose (the chart's note: it
+is for foundations and associations), and counting it would be a new line-item map and so a new feature set,
+plan 0012's to version. Reported here, not fixed.
+
+**The finding about the regression** (decision 12 asked for one): 75 of the 91 rows, a quarter of the 285
+at-risk entities, are micro filers, and the regression can score none of them. This is not missing data: its
+`working_capital_to_assets` input does not exist on the micro form. Its complete-case rule kept micro rows out of
+its training too, so the incumbent is a model of full and small filers. A tree model (LightGBM, the survival
+kinds) takes the null as an input, and decision 12 already says this narrows if one is promoted. Until then,
+the explorer and the API should say "the served model does not cover micro filers" rather than imply a data
+gap.
+
+**Built:** the scorer names the inputs a row lacks, in the model's input order: `missing_inputs` in
+`SCORE_SCHEMA` (`list[str]`) and in `scores_history` (`text[]`, added by `ALTER TABLE ... ADD COLUMN IF NOT
+EXISTS`, so a table from step A gains it). A check holds it to exactly the rows whose reason is "inputs
+incomplete", and never empty. The unit tests cover the scorer and the history rows. The table's checks are in
+the integration suite, not run this time (Postgres was down).
+
 ### Buildable now, without further input from the owner (2026-10-13)
 
 With decisions 0–13 accepted, the following need nothing more from the owner. They are listed in build order;
 each is committed on its own and recorded in Progress when done.
 
-1. **Decision 12's count and named inputs.** Count, over the 43 incomplete rows at 2026-09-30, which inputs are
+1. ~~**Decision 12's count and named inputs.**~~ Done 2026-10-14 (Progress, above). Count, over the 43 incomplete rows at 2026-09-30, which inputs are
    missing and how often, split by the size class and form filed. The question is whether a line is legitimately
    absent from a short form (AGENT_SPEC §4) or missing because of a gap in the line-item map (as with the
    `.R2025` codes in plan 0012). The result goes here. Then the scorer names the missing inputs on the row: a

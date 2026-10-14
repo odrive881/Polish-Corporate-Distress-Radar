@@ -19,7 +19,7 @@ COLUMNS = (
     "krs, as_of_date, horizon_months, probability, not_scored_reason, model_name, model_version,"
     " model_alias, mlflow_run_id, training_eve, code_commit, data_snapshot_hash, label_version,"
     " label_set_hash, feature_set_version, feature_set_hash, population_hash, top_drivers,"
-    " scored_at"
+    " missing_inputs, scored_at"
 )
 
 
@@ -55,6 +55,7 @@ def _row(**changes: object) -> dict[str, object]:
         "feature_set_hash": "d" * 64,
         "population_hash": "e" * 64,
         "top_drivers": Jsonb([{"feature": "roa", "contribution": 0.4}]),
+        "missing_inputs": None,
         "scored_at": NOW,
     }
     row.update(changes)
@@ -85,24 +86,45 @@ def test_the_schema_is_idempotent_and_a_rerun_adds_nothing(conn: psycopg.Connect
     assert probability == (0.08,)
 
 
+INCOMPLETE = {
+    "probability": None,
+    "not_scored_reason": "inputs incomplete",
+    "top_drivers": None,
+    "missing_inputs": ["roa"],
+}
+
+
 def test_a_row_not_scored_has_a_reason_and_no_probability_or_drivers(
     conn: psycopg.Connection,
 ) -> None:
     scores_store.ensure_schema(conn)
-    assert (
-        _insert(
-            conn, _row(probability=None, not_scored_reason="inputs incomplete", top_drivers=None)
-        )
-        == 1
-    )
+    assert _insert(conn, _row(**INCOMPLETE)) == 1
     for bad in (
         _row(krs="0000000002", probability=None, top_drivers=None),  # no reason
-        _row(krs="0000000003", not_scored_reason="inputs incomplete"),  # a reason and a score
-        _row(krs="0000000004", probability=None, not_scored_reason="inputs incomplete"),
+        _row(krs="0000000003", **{**INCOMPLETE, "probability": 0.2}),  # a reason and a score
+        _row(krs="0000000004", **{**INCOMPLETE, "top_drivers": Jsonb([])}),  # drivers
         _row(krs="0000000005", probability=1.5),
     ):
         with pytest.raises(psycopg.errors.CheckViolation):
             _insert(conn, bad)
+
+
+def test_missing_inputs_are_named_exactly_when_inputs_are_incomplete(
+    conn: psycopg.Connection,
+) -> None:
+    scores_store.ensure_schema(conn)
+    for bad in (
+        _row(krs="0000000002", **{**INCOMPLETE, "missing_inputs": None}),  # unnamed
+        _row(krs="0000000003", **{**INCOMPLETE, "missing_inputs": []}),  # named as none
+        _row(krs="0000000004", missing_inputs=["roa"]),  # on a scored row
+    ):
+        with pytest.raises(psycopg.errors.CheckViolation):
+            _insert(conn, bad)
+    assert _insert(conn, _row(krs="0000000005", **INCOMPLETE)) == 1
+    stored = conn.execute(
+        "SELECT missing_inputs FROM scores_history WHERE krs = '0000000005'"
+    ).fetchone()
+    assert stored == (["roa"],)
 
 
 def test_no_score_is_dated_on_or_before_its_training_eve(conn: psycopg.Connection) -> None:
@@ -129,9 +151,7 @@ def test_insert_scores_adds_new_rows_only(conn: psycopg.Connection) -> None:
         {**_row(), "top_drivers": '[{"feature": "roa"}]'},
         {
             **_row(krs="0000000002"),
-            "probability": None,
-            "not_scored_reason": "inputs incomplete",
-            "top_drivers": None,
+            **INCOMPLETE,
         },
     ]
     assert scores_store.insert_scores(conn, rows) == 2

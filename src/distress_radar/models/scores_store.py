@@ -12,7 +12,8 @@ carries decision 7's metadata, so a score traces to its MLflow run:
   without a population rule);
 - `not_scored_reason`: a row of the modelled population the served model cannot score (the
   regression's incomplete inputs) is kept with its reason and no probability, never imputed
-  (decision 2).
+  (decision 2), and `missing_inputs` names the inputs it lacks, in the model's input order
+  (decision 12): set exactly when the reason is "inputs incomplete".
 
 Every row names a company: local only (AGENT_SPEC §6K), never published.
 """
@@ -50,6 +51,13 @@ SCHEMA_DDL: tuple[LiteralString, ...] = (
         CHECK ((probability IS NULL) = (not_scored_reason IS NOT NULL)),
         CHECK (probability IS NOT NULL OR top_drivers IS NULL)
     )
+    """,
+    # Decision 12, added after the table first shipped.
+    """
+    ALTER TABLE scores_history ADD COLUMN IF NOT EXISTS missing_inputs text[]
+        CHECK ((missing_inputs IS NOT NULL)
+               = (not_scored_reason IS NOT DISTINCT FROM 'inputs incomplete'))
+        CHECK (cardinality(missing_inputs) > 0)
     """,
     """
     CREATE INDEX IF NOT EXISTS scores_history_as_of
@@ -90,6 +98,7 @@ COLUMNS: tuple[LiteralString, ...] = (
     "feature_set_hash",
     "population_hash",
     "top_drivers",
+    "missing_inputs",
     "scored_at",
 )
 
