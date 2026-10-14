@@ -42,11 +42,11 @@ registry holds and says so, and the public site's population-level pages wait fo
 ### Progress (2026-10-14): decision 12's count and named inputs (buildable item 1)
 
 **The count**, read-only, at 2026-09-30, for the served version (`distress_radar_12m` and `_24m` v3, the
-regression from `backtest_v6`, training eve 2024-12-31; both horizons take the same five inputs). Postgres was
-down, so the population came from `backtest_v6`'s stored predictions (297 of its 300 entities; the other 3 have
-no grid row in any test year, so they would be `not_at_risk` anyway) and the risk set from the version's own
-label set (`821d4ab37dcf`, the latest frozen). Of 609 entities with features: 312 outside the population, 12
-not at risk, **91 inputs incomplete, 194 scored**. The 43 of the 2026-10-13 dry run were on `backtest_v5`'s 186;
+regression from `backtest_v6`, training eve 2024-12-31; both horizons take the same five inputs), over
+`backtest_v6`'s population as `read_population` gives it today (300 entities, its pinned hash) and the latest
+frozen label set (`821d4ab37dcf`). Of 609 entities with features: 309 outside the population (180
+`rdf_not_searched`, 100 `no_statement_imported`, 27 `statements_held_back`, 2 `rdf_search_incomplete`), 14 not
+at risk, **91 inputs incomplete, 195 scored**. The 43 of the 2026-10-13 dry run were on `backtest_v5`'s 186;
 the population has since grown with list v1's second import.
 
 Inputs missing, over the 91 rows: `working_capital_to_assets` 89, `roa` 14, `asset_turnover` 13,
@@ -57,7 +57,7 @@ by the form filed, which is the class the filer declared:
 | Cause | Rows | Form filed | Missing | Kind |
 |---|---|---|---|---|
 | The micro balance sheet has no short-term liabilities line: UoR annex 4 has only "B. Zobowiązania i rezerwy na zobowiązania" | 75 | micro 2018 v1-2: 12, 2025 v1-3: 29, wariant 2: 34 | `working_capital_to_assets` | legitimately absent |
-| Statement filed, no canonical facts at all | 6 | none | all five | to check with Postgres up (`parsed_documents`, `quarantine_events`): PDF or refused at parsing |
+| Every statement refused at parsing (C1/C2), so no canonical facts at all | 6 | 4 micro, 2 full in thousands | all five | parser gaps, below |
 | Every statement graded `quarantined` (material identity failures, mostly `subtotals_consistent`) | 4 | full, 2024–2025 | the four ratios | excluded by design |
 | A small filer reported only liabilities' total (B), not B.III (0000361585, 2023) | 1 | small 2018 v1-2 | `working_capital_to_assets` | filer's omission |
 | A small filer with no liabilities filed B = 0 and left B.III out (0000934600, 2024) | 1 | small 2025 v1-3 | `working_capital_to_assets` | filer's omission |
@@ -70,7 +70,20 @@ entities carry `IS.MIKRO.G` and no `IS.MIKRO.F`. `line_items_v3` leaves G out on
 is for foundations and associations), and counting it would be a new line-item map and so a new feature set,
 plan 0012's to version. Reported here, not fixed.
 
-**The finding about the regression** (decision 12 asked for one): 75 of the 91 rows, a quarter of the 285
+**Parser gaps (stage C), found through the six.** Not this plan's to fix; reported for a stage C plan.
+Across everything imported (`quarantine_events`, 2026-10-14):
+- **Micro envelopes carrying full-form statements:** a `JednostkaMikro` file may hold `BilansJednostkaInna` and
+  `RZiSJednostkaInna`, which its XSD accepts, but the micro specs bind no full-form body, so C2 refuses it
+  ("no Bilans", "no RZiS"): 46 and 13 files in micro 2018 v1-0, 2018 v1-2, 2025 v1-3 and wariant 2. This is
+  trap (a) of ADR 0005's second addendum, which the small specs handle, met on the micro form. Four of the six
+  above.
+- **The small wariant 2 (`SFJMAZ (2)`, 2025-08-07) is not mapped:** 48 files of 47 entities refused as
+  `unknown_structure_version`, their 2025 statements. Those entities are scored on their 2024 statement, so
+  they are not among the 91, but their latest figures are missing.
+- **The full form in thousands of PLN:** 10 files of 2 entities fail the XSD (`JednostkaInnaWTys`,
+  `P_1/P_1C/Kod`), and their wariant 2 (`SFJINT (2)`, `1-0E`) is not mapped. The other two of the six.
+
+**The finding about the regression** (decision 12 asked for one): 75 of the 91 rows, a quarter of the 286
 at-risk entities, are micro filers, and the regression can score none of them. This is not missing data: its
 `working_capital_to_assets` input does not exist on the micro form. Its complete-case rule kept micro rows out of
 its training too, so the incumbent is a model of full and small filers. A tree model (LightGBM, the survival
@@ -81,8 +94,8 @@ gap.
 **Built:** the scorer names the inputs a row lacks, in the model's input order: `missing_inputs` in
 `SCORE_SCHEMA` (`list[str]`) and in `scores_history` (`text[]`, added by `ALTER TABLE ... ADD COLUMN IF NOT
 EXISTS`, so a table from step A gains it). A check holds it to exactly the rows whose reason is "inputs
-incomplete", and never empty. The unit tests cover the scorer and the history rows. The table's checks are in
-the integration suite, not run this time (Postgres was down).
+incomplete", and never empty. Tested: the unit tests (scorer, history rows) and the integration suite (the
+table's checks, 68 passed).
 
 ### Buildable now, without further input from the owner (2026-10-13)
 
