@@ -8,6 +8,11 @@
 # ADR 0005.
 fetched_on: 2026-09-17
 schemas:
+  # Fetched 2026-10-15 (plan 0017 step A), found as root namespaces in list v1's
+  # downloads; everything they import was already vendored.
+  "http://crd.gov.pl/wzor/2025/08/04/13810/schemat.xsd":
+    path: "crd.gov.pl/wzor/2025/08/04/13810/schemat.xsd"
+    sha256: c347267ea0be650948ad165bb98bbceb828785bf148c79882418773f5bd89ee6
   "http://crd.gov.pl/wzor/2025/08/07/13817/schemat.xsd":
     path: "crd.gov.pl/wzor/2025/08/07/13817/schemat.xsd"
     sha256: ee69992d4416f08c53e6b7ccd0d66350adc8ee1b5539d8e1ac8d900ec0e515bd
@@ -20,6 +25,9 @@ schemas:
   "http://crd.gov.pl/wzor/2025/08/12/13821/schemat.xsd":
     path: "crd.gov.pl/wzor/2025/08/12/13821/schemat.xsd"
     sha256: eb20e39ca85aafc30d2367fcec00ec224854a791f0095d56d2cd99963cd9ec22
+  "http://crd.gov.pl/wzor/2025/09/10/13846/schemat.xsd":
+    path: "crd.gov.pl/wzor/2025/09/10/13846/schemat.xsd"
+    sha256: 87b69e6af9a0306d6dd743aa11eb25e0cc05849bfbbd65588377afc114706f80
   "http://crd.gov.pl/xml/schematy/adres/2009/11/09/adres.xsd":
     path: "crd.gov.pl/xml/schematy/adres/2009/11/09/adres.xsd"
     sha256: 4e09bc5931caba664bc11060e4d23296554af79ff0c56eb42f413be3a4a3a443
