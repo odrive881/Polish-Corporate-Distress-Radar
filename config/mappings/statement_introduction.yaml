@@ -52,6 +52,7 @@ generations:
     structure_versions:
       - full-2025-w2-v1-0
       - micro-2025-w2-v1-0
+      - small-2025-w2-v1-0
 
 # Each item: its kind, the generations that have it, its element path under the block per
 # layout, and a phrase of the XSD documentation that identifies it.
