@@ -117,21 +117,28 @@ def test_two_specs_detecting_the_same_version_are_rejected(tmp_path: Path) -> No
 def test_spec_hash_changes_with_any_body_the_spec_can_reach(tmp_path: Path) -> None:
     """Including a body reached only through a statement alternative.
 
-    A small filing may carry the full-form statements (plan 0005 step D), so
-    `jednostka_inna` is part of how `small-2018-v1-2` maps a document. If its
-    hash did not move, those files would keep their `first_ingestion_run_id`
-    and `parsed_documents` row after a mapping change (`parsing/manifest.py`).
+    A small or micro filing may carry the full-form statements (plan 0005 step
+    D, plan 0017 step C), so `jednostka_inna` is part of how `small-2018-v1-2`
+    and `micro-2018-v1-2` map a document. If their hashes did not move, those
+    files would keep their `first_ingestion_run_id` and `parsed_documents` row
+    after a mapping change (`parsing/manifest.py`).
     """
     config_dir = _copy_config(tmp_path)
+    bodies = config_dir / "mappings" / "structures" / "bodies"
     before = load_mapping_config(config_dir).spec_hashes
-    body = config_dir / "mappings" / "structures" / "bodies" / "jednostka_inna.yaml"
+    body = bodies / "jednostka_inna.yaml"
     body.write_text(body.read_text(encoding="utf-8") + "\n# edited\n", encoding="utf-8")
     after = load_mapping_config(config_dir).spec_hashes
     assert after["full-2018-v1-2"] != before["full-2018-v1-2"]
     assert after["small-2018-v1-2"] != before["small-2018-v1-2"]
-    # A spec that cannot reach the edited body is unaffected: micro filings
-    # always carry the micro statements, so nothing about them changed.
-    assert after["micro-2018-v1-2"] == before["micro-2018-v1-2"]
+    assert after["micro-2018-v1-2"] != before["micro-2018-v1-2"]
+    # A spec that cannot reach the edited body is unaffected: a full-form
+    # envelope admits only the full statements (plan 0017 step A3).
+    body = bodies / "jednostka_mala.yaml"
+    body.write_text(body.read_text(encoding="utf-8") + "\n# edited\n", encoding="utf-8")
+    again = load_mapping_config(config_dir).spec_hashes
+    assert again["micro-2018-v1-2"] != after["micro-2018-v1-2"]
+    assert again["full-2018-v1-2"] == after["full-2018-v1-2"]
 
 
 def test_every_chart_code_is_used(mapping_config: MappingConfig) -> None:

@@ -15,9 +15,33 @@ rows (Progress, 2026-10-14) found these gaps. They lose data for every model and
 remaining work is presentation and loses nothing by waiting. This plan does not wait for list v2. Each new
 delivery brings more files of the same kinds, and this plan makes them parse.
 
-## Status: active (2026-10-15): owner decisions 1–4 accepted as recommended (2026-10-14); steps A and B built (Progress), step C next
+## Status: active (2026-10-15): owner decisions 1–4 accepted as recommended (2026-10-14); steps A–C built (Progress), step D next
 
 ### Progress
+
+**Step C (2026-10-15): micro envelopes carrying the small or full statements.** The four micro specs
+(`micro-2018-v1-0`, `-v1-2`, `micro-2025-v1-3`, `micro-2025-w2-v1-0`) bind, per statement, the micro body first,
+then `jednostka_mala` (jma) and `jednostka_inna` (jin), in each version's own namespaces (step A3). The two
+2025 specs take the eight `.R2025` overrides (step A4). `form` stays `micro`. One test changed meaning:
+`test_spec_hash_changes_with_any_body_the_spec_can_reach` assumed micro specs never reach the full body. It
+now asserts that they do, and takes its "cannot reach" case from a full-form spec, which admits no other
+form's statements. Read-only dry run over the store's 422 micro files, in memory, nothing written:
+
+- **The 59 refused files of 26 entities all map** (the survey's count). The only micro files still refused
+  are 3 `period_mismatch` (plan 0014's importer) and 1 `xsd_invalid`.
+- **Files that mapped before are unchanged:** 359 files, 20,736 facts identical to the warehouse's,
+  `source_element_path` included.
+- **Bodies filed** in the 59: 30 full, 11 small, 11 micro balance sheet with a full income statement, 5 full
+  and small mixed, 1 micro and small, 1 micro (wariant 2) and full. No file fell back to a default body.
+  23 of the 26 entities now report short-term liabilities (`BS.EQUITY_LIABILITIES.B.III`), so
+  `working_capital_to_assets` exists for them (finding 4).
+- **E2:** 35 `pass`, 11 `warn`, 13 `quarantined` (9 entities). One entity, 0000665623, has 4 of the 13: all
+  four of its files mix the full and small statements. The full body alone quarantines 2 of 30. The failing
+  lines are scattered: subtotals (`BS.ASSETS.B`, `IS.COMP.H`, `BS.EQUITY_LIABILITIES.A`, …), three
+  balance sheets that do not balance within themselves, and one `profit_ties`. A wrong binding would leave
+  lines missing, not totals wrong (60–597 facts a file). Read as filer errors, as finding 5 describes; the
+  grading rules stay as they are.
+- **`.R2025`:** 42 facts, from micro 1-3 (26) and wariant 2 (16).
 
 **Step B (2026-10-15): the small wariant 2 mapped.** `small-2025-w2-v1-0` (CRWDE 13818): the `Dokument`
 envelope, statement root `TrescDokumentu/JednostkaMala`, and alternatives per statement, `jednostka_mala` (jma)
