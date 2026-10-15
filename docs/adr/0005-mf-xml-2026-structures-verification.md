@@ -165,3 +165,41 @@ research, because neither is visible in the schemas alone:
   separate them; each spec therefore lists body alternatives and the engine picks the one the document
   contains. Recorded here because ADR 0005's §6C1 rule ("detect from the header") remains true for the
   *version* and is not sufficient for the *body*.
+
+## Third addendum, 2026-10-15 — the structures list v1 brought (plan 0017)
+
+List v1 (plan 0014, about 600 construction companies) filed in structures the 17-entity seed never used. Plan
+0017 surveyed the 143 files refused or unmapped for a fixable reason and read each case from the vendored XSDs.
+What it settled:
+
+1. **Trap (a) of the second addendum holds for micro too.** Every micro envelope — 2018 v1-0 and v1-2, 2025
+   v1-3, wariant 2 (13821) and their thousands twins — admits `BilansJednostkaMikro`, `BilansJednostkaInna` or
+   `BilansJednostkaMala`, and the same three for `RZiS`, chosen per statement. Of 59 refused micro files, 30
+   carried the full statements, 11 the small, 11 a micro balance sheet with a full income statement, and 7
+   other mixes. The micro specs now bind all three bodies in each version's own `…Struktury` namespaces. The
+   filing stays `micro`, and the body read is in `source_element_path`.
+2. **Every CRWDE file's root is `Dokument`.** 13818 and 13819 had been catalogued with the statement element
+   inside `TrescDokumentu` as their root, so neither could ever match a file. The 2025/07/31 domain schemas
+   declare six headers, `SFJ{IN,MA,MI}{Z,T} (2)`, and each has a template: 13810 (full, thousands; 2025-08-04),
+   13817, 13818, 13819, 13821 and 13846 (small, thousands; 2025-09-10). The two found here were vendored with
+   their SHA-256; everything they import already was. 13846's only filer is outside the segment, so it stays
+   catalogued, not mapped. `test_every_detect_key_is_what_its_xsd_declares` now reads every spec's and catalogue
+   entry's root, namespace and codes from its own XSD.
+3. **Wariant 2's statement types equal schema 1-3's** in element tree, flags and labels, for every form in
+   both units. So the small wariant 2 (`small-2025-w2-v1-0`) binds the existing bodies with `small-2025-v1-3`'s
+   eight `.R2025` overrides, and every 2025 spec that can bind a small or full body carries them.
+4. **Thousands twins differ from their złoty siblings only in the envelope** (root, namespace, header type and
+   the `…WTys` statement types, whose trees equal the złoty ones). Six twins with filers are mapped at unit 1000
+   by copying the sibling and changing those; the five without in-scope filers stay catalogued.
+5. **XSD defects outside the statements.** 27 files violated their XSD only in elements no stage reads: a
+   placeholder `KodPKD` holding an XML comment (18 files of 3 entities, złoty and thousands), the same
+   software's placeholder in the full introduction's user item `P_8`, empty address fields, a malformed NIP
+   in `P_1D`, the notes' income-tax reconciliation and attachment list. `config/mappings/xsd_tolerances_v1.yaml`
+   names each as element paths and error kinds. It is refused at load if an entry reaches the header, a bound
+   statement, or an introduction item the versions it applies to read. `P_8` is average employment in wariant
+   2, so that entry is scoped to the earlier full versions. A tolerated file is recorded (`xsd_tolerated`) and
+   graded at best `warn`. One micro balance sheet with non-decimal amounts is inside a statement and stays
+   quarantined.
+
+The re-parse (plan 0017 step G) made 142 of the 143 files readable, 78 entities, and left every earlier file's
+canonical values unchanged. 19 specs are mapped; 5 versions are catalogued.

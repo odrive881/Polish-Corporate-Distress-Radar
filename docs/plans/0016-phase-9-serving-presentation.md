@@ -16,7 +16,7 @@
 **Order:** after plan 0015 (complete, 2026-10-12). It does not wait for list v2 or a champion: it serves what the
 registry holds and says so, and the public site's population-level pages wait for list v2 (decision 0).
 
-## Status: active (2026-10-13): owner decisions 0–10 accepted as recommended, 11–13 added from building steps B and C (accepted the same day); steps A–C built in part (Progress)
+## Status: active (2026-10-15): owner decisions 0–10 accepted as recommended, 11–13 added from building steps B and C (accepted the same day); steps A–C built in part, item 1 of § "Buildable now" built; paused for plan 0017, whose rebuild is in (2026-10-15), so items 2–9 can resume (Progress)
 
 ### Progress (2026-10-13), built ahead of the decisions, on the parts every alternative shares
 
@@ -40,7 +40,9 @@ registry holds and says so, and the public site's population-level pages wait fo
   a score dated on or before the version's training eve. Not built: dependencies, the threshold's check.
 
 **Paused after item 1 (owner, 2026-10-14):** plan 0017 (the parsing gaps item 1's count exposed) goes first;
-items 2–9 resume on its rebuilt data.
+items 2–9 resume on its rebuilt data. *2026-10-15:* the rebuild is in (plan 0017 step H; Progress below). Before
+item 3's real scoring run: the job reads its population from `BACKTEST_VERSION`, whose default is still
+`backtest_v5` (186 entities), so either set it to `backtest_v7` or change the default.
 
 ### Progress (2026-10-15): the count refreshed on plan 0017's rebuilt data
 

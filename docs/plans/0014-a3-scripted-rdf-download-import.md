@@ -21,23 +21,25 @@ downloads", has the commands): put `outages.csv` in the folder first, import wit
 the folder, parse, fetch the legal sources, rebuild labels, features and DQ, then, if the backtest is to be
 re-run, record a new `backtest_v<n>` before running it. Record each round's counts in § "Progress".
 
-**Where the data is (after the 2026-10-13 round):**
+**Where the data is (after the 2026-10-13 round; parsing and everything downstream rebuilt by plan 0017 on 2026-10-15):**
 
 - **Last delivery imported:** the owner's folder `E:\RDF download folder — 13.10.2026\financial_statements`,
   read in place (`/mnt/e/...` from WSL, the asset's `inbox` config); nothing from it is copied into the
   repository. Its `documents.csv` (2,057 rows, 425 entities) and `entities.csv` (885 searches) are stored raw.
   The script was still on list v1, not list v2.
-- **Imported so far:** 320 entities have canonical facts (17 seed, the rest list v1); the import skips
+- **Imported so far:** 327 entities have canonical facts (17 seed, the rest list v1; 320 until plan 0017 made
+  142 more statement files readable, 2026-10-15); the import skips
   entities with fewer than three filed years (102 in the last round) until a later listing has three.
 - **Legal sources:** `krs_extracts` and `msig_notices` fetched for all 609 entities in `entity_master` on
   2026-10-13 (40 min and 1 h 21 min; each run fetches every entity).
 - **Labels:** `outcome_labels_v2`, label set `821d4ab37dcf…` (111,088 rows), frozen 2026-10-13.
-- **Features:** `feature_set_v6`, rebuilt 2026-10-13; `leakage` passed.
+- **Features:** `feature_set_v6`, rebuilt 2026-10-13 and again 2026-10-15 (plan 0017 step H); `leakage` passed.
 - **Backtest:** `backtest_v6` (`config/models/backtest_v6.yaml`, commit `03f83fe`): v5 with only the label set
   and the population pinned anew. Population 300 entities, 18 ever in distress, 20 events per horizon. The
   champion rule promotes nothing (at most 8 paired events; it needs 50), so `logistic_regression` stays
   champion. The default `BACKTEST_VERSION` is still `backtest_v5`; v6 was run with the variable set. Report:
-  `WAREHOUSE_DIR/reports/backtest/backtest_v6.md`.
+  `WAREHOUSE_DIR/reports/backtest/backtest_v6.md`. Since 2026-10-15 the latest run is `backtest_v7` (v6 on plan
+  0017's re-parsed statements; the same pins; at most 9 paired events; nothing promoted).
 - **Not re-run:** scoring (plan 0016), text signals (no new auditor reports came in this round).
 
 **Open, the owner's (in order of what they unblock):**

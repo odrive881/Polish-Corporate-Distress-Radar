@@ -13,7 +13,7 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
 
 ## Status: active (2026-10-13): owner decisions 0–9 accepted; every step built, J's docs included; the model runs on the seed under `extractor_v6` (the default since 2026-10-13; v4 before) with the provider's terms confirmed; all nine signals accepted on the 166-page golden set (2026-10-15) and held by the gate in `make check`; the `text` and `features` jobs re-run under `extractor_v6` (2026-10-15, plan 0017 step H: 868 new requests, all answered); open: enough labelled positives per signal to close the plan (`covenant_breach` and `key_customer_loss` have none), and the owner's items below
 
-### Where this stands (2026-10-13)
+### Where this stands (2026-10-15)
 
 **Done since 2026-10-05** (each in the progress section): the provider's terms confirmed and the key set up
 (decision 2; the client sends `ANTHROPIC_WORKSPACE_ID`); the first model run, and its seven disputed results
@@ -22,7 +22,11 @@ the notes' features filled in; step I's departures and the 2026-10-05 choices ap
 (`post_balance_sheet_event_v2`, dated and valued) built, labelled, accepted and the default; step J's docs.
 Since 2026-10-07: 44 more pages labelled (40 of the auditor reports' queue, 4 of the notes'), all nine signals
 re-scored and accepted on the 127 pages (2026-10-12, Progress). Then 21 more report pages, `opinion_type`'s labels
-settled against the guide, and all nine accepted on the 148 pages (2026-10-13, Progress).
+settled against the guide, and all nine accepted on the 148 pages (2026-10-13, Progress). On 2026-10-15 the
+auditor reports' queue was completed (102 of 102), 27 labels corrected to the guide over two rounds, every
+register number, natural-person firm's address and identifier, and file name masked by hand, the `text` and
+`features` jobs re-run under `extractor_v6` (plan 0017 step H), and all nine accepted on the 189 pages
+(Progress).
 
 **Open for the owner, in order:**
 
@@ -30,21 +34,22 @@ settled against the guide, and all nine accepted on the 148 pages (2026-10-13, P
    "labelled". Recommended: close once each signal has a handful of labelled positives, rather than after the
    whole seed queue (153 of the notes' 240 pages are still unlabelled, and the seed is a poor sample of the
    population). In that order:
-   - the auditor reports' queue (`golden_sample_v2`, 102 pages of 20 reports, 15 with a span to mask by hand):
-     the only source of positives for `opinion_type`, `emphasis_of_matter` and the auditor's going-concern
-     paragraph; 61 pages labelled and committed (2026-10-13), 41 to go;
+   - ~~the auditor reports' queue (`golden_sample_v2`, 102 pages of 20 reports)~~: complete, 102 of 102
+     (2026-10-15);
    - then a new golden sample drawn from ADR 0014's list v2 (its random and distress groups, addendum of
      2026-10-07) once plan 0014 has imported it, instead of finishing the seed's notes queue.
 
-   Today (148 pages) four signals have no positive, or one: `covenant_breach` and `key_customer_loss` none;
-   `emphasis_of_matter` and `continued_existence_vote` one each. `opinion_type` has 13, but its rule
-   (`rules_v3`) is the weak result: precision 0.47, recall 0.69 end to end. Labelling is done in the
+   Today (189 pages) four signals have no positive, or one: `covenant_breach` and `key_customer_loss` none;
+   `emphasis_of_matter` and `continued_existence_vote` one each. The others: `opinion_type` 20 (`rules_v4`,
+   P 1.0 R 1.0, optimistic: written on these pages), `going_concern_uncertainty` 9, `post_balance_sheet_event`
+   4, `litigation` 3, `loss_coverage_resolution` 3. With the reports' queue done, the remaining positives can
+   only come from list v2's sample (above) or the seed's notes queue. Labelling is done in the
    notebook from a WSL terminal (`uv run marimo run notebooks/labelling/golden_set.py`, not through Claude Code,
    whose background tasks stop after 30 minutes), then `make label-export`.
 2. ~~**`extractor_v6`: accept the nine results and make it the default.**~~ Done 2026-10-13 (owner): all
    nine accepted under `extractor_v6`, the default since (Progress). `rules_v4`'s 13 of 13 stays optimistic:
-   its patterns were written looking at these pages; the reports' 41 unlabelled pages and list v2's sample
-   are its real test, and no adverse opinion has been seen yet.
+   its patterns were written looking at these pages. The reports' last 41 pages held 7 more positives, all
+   read right (20 of 20 since). List v2's sample is its real test, and no adverse opinion has been seen yet.
 3. **Auditor reports, loose ends (decision 0c, below):**
    - 0000181328's 2019 report is `unknown` in the dates list;
    - 0000291203's 2024 and 2025 reports are not in the list;
