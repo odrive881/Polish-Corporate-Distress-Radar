@@ -1,5 +1,8 @@
 {
- "accepted": null,
+ "accepted": {
+  "by": "owner",
+  "on": "2026-10-15"
+ },
  "examples": [
   {
    "discard_reason": null,
