@@ -15,9 +15,41 @@ rows (Progress, 2026-10-14) found these gaps. They lose data for every model and
 remaining work is presentation and loses nothing by waiting. This plan does not wait for list v2. Each new
 delivery brings more files of the same kinds, and this plan makes them parse.
 
-## Status: active (2026-10-15): owner decisions 1–4 accepted as recommended (2026-10-14); steps A–G built and run (Progress), step H next
+## Status: active (2026-10-15): owner decisions 1–4 accepted as recommended (2026-10-14); steps A–H built and run (Progress), step I next
 
 ### Progress
+
+**Step H (2026-10-15): downstream rebuilt** (decisions 3 and 4), in this order:
+
+- **`restatement_events`:** 7,643 → 7,919 events, 188 → 204 entities.
+- **Text (decision 4).** A read-only count first: 1,869 statements and 48 auditor reports, 3,224 requests,
+  2,356 replayed from the store, **868 to send** (about $3.80 at plan 0015 step A's rate). Then the `text` job,
+  through the Batches API: all 868 answered and stored, no new G1 or G2 quarantine, `evidence_masked` passed.
+  `text_signals` 3,526 rows over 226 entities. This is also plan 0013's open re-run under `extractor_v6`.
+- **Labels: not rebuilt.** They read only the legal sources, which this plan did not touch. The frozen set
+  `821d4ab3…` stands.
+- **`features` job:** `leakage` passed. `feature_store` 56,598 rows over 609 entities. `legal_events_quarantine`
+  warns as before: no C4 record is newer than 2026-10-13 (plan 0014 item 7).
+- **DQ:** `make transform-plan` applied the changed `quarantine` model (breaking, full refresh, 6 audits
+  passed). Then `parsed_documents_current`, `quarantine`, `dq_mart` and `dq_mart_coverage`: all 20 audits
+  passed, `quarantine_one_parsing_stage_per_file` among them, now over real tolerated files.
+- **`backtest_v7` (decision 3)**, recorded and committed before the run (`b760127`): v6 with only its version
+  changed, since the population still hashes to v6's pin (300 entities) and the label set did not move.
+  Run from that commit. Same population, 18 entities ever in distress, 20 events per horizon. The
+  complete-case models score one more test event per horizon (regression at 12 months: 9, was 8), and the
+  other pooled metrics move within their intervals. **Nothing is promoted:** at most 9 paired events, and the
+  rule needs 50. The served versions are now v4 of each horizon, the regression, `incumbent`, training eve
+  2024-12-31. Report: `WAREHOUSE_DIR/reports/backtest/backtest_v7.md`.
+- **Scoring dry run** (read-only, nothing written; v7's population; at 2026-09-30, 609 entities): 309 outside
+  the population (as before), 14 not at risk, **81 inputs incomplete (was 91), 205 scored (was 195)**.
+  Missing: `working_capital_to_assets` 79 (was 89), `roa` 8 (14), `asset_turnover` 7 (13), `equity_to_assets`
+  5 (11), `going_concern_threat` 0 (6). Of the 79 without working capital, 72 are micro filers on the micro
+  balance sheet (no short-term-liabilities line: plan 0016's finding stands), 2 the known small-filer
+  omissions, and 5 have no usable statement. Plan 0016's Progress carries these numbers.
+
+`BACKTEST_VERSION` still defaults to `backtest_v5`, as since plan 0014. v6 and v7 ran with the variable set,
+and the scoring job reads its population from the default, so a real scoring run needs
+`BACKTEST_VERSION=backtest_v7`, or a change of the default. That is plan 0016 item 3's to decide.
 
 **Step G (2026-10-15): the re-parse.** `financial_statements_canonical` materialized from the stored downloads
 (no acquisition, 7 minutes, every asset check passed). Compared with a snapshot taken just before:
@@ -403,7 +435,7 @@ files, the tolerance file); README's status line; the doc sweep. `make docs-chec
 - [x] Of the 143 files, each `valid` or `warn`, or quarantined with a recorded reason outside this plan's gaps;
       the count of entities with no canonical facts recorded before and after.
 - [x] Every previously parsed file's canonical values unchanged (column-wise hash).
-- [ ] Downstream rebuilt and `backtest_v7` run (H); plan 0016's counts refreshed.
+- [x] Downstream rebuilt and `backtest_v7` run (H); plan 0016's counts refreshed.
 - [ ] Plan 0006's triggers measured and recorded (I).
 - [ ] `make check` and `make test-integration` green; docs swept (J).
 

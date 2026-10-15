@@ -42,6 +42,17 @@ registry holds and says so, and the public site's population-level pages wait fo
 **Paused after item 1 (owner, 2026-10-14):** plan 0017 (the parsing gaps item 1's count exposed) goes first;
 items 2–9 resume on its rebuilt data.
 
+### Progress (2026-10-15): the count refreshed on plan 0017's rebuilt data
+
+Plan 0017 (the parsing gaps) re-parsed 142 files of 78 entities and rebuilt everything downstream, up to
+`backtest_v7`, whose regression is now the served version (v4 of each horizon, `incumbent`, training eve
+2024-12-31). The same read-only count, at 2026-09-30, over v7's population (300 entities, the same pin as v6):
+14 not at risk, **81 inputs incomplete (was 91), 205 scored (was 195)**. Missing:
+`working_capital_to_assets` 79, `roa` 8, `asset_turnover` 7, `equity_to_assets` 5, `going_concern_threat`
+0. Of the 79 without working capital, 72 are micro filers on the micro balance sheet, so the finding below
+stands: the served regression does not cover micro filers. Details in plan 0017, § Progress, step H.
+Items 2–9 resume on this data.
+
 ### Progress (2026-10-14): decision 12's count and named inputs (buildable item 1)
 
 **The count**, read-only, at 2026-09-30, for the served version (`distress_radar_12m` and `_24m` v3, the
