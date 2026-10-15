@@ -1,8 +1,5 @@
 {
- "accepted": {
-  "by": "owner",
-  "on": "2026-10-15"
- },
+ "accepted": null,
  "examples": [
   {
    "discard_reason": null,
@@ -1504,7 +1501,7 @@
   "effort": "c082456a7766e23a18db084cd34b6ff510baef506548b897cc80e9b7d3e121c8",
   "golden": "263e172218e6cc08eae1141590bae34b2c5df433a4110f5cde2e9c9cbcf65333",
   "model": "005912bee6ee4543cec4404b5a02b9bcb11a6f1dcc134b6693c7ccde5fdd2f69",
-  "pages": "d78374553402c8c016bab99dc7072ba0dc8514b15d0e2973b303488a86983f36",
+  "pages": "d66c2c31dbfd900cf768272df47a6e9c6c8a9934d7c6f980a035584ab46d1388",
   "prefilter": "5c34e01d2f3d157d46c505c7f823dfb433aff38d639682a3607e92fa3cdbd537",
   "prompt": "49802eea160b0bdf2c2e6247958f420c5670de964b25d5dc0f254087d7d0d4f2",
   "schema": "3092fa6e7704cd444822db6ed3d8c5f8a2fe641d5441005aa7c6a2eb5ff10711"

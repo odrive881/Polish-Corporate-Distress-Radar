@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import base64
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -209,6 +210,45 @@ def test_hand_masking_replaces_counts_and_follows_the_evidence(queue: list[Queue
     for bad in ("osoba", "[osoba]", "x", "Nieobecny Tekst"):
         with pytest.raises(ValueError):
             golden.hand_mask(row, bad)
+
+
+def test_hand_masking_has_kinds_the_masker_does_not_find(queue: list[QueuePage]) -> None:
+    """A register number, a sole practitioner's address, a file name (2026-10-15): masked by hand
+    with their own tokens, counted by kind, and never mistaken for the masker's."""
+    row = QueuePage.model_validate(
+        {**_row(queue, 2).model_dump(), "text": "Biegły rewident nr 12345, ul. Polna 1. plik.xml"}
+    )
+    for target, kind in (
+        ("12345", "register_number"),
+        ("ul. Polna 1", "address"),
+        ("plik.xml", "file_name"),
+    ):
+        row = golden.hand_mask(row, target, kind)
+    assert row.text == "Biegły rewident nr [nr], [adres]. [plik]"
+    assert row.hand_masked == {"address": 1, "file_name": 1, "register_number": 1}
+    assert set(masking.TOKENS) < set(golden.HAND_TOKENS)  # the masker's own kinds are unchanged
+    with pytest.raises(ValueError, match="kind must be one of"):
+        golden.hand_mask(row, "Biegły", "nickname")
+
+
+# Register numbers and file names an auditor's report prints beside names the masker finds: the
+# wordings found in the golden set on 2026-10-15, every one masked by hand then. The committed pages
+# must hold none of them (resolution numbers of the national council, `Krajowej Rady ... nr 3430`,
+# are not a register number and do not match).
+_REGISTER_NUMBER = re.compile(
+    r"(?i)(pod (numerem|nr\.?)|nr\.? ewid\w*|numer\w* ewid\w*|w rejestrze:?|nr firmy\w*|"
+    r"Izbie Biegłych Rewidentów|w rej\.( KRBR)?|Rejestr PIBR nr|sprawozdań finansowych nr|"
+    r"\[osoba\],? \(?nr)\s*-?\s*\d{2,5}"
+)
+_FILE_NAME = re.compile(r"[\w\-]+\.(xml|xades|pdf|docx?|xlsx?)\b", re.IGNORECASE)
+
+
+def test_no_committed_page_holds_a_register_number_or_a_file_name() -> None:
+    for line in (golden.GOLDEN_DIR / "pages.jsonl").read_text(encoding="utf-8").splitlines():
+        page = json.loads(line)
+        text = " ".join(page["text"].split())
+        assert not _REGISTER_NUMBER.search(text), page["page_id"]
+        assert not _FILE_NAME.search(text), page["page_id"]
 
 
 # --- export and the masking check -----------------------------------------------------------------

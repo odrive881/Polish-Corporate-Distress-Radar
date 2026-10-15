@@ -1,8 +1,5 @@
 {
- "accepted": {
-  "by": "owner",
-  "on": "2026-10-15"
- },
+ "accepted": null,
  "examples": [
   {
    "discard_reason": null,
@@ -1251,7 +1248,7 @@
    "evidence": null,
    "outcome": "absent",
    "page_id": "849ad5ac45e57759",
-   "response_key": "a8c2371200d9bd79adfe4d3620958395f8b0185f7f0ecc4e54f11fe34fabc23f",
+   "response_key": "6fb8da175b1d8c8edace922098c544839d764a817108a906121d02a94590ff47",
    "selected": true,
    "value": null
   },
@@ -1305,7 +1302,7 @@
    "evidence": null,
    "outcome": "absent",
    "page_id": "87a5243f0e7640de",
-   "response_key": "fc102bf66f8eea7ae083cb43f31fa737363149e600486ea8e5109dbab053310d",
+   "response_key": "e61f9ebc337feaf3f6b67cd936648ce938751620a4830f3369deedec263beb60",
    "selected": true,
    "value": null
   },
@@ -1504,7 +1501,7 @@
   "effort": "c082456a7766e23a18db084cd34b6ff510baef506548b897cc80e9b7d3e121c8",
   "golden": "93010f30fca8d09bdd50e891f96a6a39184e701e09753f95f036cdd2a2d55436",
   "model": "005912bee6ee4543cec4404b5a02b9bcb11a6f1dcc134b6693c7ccde5fdd2f69",
-  "pages": "d78374553402c8c016bab99dc7072ba0dc8514b15d0e2973b303488a86983f36",
+  "pages": "d66c2c31dbfd900cf768272df47a6e9c6c8a9934d7c6f980a035584ab46d1388",
   "prefilter": "5c34e01d2f3d157d46c505c7f823dfb433aff38d639682a3607e92fa3cdbd537",
   "prompt": "26fafa3187a7c9d862a010d0c399743aa3e1fa280fe3ccaca385f5a09e252632",
   "schema": "e27451486a2e74945b3941cb1c9d8f726eda8a94f53493adbc9bf1abc73e04d3"

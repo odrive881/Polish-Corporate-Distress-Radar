@@ -66,6 +66,20 @@ corrects every proposal, and the row records who proposed (`proposed_by`) and wh
 `[osoba]` a person, `[pesel]` a PESEL, `[email]` an e-mail address, `[telefon]` a phone number. The export refuses
 any page on which the masker would still replace something; mask it in the queue first.
 
+**What the masker does not find, masked by hand** (owner, 2026-10-15). An auditor's report prints these beside
+names the masker does find, and the masker leaves them:
+- `[nr]` (`register_number`): a key auditor's register number, in any wording ("nr 11193", "nr ewid.", "nr w
+  rejestrze", "w rej. KRBR"), and any audit firm's list number ("pod numerem", "Rejestr PIBR nr", "Nr firmy
+  audytorskiej"). A sole practitioner's identifies a person, and the firm number is never stored either way;
+- `[adres]` (`address`): the address of an audit firm that is a natural person: a sole practitioner, or an s.c.,
+  whose partners are. A company's address stays;
+- `[plik]` (`file_name`): a filer's file name (ADR 0009, second addendum);
+- a surname inside a firm's name ("AK FINANSE <Surname>") is a person: `[osoba]`.
+
+`test_no_committed_page_holds_a_register_number_or_a_file_name` holds the committed pages to the first and the
+third. Numbers of the national council's resolutions (`Krajowej Rady Biegłych Rewidentów nr 3430/52a/2019`)
+are not register numbers and stay.
+
 **A flag that is not a person** (tooling, 2026-10-12): the masker also flags company names and other words it
 reads as a person. In the notebook such a span is red. If it is not a person, save the label without masking it:
 the span (its kind and a hash of its text, per page) is recorded as reviewed in `masking_cleared.json` beside the
