@@ -1,0 +1,69 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<tns:JednostkaMikro xmlns:tns="http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaMikroWZlotych" xmlns:dtsf="http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/DefinicjeTypySprawozdaniaFinansowe/" xmlns:jin="http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaInnaStruktury" xmlns:jmi="http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaMikroStruktury" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaMikroWZlotych https://www.gov.pl/documents/2034621/2182793/JednostkaMikroWZlotych(1)_v1-2.xsd http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/DefinicjeTypySprawozdaniaFinansowe/ https://www.gov.pl/documents/2034621/2182793/StrukturyDanychSprFin_v1-2.xsd http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2016/01/25/eD/DefinicjeTypy/ http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2016/01/25/eD/DefinicjeTypy/StrukturyDanych_v4-0E.xsd http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaInnaStruktury https://www.gov.pl/documents/2034621/2182793/JednostkaInnaStrukturyDanychSprFin_v1-2.xsd http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaMalaStruktury https://www.gov.pl/documents/2034621/2182793/JednostkaMalaStrukturyDanychSprFin_v1-2.xsd http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaMikroStruktury https://www.gov.pl/documents/2034621/2182793/JednostkaMikroStrukturyDanychSprFin_v1-2.xsd http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2018/02/01/eD/KodyPKD/ http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2018/02/01/eD/KodyPKD/KodyPKD_v2-0E.xsd">
+  <tns:Naglowek>
+    <dtsf:OkresOd>2019-01-01</dtsf:OkresOd>
+    <dtsf:OkresDo>2019-12-31</dtsf:OkresDo>
+    <dtsf:DataSporzadzenia>2020-03-19</dtsf:DataSporzadzenia>
+    <jmi:KodSprawozdania kodSystemowy="SFJMIZ (1)" wersjaSchemy="1-2">SprFinJednostkaMikroWZlotych</jmi:KodSprawozdania>
+    <jmi:WariantSprawozdania>1</jmi:WariantSprawozdania>
+  </tns:Naglowek>
+  <tns:InformacjeOgolneJednostkaMikro>
+    <tns:P_1>
+      <tns:P_1A>
+        <dtsf:NazwaFirmy>PRZYKŁADOWA SPÓŁKA BUDOWLANA SP. Z O.O.</dtsf:NazwaFirmy>
+        <dtsf:Siedziba>
+          <dtsf:Wojewodztwo>mazowieckie</dtsf:Wojewodztwo>
+          <dtsf:Powiat>Warszawa</dtsf:Powiat>
+          <dtsf:Gmina>Warszawa</dtsf:Gmina>
+          <dtsf:Miejscowosc>WARSZAWA</dtsf:Miejscowosc>
+        </dtsf:Siedziba>
+      </tns:P_1A>
+      <tns:P_1B>
+        <dtsf:Adres>
+          <dtsf:KodKraju>PL</dtsf:KodKraju>
+          <dtsf:Wojewodztwo>mazowieckie</dtsf:Wojewodztwo>
+          <dtsf:Powiat>Warszawa</dtsf:Powiat>
+          <dtsf:Gmina>Warszawa</dtsf:Gmina>
+          <dtsf:Ulica>PRZYKŁADOWA</dtsf:Ulica>
+          <dtsf:NrDomu>1</dtsf:NrDomu>
+          <dtsf:Miejscowosc>WARSZAWA</dtsf:Miejscowosc>
+          <dtsf:KodPocztowy>00-001</dtsf:KodPocztowy>
+          <dtsf:Poczta>WARSZAWA</dtsf:Poczta>
+        </dtsf:Adres>
+      </tns:P_1B>
+      <tns:P_1C>6381533422</tns:P_1C>
+      <tns:P_1D>1234567890</tns:P_1D>
+    </tns:P_1>
+    <tns:P_3>
+      <dtsf:DataOd>2019-01-01</dtsf:DataOd>
+      <dtsf:DataDo>2019-12-31</dtsf:DataDo>
+    </tns:P_3>
+    <tns:P_4>Tekst przykładowy.</tns:P_4>
+    <tns:P_5>
+      <tns:P_5A>true</tns:P_5A>
+      <tns:P_5B>true</tns:P_5B>
+    </tns:P_5>
+    <tns:P_6>
+      <tns:P_6A>Tekst przykładowy.</tns:P_6A>
+      <tns:P_6A>Tekst przykładowy.</tns:P_6A>
+      <tns:P_6A>Tekst przykładowy.</tns:P_6A>
+      <tns:P_6B>Tekst przykładowy.</tns:P_6B>
+      <tns:P_6B>Tekst przykładowy.</tns:P_6B>
+      <tns:P_6C>Tekst przykładowy.</tns:P_6C>
+    </tns:P_6>
+  </tns:InformacjeOgolneJednostkaMikro>
+  <tns:BilansJednostkaInna><jin:Aktywa><dtsf:KwotaA>212500.00</dtsf:KwotaA><dtsf:KwotaB>170000.00</dtsf:KwotaB><jin:Aktywa_A><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB><jin:Aktywa_A_II><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB><jin:Aktywa_A_II_1><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB><jin:Aktywa_A_II_1_B><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:Aktywa_A_II_1_B><jin:Aktywa_A_II_1_C><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:Aktywa_A_II_1_C><jin:Aktywa_A_II_1_D><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:Aktywa_A_II_1_D><jin:Aktywa_A_II_1_E><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:Aktywa_A_II_1_E></jin:Aktywa_A_II_1><jin:Aktywa_A_II_2><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:Aktywa_A_II_2><jin:Aktywa_A_II_3><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:Aktywa_A_II_3></jin:Aktywa_A_II><jin:Aktywa_A_V><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB><jin:Aktywa_A_V_1><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:Aktywa_A_V_1></jin:Aktywa_A_V></jin:Aktywa_A><jin:Aktywa_B><dtsf:KwotaA>212500.00</dtsf:KwotaA><dtsf:KwotaB>170000.00</dtsf:KwotaB><jin:Aktywa_B_I><dtsf:KwotaA>212500.00</dtsf:KwotaA><dtsf:KwotaB>170000.00</dtsf:KwotaB><jin:Aktywa_B_I_4><dtsf:KwotaA>212500.00</dtsf:KwotaA><dtsf:KwotaB>170000.00</dtsf:KwotaB></jin:Aktywa_B_I_4><jin:Aktywa_B_I_5><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:Aktywa_B_I_5></jin:Aktywa_B_I><jin:Aktywa_B_II><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB><jin:Aktywa_B_II_1><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB><jin:Aktywa_B_II_1_A><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB><jin:Aktywa_B_II_1_A_1><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:Aktywa_B_II_1_A_1></jin:Aktywa_B_II_1_A></jin:Aktywa_B_II_1><jin:Aktywa_B_II_3><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB><jin:Aktywa_B_II_3_A><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB><jin:Aktywa_B_II_3_A_1><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:Aktywa_B_II_3_A_1></jin:Aktywa_B_II_3_A></jin:Aktywa_B_II_3></jin:Aktywa_B_II><jin:Aktywa_B_III><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB><jin:Aktywa_B_III_1><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB><jin:Aktywa_B_III_1_C><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB><jin:Aktywa_B_III_1_C_1><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:Aktywa_B_III_1_C_1></jin:Aktywa_B_III_1_C></jin:Aktywa_B_III_1></jin:Aktywa_B_III><jin:Aktywa_B_IV><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:Aktywa_B_IV></jin:Aktywa_B></jin:Aktywa><jin:Pasywa><dtsf:KwotaA>212500.00</dtsf:KwotaA><dtsf:KwotaB>170000.00</dtsf:KwotaB><jin:Pasywa_A><dtsf:KwotaA>84500.00</dtsf:KwotaA><dtsf:KwotaB>67600.00</dtsf:KwotaB><jin:Pasywa_A_I><dtsf:KwotaA>50000.00</dtsf:KwotaA><dtsf:KwotaB>40000.00</dtsf:KwotaB></jin:Pasywa_A_I><jin:Pasywa_A_II><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:Pasywa_A_II><jin:Pasywa_A_VI><dtsf:KwotaA>34500.00</dtsf:KwotaA><dtsf:KwotaB>27600.00</dtsf:KwotaB></jin:Pasywa_A_VI></jin:Pasywa_A><jin:Pasywa_B><dtsf:KwotaA>128000.00</dtsf:KwotaA><dtsf:KwotaB>102400.00</dtsf:KwotaB><jin:Pasywa_B_I><dtsf:KwotaA>128000.00</dtsf:KwotaA><dtsf:KwotaB>102400.00</dtsf:KwotaB><jin:Pasywa_B_I_1><dtsf:KwotaA>128000.00</dtsf:KwotaA><dtsf:KwotaB>102400.00</dtsf:KwotaB></jin:Pasywa_B_I_1></jin:Pasywa_B_I><jin:Pasywa_B_II><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB><jin:Pasywa_B_II_3><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB><jin:Pasywa_B_II_3_A><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:Pasywa_B_II_3_A><jin:Pasywa_B_II_3_C><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:Pasywa_B_II_3_C></jin:Pasywa_B_II_3></jin:Pasywa_B_II><jin:Pasywa_B_III><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB><jin:Pasywa_B_III_1><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB><jin:Pasywa_B_III_1_A><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB><jin:Pasywa_B_III_1_A_1><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:Pasywa_B_III_1_A_1></jin:Pasywa_B_III_1_A></jin:Pasywa_B_III_1><jin:Pasywa_B_III_3><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB><jin:Pasywa_B_III_3_A><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:Pasywa_B_III_3_A><jin:Pasywa_B_III_3_C><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:Pasywa_B_III_3_C><jin:Pasywa_B_III_3_D><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB><jin:Pasywa_B_III_3_D_1><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:Pasywa_B_III_3_D_1></jin:Pasywa_B_III_3_D><jin:Pasywa_B_III_3_G><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:Pasywa_B_III_3_G><jin:Pasywa_B_III_3_H><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:Pasywa_B_III_3_H><jin:Pasywa_B_III_3_I><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:Pasywa_B_III_3_I></jin:Pasywa_B_III_3></jin:Pasywa_B_III><jin:Pasywa_B_IV><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB><jin:Pasywa_B_IV_2><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB><jin:Pasywa_B_IV_2_2><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:Pasywa_B_IV_2_2></jin:Pasywa_B_IV_2></jin:Pasywa_B_IV></jin:Pasywa_B></jin:Pasywa></tns:BilansJednostkaInna><tns:RZiSJednostkaInna><jin:RZiSPor><jin:A><dtsf:KwotaA>412000.00</dtsf:KwotaA><dtsf:KwotaB>329600.00</dtsf:KwotaB><jin:A_I><dtsf:KwotaA>412000.00</dtsf:KwotaA><dtsf:KwotaB>329600.00</dtsf:KwotaB></jin:A_I><jin:A_IV><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:A_IV></jin:A><jin:B><dtsf:KwotaA>377500.00</dtsf:KwotaA><dtsf:KwotaB>302000.00</dtsf:KwotaB><jin:B_I><dtsf:KwotaA>377500.00</dtsf:KwotaA><dtsf:KwotaB>302000.00</dtsf:KwotaB></jin:B_I><jin:B_II><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:B_II><jin:B_III><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:B_III><jin:B_IV><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:B_IV><jin:B_V><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:B_V><jin:B_VI><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB><jin:B_VI_1><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:B_VI_1></jin:B_VI><jin:B_VII><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:B_VII><jin:B_VIII><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:B_VIII></jin:B><jin:C><dtsf:KwotaA>34500.00</dtsf:KwotaA><dtsf:KwotaB>27600.00</dtsf:KwotaB></jin:C><jin:D><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB><jin:D_I><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:D_I><jin:D_IV><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:D_IV></jin:D><jin:E><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB><jin:E_III><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:E_III></jin:E><jin:F><dtsf:KwotaA>34500.00</dtsf:KwotaA><dtsf:KwotaB>27600.00</dtsf:KwotaB></jin:F><jin:H><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB><jin:H_I><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:H_I><jin:H_IV><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:H_IV></jin:H><jin:I><dtsf:KwotaA>34500.00</dtsf:KwotaA><dtsf:KwotaB>27600.00</dtsf:KwotaB></jin:I><jin:J><dtsf:KwotaA>0.00</dtsf:KwotaA><dtsf:KwotaB>0.00</dtsf:KwotaB></jin:J><jin:L><dtsf:KwotaA>34500.00</dtsf:KwotaA><dtsf:KwotaB>27600.00</dtsf:KwotaB></jin:L></jin:RZiSPor></tns:RZiSJednostkaInna><tns:InformacjeUzupelniajaceDoBilansuJednostkaMikro>
+    <tns:InformacjeUzupelniajaceDoBilansu>
+      <dtsf:Opis>Tekst przykładowy.</dtsf:Opis>
+    </tns:InformacjeUzupelniajaceDoBilansu>
+    <tns:InformacjeUzupelniajaceDoBilansu>
+      <dtsf:Opis>Tekst przykładowy.</dtsf:Opis>
+    </tns:InformacjeUzupelniajaceDoBilansu>
+    <tns:InformacjeUzupelniajaceDoBilansu>
+      <dtsf:Opis>Tekst przykładowy.</dtsf:Opis>
+    </tns:InformacjeUzupelniajaceDoBilansu>
+    <tns:InformacjeUzupelniajaceDoBilansu>
+      <dtsf:Opis>Tekst przykładowy.</dtsf:Opis>
+    </tns:InformacjeUzupelniajaceDoBilansu>
+  </tns:InformacjeUzupelniajaceDoBilansuJednostkaMikro>
+</tns:JednostkaMikro>
