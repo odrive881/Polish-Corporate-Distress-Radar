@@ -15,9 +15,33 @@ rows (Progress, 2026-10-14) found these gaps. They lose data for every model and
 remaining work is presentation and loses nothing by waiting. This plan does not wait for list v2. Each new
 delivery brings more files of the same kinds, and this plan makes them parse.
 
-## Status: active (2026-10-15): owner decisions 1–4 accepted as recommended (2026-10-14); steps A–F built (Progress), step G next
+## Status: active (2026-10-15): owner decisions 1–4 accepted as recommended (2026-10-14); steps A–G built and run (Progress), step H next
 
 ### Progress
+
+**Step G (2026-10-15): the re-parse.** `financial_statements_canonical` materialized from the stored downloads
+(no acquisition, 7 minutes, every asset check passed). Compared with a snapshot taken just before:
+
+- **Every file that parsed before is unchanged:** 1,714 files, 458,124 facts, equal on every column except
+  `ingestion_run_id`, `quality_grade` and `source_element_path` included (a frame comparison, stronger than
+  the per-version hash). The versions that gained no file (`full-2025-w2-v1-0`, `small-2018-v1-0`,
+  `small-2025-v1-3`) keep their column-wise value hashes exactly.
+- **142 of the 143 files are `valid` now**, of 78 entities: 131 that were quarantined and 11 that were
+  `not_yet_mapped`. The new files grade 76 `pass`, 43 `warn`, 23 `quarantined`. The 143rd is the micro balance
+  sheet with non-decimal amounts, `xsd_invalid` as planned.
+- **Entities with canonical facts: 320 → 327**, the seven that had none. None lost.
+- **Still quarantined: 24 files, none for one of this plan's gaps.** 9 `period_mismatch` (plan 0014's
+  importer), 3 `xml_malformed`, 4 `unknown_container`, 4 `member_not_in_filing_index`, 1
+  `unknown_structure_version` (the file with no `KodSprawozdania`), 2 `required_item_missing`, and the one
+  `xsd_invalid` above. 47 `needs_pdf_tier` are unchanged.
+- **Facts 458,124 → 484,761**; all files graded: 1,330 `pass`, 282 `warn`, 244 `quarantined`.
+- **Idempotent:** a second materialization left the 27 Parquet files of `financial_statements_canonical`,
+  `identity_check_results` and `statement_disclosures` byte-identical, and `parsed_documents` (3,795 rows) and
+  `quarantine_events` (617) unchanged.
+- `make check` and `make test-integration` were green on the commit the run used (step F; 1,445 and 68 tests).
+
+Not yet rebuilt: everything downstream (step H). The changed `quarantine` model needs `make transform-plan`
+before the `dq` run.
 
 **Step F (2026-10-15): fixtures and the one grading check.**
 
@@ -374,11 +398,11 @@ files, the tolerance file); README's status line; the doc sweep. `make docs-chec
 ## Definition of done
 
 - [x] The catalogue corrected; 13810 (and 13846) vendored and catalogued (A).
-- [ ] Small wariant 2, the micro alternatives and the six twins mapped (B–D).
-- [ ] Tolerances built, if decision 2 is accepted (E).
-- [ ] Of the 143 files, each `valid` or `warn`, or quarantined with a recorded reason outside this plan's gaps;
+- [x] Small wariant 2, the micro alternatives and the six twins mapped (B–D).
+- [x] Tolerances built, if decision 2 is accepted (E).
+- [x] Of the 143 files, each `valid` or `warn`, or quarantined with a recorded reason outside this plan's gaps;
       the count of entities with no canonical facts recorded before and after.
-- [ ] Every previously parsed file's canonical values unchanged (column-wise hash).
+- [x] Every previously parsed file's canonical values unchanged (column-wise hash).
 - [ ] Downstream rebuilt and `backtest_v7` run (H); plan 0016's counts refreshed.
 - [ ] Plan 0006's triggers measured and recorded (I).
 - [ ] `make check` and `make test-integration` green; docs swept (J).
