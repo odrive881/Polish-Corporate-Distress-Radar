@@ -11,7 +11,7 @@
 **Order:** after plan 0012 (complete). It does not wait for ADR 0013: like Phase 6, it builds and measures
 machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set this plan adds.
 
-## Status: active (2026-10-13): owner decisions 0–9 accepted; every step built, J's docs included; the model runs on the seed under `extractor_v6` (the default since 2026-10-13; v4 before) with the provider's terms confirmed; all nine signals accepted on the 148-page golden set (2026-10-13) and held by the gate in `make check`; open: enough labelled positives per signal to close the plan (`covenant_breach` and `key_customer_loss` have none), the `text` and `features` jobs re-run under `extractor_v6`, and the owner's items below
+## Status: active (2026-10-13): owner decisions 0–9 accepted; every step built, J's docs included; the model runs on the seed under `extractor_v6` (the default since 2026-10-13; v4 before) with the provider's terms confirmed; all nine signals accepted on the 166-page golden set (2026-10-15) and held by the gate in `make check`; open: enough labelled positives per signal to close the plan (`covenant_breach` and `key_customer_loss` have none), the `text` and `features` jobs re-run under `extractor_v6`, and the owner's items below
 
 ### Where this stands (2026-10-13)
 
@@ -115,6 +115,16 @@ settled against the guide, and all nine accepted on the 148 pages (2026-10-13, P
 
 ### Progress
 
+- **Golden set 166 pages, accepted (2026-10-15).** The 18 pages added on 2026-10-14 (all from the auditor
+  reports' queue, so 79 of its 102 are labelled) were reviewed against the guide before acceptance. Five
+  `opinion_type` labels contradicted it, and were corrected at the owner's direction in the local queue and
+  exported: `adb863c6` → unqualified (the opinion sentence begins on it); `9d45a2c4` (the sentence's
+  continuation), `ab1a80ba` and `b7130426` (the management-report opinion) and `b15cd2ce` (the basis section)
+  → absent. `rules_v4` then scores 15 positives, P 1.0 R 1.0 (optimistic: its patterns were written on these
+  pages). The other eight score exactly as on 148 pages: the new pages are all true negatives. All nine accepted
+  by the owner. **Open:** 16 committed report pages carry key-auditor and audit-firm numbers and one filer file
+  name, which the masker does not catch: masking them, and whether to rewrite the pushed history, is the
+  owner's decision.
 - **Step A (2026-09-29), the census** (`notebooks/exploration/text_census.py`, counts only, no text read out):
   - **Separately filed documents: 316 listed since 2017, none detailed or downloaded.** Approval resolutions
     (type 3) 115 in 15 entities; loss-coverage resolutions (4) 91 in 15; management reports (20) 58 in 12;
