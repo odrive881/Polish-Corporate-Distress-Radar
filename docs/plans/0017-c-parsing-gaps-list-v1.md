@@ -15,9 +15,25 @@ rows (Progress, 2026-10-14) found these gaps. They lose data for every model and
 remaining work is presentation and loses nothing by waiting. This plan does not wait for list v2. Each new
 delivery brings more files of the same kinds, and this plan makes them parse.
 
-## Status: active (2026-10-15): owner decisions 1–4 accepted as recommended (2026-10-14); step A built (Progress), step B next
+## Status: active (2026-10-15): owner decisions 1–4 accepted as recommended (2026-10-14); steps A and B built (Progress), step C next
 
 ### Progress
+
+**Step B (2026-10-15): the small wariant 2 mapped.** `small-2025-w2-v1-0` (CRWDE 13818): the `Dokument`
+envelope, statement root `TrescDokumentu/JednostkaMala`, and alternatives per statement, `jednostka_mala` (jma)
+and `jednostka_inna` (jin), in wariant 2's `2025/07/31` namespaces. It takes `small-2025-v1-3`'s eight `.R2025`
+overrides and `effective_from: 2025-01-01`, joins the introduction's `wariant_2` generation, and leaves the
+catalogue. The coverage tests (body against XSD, labels against the chart) pass on it. The golden fixture
+waits for step F, so `test_required_items_resolve_in_a_golden_statement` skips it by name until then.
+Read-only dry run over the store's 48 files (47 entities), in memory, nothing written:
+
+- **C1/C2:** all 48 validate and map (they were all `unknown_structure_version`).
+- **Bodies filed:** 45 small, 2 full, 1 mixed (one statement in each). No file fell back to a default body.
+- **E2:** 36 `pass`, 8 `warn`, 4 `quarantined` (8%, within the short forms' 3–21%). The failing lines in the
+  4 are spread over unrelated subtotals: `BS.ASSETS.B`, `BS.EQUITY_LIABILITIES.A`, `IS.COMP.MALA.H`, `IS.COMP.B`,
+  and one `profit_ties`. None is a line the overrides touch: filer errors, as finding 5 describes, not the spec.
+- **`.R2025`:** 89 facts in 36 files carry an `.R2025` code.
+- **Introduction:** going-concern flags, average employment and the audit flag read in all 48.
 
 **Step A (2026-10-15): catalogue and XSD research.** Read from the vendored XSDs only. The store was not
 read: Postgres and MinIO were down. The two missing templates' URLs came from the root namespaces of the

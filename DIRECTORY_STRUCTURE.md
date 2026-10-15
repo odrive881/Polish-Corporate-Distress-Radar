@@ -84,7 +84,8 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │       ├── micro-2025-w2-v1-0.yaml
 │   │       ├── small-2018-v1-0.yaml
 │   │       ├── small-2018-v1-2.yaml
-│   │       └── small-2025-v1-3.yaml   # a spec may bind more than one body (plan 0005 step D)
+│   │       ├── small-2025-v1-3.yaml   # a spec may bind more than one body (plan 0005 step D)
+│   │       └── small-2025-w2-v1-0.yaml  # CRWDE 13818 (plan 0017 step B)
 │   ├── xsd/                           # official MF/CRWDE XSDs, vendored (catalog.yaml)
 │   ├── extraction/                    # text-signal engineering config (plan 0013)
 │   │   ├── eval_gate_v1.yaml          # how far a change may fall below the accepted scores (owner's tolerance)
