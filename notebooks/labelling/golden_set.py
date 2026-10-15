@@ -131,9 +131,9 @@ def _(golden, html, mo, nlp, picker, rows):
 
 
 @app.cell
-def _(masking, mo):
+def _(golden, mo):
     mask_target = mo.ui.text(label="text to mask (exact)", full_width=True)
-    mask_kind = mo.ui.dropdown(options=sorted(masking.TOKENS), value="person", label="as")
+    mask_kind = mo.ui.dropdown(options=sorted(golden.HAND_TOKENS), value="person", label="as")
     mask_button = mo.ui.run_button(label="Mask on this page")
     mo.hstack([mask_target, mask_kind, mask_button], widths=[6, 1, 1])
     return mask_button, mask_kind, mask_target

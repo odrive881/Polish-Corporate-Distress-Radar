@@ -115,6 +115,18 @@ settled against the guide, and all nine accepted on the 148 pages (2026-10-13, P
 
 ### Progress
 
+- **Golden pages masked by hand beyond the masker (2026-10-15, owner's decision).** 26 committed pages, all
+  auditor reports, held what the masker leaves beside the names it finds. All are now masked in the queue and
+  exported. Key auditors' register numbers, in seven wordings (`[nr]`). Every audit firm's list number, in
+  five wordings (`[nr]`; the firm number is never stored). A surname inside a firm's name (`[osoba]`, 3 pages).
+  The addresses of audit firms that are natural persons, two sole practitioners and one s.c. (`[adres]`). One
+  filer's file name (`[plik]`, ADR 0009 second addendum). One phone number the masker missed (`[telefon]`). The
+  three new kinds are hand-masking only (`golden.HAND_TOKENS`); the masker and `MASKING_VERSION` are unchanged.
+  Labels and evidence did not move. Re-scored: every signal exactly as accepted (3 new model calls). The
+  masker's recall reads 0.977, since the three surnames count as its misses. The nine results await the
+  owner's acceptance again (the golden files changed). `test_no_committed_page_holds_a_register_number_or_a_file_name`
+  holds the pages to it. **Left for the owner:** the NIP, REGON and bank account in the letterheads of the
+  s.c. and of one sole practitioner (4 pages), and the pushed history.
 - **Golden set 166 pages, accepted (2026-10-15).** The 18 pages added on 2026-10-14 (all from the auditor
   reports' queue, so 79 of its 102 are labelled) were reviewed against the guide before acceptance. Five
   `opinion_type` labels contradicted it, and were corrected at the owner's direction in the local queue and

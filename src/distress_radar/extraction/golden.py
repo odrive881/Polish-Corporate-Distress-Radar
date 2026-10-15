@@ -62,7 +62,18 @@ TEXT_KEYS = frozenset({"text", "evidence", "evidence_span"})
 # label made before decision 9 lacks: until valued, it is scored on presence. Every other signal is
 # present or absent.
 OPINION_VALUES = SIGNAL_VALUES["opinion_type"]
-_TOKEN = re.compile("|".join(re.escape(t) for t in masking.TOKENS.values()))
+# What a labeller may mask by hand: the masker's kinds, and three it does not find, which an
+# auditor's report prints beside a name it does find (2026-10-15): a key auditor's or an audit
+# firm's register number (a sole practitioner's identifies a person, and the firm number is never
+# stored either way), a sole practitioner's address, and a filer's file name (ADR 0009, second
+# addendum). Hand-masking only: the masker and `MASKING_VERSION` are unchanged.
+HAND_TOKENS = {
+    **masking.TOKENS,
+    "register_number": "[nr]",
+    "address": "[adres]",
+    "file_name": "[plik]",
+}
+_TOKEN = re.compile("|".join(re.escape(t) for t in HAND_TOKENS.values()))
 
 Sample = Literal["selected", "rejected"]
 
@@ -379,14 +390,14 @@ def merge(existing: list[QueuePage], fresh: list[QueuePage]) -> list[QueuePage]:
 def hand_mask(row: QueuePage, target: str, kind: str = "person") -> QueuePage:
     """Every occurrence of `target` replaced by `kind`'s token, in the text and in the evidence
     already labelled, and counted as the masker's miss."""
-    if kind not in masking.TOKENS:
-        raise ValueError(f"kind must be one of {sorted(masking.TOKENS)}")
-    if len(target.strip()) < 2 or any(target in t or t in target for t in masking.TOKENS.values()):
+    if kind not in HAND_TOKENS:
+        raise ValueError(f"kind must be one of {sorted(HAND_TOKENS)}")
+    if len(target.strip()) < 2 or any(target in t or t in target for t in HAND_TOKENS.values()):
         raise ValueError("the text to mask must be at least two characters and not a token")
     occurrences = row.text.count(target)
     if not occurrences:
         raise ValueError("the text to mask is not on the page")
-    token = masking.TOKENS[kind]
+    token = HAND_TOKENS[kind]
     labels = {
         signal: label.model_copy(
             update={
