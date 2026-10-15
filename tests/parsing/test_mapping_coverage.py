@@ -72,6 +72,41 @@ def test_every_schema_is_vendored_with_its_imports(mapping_config: MappingConfig
             )
 
 
+def _declared_versions(xsd: Path, catalog: dict[str, Path]) -> set[tuple[str, str]]:
+    """(kodSystemowy, wersjaSchemy) pairs fixed by one declaration in a schema or its imports."""
+    pairs: set[tuple[str, str]] = set()
+    for path in {xsd} | {
+        catalog[i.get("schemaLocation") or ""]
+        for i in etree.parse(str(xsd)).getroot().iter(f"{XSD_NS}import")
+    }:
+        for ext in etree.parse(str(path)).getroot().iter(f"{XSD_NS}extension"):
+            fixed = {a.get("name"): a.get("fixed") for a in ext.iter(f"{XSD_NS}attribute")}
+            kod, wersja = fixed.get("kodSystemowy"), fixed.get("wersjaSchemy")
+            if kod and wersja:
+                pairs.add((kod, wersja))
+    return pairs
+
+
+def test_every_detect_key_is_what_its_xsd_declares(mapping_config: MappingConfig) -> None:
+    """A spec's or catalogue entry's root, namespace and codes are read from its XSD.
+
+    A CRWDE file's root is the `Dokument` envelope, not the statement element
+    inside it; 13818 and 13819 were catalogued with the inner name and so never
+    matched a file (plan 0017 step A).
+    """
+    catalog = load_xsd_catalog(XSD_DIR)
+    entries = [(s.structure_version, s.detect, s.xsd) for s in mapping_config.specs.values()]
+    entries += [(e.kod_systemowy, e, e.xsd) for e in mapping_config.catalog.versions]
+    for name, key, url in entries:
+        root = etree.parse(str(catalog[url])).getroot()
+        assert key.root_namespace == root.get("targetNamespace"), name
+        top_level = {el.get("name") for el in root.findall(f"{XSD_NS}element")}
+        assert key.root_name in top_level, (name, key.root_name, top_level)
+        assert (key.kod_systemowy, key.wersja_schemy) in _declared_versions(
+            catalog[url], catalog
+        ), name
+
+
 def test_vendored_schemas_match_their_recorded_hashes() -> None:
     raw = yaml.safe_load((XSD_DIR / "catalog.yaml").read_text(encoding="utf-8"))
     for url, entry in raw["schemas"].items():

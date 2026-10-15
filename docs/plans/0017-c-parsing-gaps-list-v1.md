@@ -15,7 +15,50 @@ rows (Progress, 2026-10-14) found these gaps. They lose data for every model and
 remaining work is presentation and loses nothing by waiting. This plan does not wait for list v2. Each new
 delivery brings more files of the same kinds, and this plan makes them parse.
 
-## Status: active (2026-10-14): owner decisions 1–4 accepted as recommended (2026-10-14); nothing built yet, step A next
+## Status: active (2026-10-15): owner decisions 1–4 accepted as recommended (2026-10-14); step A built (Progress), step B next
+
+### Progress
+
+**Step A (2026-10-15): catalogue and XSD research.** Read from the vendored XSDs only. The store was not
+read: Postgres and MinIO were down. The two missing templates' URLs came from the root namespaces of the
+XML files in the owner's two delivery folders, and nothing else in those files was read.
+
+- **A1, the catalogue corrected.** `SFJMAZ (2)` (13818) had root `JednostkaMala`, but its XSD's only top-level
+  element is `Dokument`. **`SFJMIT (2)` (13819) had the same defect** (`JednostkaMikroWTys`), which the survey
+  could not show because no file uses it. Both are now `Dokument`. New test
+  `test_every_detect_key_is_what_its_xsd_declares`: every spec's and catalogue entry's root is a top-level
+  element of its XSD, its namespace is the XSD's target namespace, and its system code and schema version are
+  fixed by one declaration in the XSD or its imports. It fails on the old 13818 entry.
+- **A2, the templates.** 13810 (`SFJINT (2)`, dated 2025-08-04) vendored and catalogued. The probe found a
+  second template the survey had not listed: **13846 (`SFJMAT (2)`, 2025-09-10), the small thousands twin**,
+  found in one file in the deliveries. It is vendored and catalogued too. The 2025/07/31 domain schemas declare
+  six headers, `SFJ{IN,MA,MI}{Z,T} (2)`, and with these two each has a template (13810, 13817, 13818, 13819,
+  13821, 13846). So the search is complete without sending blind requests through the template range.
+  Everything both templates import was already vendored. 13846 is used by a filer, so by decision 1's rule
+  it is a seventh twin for step D (`small-2025-w2-v1-0-tys`). Its file's status in `parsed_documents` is to
+  be read in step G.
+- **A3, what each envelope admits** for `Bilans` and `RZiS`. These are element names under the statement root;
+  the prefixes are each XSD's own (`jmi`/`jma`/`jin`: the micro, small and full `…Struktury` namespace of that
+  version: MF `2018/07/09`, MF `2025/01/01` or CRWDE `2025/07/31`):
+
+  | Envelope | `Bilans` | `RZiS` |
+  |---|---|---|
+  | micro 2018 v1-0, v1-2, 2025 v1-3, wariant 2 (13821), and their thousands twins (v1-0E, v1-2, 13819) | `BilansJednostkaMikro` (jmi), `BilansJednostkaInna` (jin), `BilansJednostkaMala` (jma) | `RZiSJednostkaMikro`, `RZiSJednostkaInna`, `RZiSJednostkaMala`, same namespaces |
+  | small wariant 2 (13818), small thousands 1-2 and wariant 2 (13846) | `BilansJednostkaMala` (jma), `BilansJednostkaInna` (jin) | `RZiSJednostkaMala`, `RZiSJednostkaInna` |
+  | full thousands 1-0E, 1-3, wariant 2 (13810) | `Bilans` (jin) only | `RZiS` (jin) only |
+
+  The full-form thousands envelopes admit no other form's statements, so their specs bind one body, like
+  `full-2018-v1-2-tys`. The thousands types (`…WTys`) have the same element trees as the złoty ones.
+- **A4, small wariant 2 against small 1-3.** For every form in both units, the CRWDE 2025/07/31 statement types
+  equal schema 1-3's in element tree, amount and user-slot flags, and labels. So `small-2025-w2-v1-0` binds
+  `jednostka_mala` and `jednostka_inna`, and there is no new body and no classification table. Against the 2018
+  v1-2 types, the trees are identical everywhere except micro `RZiS` (1-3 and wariant 2 drop `G`, as
+  `jednostka_mikro_v1_3` already has it). Labels narrow on the full body's six lines and the small body's
+  three (`RZiSKalk/A`, `RZiSKalk/B`, `RZiSPor/B/B_VI/B_VI_1`, mapped to `IS.CALC.A`, `IS.CALC.B` and
+  `IS.COMP.B.VIII`). These are exactly the codes `small-2025-v1-3`'s eight overrides cover. So every 2025
+  spec that binds a full or small body takes those eight overrides: micro 1-3 and wariant 2, small
+  wariant 2, and the twins `full-2025-v1-3-tys`, `full-2025-w2-v1-0-tys` and `small-2025-w2-v1-0-tys`. The
+  2018 specs take none.
 
 ## Why
 
@@ -148,8 +191,9 @@ introduction and notes, which stay micro.
 
 ### D. Thousands twins (decision 1)
 
-Six specs: `full-2018-v1-0-tys`, `full-2025-v1-3-tys`, `full-2025-w2-v1-0-tys`, `small-2018-v1-2-tys`,
-`micro-2018-v1-0-tys`, `micro-2018-v1-2-tys`. Each binds its form's złoty bodies, its alternatives included (a
+Seven specs: `full-2018-v1-0-tys`, `full-2025-v1-3-tys`, `full-2025-w2-v1-0-tys`, `small-2018-v1-2-tys`,
+`micro-2018-v1-0-tys`, `micro-2018-v1-2-tys`, and `small-2025-w2-v1-0-tys` (13846, which step A found in use).
+Each binds its form's złoty bodies, its alternatives included (a
 thousands envelope can carry another form's statements as well), at `unit: 1000`. Out of the catalogue
 accordingly.
 
@@ -213,8 +257,8 @@ files, the tolerance file); README's status line; the doc sweep. `make docs-chec
 
 ## Definition of done
 
-- [ ] The catalogue corrected; 13810 vendored and catalogued (A).
-- [ ] Small wariant 2, the micro alternatives and the six twins mapped (B–D).
+- [x] The catalogue corrected; 13810 (and 13846) vendored and catalogued (A).
+- [ ] Small wariant 2, the micro alternatives and the seven twins mapped (B–D).
 - [ ] Tolerances built, if decision 2 is accepted (E).
 - [ ] Of the 143 files, each `valid` or `warn`, or quarantined with a recorded reason outside this plan's gaps;
       the count of entities with no canonical facts recorded before and after.
