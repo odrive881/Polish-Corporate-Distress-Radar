@@ -67,6 +67,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │   ├── rdf_document_types.yaml    # observed RDF document types, A3 download scope
 │   │   ├── statement_introduction.yaml  # going-concern flags, employment, audit: where and how read (plan 0013)
 │   │   ├── structure_catalog.yaml     # versions recognised but not mapped yet
+│   │   ├── xsd_tolerances_v1.yaml     # XSD violations C1 tolerates outside what it reads (plan 0017 step E)
 │   │   └── structures/                # one file per XML structure version
 │   │       ├── bodies/                # statutory element paths shared by versions
 │   │       │   ├── jednostka_inna.yaml
@@ -263,6 +264,7 @@ src/distress_radar/
 │   ├── containers.py            # C1 — unwrap stored downloads (ZIP, signature envelopes)
 │   ├── version_detection.py     # C1
 │   ├── xsd_validation.py        # C1 — offline, against config/xsd/
+│   ├── xsd_tolerances.py        # C1 — which violations a file may carry and still parse
 │   ├── xsd_inventory.py         # statutory line items an XSD declares (coverage tests)
 │   ├── canonical_schema.py      # typed canonical chart, mirrors config/mappings/canonical_chart.yaml
 │   ├── legal_taxonomy.py        # typed config/statutory/procedure_taxonomy.yaml, dated lookups

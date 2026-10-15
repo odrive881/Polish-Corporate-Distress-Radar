@@ -98,3 +98,31 @@ test_text_quarantine_is_what_text_coverage_says_now:
       rows:
         - {stage: G1, entity_key: "0000000007:ref7", krs: "0000000007", document_ref: ref7, source_document_hash: h7, source_member: "zip:7.xml", reason_codes: [pdf_encrypted], known_from: 2024-06-30, first_detected_at: "2026-09-30 08:00:00+00"}
         - {stage: G2, entity_key: "0000000007:ref7:litigation", krs: "0000000007", document_ref: ref7, source_document_hash: h7, source_member: "zip:7.xml", reason_codes: [evidence_not_on_page], known_from: 2024-06-30, first_detected_at: "2026-09-30 08:00:00+00"}
+
+# A tolerated XSD violation (plan 0017 step E) is recorded at C1 but quarantines nothing.
+# T9 parsed on 2026-10-01 with one, and is refused at C2 in the run of 2026-10-15, which
+# recorded its `xsd_tolerated` row again at the same instant: one C2 row, the C2 reason only,
+# first detected at the C2 refusal. T10 parsed with one and is valid: absent.
+test_a_tolerated_xsd_violation_is_never_a_quarantine_reason:
+  model: quarantine.quarantine
+  inputs:
+    ext.financial_statements_canonical:
+      rows: []
+    ext.identity_check_results:
+      rows: []
+    staging.parsed_documents_current:
+      rows:
+        - {sha256: h9, source_member: "zip:9.xml", krs: "0000000009", document_ref: ref9, status: quarantined, known_from: 2025-06-30}
+        - {sha256: h10, source_member: "zip:10.xml", krs: "0000000010", document_ref: ref10, status: valid, known_from: 2025-06-30}
+    ext.text_coverage:
+      rows: []
+    ext.quarantine_events:
+      rows:
+        - {stage: C1, entity_key: "0000000009:ref9", reason_code: xsd_tolerated, source_document_hash: h9, created_at: "2026-10-01 08:00:00+00", krs: "0000000009", document_ref: ref9}
+        - {stage: C1, entity_key: "0000000009:ref9", reason_code: xsd_tolerated, source_document_hash: h9, created_at: "2026-10-15 08:00:00+00", krs: "0000000009", document_ref: ref9}
+        - {stage: C2, entity_key: "0000000009:ref9", reason_code: period_mismatch, source_document_hash: h9, created_at: "2026-10-15 08:00:00+00", krs: "0000000009", document_ref: ref9}
+        - {stage: C1, entity_key: "0000000010:ref10", reason_code: xsd_tolerated, source_document_hash: h10, created_at: "2026-10-15 08:00:00+00", krs: "0000000010", document_ref: ref10}
+  outputs:
+    query:
+      rows:
+        - {stage: C2, entity_key: "0000000009:ref9", krs: "0000000009", document_ref: ref9, source_document_hash: h9, source_member: "zip:9.xml", reason_codes: [period_mismatch], known_from: 2025-06-30, first_detected_at: "2026-10-15 08:00:00+00"}

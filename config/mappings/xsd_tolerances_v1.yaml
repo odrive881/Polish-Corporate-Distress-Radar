@@ -1,0 +1,85 @@
+# XSD violations C1 tolerates (plan 0017 step E, decision 2). Data, not code.
+#
+# A file whose every XSD violation matches an entry here parses. Its grade is
+# capped at `warn`, and one `xsd_tolerated` event in `quarantine_events` names
+# each violation it tolerated, so the file stays countable. A file with any
+# other violation is quarantined `xsd_invalid`, as before.
+#
+# An entry is element paths and error kinds, never a file or an entity:
+# - `paths`: local element names below the statement root, `/`-separated; a `*`
+#   matches within one name, never across a `/`.
+# - `errors`: kinds from `parsing/xsd_tolerances.py` (`ERROR_KINDS`), read from
+#   the validator's reason. Every (path, error) pair of an entry is tolerated.
+# - `structure_versions`: where the entry applies; omitted, every mapped version.
+#
+# Nothing C reads may be tolerated: the header, any statement a spec binds, or
+# an introduction item its generation reads. The loader refuses an entry whose
+# path lies inside, or contains, any of those for a version it applies to. A new
+# kind of defect is a new version of this file (the highest-numbered one is in
+# use), never a broader pattern.
+#
+# Every entry was found in list v1's statements (plan 0017 survey, 2026-10-14;
+# every violation of all 27 files read on 2026-10-15). They let 26 files of 11
+# entities parse. The micro balance sheet with non-decimal amounts (`Aktywa_C`)
+# is inside a statement and stays quarantined.
+version: xsd_tolerances_v1
+
+tolerances:
+  - id: placeholder_pkd
+    # The filer's software left an XML comment (`<!-- 1 -->`) in place of the PKD
+    # code: 18 files of 3 entities, full form, in złoty and in thousands.
+    paths:
+      - WprowadzenieDoSprawozdaniaFinansowego/P_1/P_1C/KodPKD
+    errors: [child_in_simple_content, not_in_enumeration]
+
+  - id: placeholder_user_item
+    # The same software's placeholder in the full introduction's optional user
+    # item P_8 (5 of those files). Before wariant 2, P_8 is that user item; in
+    # wariant 2 it is average employment, which is read, so the entry is limited
+    # to the earlier versions.
+    paths:
+      - WprowadzenieDoSprawozdaniaFinansowego/P_8/NazwaPozycji
+      - WprowadzenieDoSprawozdaniaFinansowego/P_8/Opis
+    errors: [child_in_simple_content, too_short]
+    structure_versions:
+      - full-2018-v1-0
+      - full-2018-v1-0-tys
+      - full-2018-v1-2
+      - full-2018-v1-2-tys
+      - full-2025-v1-3
+      - full-2025-v1-3-tys
+
+  - id: empty_address_field
+    # An empty street, house number or post office in the entity's address
+    # (2 files of 2 entities).
+    paths:
+      - WprowadzenieDoSprawozdaniaFinansowego*/P_1/P_1B/Adres/Ulica
+      - WprowadzenieDoSprawozdaniaFinansowego*/P_1/P_1B/Adres/NrDomu
+      - WprowadzenieDoSprawozdaniaFinansowego*/P_1/P_1B/Adres/Poczta
+    errors: [too_short]
+
+  - id: nip_pattern
+    # The introduction's NIP (P_1D) not ten digits (1 file). Identifiers come from
+    # the registry, never from the statement.
+    paths:
+      - WprowadzenieDoSprawozdaniaFinansowego*/P_1/P_1D
+    errors: [pattern_mismatch]
+
+  - id: income_tax_note
+    # The notes' income-tax reconciliation: a legal basis left incomplete or
+    # empty, or an amount that is not a decimal, in a filer's own line (2 files).
+    paths:
+      - DodatkoweInformacjeIObjasnieniaJedn*/InformacjaDodatkowaDotyczacaPodatkuDochodowego/P_ID_*/PozycjaUzytkownika/Kwoty/RB/PodstawaPrawna
+      - DodatkoweInformacjeIObjasnieniaJedn*/InformacjaDodatkowaDotyczacaPodatkuDochodowego/P_ID_*/PozycjaUzytkownika/Kwoty/RB/PodstawaPrawna/Art
+      - DodatkoweInformacjeIObjasnieniaJedn*/InformacjaDodatkowaDotyczacaPodatkuDochodowego/P_ID_*/PozycjaUzytkownika/Kwoty/RB/Kwota/KwotaA
+    errors: [content_incomplete, too_short, invalid_decimal]
+
+  - id: notes_attachment_list
+    # The list of attached notes incomplete, out of order, or with an empty
+    # description (3 files). `DodatkoweInformacjeIObjasnieniaJednstkaInna` is
+    # schema 1-0's own spelling. The text job reads the attachments themselves
+    # from every XML statement, whatever its parse status (plan 0013).
+    paths:
+      - DodatkoweInformacjeIObjasnieniaJedn*/DodatkoweInformacjeIObjasnienia
+      - DodatkoweInformacjeIObjasnieniaJedn*/DodatkoweInformacjeIObjasnienia/Opis
+    errors: [content_incomplete, unexpected_child, too_short]

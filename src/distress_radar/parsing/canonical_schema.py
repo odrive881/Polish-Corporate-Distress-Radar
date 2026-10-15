@@ -6,14 +6,18 @@
 - `config/mappings/structures/*.yaml`: one spec per structure version, binding
   a detected document version to a body.
 - `config/mappings/structure_catalog.yaml`: versions recognised but not mapped.
+- `config/mappings/xsd_tolerances_v<n>.yaml`: XSD violations C1 tolerates, the highest
+  version in use (plan 0017 step E).
 
-`load_mapping_config()` loads all four and checks the references between them,
+`load_mapping_config()` loads all five and checks the references between them,
 so a bad edit fails at load time rather than as missing facts.
 """
 
 from __future__ import annotations
 
 import hashlib
+import json
+import re
 from collections import Counter
 from datetime import date
 from pathlib import Path
@@ -264,6 +268,81 @@ class StructureCatalog(_Frozen):
     versions: tuple[CatalogEntry, ...]
 
 
+# --- XSD tolerances (plan 0017 step E) -------------------------------------------------------------
+
+# What an XSD violation is, read from the validator's reason (`parsing/xsd_tolerances.py`).
+XsdErrorKind = Literal[
+    "child_in_simple_content",
+    "not_in_enumeration",
+    "too_short",
+    "pattern_mismatch",
+    "content_incomplete",
+    "unexpected_child",
+    "invalid_decimal",
+]
+
+
+def path_segments(path: str) -> tuple[str, ...]:
+    """`a/b/c` -> ("a", "b", "c"); a tolerance path or a read path below the statement root."""
+    return tuple(part for part in path.strip("/").split("/") if part)
+
+
+def _segment_matches(pattern: str, name: str) -> bool:
+    # `*` matches within one element name; nothing else is special.
+    regex = "".join(".*" if ch == "*" else re.escape(ch) for ch in pattern)
+    return re.fullmatch(regex, name) is not None
+
+
+def overlaps(pattern: tuple[str, ...], path: tuple[str, ...]) -> bool:
+    """Whether a tolerance pattern can match `path`, an element inside it, or one containing it."""
+    return all(_segment_matches(p, n) for p, n in zip(pattern, path, strict=False))
+
+
+def matches(pattern: tuple[str, ...], path: tuple[str, ...]) -> bool:
+    return len(pattern) == len(path) and overlaps(pattern, path)
+
+
+class XsdTolerance(_Frozen):
+    id: str = Field(pattern=r"^[a-z0-9_]+$")
+    paths: tuple[str, ...] = Field(min_length=1)
+    errors: tuple[XsdErrorKind, ...] = Field(min_length=1)
+    structure_versions: tuple[str, ...] | None = None  # None: every mapped version
+
+    def applies_to(self, structure_version: str) -> bool:
+        return self.structure_versions is None or structure_version in self.structure_versions
+
+    @property
+    def patterns(self) -> tuple[tuple[str, ...], ...]:
+        return tuple(path_segments(p) for p in self.paths)
+
+
+class XsdTolerances(_Frozen):
+    version: str = Field(pattern=r"^xsd_tolerances_v\d+$")
+    tolerances: tuple[XsdTolerance, ...]
+
+    @model_validator(mode="after")
+    def _unique_ids(self) -> XsdTolerances:
+        ids = [t.id for t in self.tolerances]
+        if len(set(ids)) != len(ids):
+            raise ValueError(f"{self.version}: duplicate tolerance ids")
+        return self
+
+    def for_spec(self, structure_version: str) -> tuple[XsdTolerance, ...]:
+        return tuple(t for t in self.tolerances if t.applies_to(structure_version))
+
+
+def read_paths(spec: StructureSpec) -> tuple[tuple[str, ...], ...]:
+    """What C reads below a spec's statement root, outside the introduction: the header and
+    every statement element it binds. `xsd_tolerances.check_introduction` adds the items."""
+    names = {"Naglowek"}
+    names |= {
+        alt.xpath.rsplit("/", 1)[-1].split(":")[-1]
+        for name in spec.statements
+        for alt in spec.alternatives(name)
+    }
+    return tuple((n,) for n in sorted(names))
+
+
 # --- the bundle ------------------------------------------------------------------------------------
 
 
@@ -272,6 +351,7 @@ class MappingConfig(_Frozen):
     bodies: dict[str, StatementBody]
     specs: dict[str, StructureSpec]
     catalog: StructureCatalog
+    tolerances: XsdTolerances
     # structure_version -> SHA-256 over the files that shape its output
     spec_hashes: dict[str, str]
 
@@ -301,6 +381,19 @@ class MappingConfig(_Frozen):
         overlap = [e.key for e in self.catalog.versions if e.key in keys]
         if overlap:
             raise ValueError(f"catalog lists mapped versions: {overlap}")
+        for tol in self.tolerances.tolerances:
+            unknown_versions = set(tol.structure_versions or ()) - set(self.specs)
+            if unknown_versions:
+                raise ValueError(f"tolerance {tol.id}: unknown versions {sorted(unknown_versions)}")
+        for spec in self.specs.values():
+            for tol in self.tolerances.for_spec(spec.structure_version):
+                for pattern in tol.patterns:
+                    for read in read_paths(spec):
+                        if overlaps(pattern, read):
+                            raise ValueError(
+                                f"tolerance {tol.id}: {'/'.join(pattern)} reaches "
+                                f"{'/'.join(read)}, which {spec.structure_version} reads"
+                            )
         return self
 
     def spec_for(self, key: tuple[str, str, str, str]) -> StructureSpec | None:
@@ -317,8 +410,21 @@ def _yaml(path: Path) -> object:
     return yaml.safe_load(path.read_text(encoding="utf-8"))
 
 
+def _tolerances_path(mappings: Path) -> Path:
+    """The highest-numbered `xsd_tolerances_v<n>.yaml`: earlier versions stay as the record."""
+    found = {
+        int(m.group(1)): p
+        for p in mappings.glob("xsd_tolerances_v*.yaml")
+        if (m := re.fullmatch(r"xsd_tolerances_v(\d+)\.yaml", p.name))
+    }
+    if not found:
+        raise ValueError(f"{mappings}: no xsd_tolerances_v<n>.yaml")
+    return found[max(found)]
+
+
 def load_mapping_config(config_dir: Path = CONFIG_DIR) -> MappingConfig:
     mappings = config_dir / "mappings"
+    tolerances = XsdTolerances.model_validate(_yaml(_tolerances_path(mappings)))
     chart_path = mappings / "canonical_chart.yaml"
     chart = CanonicalChart.model_validate(_yaml(chart_path))
     body_paths = {p.stem: p for p in sorted((mappings / "structures" / "bodies").glob("*.yaml"))}
@@ -341,8 +447,20 @@ def load_mapping_config(config_dir: Path = CONFIG_DIR) -> MappingConfig:
         used = [body_paths[b] for b in sorted(spec.bodies_used) if b in body_paths]
         for part in (path, *used, chart_path):
             digest.update(part.read_bytes())
+        # The tolerances that apply to this version decide which of its files parse at all,
+        # so a change to one is a change to how they are mapped (plan 0017 step E).
+        applicable = [
+            t.model_dump(mode="json") for t in tolerances.for_spec(spec.structure_version)
+        ]
+        if applicable:
+            digest.update(json.dumps([tolerances.version, applicable], sort_keys=True).encode())
         hashes[spec.structure_version] = digest.hexdigest()
     catalog = StructureCatalog.model_validate(_yaml(mappings / "structure_catalog.yaml"))
     return MappingConfig(
-        chart=chart, bodies=bodies, specs=specs, catalog=catalog, spec_hashes=hashes
+        chart=chart,
+        bodies=bodies,
+        specs=specs,
+        catalog=catalog,
+        tolerances=tolerances,
+        spec_hashes=hashes,
     )
