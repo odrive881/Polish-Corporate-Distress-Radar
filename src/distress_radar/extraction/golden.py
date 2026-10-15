@@ -65,12 +65,14 @@ OPINION_VALUES = SIGNAL_VALUES["opinion_type"]
 # What a labeller may mask by hand: the masker's kinds, and three it does not find, which an
 # auditor's report prints beside a name it does find (2026-10-15): a key auditor's or an audit
 # firm's register number (a sole practitioner's identifies a person, and the firm number is never
-# stored either way), a sole practitioner's address, and a filer's file name (ADR 0009, second
-# addendum). Hand-masking only: the masker and `MASKING_VERSION` are unchanged.
+# stored either way), and a natural-person firm's NIP or REGON; a sole practitioner's address; the
+# bank account in such a firm's letterhead; and a filer's file name (ADR 0009, second addendum).
+# Hand-masking only: the masker and `MASKING_VERSION` are unchanged.
 HAND_TOKENS = {
     **masking.TOKENS,
     "register_number": "[nr]",
     "address": "[adres]",
+    "bank_account": "[rachunek]",
     "file_name": "[plik]",
 }
 _TOKEN = re.compile("|".join(re.escape(t) for t in HAND_TOKENS.values()))

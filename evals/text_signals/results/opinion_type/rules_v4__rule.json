@@ -1,5 +1,8 @@
 {
- "accepted": null,
+ "accepted": {
+  "by": "owner",
+  "on": "2026-10-15"
+ },
  "examples": [
   {
    "discard_reason": null,
@@ -1494,12 +1497,219 @@
    "response_key": null,
    "selected": true,
    "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "bb4f59cdf1706196",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": "Naszym zdaniem, za wyjątkiem możliwych skutków spraw opisanych w sekcji Podstawa opinii\nz zastrzeżeniem, załączone roczne sprawozdanie finansowe",
+   "outcome": "present",
+   "page_id": "bd4f24f7a74a477d",
+   "response_key": null,
+   "selected": true,
+   "value": "qualified"
+  },
+  {
+   "discard_reason": null,
+   "evidence": "Naszym zdaniem załączone roczne sprawozdanie finansowe",
+   "outcome": "present",
+   "page_id": "be0dc70f7c5bd1ae",
+   "response_key": null,
+   "selected": true,
+   "value": "unqualified"
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "bee42ace80fb9f4f",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "c5e4cb00f22cc9ec",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "c959c78ee7dbb1ad",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "c9a03d9da2eb5b2f",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "c9a7b1d60b010268",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "cc2d4df74df7c1a9",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "d5d13c39582e9500",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "d6f8bc3d45ac66c0",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "d8cfb2cfc2f28656",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "d9b40b0208c73224",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "e6060205a632b69b",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": "Naszym zdaniem, załączone sprawozdanie finansowe",
+   "outcome": "present",
+   "page_id": "e73681cc4de37bea",
+   "response_key": null,
+   "selected": true,
+   "value": "unqualified"
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "e75cb75c23d7cfdd",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "ec74d3b71c5bdbe2",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "ed899f8d679b87b8",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": "Naszym zdaniem, załączone sprawozdanie finansowe",
+   "outcome": "present",
+   "page_id": "edebe12855f7b9d8",
+   "response_key": null,
+   "selected": true,
+   "value": "unqualified"
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "ef56455bfb1cec02",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "eff427ec8d83faf6",
+   "response_key": null,
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": "Naszym zdaniem, załączone sprawozdanie finansowe",
+   "outcome": "present",
+   "page_id": "f344fb210ca571d1",
+   "response_key": null,
+   "selected": true,
+   "value": "unqualified"
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "fc8e4e8afa63f3bc",
+   "response_key": null,
+   "selected": true,
+   "value": null
   }
  ],
  "extractor_version": "extractor_v6",
  "hashes": {
-  "golden": "c733827241bdc1f210a604342b54817e6d40a3476e71024f3ff25af82edf25f4",
-  "pages": "d66c2c31dbfd900cf768272df47a6e9c6c8a9934d7c6f980a035584ab46d1388",
+  "golden": "b140500f80ff98adcc51c2314041d5f002053b3be2ec85f5c4b6ac960df868c4",
+  "pages": "6bb4d4ce1f3197b87d9b34bbc9c69fc87ad20b48bcc7d564fec14dfe426b29cb",
   "prefilter": "5c34e01d2f3d157d46c505c7f823dfb433aff38d639682a3607e92fa3cdbd537",
   "rules": "87507302a492bbc503d471315200e7b6e2e36c2c0358848888103fbec563d148"
  },
@@ -1514,23 +1724,23 @@
    "fp": 0,
    "precision": 1.0,
    "recall": 1.0,
-   "tn": 151,
-   "tp": 15
+   "tn": 169,
+   "tp": 20
   },
-  "evidence_overlaps": 14,
+  "evidence_overlaps": 17,
   "extractor": {
    "f1": 1.0,
    "fn": 0,
    "fp": 0,
    "precision": 1.0,
    "recall": 1.0,
-   "tn": 49,
-   "tp": 15
+   "tn": 65,
+   "tp": 20
   },
-  "pages": 166,
-  "positives": 15,
+  "pages": 189,
+  "positives": 20,
   "prefilter_missed_in_rejected_sample": 0,
-  "prefilter_selected_positives": 15
+  "prefilter_selected_positives": 20
  },
  "signal_type": "opinion_type"
 }
