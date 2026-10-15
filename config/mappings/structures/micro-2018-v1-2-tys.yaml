@@ -1,0 +1,52 @@
+# The thousands-of-złoty twin of `micro-2018-v1-2` (plan 0017 step D, decision 1): the same
+# bodies and alternatives, at unit 1000. The envelope differs only in its root,
+# namespace, header type and the statements' `…WTys` types, whose element trees
+# equal the złoty ones (plan 0017 steps A3 and D). micro-2018-v1-2's notes follow.
+#
+# Micro form (UoR Annex 4, JednostkaMikro), schema 1-2. Plan 0005 step D.
+#
+# A micro envelope may carry the small or the full form's balance sheet and
+# income statement instead of the micro ones, chosen per statement, as its XSD
+# allows (trap (a), plan 0017 finding 1): the micro body first, then the small
+# and the full body, each in this version's own `…Struktury` namespace. The
+# filing stays `micro`; the body read is in each fact's `source_element_path`.
+structure_version: micro-2018-v1-2-tys
+form: micro
+body: jednostka_mikro_v1_2
+detect:
+  root_namespace: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaMikroWTysiacach"
+  root_name: JednostkaMikroWTys
+  kod_systemowy: "SFJMIT (1)"
+  wersja_schemy: "1-2"
+xsd: "https://www.gov.pl/documents/2034621/2182793/JednostkaMikroWTysiacach(1)_v1-2.xsd"
+effective_from: null
+effective_to: null
+namespaces:
+  tns: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaMikroWTysiacach"
+  jmi: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaMikroStruktury"
+  jma: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaMalaStruktury"
+  jin: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaInnaStruktury"
+  dtsf: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/DefinicjeTypySprawozdaniaFinansowe/"
+statement_root: "/tns:JednostkaMikroWTys"
+header:
+  kod_sprawozdania: "tns:Naglowek/jmi:KodSprawozdania"
+  period_start: "tns:Naglowek/dtsf:OkresOd"
+  period_end: "tns:Naglowek/dtsf:OkresDo"
+unit:
+  SprFinJednostkaMikroWTysiacach: 1000
+statements:
+  Bilans:
+    - {xpath: "tns:BilansJednostkaMikro", body: jednostka_mikro_v1_2, item_namespace: jmi}
+    - {xpath: "tns:BilansJednostkaMala", body: jednostka_mala, item_namespace: jma}
+    - {xpath: "tns:BilansJednostkaInna", body: jednostka_inna, item_namespace: jin}
+  RZiS:
+    - {xpath: "tns:RZiSJednostkaMikro", body: jednostka_mikro_v1_2, item_namespace: jmi}
+    - {xpath: "tns:RZiSJednostkaMala", body: jednostka_mala, item_namespace: jma}
+    - {xpath: "tns:RZiSJednostkaInna", body: jednostka_inna, item_namespace: jin}
+item_namespace: jmi
+amount_namespace: dtsf
+columns:
+  KwotaA: current_year
+  KwotaB: prior_year
+  KwotaB1: prior_year_restated
+code_overrides: {}

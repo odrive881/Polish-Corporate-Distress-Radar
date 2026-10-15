@@ -38,19 +38,25 @@ generations:
     encoding: xsd_boolean
     structure_versions:
       - full-2018-v1-0
+      - full-2018-v1-0-tys
       - full-2018-v1-2
       - full-2018-v1-2-tys
       - full-2025-v1-3
+      - full-2025-v1-3-tys
       - micro-2018-v1-0
+      - micro-2018-v1-0-tys
       - micro-2018-v1-2
+      - micro-2018-v1-2-tys
       - micro-2025-v1-3
       - small-2018-v1-0
       - small-2018-v1-2
+      - small-2018-v1-2-tys
       - small-2025-v1-3
   wariant_2:
     encoding: choice_1_2
     structure_versions:
       - full-2025-w2-v1-0
+      - full-2025-w2-v1-0-tys
       - micro-2025-w2-v1-0
       - small-2025-w2-v1-0
 
