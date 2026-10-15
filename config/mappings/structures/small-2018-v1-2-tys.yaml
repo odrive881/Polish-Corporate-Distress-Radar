@@ -1,0 +1,43 @@
+# The thousands-of-złoty twin of `small-2018-v1-2` (plan 0017 step D, decision 1): the same
+# bodies and alternatives, at unit 1000. The envelope differs only in its root,
+# namespace, header type and the statements' `…WTys` types, whose element trees
+# equal the złoty ones (plan 0017 steps A3 and D). small-2018-v1-2's notes follow.
+#
+# Small form (UoR Annex 5, JednostkaMala), schema 1-2. Plan 0005 step D.
+structure_version: small-2018-v1-2-tys
+form: small
+body: jednostka_mala
+detect:
+  root_namespace: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaMalaWTysiacach"
+  root_name: JednostkaMalaWTys
+  kod_systemowy: "SFJMAT (1)"
+  wersja_schemy: "1-2"
+xsd: "https://www.gov.pl/documents/2034621/2182793/JednostkaMalaWTysiacach(1)_v1-2.xsd"
+effective_from: null
+effective_to: null
+namespaces:
+  tns: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaMalaWTysiacach"
+  jma: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaMalaStruktury"
+  dtsf: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/DefinicjeTypySprawozdaniaFinansowe/"
+  jin: "http://www.mf.gov.pl/schematy/SF/DefinicjeTypySprawozdaniaFinansowe/2018/07/09/JednostkaInnaStruktury"
+statement_root: "/tns:JednostkaMalaWTys"
+header:
+  kod_sprawozdania: "tns:Naglowek/jma:KodSprawozdania"
+  period_start: "tns:Naglowek/dtsf:OkresOd"
+  period_end: "tns:Naglowek/dtsf:OkresDo"
+unit:
+  SprFinJednostkaMalaWTysiacach: 1000
+statements:
+  Bilans:
+    - {xpath: "tns:BilansJednostkaMala", body: jednostka_mala, item_namespace: jma}
+    - {xpath: "tns:BilansJednostkaInna", body: jednostka_inna, item_namespace: jin}
+  RZiS:
+    - {xpath: "tns:RZiSJednostkaMala", body: jednostka_mala, item_namespace: jma}
+    - {xpath: "tns:RZiSJednostkaInna", body: jednostka_inna, item_namespace: jin}
+item_namespace: jma
+amount_namespace: dtsf
+columns:
+  KwotaA: current_year
+  KwotaB: prior_year
+  KwotaB1: prior_year_restated
+code_overrides: {}

@@ -15,9 +15,27 @@ rows (Progress, 2026-10-14) found these gaps. They lose data for every model and
 remaining work is presentation and loses nothing by waiting. This plan does not wait for list v2. Each new
 delivery brings more files of the same kinds, and this plan makes them parse.
 
-## Status: active (2026-10-15): owner decisions 1–4 accepted as recommended (2026-10-14); steps A–C built (Progress), step D next
+## Status: active (2026-10-15): owner decisions 1–4 accepted as recommended (2026-10-14); steps A–D built (Progress), step E next
 
 ### Progress
+
+**Step D (2026-10-15): the six thousands twins mapped** (decision 1): `full-2018-v1-0-tys`, `full-2025-v1-3-tys`,
+`full-2025-w2-v1-0-tys` (13810), `small-2018-v1-2-tys`, `micro-2018-v1-0-tys`, `micro-2018-v1-2-tys`. Each is its
+złoty sibling with only the envelope changed. The XSDs show each pair differs in the root element, the
+target namespace, the header type and the statements' `…WTys` types, and nothing else: the same element names
+and the same imports, so the same item namespaces and alternatives. Unit `…WTysiacach: 1000`. The 2025 twins
+keep their siblings' `.R2025` overrides. Out of the catalogue, which keeps the five twins no in-scope filer
+uses; into the introduction's generations. `test_catalogued_but_unmapped_version` now takes `SFJMAT (1)` 1-0E
+as its example, since 1-2 is mapped. Read-only dry run over the store's 23 thousands files:
+
+- **9 files of 6 entities map:** `full-2025-w2-v1-0-tys` 2, `small-2018-v1-2-tys` 5, the micro twins 1 each.
+  Every value is a multiple of 1000 (1,195 facts). Graded 5 `pass`, 2 `warn`, 2 `quarantined` (subtotals,
+  one file each of 0000481314 and 0000602022). No body fallback.
+- **The other 14 (3 entities) fail only the XSD on the placeholder `KodPKD`:** the 2 `full-2018-v1-0-tys` and 2
+  `full-2025-v1-3-tys` files, `not_yet_mapped` until now, and the 10 `full-2018-v1-2-tys`. These are all 14 of
+  the survey's "Empty `KodPKD`" files, all in thousands. Step E's tolerances are what remains for them. The
+  validator reports the comment inside `KodPKD` as "a simple content element can't have child elements",
+  and the tolerance entry has to name that error kind.
 
 **Step C (2026-10-15): micro envelopes carrying the small or full statements.** The four micro specs
 (`micro-2018-v1-0`, `-v1-2`, `micro-2025-v1-3`, `micro-2025-w2-v1-0`) bind, per statement, the micro body first,
