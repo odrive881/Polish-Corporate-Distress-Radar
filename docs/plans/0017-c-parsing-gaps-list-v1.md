@@ -15,7 +15,7 @@ rows (Progress, 2026-10-14) found these gaps. They lose data for every model and
 remaining work is presentation and loses nothing by waiting. This plan does not wait for list v2. Each new
 delivery brings more files of the same kinds, and this plan makes them parse.
 
-## Status: active (2026-10-15): owner decisions 1–4 accepted as recommended (2026-10-14); steps A–H built and run (Progress), step I next
+## Status: active (2026-10-15): owner decisions 1–4 accepted as recommended (2026-10-14); steps A–H built and run (Progress), step J's docs written ahead of step I (2026-10-15); step I next
 
 ### Progress
 
