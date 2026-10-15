@@ -1,0 +1,69 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<ns0:Dokument xmlns:ns1="http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2025/07/31/eD/StrukturyDanychSprFin/" xmlns:p4="http://www.w3.org/2001/XMLSchema-instance" xmlns:ns0="http://crd.gov.pl/wzor/2025/08/07/13818/" p4:schemaLocation="http://crd.gov.pl/wzor/2025/08/07/13818/ http://crd.gov.pl/wzor/2025/08/07/13818/schemat.xsd">
+  <ns0:OpisDokumentu/>
+  <ns0:DaneDokumentu/>
+  <ns0:TrescDokumentu format="text/xml" kodowanie="XML">
+    <ns0:JednostkaMala>
+      <ns0:Naglowek>
+        <ns1:OkresOd>2025-01-01</ns1:OkresOd>
+        <ns1:OkresDo>2025-12-31</ns1:OkresDo>
+        <ns1:DataSporzadzenia>2026-03-31</ns1:DataSporzadzenia>
+        <ns3:KodSprawozdania xmlns:ns3="http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2025/07/31/eD/JednostkaMalaStruktury/" kodSystemowy="SFJMAZ (2)" wersjaSchemy="1-0E">SprFinJednostkaMalaWZlotych</ns3:KodSprawozdania>
+        <ns4:WariantSprawozdania xmlns:ns4="http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2025/07/31/eD/JednostkaMalaStruktury/">2</ns4:WariantSprawozdania>
+      </ns0:Naglowek>
+      <ns0:WprowadzenieDoSprawozdaniaFinansowegoJednostkaInna>
+        <ns0:P_1>
+          <ns0:P_1A>
+            <ns1:NazwaFirmy>PRZYKŁADOWA SPÓŁKA BUDOWLANA SP. Z O.O.</ns1:NazwaFirmy>
+            <ns1:Siedziba>
+              <ns1:AdresPol>
+                <ns1:KodKraju>PL</ns1:KodKraju>
+                <ns1:Wojewodztwo>mazowieckie</ns1:Wojewodztwo>
+                <ns1:Powiat>Warszawa</ns1:Powiat>
+                <ns1:Gmina>Warszawa</ns1:Gmina>
+                <ns1:Ulica>PRZYKŁADOWA</ns1:Ulica>
+                <ns1:NrDomu>1</ns1:NrDomu>
+                <ns1:Miejscowosc>WARSZAWA</ns1:Miejscowosc>
+                <ns1:KodPocztowy>00-001</ns1:KodPocztowy>
+              </ns1:AdresPol>
+            </ns1:Siedziba>
+          </ns0:P_1A>
+          <ns0:P_1B>
+            <ns0:FormaPrawna>17</ns0:FormaPrawna>
+          </ns0:P_1B>
+          <ns0:P_1C>
+            <ns1:KodPKD2007>4120Z</ns1:KodPKD2007>
+          </ns0:P_1C>
+          <ns0:P_1D>1234567890</ns0:P_1D>
+          <ns0:P_1E>0000000000</ns0:P_1E>
+        </ns0:P_1>
+        <ns0:P_3>
+          <ns1:DataOd>2025-01-01</ns1:DataOd>
+          <ns1:DataDo>2025-12-31</ns1:DataDo>
+        </ns0:P_3>
+        <ns0:P_4>2</ns0:P_4>
+        <ns0:P_5>
+          <ns0:P_5A>2</ns0:P_5A>
+          <ns0:P_5B>2</ns0:P_5B>
+          <ns0:P_5C>Tekst przykładowy.</ns0:P_5C>
+        </ns0:P_5>
+        <ns0:P_7>
+          <ns0:P_7A>Tekst przykładowy.</ns0:P_7A>
+          <ns0:P_7B>Tekst przykładowy.</ns0:P_7B>
+          <ns0:P_7C>Tekst przykładowy.</ns0:P_7C>
+        </ns0:P_7>
+        <ns0:P_8>0</ns0:P_8>
+        <ns0:P_9>2</ns0:P_9>
+      <ns0:P_11>Tekst przykładowy.</ns0:P_11></ns0:WprowadzenieDoSprawozdaniaFinansowegoJednostkaInna>
+      <ns0:BilansJednostkaMala><ns0:Aktywa xmlns:ns0="http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2025/07/31/eD/JednostkaMalaStruktury/"><ns1:KwotaA>212500.00</ns1:KwotaA><ns1:KwotaB>170000.00</ns1:KwotaB><ns0:Aktywa_A><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB><ns0:Aktywa_A_I><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB></ns0:Aktywa_A_I><ns0:Aktywa_A_II><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB><ns0:Aktywa_A_II_1><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB></ns0:Aktywa_A_II_1><ns0:Aktywa_A_II_2><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB></ns0:Aktywa_A_II_2></ns0:Aktywa_A_II><ns0:Aktywa_A_III><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB></ns0:Aktywa_A_III><ns0:Aktywa_A_IV><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB><ns0:Aktywa_A_IV_1><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB></ns0:Aktywa_A_IV_1><ns0:Aktywa_A_IV_2><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB></ns0:Aktywa_A_IV_2></ns0:Aktywa_A_IV><ns0:Aktywa_A_V><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB></ns0:Aktywa_A_V></ns0:Aktywa_A><ns0:Aktywa_B><ns1:KwotaA>212500.00</ns1:KwotaA><ns1:KwotaB>170000.00</ns1:KwotaB><ns0:Aktywa_B_I><ns1:KwotaA>212500.00</ns1:KwotaA><ns1:KwotaB>170000.00</ns1:KwotaB></ns0:Aktywa_B_I><ns0:Aktywa_B_II><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB><ns0:Aktywa_B_II_A><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB><ns0:Aktywa_B_II_A_1><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB></ns0:Aktywa_B_II_A_1><ns0:Aktywa_B_II_A_2><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB></ns0:Aktywa_B_II_A_2></ns0:Aktywa_B_II_A></ns0:Aktywa_B_II><ns0:Aktywa_B_III><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB><ns0:Aktywa_B_III_A><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB><ns0:Aktywa_B_III_A_1><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB></ns0:Aktywa_B_III_A_1></ns0:Aktywa_B_III_A></ns0:Aktywa_B_III><ns0:Aktywa_B_IV><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB></ns0:Aktywa_B_IV></ns0:Aktywa_B><ns0:Aktywa_C><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB></ns0:Aktywa_C><ns0:Aktywa_D><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB></ns0:Aktywa_D></ns0:Aktywa><ns50:Pasywa xmlns:ns50="http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2025/07/31/eD/JednostkaMalaStruktury/"><ns1:KwotaA>212500.00</ns1:KwotaA><ns1:KwotaB>170000.00</ns1:KwotaB><ns50:Pasywa_A><ns1:KwotaA>84500.00</ns1:KwotaA><ns1:KwotaB>67600.00</ns1:KwotaB><ns50:Pasywa_A_I><ns1:KwotaA>50000.00</ns1:KwotaA><ns1:KwotaB>40000.00</ns1:KwotaB></ns50:Pasywa_A_I><ns50:Pasywa_A_II><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB><ns50:Pasywa_A_II_1><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB></ns50:Pasywa_A_II_1></ns50:Pasywa_A_II><ns50:Pasywa_A_III><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB><ns50:Pasywa_A_III_1><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB></ns50:Pasywa_A_III_1></ns50:Pasywa_A_III><ns50:Pasywa_A_IV><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB></ns50:Pasywa_A_IV><ns50:Pasywa_A_V><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB></ns50:Pasywa_A_V><ns50:Pasywa_A_VI><ns1:KwotaA>34500.00</ns1:KwotaA><ns1:KwotaB>27600.00</ns1:KwotaB></ns50:Pasywa_A_VI><ns50:Pasywa_A_VII><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB></ns50:Pasywa_A_VII></ns50:Pasywa_A><ns50:Pasywa_B><ns1:KwotaA>128000.00</ns1:KwotaA><ns1:KwotaB>102400.00</ns1:KwotaB><ns50:Pasywa_B_I><ns1:KwotaA>128000.00</ns1:KwotaA><ns1:KwotaB>102400.00</ns1:KwotaB><ns50:Pasywa_B_I_1><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB></ns50:Pasywa_B_I_1></ns50:Pasywa_B_I><ns50:Pasywa_B_II><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB><ns50:Pasywa_B_II_1><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB></ns50:Pasywa_B_II_1></ns50:Pasywa_B_II><ns50:Pasywa_B_III><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB><ns50:Pasywa_B_III_A><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB></ns50:Pasywa_B_III_A><ns50:Pasywa_B_III_B><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB><ns50:Pasywa_B_III_B_1><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB></ns50:Pasywa_B_III_B_1><ns50:Pasywa_B_III_B_2><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB></ns50:Pasywa_B_III_B_2></ns50:Pasywa_B_III_B><ns50:Pasywa_B_III_C><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB></ns50:Pasywa_B_III_C></ns50:Pasywa_B_III><ns50:Pasywa_B_IV><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB></ns50:Pasywa_B_IV></ns50:Pasywa_B></ns50:Pasywa></ns0:BilansJednostkaMala><ns0:RZiSJednostkaMala><ns0:RZiSKalk xmlns:ns0="http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2025/07/31/eD/JednostkaMalaStruktury/"><ns0:A><ns1:KwotaA>412000.00</ns1:KwotaA><ns1:KwotaB>329600.00</ns1:KwotaB></ns0:A><ns0:B><ns1:KwotaA>377500.00</ns1:KwotaA><ns1:KwotaB>302000.00</ns1:KwotaB></ns0:B><ns0:C><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB></ns0:C><ns0:D><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB></ns0:D><ns0:E><ns1:KwotaA>34500.00</ns1:KwotaA><ns1:KwotaB>27600.00</ns1:KwotaB></ns0:E><ns0:F><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB><ns0:F_1><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB></ns0:F_1></ns0:F><ns0:G><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB><ns0:G_1><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB></ns0:G_1></ns0:G><ns0:H><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB><ns0:H_I><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB><ns0:H_I_1><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB></ns0:H_I_1></ns0:H_I><ns0:H_II><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB><ns0:H_II_1><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB></ns0:H_II_1></ns0:H_II><ns0:H_III><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB><ns0:H_III_1><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB></ns0:H_III_1></ns0:H_III><ns0:H_IV><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB></ns0:H_IV></ns0:H><ns0:I><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB><ns0:I_I><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB><ns0:I_I_1><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB></ns0:I_I_1></ns0:I_I><ns0:I_II><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB><ns0:I_II_1><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB></ns0:I_II_1></ns0:I_II><ns0:I_III><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB></ns0:I_III></ns0:I><ns0:J><ns1:KwotaA>34500.00</ns1:KwotaA><ns1:KwotaB>27600.00</ns1:KwotaB></ns0:J><ns0:K><ns1:KwotaA>0.00</ns1:KwotaA><ns1:KwotaB>0.00</ns1:KwotaB></ns0:K><ns0:L><ns1:KwotaA>34500.00</ns1:KwotaA><ns1:KwotaB>27600.00</ns1:KwotaB></ns0:L></ns0:RZiSKalk></ns0:RZiSJednostkaMala><ns0:DodatkoweInformacjeIObjasnieniaJednostkaMala>
+        <ns0:DodatkoweInformacjeIObjasnienia>
+          <ns1:Opis>Tekst przykładowy.</ns1:Opis>
+          <ns1:Plik>
+            <ns1:Nazwa>plik-1.pdf</ns1:Nazwa>
+            <ns1:Zawartosc>bm90ZXMgcmVtb3ZlZCBmcm9tIGZpeHR1cmU=</ns1:Zawartosc>
+          </ns1:Plik>
+        </ns0:DodatkoweInformacjeIObjasnienia>
+      </ns0:DodatkoweInformacjeIObjasnieniaJednostkaMala>
+    </ns0:JednostkaMala>
+  </ns0:TrescDokumentu>
+</ns0:Dokument>

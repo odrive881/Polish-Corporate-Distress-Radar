@@ -22,6 +22,12 @@ Trimmed copies of real annual financial statements from the Phase 1 seed, used b
 | `micro_2025_v1_3_2024.xml` | 0000041651 | 2024 | `micro-2025-v1-3` | micro without the `G` block (`jednostka_mikro_v1_3`) |
 | `micro_2025_w2_2025.xml` | 0000277937 | 2025 | `micro-2025-w2-v1-0` | the seed's only CRWDE micro filing |
 | `../neobis_001.xml` | (not in seed) | 2025 | `full-2025-w2-v1-0` | comparative (the original Phase 0 fixture, unsigned and unchanged since `a699750`) |
+| `micro_2018_v1_2_inna_synthetic.xml` | synthetic | 2019 | `micro-2018-v1-2` | **full balance sheet and income statement inside a micro envelope** (plan 0017 step C) |
+| `micro_2018_v1_2_mikro_bs_inna_is_synthetic.xml` | synthetic | 2019 | `micro-2018-v1-2` | **mixed**: micro balance sheet, full income statement (no `profit_ties`: the micro balance sheet has no net-result line) |
+| `micro_2025_w2_inna_synthetic.xml` | synthetic | 2025 | `micro-2025-w2-v1-0` | full statements inside the CRWDE micro envelope, calculation variant: `.R2025` codes on the full body |
+| `small_2025_w2_mala_synthetic.xml` | synthetic | 2025 | `small-2025-w2-v1-0` | the CRWDE small envelope (13818), small body: `.R2025` codes on the small body (plan 0017 step B) |
+| `small_2025_w2_inna_synthetic.xml` | synthetic | 2025 | `small-2025-w2-v1-0` | the same envelope with the full statements |
+| `small_2018_v1_2_tys_synthetic.xml` | synthetic | 2021 | `small-2018-v1-2-tys` | a thousands twin (plan 0017 step D): integer amounts, multiplied by 1000 |
 
 ## What was trimmed
 
@@ -39,4 +45,33 @@ signature, and their attached files were replaced with a placeholder. Every fixt
 `../neobis_001.xml` predates all of this and went through none of it: it is the unsigned Phase 0
 fixture, unchanged since `a699750`. Nothing else was changed. The statement data, the header and the free-text accounting-policy fields are as filed. Every file still validates against its official XSD (`test_mapping_coverage.py`). The free-text fields were read through to confirm that no person is named in them.
 
-Synthetic variants (thousands of złoty, a direct-method cash flow, signature wrappers, a known-bad total) are built from these files inside the tests, not committed.
+Synthetic variants (thousands of złoty, a direct-method cash flow, signature wrappers, a known-bad total, a
+placeholder `KodPKD` for the XSD tolerances) are built from these files inside the tests, not committed.
+
+## The synthetic fixtures (plan 0017 step F, 2026-10-15)
+
+The six `*_synthetic.xml` files cover structure versions and statement combinations no seed filing uses.
+A one-off script built each one from a committed fixture's envelope (and, for a full or small statement, the
+element tree of a fixture that has one). The script:
+
+- zeroed every amount, removed user-defined lines and restated columns, and wrote a small synthetic set:
+  revenue 412,000 and costs 377,500 at the first leaf of `A` and `B`, capital 50,000 and a liability
+  128,000, and a current asset that balances them, with the prior year at 0.8 times each. Every subtotal
+  and formula is computed from the body's own rules, and a full or small balance sheet's net result is
+  the income statement's, so every identity check passes by construction. A thousands file rounds each
+  line to whole thousands before summing;
+- set the identity fields to invented values: name `PRZYKŁADOWA SPÓŁKA BUDOWLANA SP. Z O.O.`, an address in
+  Warszawa, KRS `0000000000`, and NIP `1234567890`, which matches every schema's NIP pattern and fails the
+  NIP checksum, so it can be no company's;
+- replaced every free-text field outside the header and the statements (accounting policies, going-concern
+  descriptions, notes) with `Tekst przykładowy.` and zeroed the notes' decimal amounts. The source files'
+  free text names the source companies and their proceedings, and in one case a person (below);
+- for the small wariant 2 envelope, which no fixture has, started from the full wariant 2 envelope (13817):
+  renamed to 13818's elements, with its required `P_11` added.
+
+So no figure, name or text of a real filing is in them. Each validates against its XSD.
+
+**Correction, 2026-10-15:** `micro_2025_w2_2025.xml` carried, in a note of its notes block, the name of the
+company's management board president. That was missed in plan 0005 step E. It is replaced by `[osoba]`; the
+notes are not mapped, so its golden output is unchanged. `test_no_fixture_contains_personal_data` now also
+refuses a name followed by a dash and a board or officer role.

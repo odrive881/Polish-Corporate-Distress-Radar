@@ -15,9 +15,35 @@ rows (Progress, 2026-10-14) found these gaps. They lose data for every model and
 remaining work is presentation and loses nothing by waiting. This plan does not wait for list v2. Each new
 delivery brings more files of the same kinds, and this plan makes them parse.
 
-## Status: active (2026-10-15): owner decisions 1–4 accepted as recommended (2026-10-14); steps A–E built (Progress), step F next
+## Status: active (2026-10-15): owner decisions 1–4 accepted as recommended (2026-10-14); steps A–F built (Progress), step G next
 
 ### Progress
+
+**Step F (2026-10-15): fixtures and the one grading check.**
+
+- **Six synthetic golden statements**, each with its golden JSON (`tests/fixtures/statements/README.md` says
+  how they were built): a micro envelope with the full statements, a micro balance sheet with a full income
+  statement, the CRWDE micro envelope with the full statements, the small wariant 2 with each alternative
+  (two files), and the thousands twin `small-2018-v1-2-tys`. Amounts are synthetic and consistent by
+  construction, the identity is invented, and every free-text field is replaced. Every golden test covers
+  them: schema-valid, every identity check passes, no fallback body, one income-statement layout, `.R2025`
+  codes where the version narrows. `small-2025-w2-v1-0` and `small-2018-v1-2-tys` no longer skip
+  `test_required_items_resolve_in_a_golden_statement`. The other five twins still skip it by name, as the plan
+  asked for one twin. The placeholder-`KodPKD` case is built in `test_xsd_tolerances.py` from a committed
+  fixture: a golden file must validate, and that one cannot.
+- **Personal data found in a committed fixture (commit `47fe645`).** `micro_2025_w2_2025.xml` (plan 0005
+  step E) named the company's management board president in a note. The builder's first output copied it,
+  which is how it was found. Redacted to `[osoba]` (the golden output is unchanged: notes are not mapped).
+  `test_no_fixture_contains_personal_data` now refuses a name followed by a dash and a board or officer
+  role. A scan of every fixture for role words found no other person. The name stays in the pushed history,
+  like the golden pages' auditor numbers: the owner's decision.
+- **`BS.EQUITY_LIABILITIES.B` (finding 5): a filer pattern, not a body error.** The small body sums `B` from
+  `B.I`–`B.IV`, plus `B`'s own user lines. That is the XSD's tree, and UoR's: "Zobowiązania i rezerwy na
+  zobowiązania" includes the accruals, `IV`. `B`'s label carries no "w tym", so its user lines are components.
+  The failure is not confined to small 2018 v1-2: it also fails in 5 `full-2018-v1-2` files and 3 others. On
+  small 2018 v1-2 it is 11 files of 7 entities, 14 rows. Two entities, 6 of those rows, leave the accruals out
+  of the total: the difference is exactly `−B.IV` each time. The rest are scattered differences of 1–12%
+  matching no single line. Recorded; the files stay graded as they are.
 
 **Step E (2026-10-15): XSD tolerances** (decision 2). Built as decided:
 
