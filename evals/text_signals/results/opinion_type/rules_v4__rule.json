@@ -1498,7 +1498,7 @@
  ],
  "extractor_version": "extractor_v6",
  "hashes": {
-  "golden": "025caaac33a066e351c7745f21cc88244f2dab5e9d9d79b87d3ac28d9eb4e055",
+  "golden": "c733827241bdc1f210a604342b54817e6d40a3476e71024f3ff25af82edf25f4",
   "pages": "d78374553402c8c016bab99dc7072ba0dc8514b15d0e2973b303488a86983f36",
   "prefilter": "5c34e01d2f3d157d46c505c7f823dfb433aff38d639682a3607e92fa3cdbd537",
   "rules": "87507302a492bbc503d471315200e7b6e2e36c2c0358848888103fbec563d148"
@@ -1509,28 +1509,28 @@
  "scores": {
   "discarded": {},
   "end_to_end": {
-   "f1": 0.8485,
-   "fn": 4,
-   "fp": 1,
-   "precision": 0.9333,
-   "recall": 0.7778,
-   "tn": 147,
-   "tp": 14
+   "f1": 1.0,
+   "fn": 0,
+   "fp": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "tn": 151,
+   "tp": 15
   },
-  "evidence_overlaps": 13,
+  "evidence_overlaps": 14,
   "extractor": {
-   "f1": 0.8485,
-   "fn": 4,
-   "fp": 1,
-   "precision": 0.9333,
-   "recall": 0.7778,
-   "tn": 45,
-   "tp": 14
+   "f1": 1.0,
+   "fn": 0,
+   "fp": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "tn": 49,
+   "tp": 15
   },
   "pages": 166,
-  "positives": 18,
+  "positives": 15,
   "prefilter_missed_in_rejected_sample": 0,
-  "prefilter_selected_positives": 18
+  "prefilter_selected_positives": 15
  },
  "signal_type": "opinion_type"
 }
