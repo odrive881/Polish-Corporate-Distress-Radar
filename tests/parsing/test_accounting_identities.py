@@ -11,6 +11,7 @@ import pytest
 from lxml import etree
 
 from distress_radar.parsing.accounting_identities import (
+    DOCUMENT_KEY,
     balance_sheet_balances,
     cashflow_ties,
     filed_bodies,
@@ -116,6 +117,29 @@ def test_balanced_statement_passes_every_check(mapping_config: MappingConfig) ->
         "cashflow_ties": ["not_applicable"],
     }
     assert grade(frame, results)["quality_grade"].unique().to_list() == ["pass"]
+
+
+def test_a_file_parsed_by_tolerating_xsd_violations_is_at_best_warn(
+    mapping_config: MappingConfig,
+) -> None:
+    """Plan 0017 step E: the cap lowers `pass` to `warn` and never raises `quarantined`."""
+    clean = _frame(BALANCED, mapping_config, ref="clean")
+    broken = _frame(
+        {**BALANCED, ("BS.ASSETS", "current_year"): "900.00"}, mapping_config, ref="bad"
+    )
+    frame = pl.concat([clean, broken])
+    results = run_identity_checks(frame, mapping_config, TOLERANCE)
+    keys = frozenset(
+        (str(r[0]), str(r[1])) for r in frame.select(DOCUMENT_KEY).unique().iter_rows()
+    )
+    graded = grade(frame, results, keys).select("document_ref", "quality_grade").unique()
+    assert dict(graded.iter_rows()) == {"clean": "warn", "bad": "quarantined"}
+    assert dict(
+        grade(frame, results).select("document_ref", "quality_grade").unique().iter_rows()
+    ) == {
+        "clean": "pass",
+        "bad": "quarantined",
+    }
 
 
 def test_tolerance_boundary_is_inclusive(mapping_config: MappingConfig) -> None:

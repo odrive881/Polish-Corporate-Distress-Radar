@@ -503,13 +503,19 @@ def _with_severity(
     )
 
 
-def grade(frame: pl.DataFrame, results: pl.DataFrame) -> pl.DataFrame:
+def grade(
+    frame: pl.DataFrame,
+    results: pl.DataFrame,
+    capped: frozenset[tuple[str, str]] = frozenset(),
+) -> pl.DataFrame:
     """Set `quality_grade` per statement file from its judged identity results.
 
     `quarantined`: any `material` failure. `warn`: failures, all `immaterial`.
     `pass`: nothing failed. `results` is `run_identity_checks` output: the
     materiality rule lives in `_with_severity`, so the grade and the persisted
-    `severity` can never disagree.
+    `severity` can never disagree. A file in `capped` (`DOCUMENT_KEY` pairs),
+    one that parsed only because C1 tolerated its XSD violations (plan 0017
+    step E), is at best `warn`.
     """
     failures = results.filter(pl.col("status") == "fail")
     severe = {
@@ -521,7 +527,7 @@ def grade(frame: pl.DataFrame, results: pl.DataFrame) -> pl.DataFrame:
     failed = {(str(row[0]), str(row[1])) for row in failures.select(DOCUMENT_KEY).iter_rows()}
     keys = frame.select(DOCUMENT_KEY).unique(maintain_order=True)
     grades = [
-        "quarantined" if key in severe else "warn" if key in failed else "pass"
+        "quarantined" if key in severe else "warn" if key in failed or key in capped else "pass"
         for key in keys.iter_rows()
     ]
     graded = keys.with_columns(pl.Series("_grade", grades, dtype=pl.String))

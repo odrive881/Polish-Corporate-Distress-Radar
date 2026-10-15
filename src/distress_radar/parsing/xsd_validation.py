@@ -7,6 +7,9 @@ open local files, so validation never touches the network.
 
 Enveloped XAdES signatures (`ds:Signature` inside the statement) are not part
 of the MF schemas; they are removed from an in-memory copy before validation.
+
+`violations` returns every error with its path and kind, which is what C1's
+tolerances are matched on (`parsing/xsd_tolerances.py`, plan 0017 step E).
 """
 
 from __future__ import annotations
@@ -19,9 +22,12 @@ import yaml
 
 from distress_radar.parsing.canonical_schema import CONFIG_DIR, StructureSpec
 from distress_radar.parsing.containers import DS_NS, Element
+from distress_radar.parsing.xsd_tolerances import Violation, below_statement_root, error_kind
 
 MAX_ERRORS = 5
 MAX_ERROR_LENGTH = 300
+# Enough to judge every violation of any file seen; past it the file is refused outright.
+MAX_VIOLATIONS = 500
 
 
 def load_xsd_catalog(xsd_dir: Path) -> dict[str, Path]:
@@ -50,15 +56,29 @@ class XsdValidator:
 
     def validate(self, root: Element, spec: StructureSpec) -> list[str]:
         """Up to `MAX_ERRORS` validation messages; empty when the document is valid."""
+        return [v.message for v in self.violations(root, spec)[:MAX_ERRORS]]
+
+    def violations(self, root: Element, spec: StructureSpec) -> list[Violation]:
+        """Every validation error, up to `MAX_VIOLATIONS`, with its path below the statement
+        root and its kind. A file with more is judged on the first `MAX_VIOLATIONS`, plus one
+        that no tolerance can match, so it is never tolerated."""
         document = copy.deepcopy(root)
         for signature in list(document.iter(f"{{{DS_NS}}}Signature")):
             parent = signature.getparent()
             if parent is not None:
                 parent.remove(signature)
-        errors: list[str] = []
+        found: list[Violation] = []
         for error in self.schema(spec.xsd).iter_errors(document):
-            message = f"{error.path}: {error.reason}" if error.path else str(error.reason)
-            errors.append(message[:MAX_ERROR_LENGTH])
-            if len(errors) >= MAX_ERRORS:
+            if len(found) >= MAX_VIOLATIONS:
+                found.append(Violation(f"more than {MAX_VIOLATIONS} errors", None, None))
                 break
-        return errors
+            reason = str(error.reason)
+            message = f"{error.path}: {reason}" if error.path else reason
+            found.append(
+                Violation(
+                    message[:MAX_ERROR_LENGTH],
+                    below_statement_root(error.path, spec),
+                    error_kind(reason),
+                )
+            )
+        return found

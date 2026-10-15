@@ -15,9 +15,40 @@ rows (Progress, 2026-10-14) found these gaps. They lose data for every model and
 remaining work is presentation and loses nothing by waiting. This plan does not wait for list v2. Each new
 delivery brings more files of the same kinds, and this plan makes them parse.
 
-## Status: active (2026-10-15): owner decisions 1–4 accepted as recommended (2026-10-14); steps A–D built (Progress), step E next
+## Status: active (2026-10-15): owner decisions 1–4 accepted as recommended (2026-10-14); steps A–E built (Progress), step F next
 
 ### Progress
+
+**Step E (2026-10-15): XSD tolerances** (decision 2). Built as decided:
+
+- **The list, `config/mappings/xsd_tolerances_v1.yaml`:** six entries, each element paths below the statement
+  root and error kinds, read from the full error lists of the 27 affected files: `placeholder_pkd`,
+  `placeholder_user_item`, `empty_address_field`, `nip_pattern`, `income_tax_note` and
+  `notes_attachment_list`. A `*` matches within one element name only. The highest-numbered file is in use.
+  Error kinds come from the validator's reason (`parsing/xsd_tolerances.py`). A reason no pattern matches
+  has no kind and is never tolerable.
+- **Refused at load:** an entry whose path lies inside or contains the header, a statement any alternative
+  binds, or (checked when the asset starts, and in a test) an introduction item its versions' generation reads.
+  Not foreseen by the plan: the full introduction's `P_8` is a filer's own item before wariant 2 and average
+  employment in it (read). So `placeholder_user_item` lists the six pre-wariant-2 full versions it applies to,
+  and the check refuses it without that scope.
+- **C1:** `XsdValidator.violations` returns every error (up to 500) with its path and kind. A file parses when
+  `split` leaves nothing unmatched. The `xsd_invalid` detail is unchanged (the first five messages).
+- **Recorded:** one `C1` `xsd_tolerated` row per file in `quarantine_events`, naming each tolerated violation
+  and its entry. The `quarantine` model leaves that reason out of C1/C2's reasons and of `first_detected_at`.
+  Without that, a tolerated file later refused at C2 would show two stages, since a run's events share one
+  timestamp. A SQLMesh test covers it, and fails without the fix.
+- **E2:** `grade(..., capped)` makes such a file at best `warn`; `quarantined` is never raised.
+- **Hashes:** each spec's hash covers the entries that apply to it (a test checks that editing a scoped entry
+  moves exactly its versions).
+
+Read-only dry run over the 27 files, in memory, nothing written:
+- **26 files of 11 entities now parse:** the 22 `xsd_invalid` files and the 4 thousands twins of step D. By
+  entry: `placeholder_pkd` 18 files (3 entities), `placeholder_user_item` 5 (3, the same filers),
+  `notes_attachment_list` 3, `empty_address_field` 2, `income_tax_note` 2, `nip_pattern` 1.
+- **The one left** is the micro balance sheet with non-decimal amounts, `xsd_invalid` as planned.
+- **Grades** over every file the dry run mapped (35, including the 9 clean thousands files of step D):
+  24 `warn`, 6 `quarantined`, 5 `pass`. Without the cap, 22 would have been `pass`.
 
 **Step D (2026-10-15): the six thousands twins mapped** (decision 1): `full-2018-v1-0-tys`, `full-2025-v1-3-tys`,
 `full-2025-w2-v1-0-tys` (13810), `small-2018-v1-2-tys`, `micro-2018-v1-0-tys`, `micro-2018-v1-2-tys`. Each is its
@@ -32,10 +63,11 @@ as its example, since 1-2 is mapped. Read-only dry run over the store's 23 thous
   Every value is a multiple of 1000 (1,195 facts). Graded 5 `pass`, 2 `warn`, 2 `quarantined` (subtotals,
   one file each of 0000481314 and 0000602022). No body fallback.
 - **The other 14 (3 entities) fail only the XSD on the placeholder `KodPKD`:** the 2 `full-2018-v1-0-tys` and 2
-  `full-2025-v1-3-tys` files, `not_yet_mapped` until now, and the 10 `full-2018-v1-2-tys`. These are all 14 of
-  the survey's "Empty `KodPKD`" files, all in thousands. Step E's tolerances are what remains for them. The
-  validator reports the comment inside `KodPKD` as "a simple content element can't have child elements",
-  and the tolerance entry has to name that error kind.
+  `full-2025-v1-3-tys` files, `not_yet_mapped` until now, and the 10 `full-2018-v1-2-tys`. Step E's tolerances
+  are what remains for them. The validator reports the comment inside `KodPKD` as "a simple content element
+  can't have child elements", and the tolerance entry has to name that error kind. (Corrected in step E: the
+  survey's 14 "Empty `KodPKD`" files are the 10 `full-2018-v1-2-tys` and 4 in złoty. The 4 twins here were
+  `not_yet_mapped` and so never reached validation, which makes 18 files of the same 3 entities.)
 
 **Step C (2026-10-15): micro envelopes carrying the small or full statements.** The four micro specs
 (`micro-2018-v1-0`, `-v1-2`, `micro-2025-v1-3`, `micro-2025-w2-v1-0`) bind, per statement, the micro body first,

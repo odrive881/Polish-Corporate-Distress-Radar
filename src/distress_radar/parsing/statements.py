@@ -42,7 +42,8 @@ from distress_radar.parsing.statement_introduction import (
 )
 from distress_radar.parsing.statement_introduction import to_frame as disclosures_frame
 from distress_radar.parsing.version_detection import DetectionError, detect
-from distress_radar.parsing.xsd_validation import XsdValidator
+from distress_radar.parsing.xsd_tolerances import Tolerated, split
+from distress_radar.parsing.xsd_validation import MAX_ERRORS, XsdValidator
 
 
 @dataclass(frozen=True)
@@ -65,6 +66,8 @@ class FileOutcome:
     reason_code: str | None = None
     detail: str | None = None
     data: bytes = b""  # the statement bytes, kept for `valid` files only
+    # XSD violations the tolerances allowed (plan 0017 step E): recorded, and the grade capped
+    tolerated: tuple[Tolerated, ...] = ()
 
 
 def _key_text(key: tuple[str, str, str, str]) -> str:
@@ -152,8 +155,9 @@ def _classify_member(
             reason_code="unknown_structure_version",
             detail=key,
         )
-    errors = validator.validate(root, detection.spec)
-    if errors:
+    violations = validator.violations(root, detection.spec)
+    refused, tolerated = split(violations, detection.spec, config.tolerances)
+    if refused:
         return FileOutcome(
             member.source_member,
             member.kind,
@@ -163,7 +167,7 @@ def _classify_member(
             spec=detection.spec,
             stage="C1",
             reason_code="xsd_invalid",
-            detail="; ".join(errors),
+            detail="; ".join(v.message for v in violations[:MAX_ERRORS]),
         )
     return FileOutcome(
         member.source_member,
@@ -173,6 +177,7 @@ def _classify_member(
         structure_key=key,
         spec=detection.spec,
         data=member.data,
+        tolerated=tuple(tolerated),
     )
 
 

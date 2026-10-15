@@ -11,7 +11,8 @@ every run, asking whichever source knows the current answer for each stage:
   list more.)
 - C1, C2: `parsed_documents.status` on the latest parsing run (these files have
   no canonical rows to grade), with stage and reason codes from the file's
-  most recent C1/C2 detection in the log.
+  most recent C1/C2 detection in the log. `xsd_tolerated` rows are left out: they
+  record a violation C1 allowed, on a file that parsed (plan 0017 step E).
 - A1–A4, and C4 (legal-event normalisation): nothing downstream records these, so
   the log is the only source: the most recent detection per (stage, entity_key).
 - G1, G2 (text signals, plan 0013 step H): `text_coverage`, rebuilt on every run of the text
@@ -81,6 +82,9 @@ WITH e2_files AS (
     MAX(created_at) OVER (PARTITION BY entity_key, source_document_hash) AS latest_at
   FROM ext.quarantine_events
   WHERE stage IN ('C1', 'C2')
+    -- A tolerated XSD violation is recorded, not quarantining (plan 0017 step E): it is never
+    -- the reason a file is quarantined, nor a second stage for one refused later at C2.
+    AND reason_code <> 'xsd_tolerated'
 ), c AS (
   SELECT
     e.stage,
@@ -159,6 +163,7 @@ WITH e2_files AS (
     CASE WHEN stage IN ('A1', 'A2', 'A3', 'A4', 'C4') THEN NULL ELSE source_document_hash END AS file_hash,
     MIN(created_at) AS first_detected_at
   FROM ext.quarantine_events
+  WHERE reason_code <> 'xsd_tolerated'
   GROUP BY ALL
 )
 SELECT

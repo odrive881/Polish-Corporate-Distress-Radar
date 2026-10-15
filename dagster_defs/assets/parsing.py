@@ -25,7 +25,7 @@ from distress_radar.acquisition import manifest as acquisition_manifest
 from distress_radar.acquisition.document_retrieval import load_document_types
 from distress_radar.acquisition.models import QuarantineRecord, QuarantineStage
 from distress_radar.acquisition.raw_store import raw_key
-from distress_radar.parsing import manifest, statement_introduction
+from distress_radar.parsing import manifest, statement_introduction, xsd_tolerances
 from distress_radar.parsing.accounting_identities import (
     filed_bodies,
     grade,
@@ -153,7 +153,10 @@ def financial_statements_canonical(context: dg.AssetExecutionContext) -> dg.Mate
       `needs_pdf_tier`, `quarantined`), the body set its statements were filed
       in, and `last_seen_run_id` = this run on every row it touched;
     - `quarantine_events` rows, stage `C1` (container, detection, XSD), `C2` (mapping)
-      or `E2` (identity failures that grade a file `quarantined`);
+      or `E2` (identity failures that grade a file `quarantined`); and one `C1`
+      `xsd_tolerated` row per file that parsed because every XSD violation it has
+      is in `config/mappings/xsd_tolerances_v<n>.yaml` (plan 0017 step E), whose
+      grade is then at best `warn`;
     - `WAREHOUSE_DIR/financial_statements_canonical/fiscal_year=YYYY/`: the
       canonical facts (AGENT_SPEC §5 plus `document_ref`, `source_member`),
       with `quality_grade` set. Quarantined files keep their rows.
@@ -173,6 +176,7 @@ def financial_statements_canonical(context: dg.AssetExecutionContext) -> dg.Mate
     settings = Settings()
     config = load_mapping_config()
     introduction = statement_introduction.load_introduction_config(set(config.specs))
+    xsd_tolerances.check_introduction(config, introduction)
     validator = XsdValidator()
     run_id = context.run_id
     now = datetime.now(UTC)
@@ -180,6 +184,7 @@ def financial_statements_canonical(context: dg.AssetExecutionContext) -> dg.Mate
     reasons: Counter[str] = Counter()
     frames: list[pl.DataFrame] = []
     disclosure_frames: list[pl.DataFrame] = []
+    capped: set[tuple[str, str]] = set()  # files C1 parsed by tolerating XSD violations
 
     with postgres.connect() as conn:
         acquisition_manifest.ensure_schema(conn)
@@ -222,6 +227,24 @@ def financial_statements_canonical(context: dg.AssetExecutionContext) -> dg.Mate
                 if outcome.status != "valid":
                     statuses[f"{label}:{outcome.status}"] += 1
                     continue
+                if outcome.tolerated:
+                    # Recorded so the file stays countable; it is not quarantined (plan 0017
+                    # step E), and the `quarantine` model leaves this reason out of C1's.
+                    _quarantine(
+                        conn,
+                        "C1",
+                        source.krs,
+                        outcome.filing.document_ref if outcome.filing else None,
+                        outcome.source_member,
+                        "xsd_tolerated",
+                        f"{config.tolerances.version}: "
+                        + "; ".join(t.describe() for t in outcome.tolerated),
+                        source.sha256,
+                        run_id,
+                        now,
+                    )
+                    capped.add((source.sha256, outcome.source_member))
+                    reasons["C1:xsd_tolerated"] += 1
                 try:
                     mapped = map_file(outcome, source, config, first_run)
                     disclosed = map_disclosures(outcome, source, introduction, first_run)
@@ -264,7 +287,9 @@ def financial_statements_canonical(context: dg.AssetExecutionContext) -> dg.Mate
         fallbacks = unresolved_bodies(facts, config)
         if not fallbacks.is_empty():
             context.log.warning(f"{fallbacks.height} statements checked against a fallback body")
-        graded = FINANCIAL_STATEMENTS_CANONICAL.validate(grade(facts, results).sort(SORT_KEY))
+        graded = FINANCIAL_STATEMENTS_CANONICAL.validate(
+            grade(facts, results, frozenset(capped)).sort(SORT_KEY)
+        )
         checked = IDENTITY_CHECK_RESULTS.validate(identity_check_results(results, graded))
         for row in filed_bodies(facts, config).iter_rows(named=True):
             manifest.record_filed_bodies(
