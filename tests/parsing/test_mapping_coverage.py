@@ -235,6 +235,12 @@ def test_every_full_form_version_has_a_golden_statement(mapping_config: MappingC
         assert _golden_for(mapping_config.specs[version], mapping_config), version
 
 
+NAME_AND_ROLE = re.compile(
+    r"\b[A-ZŁŚŻŹĆŃÓĘĄ][a-ząćęłńóśźż]+\s+[A-ZŁŚŻŹĆŃÓĘĄ][a-ząćęłńóśźż-]+\s*[–—-]\s*"
+    r"(?i:prezes|wiceprezes|członek|prokurent|likwidator|syndyk|nadzorca|księgow)"
+)
+
+
 @pytest.mark.parametrize("xml", GOLDEN, ids=lambda p: p.stem)
 def test_no_fixture_contains_personal_data(xml: Path) -> None:
     """Invariant 6: the fixtures are public, and must name no natural person.
@@ -249,6 +255,9 @@ def test_no_fixture_contains_personal_data(xml: Path) -> None:
         assert marker not in raw, f"{xml.name} contains {marker.decode()}"
     text = " ".join(t for t in etree.fromstring(raw, safe_parser()).itertext() if t and t.strip())
     assert not re.search(r"\b\d{11}\b", text), f"{xml.name} has an 11-digit run (PESEL-shaped)"
+    # A name and a role, the way the notes list the management board ("<Name> <Surname> –
+    # prezes Zarządu"): one reached a fixture through a note in plan 0005, found in plan 0017.
+    assert not NAME_AND_ROLE.search(text), f"{xml.name} names a person with a role"
 
 
 def test_golden_statements_are_schema_valid(
