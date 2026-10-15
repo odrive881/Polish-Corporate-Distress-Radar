@@ -115,6 +115,17 @@ settled against the guide, and all nine accepted on the 148 pages (2026-10-13, P
 
 ### Progress
 
+- **The auditor reports' queue complete: golden set 189 pages, all nine accepted (2026-10-15).** The owner
+  labelled the queue's last 23 pages (`golden_sample_v2`, 102 of 102). Reviewed against the guide before
+  acceptance. Nine `opinion_type` labels contradicted it and were corrected at the owner's direction: six
+  management-report opinions (art. 49) and one basis section set absent; two pages where the opinion
+  sentence begins set unqualified. Then `rules_v4`: 20 positives, P 1.0 R 1.0; the other eight unchanged (the
+  new pages are true negatives for them). Masked by hand as well, at the owner's direction: the letterhead NIP,
+  REGON and bank account (`[rachunek]`, a fourth hand-only kind) of the s.c. and one sole practitioner, and,
+  found by the new test on the new pages, a file name, a key auditor's number, a sole practitioner's address
+  and a firm number. The test also guards bank account numbers now. A batch for the re-score did not return
+  within an hour, so it was re-run with `--sync`; one request. Open on the golden set: positives for
+  `covenant_breach` and `key_customer_loss` (none), and the pushed history.
 - **Golden pages masked by hand beyond the masker (2026-10-15, owner's decision).** 26 committed pages, all
   auditor reports, held what the masker leaves beside the names it finds. All are now masked in the queue and
   exported. Key auditors' register numbers, in seven wordings (`[nr]`). Every audit firm's list number, in

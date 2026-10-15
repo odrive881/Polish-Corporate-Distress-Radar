@@ -71,8 +71,10 @@ names the masker does find, and the masker leaves them:
 - `[nr]` (`register_number`): a key auditor's register number, in any wording ("nr 12345", "nr ewid.", "nr w
   rejestrze", "w rej. KRBR"), and any audit firm's list number ("pod numerem", "Rejestr PIBR nr", "Nr firmy
   audytorskiej"). A sole practitioner's identifies a person, and the firm number is never stored either way;
+- `[nr]` also for the NIP and REGON of such a firm (below), which identify the people behind it;
 - `[adres]` (`address`): the address of an audit firm that is a natural person: a sole practitioner, or an s.c.,
   whose partners are. A company's address stays;
+- `[rachunek]` (`bank_account`): a bank account in such a firm's letterhead;
 - `[plik]` (`file_name`): a filer's file name (ADR 0009, second addendum);
 - a surname inside a firm's name ("AK FINANSE <Surname>") is a person: `[osoba]`.
 

@@ -240,15 +240,20 @@ _REGISTER_NUMBER = re.compile(
     r"Izbie Biegłych Rewidentów|w rej\.( KRBR)?|Rejestr PIBR nr|sprawozdań finansowych nr|"
     r"\[osoba\],? \(?nr)\s*-?\s*\d{2,5}"
 )
+# A Polish account number (NRB: 26 digits, printed in groups); a natural-person firm's letterhead
+# carried one. An audited company's NIP is legitimate on these pages, so NIPs are not guarded here.
+_BANK_ACCOUNT = re.compile(r"(?<!\d)\d{2}(?:\s?\d{4}){6}(?!\d)")
 _FILE_NAME = re.compile(r"[\w\-]+\.(xml|xades|pdf|docx?|xlsx?)\b", re.IGNORECASE)
 
 
 def test_no_committed_page_holds_a_register_number_or_a_file_name() -> None:
+    """Nor a bank account number (2026-10-15)."""
     for line in (golden.GOLDEN_DIR / "pages.jsonl").read_text(encoding="utf-8").splitlines():
         page = json.loads(line)
         text = " ".join(page["text"].split())
         assert not _REGISTER_NUMBER.search(text), page["page_id"]
         assert not _FILE_NAME.search(text), page["page_id"]
+        assert not _BANK_ACCOUNT.search(text), page["page_id"]
 
 
 # --- export and the masking check -----------------------------------------------------------------

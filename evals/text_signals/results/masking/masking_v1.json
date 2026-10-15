@@ -1,8 +1,8 @@
 {
- "masker_recall": 0.977,
+ "masker_recall": 0.9804,
  "masking_version": "1",
  "note": "over-masking is not measured: masked text does not show what was masked",
- "pages": 166,
+ "pages": 189,
  "persons_by_hand": 4,
- "persons_by_masker": 170
+ "persons_by_masker": 200
 }

@@ -1,5 +1,8 @@
 {
- "accepted": null,
+ "accepted": {
+  "by": "owner",
+  "on": "2026-10-15"
+ },
  "examples": [
   {
    "discard_reason": null,
@@ -1248,7 +1251,7 @@
    "evidence": null,
    "outcome": "absent",
    "page_id": "849ad5ac45e57759",
-   "response_key": "6fb8da175b1d8c8edace922098c544839d764a817108a906121d02a94590ff47",
+   "response_key": "fa78c114e73605e3b70a256e5f047c6dee993a646c9cfcc6e5a7449120f2da7a",
    "selected": true,
    "value": null
   },
@@ -1494,14 +1497,221 @@
    "response_key": "e38fc02efdc8b99739387222043fc96cbc78adae6582d7cebe143a0b37b48b9e",
    "selected": true,
    "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "bb4f59cdf1706196",
+   "response_key": "a47ea2cb530b7cc1f4a8e556f92cfea4076f161efc2f51cf36eca6d6887ced09",
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "bd4f24f7a74a477d",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "be0dc70f7c5bd1ae",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "bee42ace80fb9f4f",
+   "response_key": "84e26c9cb89453d82eb05d57466c639edb8a7f44947d771a70551776a52fc0a4",
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "c5e4cb00f22cc9ec",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "c959c78ee7dbb1ad",
+   "response_key": "4d23bf49c79f104db3de0d329f2748dbc1ae46b052498a9f26186152b4154271",
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "c9a03d9da2eb5b2f",
+   "response_key": "fbc072d1da9aaa6b0c279e21c0552809cba93b642e09cf4512a3a4321d2c7e25",
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "c9a7b1d60b010268",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "cc2d4df74df7c1a9",
+   "response_key": "60ddafb65bca18a5750f59389a49ef8030fd87a2c3d858d6a23e590fdbd04277",
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "d5d13c39582e9500",
+   "response_key": "50c251e924eda0fa1bebc2bd1e9e1e458ab3bff5117ea49bb5d0ee95dbdd2b85",
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "d6f8bc3d45ac66c0",
+   "response_key": "f0349f6db1cd06c707cc6f3183b45c569f5fb843859ffbb7bad24635762fcb99",
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "d8cfb2cfc2f28656",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "d9b40b0208c73224",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "e6060205a632b69b",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "e73681cc4de37bea",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "e75cb75c23d7cfdd",
+   "response_key": "2629726117a2d81171c5485156c427bbc41622cc67d42f108d087cc4832b465d",
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "ec74d3b71c5bdbe2",
+   "response_key": "0089f72d586cb38243a9270f9018d482521216ff0f1d52cff5eb98c101a9469b",
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "ed899f8d679b87b8",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "edebe12855f7b9d8",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "ef56455bfb1cec02",
+   "response_key": "6ef9c3af1f5eb54ab8d1620f41884781022a81e9239410e9c4405a3efe4c65f1",
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "eff427ec8d83faf6",
+   "response_key": "651122cf63ccd16d9cefc0bf98fe2b50c69b482e28198ba0fa54aaa44ce7faa0",
+   "selected": true,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "not_selected",
+   "page_id": "f344fb210ca571d1",
+   "response_key": null,
+   "selected": false,
+   "value": null
+  },
+  {
+   "discard_reason": null,
+   "evidence": null,
+   "outcome": "absent",
+   "page_id": "fc8e4e8afa63f3bc",
+   "response_key": "c401abd899557e603a783cd37300d68291e2e5ee0eafac870bfa5156c120a75e",
+   "selected": true,
+   "value": null
   }
  ],
  "extractor_version": "extractor_v6",
  "hashes": {
   "effort": "c082456a7766e23a18db084cd34b6ff510baef506548b897cc80e9b7d3e121c8",
-  "golden": "93010f30fca8d09bdd50e891f96a6a39184e701e09753f95f036cdd2a2d55436",
+  "golden": "d8836155ceb35e4833b676163b0c184c5b3063fb29330bb250711040c70f56ed",
   "model": "005912bee6ee4543cec4404b5a02b9bcb11a6f1dcc134b6693c7ccde5fdd2f69",
-  "pages": "d66c2c31dbfd900cf768272df47a6e9c6c8a9934d7c6f980a035584ab46d1388",
+  "pages": "6bb4d4ce1f3197b87d9b34bbc9c69fc87ad20b48bcc7d564fec14dfe426b29cb",
   "prefilter": "5c34e01d2f3d157d46c505c7f823dfb433aff38d639682a3607e92fa3cdbd537",
   "prompt": "26fafa3187a7c9d862a010d0c399743aa3e1fa280fe3ccaca385f5a09e252632",
   "schema": "e27451486a2e74945b3941cb1c9d8f726eda8a94f53493adbc9bf1abc73e04d3"
@@ -1517,7 +1727,7 @@
    "fp": 1,
    "precision": 0.9,
    "recall": 1.0,
-   "tn": 156,
+   "tn": 179,
    "tp": 9
   },
   "evidence_overlaps": 7,
@@ -1527,10 +1737,10 @@
    "fp": 1,
    "precision": 0.9,
    "recall": 1.0,
-   "tn": 48,
+   "tn": 60,
    "tp": 9
   },
-  "pages": 166,
+  "pages": 189,
   "positives": 9,
   "prefilter_missed_in_rejected_sample": 0,
   "prefilter_selected_positives": 9
