@@ -39,7 +39,9 @@ re-run, record a new `backtest_v<n>` before running it. Record each round's coun
   events per horizon. The champion rule promotes nothing (at most 10 paired events; it needs 50), so
   `logistic_regression` stays champion. The default `BACKTEST_VERSION` is still `backtest_v5`; v8 was run with
   the variable set. Report: `WAREHOUSE_DIR/reports/backtest/backtest_v8.md`.
-- **Not re-run:** scoring (plan 0016), text signals (no new auditor reports came in this round).
+- **Scoring:** re-run on `backtest_v8`'s population and served version 5 (plan 0016, § "Progress"): 242
+  scored and 113 with inputs incomplete per horizon.
+- **Not re-run:** text signals (no new auditor reports came in this round).
 
 **Open, the owner's (in order of what they unblock):**
 
@@ -188,7 +190,7 @@ the next list representative.
     that label set and the 370-entity population, recorded before the run): 20 entities ever in distress, 22
     distinct events per horizon (v6/v7: 300, 18, 20); left out: 72 `rdf_not_searched`, 2
     `rdf_search_incomplete`, 133 `no_statement_imported`, 31 `statements_held_back`. The champion rule
-    promotes nothing (at most 10 paired events, it needs 50). Scoring not re-run.
+    promotes nothing (at most 10 paired events, it needs 50). Scoring re-run the same day (plan 0016).
 
 - **List v1's second import (2026-10-13).** The script's listing as of 2026-10-13, still on list v1:
   `documents.csv` (2,057 rows, 425 entities) and `entities.csv` (885 searches), imported from the owner's

@@ -147,6 +147,26 @@ value or one below 5 (`PUBLISH_MIN_CELL_FLOOR`); step F's `publish` asset calls 
 An existing `.env` keeps its own value: empty (suppression off) until the owner sets it, which is harmless while
 nothing is published, and the `publish` asset refuses to run until then.
 
+### Progress (2026-10-16): scoring re-run on list v1's third import
+
+After plan 0014's third import and `backtest_v8` (plan 0014, § "Progress"), the `scoring` job, run from a clean
+tree at `5c5315f` with `BACKTEST_VERSION=backtest_v8`, wrote to local Postgres at 2026-09-30. Per horizon, the
+served version is v5 of `distress_radar_12m` and `_24m` (registered by `backtest_v8`), the regression,
+`incumbent`, label set `fd867aa8…`; the population hash is `backtest_v8`'s pin (`dbdaa172…`, 370 entities).
+Version 4's rows stay beside them; every read is limited to the served versions.
+
+| | 12 months | 24 months |
+|---|---|---|
+| `scores_history`: scored | 242 | 242 |
+| `scores_history`: inputs incomplete | 113 | 113 |
+| `scoring_exclusions`: `rdf_not_searched` / `no_statement_imported` / `statements_held_back` / `rdf_search_incomplete` | 72 / 133 / 31 / 2 | the same |
+| `scoring_exclusions`: `not_at_risk` | 16 | 16 |
+| Mean / median probability of the scored | 0.010 / 0.005 | 0.023 / 0.014 |
+
+710 score rows and 508 exclusions, all 609 entities with features accounted for per horizon. Missing inputs
+(`working_capital_to_assets` 110, `roa` 11, `asset_turnover` 11, `equity_to_assets` 8): the gap the first run
+showed, grown with the new entities.
+
 ### Progress (2026-10-16): the first real scoring run (buildable item 3)
 
 The `scoring` job, run from a clean tree at `811ce1f` with `BACKTEST_VERSION=backtest_v7` set for the run (the
