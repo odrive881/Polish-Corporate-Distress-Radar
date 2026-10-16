@@ -130,6 +130,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │   ├── backtest_v5.yaml           # generation 3 and the acquisition-complete population (plan 0015)
 │   │   ├── backtest_v6.yaml           # v5 on the 2026-10-13 label set and population (plan 0014)
 │   │   ├── backtest_v7.yaml           # v6 on the statements plan 0017 made readable
+│   │   ├── backtest_v8.yaml           # v7 on the 2026-10-16 label set and population (plan 0014)
 │   │   └── poznan_2004.yaml           # the Poznań model, Hamrol, Czajka, Piechocki (2004)
 │   ├── labels/
 │   │   ├── outcome_labels_v1.yaml     # label parameters; the file name is the label_version
