@@ -328,7 +328,7 @@ src/distress_radar/
 │   ├── registry.py                # MLflow runs with the four identifiers; registered versions per horizon
 │   ├── serving.py                 # the served version (champion, else incumbent), a scorer per kind, top_drivers
 │   ├── scoring.py                 # the latest month-end: who is scored, why the rest are not, each row's metadata
-│   └── scores_store.py            # Postgres scores_history and watchlists
+│   └── scores_store.py            # Postgres scores_history, scoring_exclusions and watchlists
 │
 └── api/
     ├── main.py

@@ -19,6 +19,8 @@ and set the model was trained on; the feature set; the population's hash. The fe
 hold the feature set the model was trained on, by version and hash, or nothing is scored.
 
 Rows go to Postgres `scores_history` (`scores_store.py`), whose key makes a rerun add nothing.
+The entities not scored at all go to `scoring_exclusions` with their reason, keyed the same way
+(decision 6), so the API can say why a company has no score.
 """
 
 # polars's signatures reference types pyright cannot resolve; scoped to this module.
@@ -150,14 +152,18 @@ def feature_set_identity(features: pl.DataFrame) -> tuple[str, str]:
     return str(version), str(digest)
 
 
-def history_rows(month_end: MonthEndScores, context: ScoreContext) -> list[dict[str, object]]:
-    """`scores_history` rows (column name to value, `top_drivers` as JSON text)."""
-    served = context.served
+def _refuse_in_sample(month_end: MonthEndScores, served: ServedVersion) -> None:
     if month_end.as_of_date <= served.training_eve:
         raise ValueError(
             f"{month_end.as_of_date} is not after {served.name} v{served.version}'s training eve "
             f"({served.training_eve}): its score there would be in-sample"
         )
+
+
+def history_rows(month_end: MonthEndScores, context: ScoreContext) -> list[dict[str, object]]:
+    """`scores_history` rows (column name to value, `top_drivers` as JSON text)."""
+    served = context.served
+    _refuse_in_sample(month_end, served)
     fixed: Mapping[str, object] = {
         "horizon_months": served.horizon_months,
         "model_name": served.name,
@@ -185,4 +191,29 @@ def history_rows(month_end: MonthEndScores, context: ScoreContext) -> list[dict[
             **fixed,
         }
         for row in month_end.scores.iter_rows(named=True)
+    ]
+
+
+def exclusion_rows(
+    month_end: MonthEndScores, context: ScoreContext, risk_label_set_hash: str
+) -> list[dict[str, object]]:
+    """`scoring_exclusions` rows: every entity of the month-end not scored at all, with its reason
+    (decision 6). `risk_label_set_hash` is the label set the risk set was read from."""
+    served = context.served
+    _refuse_in_sample(month_end, served)
+    return [
+        {
+            "krs": krs,
+            "as_of_date": month_end.as_of_date,
+            "horizon_months": served.horizon_months,
+            "model_version": served.version,
+            "reason": reason,
+            "model_name": served.name,
+            "population_hash": context.population_hash,
+            "risk_label_set_hash": risk_label_set_hash,
+            "code_commit": context.code_commit,
+            "data_snapshot_hash": context.data_snapshot_hash,
+            "scored_at": context.scored_at,
+        }
+        for krs, reason in sorted(month_end.not_scored.items())
     ]

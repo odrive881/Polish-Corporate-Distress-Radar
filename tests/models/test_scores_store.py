@@ -178,3 +178,48 @@ def test_the_latest_label_set_of_a_version_is_found(conn: psycopg.Connection) ->
     assert latest_label_set(conn, "label_v2") == "new"
     with pytest.raises(LookupError, match="label_v1"):
         latest_label_set(conn, "label_v1")
+
+
+def _exclusion(**changes: object) -> dict[str, object]:
+    row: dict[str, object] = {
+        "krs": "0000000001",
+        "as_of_date": date(2026, 9, 30),
+        "horizon_months": 12,
+        "model_version": "3",
+        "reason": "not_at_risk",
+        "model_name": "distress_radar_12m",
+        "population_hash": "e" * 64,
+        "risk_label_set_hash": "c" * 64,
+        "code_commit": "a" * 40,
+        "data_snapshot_hash": "b" * 64,
+        "scored_at": NOW,
+    }
+    row.update(changes)
+    return row
+
+
+def test_insert_exclusions_adds_new_rows_only_and_refuses_an_unknown_reason(
+    conn: psycopg.Connection,
+) -> None:
+    scores_store.ensure_schema(conn)
+    rows = [_exclusion(), _exclusion(krs="0000000002", reason="rdf_not_searched")]
+    assert scores_store.insert_exclusions(conn, rows) == 2
+    assert scores_store.insert_exclusions(conn, rows) == 0
+    assert scores_store.insert_exclusions(conn, [_exclusion(model_version="4")]) == 1
+    assert scores_store.insert_exclusions(conn, []) == 0
+    with pytest.raises(psycopg.errors.CheckViolation):
+        scores_store.insert_exclusions(conn, [_exclusion(krs="0000000003", reason="other")])
+
+
+def test_the_exclusion_reasons_are_the_population_rules_and_not_at_risk(
+    conn: psycopg.Connection,
+) -> None:
+    from distress_radar.models.population import REASONS
+    from distress_radar.models.scoring import NOT_AT_RISK
+
+    scores_store.ensure_schema(conn)
+    rows = [
+        _exclusion(krs=f"{i:010d}", reason=reason)
+        for i, reason in enumerate([*REASONS, NOT_AT_RISK])
+    ]
+    assert scores_store.insert_exclusions(conn, rows) == len(rows)

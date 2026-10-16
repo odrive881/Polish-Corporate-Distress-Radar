@@ -16,7 +16,7 @@
 **Order:** after plan 0015 (complete, 2026-10-12). It does not wait for list v2 or a champion: it serves what the
 registry holds and says so, and the public site's population-level pages wait for list v2 (decision 0).
 
-## Status: active (2026-10-15): owner decisions 0–10 accepted as recommended, 11–13 added from building steps B and C (accepted the same day); steps A–C built in part, item 1 of § "Buildable now" built; paused for plan 0017, whose rebuild is in (2026-10-15), so items 2–9 can resume (Progress)
+## Status: active (2026-10-15): owner decisions 0–10 accepted as recommended, 11–13 added from building steps B and C (accepted the same day); steps A–C built in part, items 1–2 of § "Buildable now" built (2026-10-16), item 3 next (Progress)
 
 ### Progress (2026-10-13), built ahead of the decisions, on the parts every alternative shares
 
@@ -43,6 +43,17 @@ registry holds and says so, and the public site's population-level pages wait fo
 items 2–9 resume on its rebuilt data. *2026-10-15:* the rebuild is in (plan 0017 step H; Progress below). Before
 item 3's real scoring run: the job reads its population from `BACKTEST_VERSION`, whose default is still
 `backtest_v5` (186 entities), so either set it to `backtest_v7` or change the default.
+
+### Progress (2026-10-16): the excluded entities' reasons stored (buildable item 2)
+
+Postgres `scoring_exclusions` (`models/scores_store.py`), keyed like `scores_history` (`krs`, `as_of_date`,
+`horizon_months`, `model_version`): one row per entity with a feature row at the scored month-end that was not
+scored at all, with its reason (one of the population rule's five, or `not_at_risk`, held by a check), the
+population's hash, the label set the risk set was read from (`risk_label_set_hash`), the code commit, the data
+snapshot and `scored_at`. `scoring.exclusion_rows` builds them, refusing an in-sample month-end as
+`history_rows` does; the `scores` asset inserts them beside the scores with `ON CONFLICT DO NOTHING`, so a rerun
+adds nothing. An entity with "inputs incomplete" stays a `scores_history` row (decision 12), not an exclusion.
+Tested: the unit test (rows and reasons) and the integration suite (the key, the reasons' check).
 
 ### Progress (2026-10-15): the count refreshed on plan 0017's rebuilt data
 
@@ -125,7 +136,7 @@ each is committed on its own and recorded in Progress when done.
    `missing_inputs` column in `SCORE_SCHEMA` and in `scores_history` (`text[]`, null unless the reason is
    "inputs incomplete"). A mapping gap, if one is found, is reported and not fixed in this plan: a fix changes
    the feature set, which is plan 0012's to version.
-2. **Storing the excluded entities' reasons (decision 6).** Today they go only to Dagster metadata. Each
+2. ~~**Storing the excluded entities' reasons (decision 6).**~~ Done 2026-10-16 (Progress, above). Today they go only to Dagster metadata. Each
    feature-store entity at the scored month-end gets one row with its reason (the population rule's, or
    `not_at_risk`) and the population hash, in a Postgres table beside `scores_history` (`scoring_exclusions`,
    keyed like it, idempotent), so the API can say why a company is not scored.
