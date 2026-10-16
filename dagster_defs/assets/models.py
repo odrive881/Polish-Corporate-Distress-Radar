@@ -34,6 +34,7 @@ from distress_radar.models.report import render_report, write_report
 from distress_radar.models.scoring import (
     ScoreContext,
     at_risk,
+    exclusion_rows,
     feature_set_identity,
     history_rows,
     latest_label_set,
@@ -178,7 +179,10 @@ def scores(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
     entities scored; the code commit of a clean working tree, refused otherwise.
     Outputs: Postgres `scores_history`, one row per entity of the population at risk, horizon and
     served version: its probability and `top_drivers`, or "inputs incomplete" and none; inserted
-    with `ON CONFLICT DO NOTHING`, so a rerun adds nothing. Every row names a company: local only.
+    with `ON CONFLICT DO NOTHING`, so a rerun adds nothing; Postgres `scoring_exclusions`, one row
+    per other entity with a feature row at that month-end, horizon and served version, with its
+    reason (the population rule's, or `not_at_risk`), inserted the same way. Every row names a
+    company: local only.
     Partition scheme: none (unpartitioned); the month-end is the latest in `feature_store`.
     """
     settings = Settings()
@@ -197,6 +201,7 @@ def scores(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
     postgres = cast("PostgresResource", context.resources.postgres)
     lines: list[str] = []
     inserted_total = 0
+    excluded_total = 0
     with postgres.connect() as conn:
         population = (
             read_population(conn, entities, config.population, load_document_types().download_codes)
@@ -208,25 +213,28 @@ def scores(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
             label_hash = latest_label_set(conn, version.tags["label_version"])
             risk_set = at_risk(load_label_set(settings.warehouse_dir, label_hash), as_of_date)
             month_end = score_month_end(features, as_of_date, population, risk_set, scorer)
-            rows = history_rows(
-                month_end,
-                ScoreContext(
-                    served=version,
-                    code_commit=commit,
-                    data_snapshot_hash=snapshot,
-                    feature_set_version=feature_set_version,
-                    feature_set_hash=feature_set_hash,
-                    population_hash=population.entities_hash,
-                    scored_at=scored_at,
-                ),
+            score_context = ScoreContext(
+                served=version,
+                code_commit=commit,
+                data_snapshot_hash=snapshot,
+                feature_set_version=feature_set_version,
+                feature_set_hash=feature_set_hash,
+                population_hash=population.entities_hash,
+                scored_at=scored_at,
             )
+            rows = history_rows(month_end, score_context)
             inserted = scores_store.insert_scores(conn, rows)
             inserted_total += inserted
+            excluded = scores_store.insert_exclusions(
+                conn, exclusion_rows(month_end, score_context, label_hash)
+            )
+            excluded_total += excluded
             reasons = ", ".join(f"{r} {n}" for r, n in month_end.reasons().items()) or "none"
             lines.append(
                 f"- {horizon}m: {version.name} v{version.version} @{version.alias} "
                 f"({version.model}, training eve {version.training_eve}); "
-                f"{len(rows)} rows, {inserted} new; risk set from label set {label_hash[:12]}; "
+                f"{len(rows)} rows, {inserted} new; {len(month_end.not_scored)} excluded, "
+                f"{excluded} new; risk set from label set {label_hash[:12]}; "
                 f"not scored: {reasons}"
             )
         conn.commit()
@@ -240,6 +248,7 @@ def scores(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
             "data_snapshot_hash": snapshot,
             "population_hash": population.entities_hash,
             "inserted": inserted_total,
+            "exclusions_inserted": excluded_total,
             "horizons": dg.MetadataValue.md("\n".join(lines)),
         }
     )

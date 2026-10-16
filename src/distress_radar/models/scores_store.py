@@ -1,4 +1,4 @@
-"""Postgres `scores_history` and `watchlists` (plan 0016 step A, AGENT_SPEC §5). Same DDL
+"""Postgres `scores_history`, `scoring_exclusions` and `watchlists` (plan 0016 step A, AGENT_SPEC §5). Same DDL
 conventions as `acquisition/manifest.py` (ADR 0006): plain idempotent DDL, natural keys.
 
 `scores_history` holds one row per company, month-end, horizon and served model version, so a
@@ -14,6 +14,14 @@ carries decision 7's metadata, so a score traces to its MLflow run:
   regression's incomplete inputs) is kept with its reason and no probability, never imputed
   (decision 2), and `missing_inputs` names the inputs it lacks, in the model's input order
   (decision 12): set exactly when the reason is "inputs incomplete".
+
+`scoring_exclusions` holds the rest of the month-end (decision 6, plan 0016 buildable item 2): one
+row per entity with a feature row there that was not scored at all, keyed like `scores_history`,
+with its reason: the population rule's (acquisition incomplete) or `not_at_risk` (off the label
+grid: already in a proceeding or deregistered). It carries the population's hash and the label set
+the risk set was read from, so the API can say why a company has no score, and from what. An
+entity the served model could not score for a missing input is not here: it is a
+`scores_history` row with "inputs incomplete".
 
 Every row names a company: local only (AGENT_SPEC §6K), never published.
 """
@@ -62,6 +70,26 @@ SCHEMA_DDL: tuple[LiteralString, ...] = (
     """
     CREATE INDEX IF NOT EXISTS scores_history_as_of
         ON scores_history (as_of_date, horizon_months)
+    """,
+    # Plan 0016 buildable item 2. The reasons are `population.REASONS` and `scoring.NOT_AT_RISK`
+    # (a test holds the list to them).
+    """
+    CREATE TABLE IF NOT EXISTS scoring_exclusions (
+        krs                  char(10) NOT NULL,
+        as_of_date           date NOT NULL,
+        horizon_months       integer NOT NULL CHECK (horizon_months > 0),
+        model_version        text NOT NULL,
+        reason               text NOT NULL CHECK (reason IN (
+            'rdf_not_searched', 'rdf_not_found', 'rdf_search_incomplete',
+            'no_statement_imported', 'statements_held_back', 'not_at_risk')),
+        model_name           text NOT NULL,
+        population_hash      char(64) NOT NULL,
+        risk_label_set_hash  char(64) NOT NULL,
+        code_commit          char(40) NOT NULL,
+        data_snapshot_hash   char(64) NOT NULL,
+        scored_at            timestamptz NOT NULL,
+        PRIMARY KEY (krs, as_of_date, horizon_months, model_version)
+    )
     """,
     """
     CREATE TABLE IF NOT EXISTS watchlists (
@@ -116,6 +144,40 @@ def insert_scores(conn: Connection, rows: Sequence[dict[str, object]]) -> int:
             cursor.execute(
                 f"INSERT INTO scores_history ({columns}) VALUES ({values}) ON CONFLICT DO NOTHING",
                 tuple(row[c] for c in COLUMNS),
+            )
+            inserted += cursor.rowcount
+    return inserted
+
+
+EXCLUSION_COLUMNS: tuple[LiteralString, ...] = (
+    "krs",
+    "as_of_date",
+    "horizon_months",
+    "model_version",
+    "reason",
+    "model_name",
+    "population_hash",
+    "risk_label_set_hash",
+    "code_commit",
+    "data_snapshot_hash",
+    "scored_at",
+)
+
+
+def insert_exclusions(conn: Connection, rows: Sequence[dict[str, object]]) -> int:
+    """Insert `scoring_exclusions` rows; a row whose key is already there is left as it was.
+    Returns the rows inserted."""
+    if not rows:
+        return 0
+    columns = ", ".join(EXCLUSION_COLUMNS)
+    values = ", ".join("%s" for _ in EXCLUSION_COLUMNS)
+    inserted = 0
+    with conn.cursor() as cursor:
+        for row in rows:
+            cursor.execute(
+                f"INSERT INTO scoring_exclusions ({columns}) VALUES ({values})"
+                " ON CONFLICT DO NOTHING",
+                tuple(row[c] for c in EXCLUSION_COLUMNS),
             )
             inserted += cursor.rowcount
     return inserted

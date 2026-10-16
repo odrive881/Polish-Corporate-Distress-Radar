@@ -15,6 +15,7 @@ from distress_radar.models.scoring import (
     MonthEndScores,
     ScoreContext,
     at_risk,
+    exclusion_rows,
     feature_set_identity,
     history_rows,
     latest_month_end,
@@ -195,3 +196,19 @@ def test_the_feature_store_holds_one_feature_set() -> None:
     )
     with pytest.raises(ValueError, match="2 feature sets"):
         feature_set_identity(mixed)
+
+
+def test_every_entity_not_scored_at_all_is_an_exclusion_with_its_reason() -> None:
+    rows = exclusion_rows(_month_end(), _context(), "9" * 64)
+    assert [(r["krs"], r["reason"]) for r in rows] == [
+        ("0000000003", "rdf_not_searched"),
+        ("0000000004", NOT_AT_RISK),
+    ]
+    for row in rows:
+        assert row["as_of_date"] == DAY
+        assert row["horizon_months"] == 12 and row["model_version"] == "3"
+        assert row["risk_label_set_hash"] == "9" * 64
+        assert row["population_hash"] == "e" * 64
+        assert row["scored_at"] == NOW
+    with pytest.raises(ValueError, match="in-sample"):
+        exclusion_rows(_month_end(), _context(_served(test_year=2027)), "9" * 64)
