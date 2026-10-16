@@ -15,9 +15,17 @@ rows (Progress, 2026-10-14) found these gaps. They lose data for every model and
 remaining work is presentation and loses nothing by waiting. This plan does not wait for list v2. Each new
 delivery brings more files of the same kinds, and this plan makes them parse.
 
-## Status: active (2026-10-15): owner decisions 1–4 accepted as recommended (2026-10-14); steps A–H built and run (Progress), step J's docs written ahead of step I (2026-10-15); step I next
+## Status: complete (2026-10-16): owner decisions 1–4 accepted as recommended (2026-10-14); steps A–J done (Progress); plan 0006's trigger 1 fires for one entity, and whether it stays deferred is the owner's (plan 0006, status)
 
 ### Progress
+
+**Step I (2026-10-16): plan 0006's triggers, measured** by `notebooks/exploration/pdf_tier_triggers.py`
+(read-only, counts and KRS numbers only). 47 `needs_pdf_tier` files of 22 entities: 29 recoverable from the next
+filing's `prior_year` column, 18 not (8 entities, none with a distress event, 6 in `backtest_v7`'s population).
+**Trigger 2 does not fire. Trigger 1 fires for one entity**: 0000777764, live, a micro filer, whose three latest
+statements are PDFs. Recommended: stay deferred, with trigger 1 amended to a share. The table and the reasoning
+are in plan 0006's status section, the owner's to decide. Then `make check` (1,447 passed) and `make
+test-integration` green, and the doc sweep (J).
 
 **Step H (2026-10-15): downstream rebuilt** (decisions 3 and 4), in this order:
 
@@ -436,8 +444,8 @@ files, the tolerance file); README's status line; the doc sweep. `make docs-chec
       the count of entities with no canonical facts recorded before and after.
 - [x] Every previously parsed file's canonical values unchanged (column-wise hash).
 - [x] Downstream rebuilt and `backtest_v7` run (H); plan 0016's counts refreshed.
-- [ ] Plan 0006's triggers measured and recorded (I).
-- [ ] `make check` and `make test-integration` green; docs swept (J).
+- [x] Plan 0006's triggers measured and recorded (I).
+- [x] `make check` and `make test-integration` green; docs swept (J).
 
 ## Risks
 
