@@ -12,42 +12,42 @@
 **Order:** after ADR 0013's decision. It does not wait for plan 0013 (Phase 7). A1 is the owner's
 Rejestr.io list (ADR 0014, accepted 2026-10-06), loaded in step 0.
 
-## Status: active (2026-10-14): owner decisions 1–6 accepted as recommended; steps 0 and B–D built, step F's docs written; list v1 imported twice (2026-10-09 and 2026-10-13, Progress) and everything downstream rebuilt, up to `backtest_v6`; open: the script writing every tab of an expanded row, re-searching list v1's unsearched companies, two importer questions from the second import, and step A's field-by-field comparison and step E on the seed
+## Status: active (2026-10-16): owner decisions 1–6 accepted as recommended; steps 0 and B–D built, step F's docs written; list v1 imported three times (2026-10-09, 2026-10-13 and 2026-10-16, Progress) and everything downstream rebuilt, up to `backtest_v8`; open: the script writing every tab of an expanded row, re-searching list v1's unsearched companies, two importer questions from the second import, and step A's field-by-field comparison and step E on the seed
 
-### Where this stands (2026-10-14): pick up here
+### Where this stands (2026-10-16): pick up here
 
 **The process, each time the owner hands over a new delivery** (README § "Manual RDF capture", "Scripted
 downloads", has the commands): put `outages.csv` in the folder first, import with `rdf_script_import` pointed at
 the folder, parse, fetch the legal sources, rebuild labels, features and DQ, then, if the backtest is to be
 re-run, record a new `backtest_v<n>` before running it. Record each round's counts in § "Progress".
 
-**Where the data is (after the 2026-10-13 round; parsing and everything downstream rebuilt by plan 0017 on 2026-10-15):**
+**Where the data is (after the 2026-10-16 round):**
 
-- **Last delivery imported:** the owner's folder `E:\RDF download folder — 13.10.2026\financial_statements`,
-  read in place (`/mnt/e/...` from WSL, the asset's `inbox` config); nothing from it is copied into the
-  repository. Its `documents.csv` (2,057 rows, 425 entities) and `entities.csv` (885 searches) are stored raw.
-  The script was still on list v1, not list v2.
-- **Imported so far:** 327 entities have canonical facts (17 seed, the rest list v1; 320 until plan 0017 made
-  142 more statement files readable, 2026-10-15); the import skips
-  entities with fewer than three filed years (102 in the last round) until a later listing has three.
+- **Last delivery imported:** the owner's folder `E:\financial_statements 16.10.2026` (the whole listing so
+  far, not only the new downloads), read in place (`/mnt/e/...` from WSL, the asset's `inbox` config); nothing
+  from it is copied into the repository. Its `documents.csv` (2,499 rows, 533 entities), `entities.csv`
+  (1,107 searches) and, from the next import on, `outages.csv` (both known spans, written 2026-10-16) are
+  stored raw. The script was still on list v1 (2 of its entities are also on list v2).
+- **Imported so far:** 402 entities have canonical facts (17 seed, the rest list v1); the import skips
+  entities with fewer than three filed years (134 in the last round) until a later listing has three.
 - **Legal sources:** `krs_extracts` and `msig_notices` fetched for all 609 entities in `entity_master` on
-  2026-10-13 (40 min and 1 h 21 min; each run fetches every entity).
-- **Labels:** `outcome_labels_v2`, label set `821d4ab37dcf…` (111,088 rows), frozen 2026-10-13.
-- **Features:** `feature_set_v6`, rebuilt 2026-10-13 and again 2026-10-15 (plan 0017 step H); `leakage` passed.
-- **Backtest:** `backtest_v6` (`config/models/backtest_v6.yaml`, commit `03f83fe`): v5 with only the label set
-  and the population pinned anew. Population 300 entities, 18 ever in distress, 20 events per horizon. The
-  champion rule promotes nothing (at most 8 paired events; it needs 50), so `logistic_regression` stays
-  champion. The default `BACKTEST_VERSION` is still `backtest_v5`; v6 was run with the variable set. Report:
-  `WAREHOUSE_DIR/reports/backtest/backtest_v6.md`. Since 2026-10-15 the latest run is `backtest_v7` (v6 on plan
-  0017's re-parsed statements; the same pins; at most 9 paired events; nothing promoted).
+  2026-10-16 (40 min and 1 h 21 min; each run fetches every entity).
+- **Labels:** `outcome_labels_v2`, label set `fd867aa80a4d…` (111,088 rows), frozen 2026-10-16.
+- **Features:** `feature_set_v6`, rebuilt 2026-10-16; `leakage` passed.
+- **Backtest:** `backtest_v8` (`config/models/backtest_v8.yaml`, commit `19ca71f`): v7 with only the label set
+  and the population pinned anew. Population 370 entities (seed 17, list v1 353), 20 ever in distress, 22
+  events per horizon. The champion rule promotes nothing (at most 10 paired events; it needs 50), so
+  `logistic_regression` stays champion. The default `BACKTEST_VERSION` is still `backtest_v5`; v8 was run with
+  the variable set. Report: `WAREHOUSE_DIR/reports/backtest/backtest_v8.md`.
 - **Not re-run:** scoring (plan 0016), text signals (no new auditor reports came in this round).
 
 **Open, the owner's (in order of what they unblock):**
 
-1. **The script writes only an expanded row's first tab.** 33 ZIPs of correction groups are held, and 27
+1. **The script writes only an expanded row's first tab.** 34 ZIPs of correction groups are held, and 31
    entities are left out of the backtest for it (`statements_held_back`).
-2. **179 list v1 companies have no search** (`rdf_not_searched`), most searched only during the 2026-10-08
-   outage. Re-searching them is the largest source of new events.
+2. **72 list v1 companies have no search** (`rdf_not_searched`; 179 before the 2026-10-16 round), most
+   searched only during an outage (2026-10-08, or 2026-10-13 evening). Re-searching them is the largest
+   source of new events.
 3. **A correction listed as a row of its own** (3 entities, 4 rows, refused): the importer assumes an expanded
    row's own tab is the original. Decide whether such a row is read as a correction (a change to
    `script_import.py`'s `_tab` rule, then a re-import).
@@ -56,10 +56,13 @@ re-run, record a new `backtest_v<n>` before running it. Record each round's coun
    entity out, or redact free text.
 5. **List v2** (ADR 0014 addendum): its two files are received (2026-10-13); the script runs on it next.
 
-**Lessons from the 2026-10-13 round:**
+**Lessons from the 2026-10-13 and 2026-10-16 rounds:**
 
 - **Without `outages.csv` an outage's not-found searches are recorded** as "not on RDF". The 2026-10-13 folder
-  had none; 396 such searches were recorded and then deleted by hand (Progress). Check for the file, or write
+  had none; 396 such searches were recorded and then deleted by hand (Progress). The 2026-10-16 folder had
+  none either, so the same 396 came back with 102 from a second outage the owner had not noticed (2026-10-13,
+  19:20 to 23:29): an unbroken run of not-found searches with found ones on both sides is an outage to
+  confirm with the owner, even when the owner reports none. Check for the file, or write
   the known spans into it, before importing.
 - **The import fails at the end by design** when any row, search or ZIP is refused. Everything else is imported
   first, but the failure skips the asset's `personal_data` check, so run the store-wide scan by hand:
@@ -159,6 +162,33 @@ statement tier, and the share of scans; and, from ADR 0014, the list's compositi
 the next list representative.
 
 ### Progress
+
+- **List v1's third import (2026-10-16).** The script's listing as of 2026-10-16, still on list v1:
+  `documents.csv` (2,499 rows, 533 entities) and `entities.csv` (1,107 searches), imported from the owner's
+  folder `E:\financial_statements 16.10.2026` with the importer unchanged.
+  - **Import:** 385 rows indexed for 75 new entities, 380 with their document stored; 117 searches recorded.
+    (The folder had no `outages.csv`, so the import first recorded 615: 498 not-found searches, all inside
+    two outages, 396 in 2026-10-08's and 102 in a second, 2026-10-13 19:20 to 23:29 Warsaw time, bounded by
+    found searches. 274 of the 396 entities searched have filings. Deleted by hand the same day with the
+    owner's approval, and both spans written to the folder's `outages.csv`.) 134 entities with fewer than
+    three filed years not imported; 15 not in `entity_master`. Still held: 34 ZIPs whose rows list 1 of 2 or
+    3 tabs.
+  - **Refused, with the asset failing after the rest:** 4 rows the script left empty (no KRS, ids or status;
+    two name a ZIP, 0000792981's 2025 `_2` and 0001039735's 2024, which stay unimported until a row lists
+    them) and 1 search with no time; the 4 rows of a correction listed as its own row (0000734057,
+    0000975124, 0000710747, as before); 6 ZIPs of 0000500757, PESEL numbers in the notes (as before). The
+    store-wide `personal_data` scan finds nothing.
+  - **Parsing:** of the new rows' files, 364 valid, 15 quarantined, 2 `needs_pdf_tier`; all 75 new entities
+    have valid statements, so canonical facts cover 402 entities. The `cashflow_ties` check's step ran out of
+    memory (the four identity checks each load the canonical table, in parallel, beside the legal fetch);
+    re-run by hand on its own it passes (11 failing files, none graded `pass`).
+  - **Rebuilt after it (2026-10-16):** `krs_extracts` and `msig_notices` over all 609 entities, `legal_events`
+    (no new quarantined record), the label models (label set `fd867aa8…`, `outcome_labels_v2`, 111,088 rows),
+    the `features` job (`leakage` passed) and the `dq` models (all audits passed). Then `backtest_v8` (v7 on
+    that label set and the 370-entity population, recorded before the run): 20 entities ever in distress, 22
+    distinct events per horizon (v6/v7: 300, 18, 20); left out: 72 `rdf_not_searched`, 2
+    `rdf_search_incomplete`, 133 `no_statement_imported`, 31 `statements_held_back`. The champion rule
+    promotes nothing (at most 10 paired events, it needs 50). Scoring not re-run.
 
 - **List v1's second import (2026-10-13).** The script's listing as of 2026-10-13, still on list v1:
   `documents.csv` (2,057 rows, 425 entities) and `entities.csv` (885 searches), imported from the owner's
