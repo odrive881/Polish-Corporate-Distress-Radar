@@ -16,7 +16,7 @@
 **Order:** after plan 0015 (complete, 2026-10-12). It does not wait for list v2 or a champion: it serves what the
 registry holds and says so, and the public site's population-level pages wait for list v2 (decision 0).
 
-## Status: active (2026-10-15): owner decisions 0–10 accepted as recommended, 11–13 added from building steps B and C (accepted the same day); steps A–C built in part, items 1–7 of § "Buildable now" built (2026-10-16; the site's build waits on Node.js in WSL), item 8 (the report) next (Progress)
+## Status: active (2026-10-15): owner decisions 0–10 accepted as recommended, 11–13 added from building steps B and C (accepted the same day); steps A–C built in part, items 1–7 of § "Buildable now" built (2026-10-16; the site first built the same day, on `backtest_v8`), item 8 (the report) next (Progress)
 
 ### Progress (2026-10-13), built ahead of the decisions, on the parts every alternative shares
 
@@ -75,14 +75,21 @@ The site (`site/`): Evidence 40.1.8 pinned in `package.json`, the `publish` sour
 decision 0: an overview with the purposive caveat and the provenance table, data quality, pipeline coverage,
 and the backtest (pooled metrics with intervals and event counts per horizon, and the main run's reliability
 tables). No company, sector, region or predicted rate. `make site` builds under `site/build/`; it refuses a
-Windows `npm`, and Node.js is not installed in WSL yet (decision 10), so the site has not been built:
-`site/package-lock.json` comes from its first build.
+Windows `npm`. `site/package-lock.json` comes from its first build (2026-10-16, below).
 
 *Re-run on `backtest_v8` (2026-10-16, at `e106c7b`):* `publish.duckdb` written at threshold 10, nothing
 identifying in it; provenance names `backtest_v8` (commit `19ca71f`), label set `fd867aa8…` and population
 `dbdaa172…`; pipeline coverage for list v1: 609 listed, 592 identified, 518 searched on RDF, 385 with statements
-stored and parsed, 591 labelled, 353 modelled (the seed: 17 at every stage). The site itself is still not built
-(Node.js not in WSL).
+stored and parsed, 591 labelled, 353 modelled (the seed: 17 at every stage).
+
+*The site's first build (2026-10-16):* with Node.js 22 installed in WSL by the owner (`nvm`), `make site` built
+the four pages into `site/build/` (not committed, nothing deployed) from that database. Two fixes to
+`site/package.json` were needed: `"type": "module"`, without which Vite loads Evidence's config as CommonJS and
+refuses its ESM-only packages; and `typescript` pinned at 5.4.2, Evidence 40.1.8's own exact peer, since npm
+otherwise picks TypeScript 7 for a looser peer and refuses the tree. The first `npm install` wrote
+`site/package-lock.json`; `make site` from it (`npm ci`) rebuilds the same pages. No KRS, NIP or REGON of
+`entity_master` or `universe_candidates` occurs in any built file. A shell that skips `~/.bashrc` (a
+non-interactive one) needs `. ~/.nvm/nvm.sh` first, or `make site` finds the Windows `npm` and refuses.
 
 Tested (`tests/test_publish.py`, 18 tests): suppression, including over an upstream threshold; coverage per
 stage; the pooled rows and reliability equal to the backtest's function, bins and cells suppressed, predictions
@@ -299,15 +306,14 @@ each is committed on its own and recorded in Progress when done.
    in the integration suite.
 6. ~~**Step E, the explorer** (decision 8):~~ Built 2026-10-16 (Progress, above). Streamlit, local only, the disclaimer on every page. Score history
    comes from `model_predictions/` before the training eve and from `scores_history` after it (decision 3).
-7. ~~**Step F, the `publish` asset** (decision 9):~~ Built 2026-10-16, up to the site's build (Progress, above). the fixed aggregate queries into `site/sources/publish.duckdb`,
+7. ~~**Step F, the `publish` asset** (decision 9):~~ Built 2026-10-16, and the site built the same day (Progress, above). the fixed aggregate queries into `site/sources/publish.duckdb`,
    and the test that no identifier reaches it. Then the Evidence pages of decision 0, written as source.
 8. **Step G, the report's figures:** the backtest's pooled metrics, event counts and reliability tables,
    computed under `src/` from the warehouse and stamped with their identifiers. Then `report/methodology.qmd`.
 9. **Step H, the docs sweep.**
 
-**What waits on the machine, not on a decision:** building the site and rendering the report (`make site`,
-`make report`). Node.js is not on WSL's `PATH` (only a Windows `npm` under `/mnt/e` is visible), and the Quarto
-CLI is not installed. Steps F and G are written and tested up to that point. Installing both inside WSL is the
+**What waits on the machine, not on a decision:** rendering the report (`make report`): the Quarto CLI is not
+installed. (Node.js was installed in WSL on 2026-10-16, and the site is built.) Steps F and G are written and tested up to that point. Installing both inside WSL is the
 owner's to do, as a documented prerequisite (decision 10). Nothing is deployed (decision 10).
 
 **Not in this list:** plan 0014 item 4's remaining work, weights through the backtest's folds, cells and
