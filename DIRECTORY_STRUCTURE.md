@@ -152,7 +152,8 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │       ├── extraction/
 │       ├── features/
 │       ├── models/
-│       └── api/
+│       ├── api/
+│       └── explorer/
 │
 ├── transform/                         # SQLMesh project (ADR 0010)
 │   ├── config.py                      # gateways (local: DuckDB + Postgres state; test: in-memory)
@@ -186,9 +187,12 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   └── labelling/
 │       └── golden_set.py              # the owner labels the local queues, one per golden sample (plan 0013 step E)
 │
-├── app/                                # Streamlit internal explorer
-│   ├── Home.py
+├── app/                                # Streamlit internal explorer, local only (`make app`; plan 0016 step E)
+│   ├── Home.py                         # served models, the latest month-end's counts
 │   └── pages/
+│       ├── 1_Company.py                # profile, scores, out-of-time history, source-linked statements
+│       ├── 2_Peers.py                  # probabilities by PKD division, as distributions
+│       └── 3_Watchlists.py
 │
 ├── site/                               # Evidence public dashboard
 │   ├── pages/
@@ -228,9 +232,15 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
     │   ├── test_registry.py            # the four identifiers, a dirty tree refused
     │   ├── test_registry_generation3.py  # generation 3's parameters, tuning child runs, versions and aliases
     │   ├── test_serving.py             # the alias rule, a loaded version reproduces its fold, drivers, predictions written
-    │   ├── test_scoring.py             # population, risk set, incomplete inputs, metadata, in-sample refused
-    │   ├── test_scores_store.py        # a rerun adds nothing, not-scored rows, the training eve (integration)
+    │   ├── test_scoring.py             # population, risk set, incomplete inputs, exclusions, metadata, in-sample refused
+    │   ├── test_scores_store.py        # a rerun adds nothing, not-scored rows, exclusions, the training eve (integration)
     │   └── test_backtest_asset.py      # the models group and its hand-run job
+    ├── api/
+    │   └── test_api.py                 # envelope and disclaimer, localhost, a stale version refused, each route
+    ├── explorer/
+    │   ├── sources.py                  # synthetic explorer sources
+    │   ├── test_data.py                # history out-of-time, status, peers as distributions, documents
+    │   └── test_pages.py               # every page runs (AppTest) and carries the disclaimer
     ├── transform/                      # SQLMesh boundary and Dagster DQ wiring (pytest side)
     ├── fixtures/                       # golden XML/PDF documents for mapping tests
     │   └── legal/                      # redacted KRS extracts, reduced MSiG notices (plan 0008)
@@ -330,14 +340,18 @@ src/distress_radar/
 │   ├── scoring.py                 # the latest month-end: who is scored, why the rest are not, each row's metadata
 │   └── scores_store.py            # Postgres scores_history, scoring_exclusions and watchlists
 │
-└── api/
-    ├── main.py
+└── api/                           # J: read-only scores API, 127.0.0.1 only (plan 0016 step D)
+    ├── main.py                    # app factory; served versions resolved at startup; `make api`
     ├── routes/
     │   ├── companies.py
-    │   ├── scores.py
+    │   ├── scores.py              # also /meta
     │   └── watchlists.py
-    ├── schemas.py
+    ├── schemas.py                 # the envelope: data, served versions, disclaimer
+    ├── deps.py                    # per-request connection, served versions, envelope
     └── db.py
+
+src/distress_radar/explorer/       # K: what the Streamlit pages show, as frames, testable without Streamlit
+└── data.py                        # sources, out-of-time score history, current status, peers, documents
 ```
 
 Subfolder names match the stage groups in `AGENT_SPEC.md` §6 exactly (acquisition = A, parsing = C, extraction = G, features = H, models = I, api = J). This is intentional and must be preserved: an agent implementing a stage should never need to guess which folder it belongs in.

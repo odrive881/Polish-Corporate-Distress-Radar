@@ -16,7 +16,7 @@
 **Order:** after plan 0015 (complete, 2026-10-12). It does not wait for list v2 or a champion: it serves what the
 registry holds and says so, and the public site's population-level pages wait for list v2 (decision 0).
 
-## Status: active (2026-10-15): owner decisions 0–10 accepted as recommended, 11–13 added from building steps B and C (accepted the same day); steps A–C built in part, items 1–3 of § "Buildable now" built and run (2026-10-16), item 4 next (Progress)
+## Status: active (2026-10-15): owner decisions 0–10 accepted as recommended, 11–13 added from building steps B and C (accepted the same day); steps A–C built in part, items 1–6 of § "Buildable now" built and run (2026-10-16), item 7 (the publish asset and the site) next (Progress)
 
 ### Progress (2026-10-13), built ahead of the decisions, on the parts every alternative shares
 
@@ -43,6 +43,69 @@ registry holds and says so, and the public site's population-level pages wait fo
 items 2–9 resume on its rebuilt data. *2026-10-15:* the rebuild is in (plan 0017 step H; Progress below). Before
 item 3's real scoring run: the job reads its population from `BACKTEST_VERSION`, whose default is still
 `backtest_v5` (186 entities), so either set it to `backtest_v7` or change the default.
+
+### Progress (2026-10-16): step E, the explorer (buildable item 6)
+
+`app/` (`make app`, Streamlit on `127.0.0.1` only), laid out over `src/distress_radar/explorer/data.py`, which
+holds everything the pages show as frames, testable without Streamlit. Every page carries the disclaimer.
+
+- **Home:** the served versions and the latest month-end's counts per horizon (scored, inputs incomplete, each
+  exclusion reason), with the purposive caveat.
+- **Company:** identity (KRS, NIP, REGON, GUS status, PKD) and the form of the latest statement filed (the size
+  class as filed); per horizon, the probability with its drivers and its percentile in its PKD division, or why
+  it is not scored, with the inputs missing. A micro filer missing `working_capital_to_assets` is told the
+  served model does not cover micro filers (the 2026-10-14 finding), not that data is missing. The score history
+  (decision 3) is out-of-time throughout: each backtest month-end from the fold whose test year holds it (the
+  served version's backtest, `main` run, model and horizon), then the served version's own scores; nothing is
+  re-scored with the served model. Annotated with filings and distress events, and the training eve. Then legal
+  events, filings, and the canonical facts by period, each with its document hash and element path; the stored
+  document can be fetched and saved.
+- **Peers:** per PKD division at the latest month-end, the count and quartiles of the scored companies'
+  probabilities; no company is listed.
+- **Watchlists:** pick or name a list, choose its companies, save (through `api.db.replace_watchlist`), and see
+  each member's current scores or reasons.
+
+A correction to decision 3 as first built: cutting the backtest's points at the served version's training eve
+dropped its own fold's predictions (the served regression is the fold-2025 model, so its 2025 month-ends are
+out-of-time). Every fold's point is out-of-time by construction, so all are kept, a served score winning on a
+shared month-end.
+
+Tested: `tests/explorer/test_data.py` (history, status, summary, peers, facts, documents) and
+`tests/explorer/test_pages.py` (every page under `AppTest` on synthetic sources, the disclaimer on each, the
+micro note, an excluded company, a watchlist). Run on the real stores under `AppTest`: every page without an
+exception; loading the stores takes about 40 seconds on `/mnt/c`, once per session (cached).
+
+### Progress (2026-10-16): step D, the API (buildable item 5)
+
+`src/distress_radar/api/` (`make api`, on `127.0.0.1:8000` only, no auth): decision 6's routes, read-only over
+`scores_history`, `scoring_exclusions` and `watchlists`. At startup the served version per horizon of
+`BACKTEST_VERSION`'s horizons is loaded from the registry (`load_served`), and the app refuses to start when the
+latest stored scores of a horizon came from another version ("run the scoring job first"). Every response is an
+envelope: `data`, `meta.served` (decision 7's fields per served version: name, version, alias, kind, MLflow run,
+training eve, the version's code commit, data snapshot, label version and set, feature set and hash) and the
+disclaimer, which also says the training list is purposive. Every read is limited to the served versions.
+
+- `GET /companies/{krs}`: per horizon, the newer of the latest score row (a probability with its drivers, or
+  "inputs incomplete" with the inputs named) and the latest exclusion with its reason; a company scored once and
+  then found in a proceeding shows the exclusion. 404 for a company no served run saw.
+- `GET /companies/{krs}/scores`: the served versions' score rows, oldest first. The out-of-time history before
+  the training eve (decision 3) is the explorer's, from `model_predictions/`; the API serves what is in Postgres.
+- `GET /scores?as_of_date=&horizon_months=`: every score row at a month-end, the latest by default.
+- `GET|PUT|DELETE /watchlists/{name}`: PUT sets the whole list (members kept keep their `added_at`), each
+  member returned with its latest scores or exclusions.
+- `GET /meta`: the served versions and the disclaimer.
+
+Tested (`tests/api/test_api.py`, 13 tests): the bind address, the envelope on every route, a stale database
+refused, an empty one starting, each route's shape and 404/422 cases, against a throwaway Postgres schema.
+Smoke-tested on the real stores (`BACKTEST_VERSION=backtest_v7`): 572 rows at 2026-09-30, served v4.
+
+### Progress (2026-10-16): step A completed (buildable item 4)
+
+`fastapi` 0.141.1, `uvicorn` 0.52.4, `streamlit` 1.66.0 and `altair` 6.3.0 locked. The threshold (decision 9):
+`.env.example` sets `DQ_MART_MIN_CELL_ENTITIES=10`, and `Settings.publish_min_cell_entities()` refuses an unset
+value or one below 5 (`PUBLISH_MIN_CELL_FLOOR`); step F's `publish` asset calls it before writing anything.
+An existing `.env` keeps its own value: empty (suppression off) until the owner sets it, which is harmless while
+nothing is published, and the `publish` asset refuses to run until then.
 
 ### Progress (2026-10-16): the first real scoring run (buildable item 3)
 
@@ -163,12 +226,12 @@ each is committed on its own and recorded in Progress when done.
 3. ~~**The first real scoring run (decision 5).**~~ Done 2026-10-16 (Progress, above). Run the `scoring` job on a clean tree at the latest month-end,
    writing to local Postgres, and record the counts here. This is local and company-level, nothing leaves the
    machine. A rerun adds nothing.
-4. **Step A, the rest:** `fastapi`, `uvicorn`, `streamlit`, `altair` in `pyproject.toml` (`make lock`). The
+4. ~~**Step A, the rest:**~~ Built 2026-10-16 (Progress, above). `fastapi`, `uvicorn`, `streamlit`, `altair` in `pyproject.toml` (`make lock`). The
    threshold check (decision 9): `DQ_MART_MIN_CELL_ENTITIES=10` in `.env.example`, and a settings check that
    refuses a value below 5 before anything is published.
-5. **Step D, the API** (decisions 6 and 7), as specified. It is bound to `127.0.0.1` and tested against Postgres
+5. ~~**Step D, the API** (decisions 6 and 7), as specified.~~ Built 2026-10-16 (Progress, above). It is bound to `127.0.0.1` and tested against Postgres
    in the integration suite.
-6. **Step E, the explorer** (decision 8): Streamlit, local only, the disclaimer on every page. Score history
+6. ~~**Step E, the explorer** (decision 8):~~ Built 2026-10-16 (Progress, above). Streamlit, local only, the disclaimer on every page. Score history
    comes from `model_predictions/` before the training eve and from `scores_history` after it (decision 3).
 7. **Step F, the `publish` asset** (decision 9): the fixed aggregate queries into `site/sources/publish.duckdb`,
    and the test that no identifier reaches it. Then the Evidence pages of decision 0, written as source.
