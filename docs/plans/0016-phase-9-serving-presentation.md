@@ -16,7 +16,7 @@
 **Order:** after plan 0015 (complete, 2026-10-12). It does not wait for list v2 or a champion: it serves what the
 registry holds and says so, and the public site's population-level pages wait for list v2 (decision 0).
 
-## Status: active (2026-10-15): owner decisions 0–10 accepted as recommended, 11–13 added from building steps B and C (accepted the same day); steps A–C built in part, items 1–2 of § "Buildable now" built (2026-10-16), item 3 next (Progress)
+## Status: active (2026-10-15): owner decisions 0–10 accepted as recommended, 11–13 added from building steps B and C (accepted the same day); steps A–C built in part, items 1–3 of § "Buildable now" done (2026-10-16), item 4 next (Progress)
 
 ### Progress (2026-10-13), built ahead of the decisions, on the parts every alternative shares
 
@@ -43,6 +43,26 @@ registry holds and says so, and the public site's population-level pages wait fo
 items 2–9 resume on its rebuilt data. *2026-10-15:* the rebuild is in (plan 0017 step H; Progress below). Before
 item 3's real scoring run: the job reads its population from `BACKTEST_VERSION`, whose default is still
 `backtest_v5` (186 entities), so either set it to `backtest_v7` or change the default.
+
+### Progress (2026-10-16): the first real scoring run (buildable item 3)
+
+The `scoring` job, run from a clean tree at `811ce1f` with `BACKTEST_VERSION=backtest_v7` set for the run (the
+default stays `backtest_v5`; the variable is the owner's to change), wrote to local Postgres at 2026-09-30.
+Per horizon, the served version is v4 of `distress_radar_12m` and `_24m`, the regression, `incumbent`, training
+eve 2024-12-31, label set `821d4ab3…`; the population hash is `backtest_v7`'s pin (`8f1d5cd3…`, 300 entities).
+
+| | 12 months | 24 months |
+|---|---|---|
+| `scores_history`: scored | 205 | 205 |
+| `scores_history`: inputs incomplete | 81 | 81 |
+| `scoring_exclusions`: `rdf_not_searched` / `no_statement_imported` / `statements_held_back` / `rdf_search_incomplete` | 180 / 100 / 27 / 2 | the same |
+| `scoring_exclusions`: `not_at_risk` | 14 | 14 |
+| Mean / median probability of the scored | 0.012 / 0.006 | 0.026 / 0.016 |
+
+572 score rows and 646 exclusions, all 609 entities with features accounted for per horizon. Missing inputs as
+the dry run counted them (`working_capital_to_assets` 79, `roa` 8, `asset_turnover` 7, `equity_to_assets` 5).
+A second run inserted nothing (invariant 5). The probabilities are the regression's on a purposive list and
+are no statement about the segment (ADR 0014); every row names a company and stays local.
 
 ### Progress (2026-10-16): the excluded entities' reasons stored (buildable item 2)
 
@@ -140,7 +160,7 @@ each is committed on its own and recorded in Progress when done.
    feature-store entity at the scored month-end gets one row with its reason (the population rule's, or
    `not_at_risk`) and the population hash, in a Postgres table beside `scores_history` (`scoring_exclusions`,
    keyed like it, idempotent), so the API can say why a company is not scored.
-3. **The first real scoring run (decision 5).** Run the `scoring` job on a clean tree at the latest month-end,
+3. ~~**The first real scoring run (decision 5).**~~ Done 2026-10-16 (Progress, above). Run the `scoring` job on a clean tree at the latest month-end,
    writing to local Postgres, and record the counts here. This is local and company-level, nothing leaves the
    machine. A rerun adds nothing.
 4. **Step A, the rest:** `fastapi`, `uvicorn`, `streamlit`, `altair` in `pyproject.toml` (`make lock`). The
