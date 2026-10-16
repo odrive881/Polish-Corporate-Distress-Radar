@@ -30,6 +30,7 @@ site/build/
 site/node_modules/
 site/.evidence/
 report/_output/
+report/_figures/
 
 # SQLMesh writes run logs to ./logs when called directly (make targets use .cache/)
 logs/

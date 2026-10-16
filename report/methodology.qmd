@@ -1,0 +1,139 @@
+---
+title: "Distress radar: methodology"
+subtitle: "Polish construction companies, bankruptcy, restructuring and liquidation within 12 and 24 months"
+format:
+  html:
+    toc: true
+    embed-resources: true
+---
+
+<!--
+Plan 0016 step G. Every number below is a generated figure, included from `_figures/`, which
+`make report` rewrites from the public site's database (the publish job's output) before rendering:
+the report shows nothing the site does not, small cells are suppressed the same way, and every
+figure carries the identifiers it is regenerable from. Prose here states rules, never results.
+-->
+
+::: {.callout-warning}
+## What this report does not claim
+
+No company is named or scored here. The companies the models were built on come from purposive
+lists, chosen partly by distress status, so their base rate is not the sector's, and no number below
+is a performance claim about the population. A score from these models is a statistical estimate,
+not a statement of fact about any company.
+:::
+
+## The question
+
+The pipeline estimates the probability that a Polish company enters bankruptcy, restructuring or
+liquidation, or disappears from the register without one ("silent exit"), within 12 or 24 months of
+a month-end. Version 1 covers construction (PKD section F), limited liability companies
+(`sp. z o.o.`), with at least three filed years.
+
+## The universe and its lists
+
+Companies enter by list, never by enumerating a register. Two lists are in use:
+
+- **the seed** (`manual_seed`): a hand-picked set, chosen with distress hints, used to build and test
+  the pipeline;
+- **list v1** (`rejestr_io_v1`): construction companies selected by hand with the filters of a
+  commercial aggregator of public registry data, at various sizes, locations and distress statuses.
+
+Neither is a probability sample, so neither list's share of distressed companies estimates the
+sector's. A company is modelled only once every statement it filed has been fetched: to a model, a
+company whose filings were never fetched looks like one that never filed. How far each list's
+companies got:
+
+{{< include _figures/coverage.md >}}
+
+## The pipeline
+
+1. **Statements.** Annual financial statements are downloaded from the Repozytorium Dokumentów
+   Finansowych at a human pace (at most three documents a minute), stored byte for byte, and parsed
+   from the Ministry of Finance's XML structures into one canonical model of line items. Every fact
+   keeps the document it came from, the element it was read from, and the run that read it. The
+   date a statement was filed is the date its figures become known; nothing is used before it.
+2. **Checks.** Four accounting identities are checked on every statement (the balance sheet
+   balances, the subtotals add up, the result ties between statements, the cash flow ties). A
+   material failure quarantines the statement: it is kept and counted, never repaired, and not used
+   for features. Statements filed as PDF are recorded and not parsed.
+3. **Registry history.** The open KRS API gives each company's full extract with its history, and the
+   Monitor Sądowy i Gospodarczy its notices. Natural persons are removed before anything is stored.
+4. **Features.** Ratios, filing behaviour, statutory loss tripwires and signals read from the notes
+   to the statements, each as known at the month-end it describes.
+
+Statements by fiscal year, and what became of them:
+
+{{< include _figures/dq_coverage.md >}}
+
+## Labels
+
+A company is labelled at each month-end by whether a qualifying event (bankruptcy, restructuring,
+liquidation, or a silent exit) follows within the horizon. The registry enters a court's decision
+late (up to 21 months after it was made, in the data so far), so a company still `alive` near the
+end of the data may have an event not yet entered. Two rules follow: an `alive` window is only treated as
+settled after a lag allowance, and a model trained as of a date uses only the labels settled by that
+date. Companies already in a proceeding are not at risk and are left out.
+
+## Evaluation
+
+Every model is evaluated **out of time**. For each test year, a model is trained only on labels
+settled on the eve of that year and scored on the year itself; folds are purged so that no training
+window overlaps the test year. A pooled row gathers the test years whose model trained on enough
+events. Calibration (the Brier score) is reported beside discrimination (AUC), never AUC alone.
+
+The models, in three generations:
+
+- **Published scores:** Altman's Z'' (2000) and the Poznań model (2004) with their published
+  coefficients, mapped to probabilities per fold.
+- **The regression:** a logistic regression on rank-transformed ratios, on complete cases only. Its
+  working-capital input needs short-term liabilities, which the micro balance sheet does not report,
+  so it does not score micro filers.
+- **Gradient boosting and survival:** LightGBM (raw and calibrated), a discrete-time survival model
+  with LightGBM hazards, and a random survival forest. Missing inputs are kept as missing, never
+  imputed.
+
+The settings these results rest on:
+
+{{< include _figures/settings.md >}}
+
+## Results
+
+Pooled over the test years, main run. Intervals are percentile intervals over companies resampled.
+A cell covering too few companies shows no figures.
+
+### 12 months
+
+{{< include _figures/metrics_12.md >}}
+
+### 24 months
+
+{{< include _figures/metrics_24.md >}}
+
+### Reliability
+
+For each probability band, the mean predicted probability beside the share of rows that went on to
+an event.
+
+#### 12 months
+
+{{< include _figures/reliability_12.md >}}
+
+#### 24 months
+
+{{< include _figures/reliability_24.md >}}
+
+## The champion rule's verdict
+
+A challenger replaces the incumbent regression only if it is better calibrated with confidence, not
+worse at ranking, in every run, and on enough events. What serves each horizon:
+
+{{< include _figures/served.md >}}
+
+## Provenance
+
+Every figure in this report is regenerable from these identifiers: the code commit, the
+feature-store snapshot, the label version and set, the feature set, the backtest, and the small-cell
+threshold.
+
+{{< include _figures/provenance.md >}}

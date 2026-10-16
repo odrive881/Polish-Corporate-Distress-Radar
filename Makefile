@@ -1,7 +1,7 @@
 UV ?= uv
 export UV_LINK_MODE := copy
 
-.PHONY: install lock lint typecheck test test-integration check dev-up dev-down api app site \
+.PHONY: install lock lint typecheck test test-integration check dev-up dev-down api app site report \
 	transform-setup transform-plan transform-run transform-test docs-check hooks models \
 	label-queue label-clear label-export eval eval-accept
 
@@ -90,6 +90,14 @@ site:       ## build the static public site under site/build (needs Node.js and 
 	@case "$$(command -v npm)" in ""|/mnt/*) echo "Node.js is not installed in WSL (a Windows npm is not used here): see README, Setup"; exit 1;; esac
 	@test -f site/sources/publish/publish.duckdb || { echo "run the publish job first"; exit 1; }
 	cd site && if [ -f package-lock.json ]; then npm ci; else npm install; fi && npm run sources && npm run build
+
+# The methodology report (plan 0016 step G): figures regenerated from the publish database, then
+# rendered by the Quarto CLI installed in WSL (decision 10). Renders only: nothing is deployed.
+report:     ## regenerate the report's figures and render report/methodology.qmd to HTML
+	@test -f site/sources/publish/publish.duckdb || { echo "run the publish job first"; exit 1; }
+	$(UV) run --locked python -m distress_radar.methodology
+	@case "$$(command -v quarto)" in ""|/mnt/*) echo "the Quarto CLI is not installed in WSL: see README, Setup"; exit 1;; esac
+	quarto render report/methodology.qmd --output-dir _output
 
 app:        ## run the local Streamlit explorer (needs `make dev-up` and a scoring run)
 	$(UV) run --locked streamlit run app/Home.py --server.address 127.0.0.1 --server.headless true \
