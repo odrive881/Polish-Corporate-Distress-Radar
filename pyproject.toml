@@ -49,6 +49,12 @@ dependencies = [
     "scikit-survival>=0.24",
     "optuna>=4.1",
     "shap>=0.46",
+    # Stages J and K (plan 0016): the read-only API, bound to 127.0.0.1, and the local explorer
+    # with its Altair charts. Both serve named companies and stay on the machine.
+    "fastapi>=0.115",
+    "uvicorn>=0.32",
+    "streamlit>=1.40",
+    "altair>=5.4",
 ]
 
 [project.optional-dependencies]

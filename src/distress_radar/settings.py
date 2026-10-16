@@ -14,6 +14,9 @@ from typing import Literal
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# The spec's floor for a published cell (AGENT_SPEC §10); plan 0016 decision 9 sets 10.
+PUBLISH_MIN_CELL_FLOOR = 5
+
 # Published by GUS for the BIR1 test environment; not a secret.
 BIR1_PUBLIC_TEST_KEY = "abcde12345abcde12345"
 
@@ -124,6 +127,17 @@ class Settings(BaseSettings):
             f"host={self.postgres_host} port={self.postgres_port} dbname={self.postgres_db} "
             f"user={self.postgres_user} password={self.postgres_password.get_secret_value()}"
         )
+
+    def publish_min_cell_entities(self) -> int:
+        """The small-cell threshold, for anything about to be published (plan 0016 decision 9):
+        refused while suppression is off or set below the spec's floor."""
+        threshold = self.dq_mart_min_cell_entities
+        if threshold is None or threshold < PUBLISH_MIN_CELL_FLOOR:
+            raise ValueError(
+                f"DQ_MART_MIN_CELL_ENTITIES is {threshold}: set it to at least "
+                f"{PUBLISH_MIN_CELL_FLOOR} (10 recommended) before anything is published"
+            )
+        return threshold
 
     def bir1_api_key(self) -> str:
         """The configured BIR1 key; the public test key when on the test endpoint."""
