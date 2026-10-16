@@ -4,7 +4,40 @@
 
 **Order:** after plan 0005 (whose vocabulary it needs), and only when a trigger below fires. It was expected to start in Phase 4, when MSiG would force a PDF text layer; MSiG turned out to serve text (ADR 0011), so it did not. Plan 0007 no longer waits for it.
 
-## Status: deferred (2026-09-21); Phase 4 trigger did not fire (2026-09-23)
+## Status: deferred (2026-09-21); Phase 4 trigger did not fire (2026-09-23); triggers 1 and 2 measured over list v1 (2026-10-16): trigger 1 fires for one entity, trigger 2 does not; staying deferred is the owner's to confirm
+
+**Update, 2026-10-16 (plan 0017 step I): the triggers, measured over list v1.** By
+`notebooks/exploration/pdf_tier_triggers.py` (read-only; re-run it after each delivery), on the latest parsing
+run: **47 `needs_pdf_tier` files of 22 entities**, none a correction, periods ending 2018–2024. Each file
+against the entity's parsed statements:
+
+| Outcome | Files | Entities |
+|---|---|---|
+| Covered by an XML statement for the same period | 0 | 0 |
+| Recoverable: the next period's statement carries a `prior_year` column | 29 | 18 |
+| Unrecoverable, a later statement exists | 15 | 7 |
+| Unrecoverable, the entity's latest statement | 3 | 1 |
+
+Of the 29 recoverable, 7 come from a next filing graded `quarantined`, and 28 are known only from the next
+filing's `known_from`, a year or so after the PDF's: the substitute recovers the figures, never the timing. A
+file is unrecoverable when the next year is a PDF too: filers that file printouts tend to do so for years in a
+row (0000680767: 2018–2023, of which 2018–2022 unrecoverable; 0000195738: 2020–2024, of which 2020–2023).
+
+- **Trigger 2 does not fire.** The 18 unrecoverable files (8 entities) are all in v1 scope (periods from
+  2018) and all known before any distress event, but **none of the 8 entities has a distress event**, and 6
+  are in `backtest_v7`'s population: 2% of its 300, all among the 282 without an event. Of the 22 entities
+  with a PDF at all, one has a distress event (0000181328, the seed's case, above). So no bias of the positive
+  class, and no material share of the universe. The one effect: the missing years fall only on negatives, and
+  the filing features' paper-filing flag sees 22 entities, one of them distressed. Too few to matter on list
+  v1; list v2's distress group (200 entities) is the real test, so re-measure after it is imported.
+- **Trigger 1 fires, for one entity.** 0000777764 is live (no distress event, not deregistered), in the
+  population, a micro filer, and its three latest statements (FY2022–FY2024, the last two filed together on
+  2025-10-18) are PDFs with no later filing. Its features stay on FY2021.
+- **Recommended: stay deferred**, and amend trigger 1 to a share rather than a single entity (for instance,
+  1% of the population's live entities). One micro filer does not justify the statement label map, three
+  bodies of it for a micro filer (ADR 0005 third addendum, trap (a)), and the served regression does not
+  score micro filers anyway (plan 0016). Building the tier stays the response if list v2 moves either
+  measure. **The owner's to decide**: by this plan's own rule a fired trigger means build.
 
 **Update, 2026-09-23 (plan 0008, ADR 0011):** trigger 3 and the "MSiG forces a PDF text layer" premise below did
 not hold. MSiG's notice base is a JSON search API that returns notice text, so Phase 4 read notices without any
