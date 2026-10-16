@@ -1,0 +1,19 @@
+{
+  "name": "distress-radar-site",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The public site (plan 0016 step F): aggregates from site/sources/publish/publish.duckdb only.",
+  "scripts": {
+    "sources": "evidence sources",
+    "build": "evidence build",
+    "dev": "evidence dev --host 127.0.0.1"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@evidence-dev/core-components": "5.4.2",
+    "@evidence-dev/duckdb": "2.0.1",
+    "@evidence-dev/evidence": "40.1.8"
+  }
+}

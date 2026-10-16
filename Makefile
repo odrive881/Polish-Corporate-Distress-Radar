@@ -1,7 +1,7 @@
 UV ?= uv
 export UV_LINK_MODE := copy
 
-.PHONY: install lock lint typecheck test test-integration check dev-up dev-down api app \
+.PHONY: install lock lint typecheck test test-integration check dev-up dev-down api app site \
 	transform-setup transform-plan transform-run transform-test docs-check hooks models \
 	label-queue label-clear label-export eval eval-accept
 
@@ -84,6 +84,13 @@ api:        ## serve the local scores API (needs `make dev-up` and a scoring run
 	$(UV) run --locked python -m distress_radar.api.main
 
 # The internal explorer (plan 0016 step E): Streamlit on localhost only; every page names companies.
+# The public site (plan 0016 step F), built locally from site/sources/publish/publish.duckdb, which the
+# `publish` job writes. Needs Node.js 20+ in WSL (decision 10). Builds only: deploying is the owner's call.
+site:       ## build the static public site under site/build (needs Node.js and a `publish` run)
+	@case "$$(command -v npm)" in ""|/mnt/*) echo "Node.js is not installed in WSL (a Windows npm is not used here): see README, Setup"; exit 1;; esac
+	@test -f site/sources/publish/publish.duckdb || { echo "run the publish job first"; exit 1; }
+	cd site && if [ -f package-lock.json ]; then npm ci; else npm install; fi && npm run sources && npm run build
+
 app:        ## run the local Streamlit explorer (needs `make dev-up` and a scoring run)
 	$(UV) run --locked streamlit run app/Home.py --server.address 127.0.0.1 --server.headless true \
 		--browser.gatherUsageStats false
