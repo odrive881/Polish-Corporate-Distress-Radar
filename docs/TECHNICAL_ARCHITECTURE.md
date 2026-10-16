@@ -475,6 +475,8 @@ Calibration matters more than discrimination for this product. A user acting on 
 
 **→ Pick: FastAPI + Pydantic v2.** Uncontroversial and correct: async, typed, and auto-generates the OpenAPI spec. Include data-version metadata in every response payload, so any consumer can tell exactly which snapshot produced a score.
 
+*As built (plan 0016):* a read-only API over Postgres, bound to 127.0.0.1 (it serves named scores, so it never leaves the machine); the served versions are loaded from the MLflow registry at startup, and every response carries their identifiers and the disclaimer.
+
 #### J2 — Operational store and model loading
 
 **→ Pick: Postgres** for scores, alerts, watchlists, and the document manifest, with `pgvector` if you later want semantic search over extracted note text — reusing Postgres avoids introducing a separate vector database for a marginal feature.
@@ -489,6 +491,8 @@ Load models in-process from the MLflow registry. No BentoML, Seldon, or KServe: 
 
 **→ Pick: Streamlit** for the company risk profile view, watchlist management, and DQ dashboards. Python-native, fastest path to a working interface, and entirely sufficient for a single-user analytical tool. Choose `Dash` instead only if you need heavily custom interactive charting.
 
+*As built (plan 0016):* local only (127.0.0.1): company profile, out-of-time score history with filings and legal events, source-linked statements, peers as PKD-division distributions, watchlists. The data layer is `src/distress_radar/explorer/`, testable without Streamlit; the pages are smoke-tested with `AppTest`.
+
 #### K2 — Public static site
 
 | Option | Assessment |
@@ -499,9 +503,13 @@ Load models in-process from the MLflow registry. No BentoML, Seldon, or KServe: 
 
 **→ Pick: Evidence, deployed static to GitHub Pages or Cloudflare Pages.** This is high-leverage for the hiring goal: a recruiter or engineering manager sees a live, working dashboard without cloning the repo, installing anything, or you paying hosting costs. Pair it with `Altair` or `Plotly` for charts inside the Streamlit app.
 
+*As built (plan 0016):* the site reads one DuckDB database written by the `publish` job from fixed aggregate tables, small cells suppressed and identifiers refused; it is built locally (`make site`) and not deployed yet, which is the owner's decision. Sector and regional pages wait for a representative list (list v2's weighted draw).
+
 #### K3 — Methodology report
 
 **→ Pick: Quarto.** Renders the versioned methodology and backtest report to HTML and PDF from the same source, with executable code blocks so figures regenerate from live data rather than being pasted in. Keep architecture diagrams as Mermaid in the repo so they render natively on GitHub.
+
+*As built (plan 0016):* the report's figures are generated as Markdown includes from the publish database before each render (`make report`), not computed in executable cells, so no Jupyter kernel is needed and the report can never show more than the site.
 
 ---
 

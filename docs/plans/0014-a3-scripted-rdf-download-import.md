@@ -37,7 +37,7 @@ re-run, record a new `backtest_v<n>` before running it. Record each round's coun
 - **Backtest:** `backtest_v8` (`config/models/backtest_v8.yaml`, commit `19ca71f`): v7 with only the label set
   and the population pinned anew. Population 370 entities (seed 17, list v1 353), 20 ever in distress, 22
   events per horizon. The champion rule promotes nothing (at most 10 paired events; it needs 50), so
-  `logistic_regression` stays champion. The default `BACKTEST_VERSION` is still `backtest_v5`; v8 was run with
+  `logistic_regression` stays the served incumbent (no version holds `champion`). The default `BACKTEST_VERSION` is still `backtest_v5`; v8 was run with
   the variable set. Report: `WAREHOUSE_DIR/reports/backtest/backtest_v8.md`.
 - **Scoring:** re-run on `backtest_v8`'s population and served version 5 (plan 0016, § "Progress"): 242
   scored and 113 with inputs incomplete per horizon.

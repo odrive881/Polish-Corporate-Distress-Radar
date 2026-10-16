@@ -16,7 +16,39 @@
 **Order:** after plan 0015 (complete, 2026-10-12). It does not wait for list v2 or a champion: it serves what the
 registry holds and says so, and the public site's population-level pages wait for list v2 (decision 0).
 
-## Status: active (2026-10-15): owner decisions 0–10 accepted as recommended, 11–13 added from building steps B and C (accepted the same day); steps A–C built in part, items 1–7 of § "Buildable now" built (2026-10-16; the site first built the same day, on `backtest_v8`), item 8 built up to its render (2026-10-16; Quarto is not in WSL), item 9 (the docs sweep) next (Progress)
+## Status: active (2026-10-16): owner decisions 0–13 accepted; every item of § "Buildable now" built and the docs swept (items 1–9); open: rendering the report, which waits on the Quarto CLI in WSL, and the owner's items below
+
+### Where this stands (2026-10-16): pick up here
+
+**Built and run, on `backtest_v8`** (370-entity population; served: the regression, v5 of `distress_radar_12m`
+and `_24m`, alias `incumbent`, training eve 2024-12-31; nothing promoted):
+
+- **Scoring** (`scoring` job): at 2026-09-30, 242 scored, 113 inputs incomplete (mostly micro filers, whose
+  balance sheet has no short-term liabilities line), 254 not scored with their reason, per horizon, in local
+  Postgres (`scores_history`, `scoring_exclusions`).
+- **API** (`make api`) and **explorer** (`make app`): local only, on 127.0.0.1.
+- **Publish and site** (`publish` job, `make site`): `publish.duckdb` on `backtest_v8`, the site built into
+  `site/build/`; nothing deployed.
+- **Report** (`make report`): figures generated from the publish database; **not rendered**, because the
+  Quarto CLI is not in WSL.
+
+Every job here runs by hand from a clean tree, with `BACKTEST_VERSION` set (the default is still
+`backtest_v5`); `publish` also needs `DQ_MART_MIN_CELL_ENTITIES` (10). After any new backtest version: re-run
+`scoring`, then `publish`, then `make site` and `make report`. `publish` refuses a population that no longer
+hashes to the backtest's pin, which is what a new delivery imported since the backtest looks like.
+
+**Open for the owner:**
+
+1. Install the Quarto CLI inside WSL, then `make report` (it refuses a Windows one), which closes the last
+   definition-of-done item.
+2. Read the built site and the report; deploying either is a separate decision (decision 10), and the
+   repository is public.
+3. Whether to move the default `BACKTEST_VERSION` to the latest backtest (every run since v5 sets it by hand).
+
+**What comes after this plan:** Phase 10 (schedules for scoring and acquisition, alerts into `alerts`, Evidently
+drift and calibration monitoring, Sentry) needs a plan of its own. The site's population pages (decision 0)
+wait for list v2's weighted draw (plan 0014, ADR 0014 addendum).
+
 
 ### Progress (2026-10-13), built ahead of the decisions, on the parts every alternative shares
 
@@ -43,6 +75,14 @@ registry holds and says so, and the public site's population-level pages wait fo
 items 2–9 resume on its rebuilt data. *2026-10-15:* the rebuild is in (plan 0017 step H; Progress below). Before
 item 3's real scoring run: the job reads its population from `BACKTEST_VERSION`, whose default is still
 `backtest_v5` (186 entities), so either set it to `backtest_v7` or change the default.
+
+### Progress (2026-10-16): step H, the docs sweep (buildable item 9)
+
+Read against this plan's results: README's status (the current state and where to pick up), AGENT_SPEC §6J and
+§6K and TECHNICAL_ARCHITECTURE (as-built notes for the API, the explorer, the site and the report: local only,
+no sector or regional page while the lists are purposive, figures as includes), `DIRECTORY_STRUCTURE.md` (every
+new file), `docs/data_inventory.md` (no MLflow server was needed; the deploy token waits on the owner's
+decision), and plan 0014's wording (nothing holds `champion`). `make docs-check` green.
 
 ### Progress (2026-10-16): step G, the methodology report (buildable item 8)
 
@@ -334,7 +374,7 @@ each is committed on its own and recorded in Progress when done.
    and the test that no identifier reaches it. Then the Evidence pages of decision 0, written as source.
 8. ~~**Step G, the report's figures:**~~ Built 2026-10-16, up to the render (Progress, above). the backtest's pooled metrics, event counts and reliability tables,
    computed under `src/` from the warehouse and stamped with their identifiers. Then `report/methodology.qmd`.
-9. **Step H, the docs sweep.**
+9. ~~**Step H, the docs sweep.**~~ Done 2026-10-16 (Progress, below).
 
 **What waits on the machine, not on a decision:** rendering the report (`make report`): the Quarto CLI is not
 installed. (Node.js was installed in WSL on 2026-10-16, and the site is built.) Steps F and G are written and tested up to that point. Installing both inside WSL is the
@@ -539,12 +579,14 @@ DIRECTORY_STRUCTURE; `docs/data_inventory.md` (Node.js and Quarto as prerequisit
 ## Definition of done
 
 - [x] Owner decisions 0–10 made (2026-10-13, as recommended; 11–13 added the same day).
-- [ ] The served versions resolve from the registry and reproduce their backtest scores.
-- [ ] `scores_history` filled for the modelled population at the latest month-end, every row traceable to its
-      MLflow run; the out-of-time history stored locally.
+- [x] The served versions resolve from the registry and reproduce their backtest scores (`tests/models/test_serving.py`).
+- [x] `scores_history` filled for the modelled population at the latest month-end, every row traceable to its
+      MLflow run; the out-of-time history stored locally (2026-10-16, on `backtest_v8`).
 - [ ] The API, the explorer and the report run locally; every score shown with its metadata and the disclaimer.
-- [ ] `publish.duckdb` built behind the threshold; the Evidence site builds from it alone; nothing deployed.
-- [ ] `make check` and `make test-integration` green; docs from step H updated.
+      (API and explorer: done 2026-10-16. The report waits on the Quarto CLI in WSL.)
+- [x] `publish.duckdb` built behind the threshold; the Evidence site builds from it alone; nothing deployed
+      (2026-10-16, on `backtest_v8`).
+- [x] `make check` and `make test-integration` green; docs from step H updated (2026-10-16).
 
 ## Risks
 
