@@ -2,6 +2,7 @@
   "name": "distress-radar-site",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "description": "The public site (plan 0016 step F): aggregates from site/sources/publish/publish.duckdb only.",
   "scripts": {
     "sources": "evidence sources",
@@ -15,5 +16,8 @@
     "@evidence-dev/core-components": "5.4.2",
     "@evidence-dev/duckdb": "2.0.1",
     "@evidence-dev/evidence": "40.1.8"
+  },
+  "devDependencies": {
+    "typescript": "5.4.2"
   }
 }
