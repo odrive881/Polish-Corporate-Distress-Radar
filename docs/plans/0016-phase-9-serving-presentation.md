@@ -16,7 +16,7 @@
 **Order:** after plan 0015 (complete, 2026-10-12). It does not wait for list v2 or a champion: it serves what the
 registry holds and says so, and the public site's population-level pages wait for list v2 (decision 0).
 
-## Status: active (2026-10-15): owner decisions 0–10 accepted as recommended, 11–13 added from building steps B and C (accepted the same day); steps A–C built in part, items 1–7 of § "Buildable now" built (2026-10-16; the site first built the same day, on `backtest_v8`), item 8 (the report) next (Progress)
+## Status: active (2026-10-15): owner decisions 0–10 accepted as recommended, 11–13 added from building steps B and C (accepted the same day); steps A–C built in part, items 1–7 of § "Buildable now" built (2026-10-16; the site first built the same day, on `backtest_v8`), item 8 built up to its render (2026-10-16; Quarto is not in WSL), item 9 (the docs sweep) next (Progress)
 
 ### Progress (2026-10-13), built ahead of the decisions, on the parts every alternative shares
 
@@ -43,6 +43,30 @@ registry holds and says so, and the public site's population-level pages wait fo
 items 2–9 resume on its rebuilt data. *2026-10-15:* the rebuild is in (plan 0017 step H; Progress below). Before
 item 3's real scoring run: the job reads its population from `BACKTEST_VERSION`, whose default is still
 `backtest_v5` (186 entities), so either set it to `backtest_v7` or change the default.
+
+### Progress (2026-10-16): step G, the methodology report (buildable item 8)
+
+`report/methodology.qmd` and `src/distress_radar/methodology.py` (`make report`). The report's prose states
+rules, never results; every number is a figure included from `report/_figures/` (generated, ignored by git),
+which `python -m distress_radar.methodology` rewrites whole from **the publish database** the site reads. So the
+report and the site cannot disagree, and the report crosses the publish boundary no further than the site:
+small cells are suppressed the same way, and nothing is read that names a company. The only other inputs are
+the backtest config and label version the database's provenance names (the settings figure, so no prose quotes
+a number a new version could change) and the registry's served version per horizon (the champion rule's
+verdict), refused when it was registered by another backtest than the one published.
+
+Figures: the settings; coverage per list and stage; statements by fiscal year; pooled metrics with intervals per
+horizon (main run); reliability per horizon; the served versions and the verdict; provenance. Generated on the
+real stores (`backtest_v8`): the 12-month pooled metrics equal `backtest_v8.md`'s, cell for cell, and no figure
+holds a 10-digit number. Departure from step G as written: the figures are generated as Markdown includes, not
+computed in executable Quarto cells, so the report needs no Jupyter kernel (no new dependency), and `make
+report` regenerates them before every render, so it still rebuilds from live data.
+
+Not rendered: the Quarto CLI is not installed in WSL (decision 10), and `make report` refuses a Windows one.
+Tested (`tests/test_methodology.py`, 10 tests): a metric printed exactly as the backtest report prints it
+(interval, no interval, undefined, not evaluable), a suppressed cell, every include backed by a figure and every
+figure included, the figures read from a synthetic publish database, the verdict's backtest checked, the
+figures replaced whole, no 10-digit number in them.
 
 ### Progress (2026-10-16): step F, the publish boundary and the site (buildable item 7)
 
@@ -308,7 +332,7 @@ each is committed on its own and recorded in Progress when done.
    comes from `model_predictions/` before the training eve and from `scores_history` after it (decision 3).
 7. ~~**Step F, the `publish` asset** (decision 9):~~ Built 2026-10-16, and the site built the same day (Progress, above). the fixed aggregate queries into `site/sources/publish.duckdb`,
    and the test that no identifier reaches it. Then the Evidence pages of decision 0, written as source.
-8. **Step G, the report's figures:** the backtest's pooled metrics, event counts and reliability tables,
+8. ~~**Step G, the report's figures:**~~ Built 2026-10-16, up to the render (Progress, above). the backtest's pooled metrics, event counts and reliability tables,
    computed under `src/` from the warehouse and stamped with their identifiers. Then `report/methodology.qmd`.
 9. **Step H, the docs sweep.**
 

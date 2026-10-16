@@ -148,6 +148,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │       ├── warehouse.py               # Parquet datasets under WAREHOUSE_DIR (ADR 0008)
 │       ├── labels.py                  # label config, label sources, the label-set freeze (plan 0008)
 │       ├── transform_project.py       # runs/audits the SQLMesh project from Python (ADR 0010)
+│       ├── methodology.py             # K: the methodology report's figures, from the publish database (plan 0016 step G)
 │       ├── publish.py                 # K: the publish boundary: aggregates, small cells suppressed, no identifier (plan 0016 step F)
 │       ├── acquisition/
 │       ├── parsing/
@@ -204,8 +205,8 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   └── sources/
 │       └── publish/                    # connection.yaml and one query per table; publish.duckdb built, never committed
 │
-├── report/                             # Quarto methodology report
-│   └── methodology.qmd
+├── report/                             # Quarto methodology report (`make report`; plan 0016 step G)
+│   └── methodology.qmd                 # rules in prose; figures included from _figures/, generated, never committed
 │
 └── tests/
     ├── acquisition/
@@ -250,6 +251,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
     ├── transform/                      # SQLMesh boundary and Dagster DQ wiring (pytest side)
     ├── fixtures/                       # golden XML/PDF documents for mapping tests
     │   └── legal/                      # redacted KRS extracts, reduced MSiG notices (plan 0008)
+    ├── test_methodology.py             # figures from the publish database, printed as the backtest report prints them
     ├── test_publish.py                 # suppression, pooled cells as the backtest builds them, nothing identifying, the pages' queries
     └── conftest.py
 ```
