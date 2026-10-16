@@ -152,6 +152,7 @@ from dagster_defs.assets.labels import label_assets
 from dagster_defs.assets.legal import legal_assets
 from dagster_defs.assets.models import models_assets
 from dagster_defs.assets.parsing import parsing_assets
+from dagster_defs.assets.publish import publish_assets
 from dagster_defs.checks.accounting_identities import accounting_identity_checks
 
 # Plan 0008: registry bytes to a frozen label set in one run (KRS and MSiG fetched, legal
@@ -188,6 +189,14 @@ scoring = dg.define_asset_job(
     description="The served model's scores at the latest month-end → Postgres scores_history.",
 )
 
+# Plan 0016 step F: the public site's database, by hand, from a clean tree. It reads the DQ marts,
+# the backtest's MLflow runs and predictions; it rebuilds none of them, and deploys nothing.
+publish = dg.define_asset_job(
+    "publish",
+    selection=dg.AssetSelection.assets("publish"),
+    description="Aggregates only, small cells suppressed → site/sources/publish/publish.duckdb.",
+)
+
 # Plan 0013 step H: the notes of every stored statement read into `text_signals` and
 # `text_coverage`. By hand: model signals cost money once confirmed, and responses are stored,
 # so a rerun replays them.
@@ -207,8 +216,9 @@ defs = dg.Definitions(
         *features_assets,
         *models_assets,
         *text_assets,
+        *publish_assets,
     ],
-    jobs=[legal_to_labels, features, backtest, scoring, text],
+    jobs=[legal_to_labels, features, backtest, scoring, publish, text],
     asset_checks=accounting_identity_checks,
     resources={
         "postgres": PostgresResource(),

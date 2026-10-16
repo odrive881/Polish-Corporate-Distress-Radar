@@ -16,7 +16,7 @@
 **Order:** after plan 0015 (complete, 2026-10-12). It does not wait for list v2 or a champion: it serves what the
 registry holds and says so, and the public site's population-level pages wait for list v2 (decision 0).
 
-## Status: active (2026-10-15): owner decisions 0–10 accepted as recommended, 11–13 added from building steps B and C (accepted the same day); steps A–C built in part, items 1–6 of § "Buildable now" built and run (2026-10-16), item 7 (the publish asset and the site) next (Progress)
+## Status: active (2026-10-15): owner decisions 0–10 accepted as recommended, 11–13 added from building steps B and C (accepted the same day); steps A–C built in part, items 1–7 of § "Buildable now" built (2026-10-16; the site's build waits on Node.js in WSL), item 8 (the report) next (Progress)
 
 ### Progress (2026-10-13), built ahead of the decisions, on the parts every alternative shares
 
@@ -43,6 +43,46 @@ registry holds and says so, and the public site's population-level pages wait fo
 items 2–9 resume on its rebuilt data. *2026-10-15:* the rebuild is in (plan 0017 step H; Progress below). Before
 item 3's real scoring run: the job reads its population from `BACKTEST_VERSION`, whose default is still
 `backtest_v5` (186 entities), so either set it to `backtest_v7` or change the default.
+
+### Progress (2026-10-16): step F, the publish boundary and the site (buildable item 7)
+
+`src/distress_radar/publish.py` and the `publish` asset in its own `publish` job (by hand, clean tree). It
+writes `site/sources/publish/publish.duckdb` (decision 9 named `site/sources/publish.duckdb`; Evidence keeps a
+DuckDB source in a directory of its own, with its `connection.yaml` and one query per table), replaced whole,
+from six fixed tables:
+
+- `dq_checks`, `dq_coverage`: `marts.dq_mart` and `marts.dq_mart_coverage`, re-suppressed at the publish
+  threshold whatever threshold SQLMesh built them with (the owner's `.env` has none today).
+- `pipeline_coverage`: per list, the entities that reached each stage: listed, identified (GUS), searched on
+  RDF, statements stored, statements parsed, labelled (the pinned label set), modelled (the population, refused
+  unless it still hashes to the backtest's pin).
+- `backtest_metrics`: the pinned backtest's pooled cells per run, horizon and model, read from its finished
+  MLflow runs (refused if two runs repeat a cell or the runs disagree on the commit, snapshot, label set or
+  feature set), with the distinct companies each covers.
+- `backtest_reliability`: for each pooled cell that speaks, the reliability table rebuilt from
+  `model_predictions` with the backtest's own rule (the folds that trained on at least `min_events` events) and
+  its own function, and the companies in each bin. Refused when the pooled rows do not number what MLflow
+  logged: on `backtest_v7` all 42 cells agree, and the pooled metrics equal the report's.
+- `provenance`: the publish's code commit, the backtest and its commit, both data snapshots, the label version
+  and set, the feature set, the population hash and the threshold.
+
+Every table carries `entities` and `suppressed`; a cell under the threshold keeps its row and loses its
+figures. The threshold is refused unset or below 5 before any work. `check_publishable` then refuses an
+identifying column (`krs`, `nip`, `regon`, `name`, `company_name`, `document_ref`, `source_document_hash`) or
+any KRS, NIP or REGON of `entity_master` and `universe_candidates` as a text value.
+
+The site (`site/`): Evidence 40.1.8 pinned in `package.json`, the `publish` source, and four pages within
+decision 0: an overview with the purposive caveat and the provenance table, data quality, pipeline coverage,
+and the backtest (pooled metrics with intervals and event counts per horizon, and the main run's reliability
+tables). No company, sector, region or predicted rate. `make site` builds under `site/build/`; it refuses a
+Windows `npm`, and Node.js is not installed in WSL yet (decision 10), so the site has not been built:
+`site/package-lock.json` comes from its first build.
+
+Tested (`tests/test_publish.py`, 18 tests): suppression, including over an upstream threshold; coverage per
+stage; the pooled rows and reliability equal to the backtest's function, bins and cells suppressed, predictions
+disagreeing with MLflow refused; cells read from a real (SQLite) MLflow store; the database replaced whole;
+identifying columns and values refused; the job's selection; and every SQL block of every page run against a
+synthetic publish database, each `<Column id>` a column it returns.
 
 ### Progress (2026-10-16): step E, the explorer (buildable item 6)
 
@@ -233,7 +273,7 @@ each is committed on its own and recorded in Progress when done.
    in the integration suite.
 6. ~~**Step E, the explorer** (decision 8):~~ Built 2026-10-16 (Progress, above). Streamlit, local only, the disclaimer on every page. Score history
    comes from `model_predictions/` before the training eve and from `scores_history` after it (decision 3).
-7. **Step F, the `publish` asset** (decision 9): the fixed aggregate queries into `site/sources/publish.duckdb`,
+7. ~~**Step F, the `publish` asset** (decision 9):~~ Built 2026-10-16, up to the site's build (Progress, above). the fixed aggregate queries into `site/sources/publish.duckdb`,
    and the test that no identifier reaches it. Then the Evidence pages of decision 0, written as source.
 8. **Step G, the report's figures:** the backtest's pooled metrics, event counts and reliability tables,
    computed under `src/` from the warehouse and stamped with their identifiers. Then `report/methodology.qmd`.

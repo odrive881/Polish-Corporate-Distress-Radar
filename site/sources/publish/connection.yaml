@@ -1,0 +1,5 @@
+# Built by the `publish` Dagster job, never by hand, never committed (*.duckdb is ignored).
+name: publish
+type: duckdb
+options:
+  filename: publish.duckdb

@@ -27,6 +27,7 @@ __pycache__/
 *.duckdb
 mlruns/
 site/build/
+site/node_modules/
 site/.evidence/
 report/_output/
 

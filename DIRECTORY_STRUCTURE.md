@@ -147,6 +147,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │       ├── warehouse.py               # Parquet datasets under WAREHOUSE_DIR (ADR 0008)
 │       ├── labels.py                  # label config, label sources, the label-set freeze (plan 0008)
 │       ├── transform_project.py       # runs/audits the SQLMesh project from Python (ADR 0010)
+│       ├── publish.py                 # K: the publish boundary: aggregates, small cells suppressed, no identifier (plan 0016 step F)
 │       ├── acquisition/
 │       ├── parsing/
 │       ├── extraction/
@@ -175,7 +176,8 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │   ├── dq.py                      # E3/F: SQLMesh DQ models, audits as asset checks
 │   │   ├── extraction.py              # plan 0013: notes and auditor reports → text_signals, text_coverage; its own job
 │   │   ├── features.py
-│   │   └── models.py                  # plan 0012: the backtest asset, its own job, run by hand
+│   │   ├── models.py                  # plan 0012: the backtest asset, its own job, run by hand
+│   │   └── publish.py                 # plan 0016 step F: the public site's database, its own job, run by hand
 │   ├── checks/                        # asset checks — accounting identities, leakage guard
 │   ├── partitions.py
 │   ├── schedules.py
@@ -194,9 +196,12 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │       ├── 2_Peers.py                  # probabilities by PKD division, as distributions
 │       └── 3_Watchlists.py
 │
-├── site/                               # Evidence public dashboard
-│   ├── pages/
+├── site/                               # Evidence public dashboard: aggregates only (`make site`; plan 0016 step F)
+│   ├── package.json                    # Evidence pinned; package-lock.json from the first `make site`
+│   ├── evidence.config.yaml
+│   ├── pages/                          # index, data-quality, coverage, backtest
 │   └── sources/
+│       └── publish/                    # connection.yaml and one query per table; publish.duckdb built, never committed
 │
 ├── report/                             # Quarto methodology report
 │   └── methodology.qmd
@@ -244,6 +249,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
     ├── transform/                      # SQLMesh boundary and Dagster DQ wiring (pytest side)
     ├── fixtures/                       # golden XML/PDF documents for mapping tests
     │   └── legal/                      # redacted KRS extracts, reduced MSiG notices (plan 0008)
+    ├── test_publish.py                 # suppression, pooled cells as the backtest builds them, nothing identifying, the pages' queries
     └── conftest.py
 ```
 

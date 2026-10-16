@@ -1,0 +1,6 @@
+# The site reads one source, `publish`: the database the `publish` asset builds (plan 0016 step F).
+plugins:
+  components:
+    "@evidence-dev/core-components": {}
+  datasources:
+    "@evidence-dev/duckdb": {}
