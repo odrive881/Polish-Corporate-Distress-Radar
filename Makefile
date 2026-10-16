@@ -1,7 +1,7 @@
 UV ?= uv
 export UV_LINK_MODE := copy
 
-.PHONY: install lock lint typecheck test test-integration check dev-up dev-down \
+.PHONY: install lock lint typecheck test test-integration check dev-up dev-down api app \
 	transform-setup transform-plan transform-run transform-test docs-check hooks models \
 	label-queue label-clear label-export eval eval-accept
 
@@ -78,6 +78,15 @@ test:
 
 test-integration:   ## tests needing live Postgres/MinIO — run `make dev-up` first
 	$(UV) run --locked pytest -m integration
+
+# The scores API (plan 0016 step D): read-only over Postgres, on 127.0.0.1:8000 only, never exposed.
+api:        ## serve the local scores API (needs `make dev-up` and a scoring run)
+	$(UV) run --locked python -m distress_radar.api.main
+
+# The internal explorer (plan 0016 step E): Streamlit on localhost only; every page names companies.
+app:        ## run the local Streamlit explorer (needs `make dev-up` and a scoring run)
+	$(UV) run --locked streamlit run app/Home.py --server.address 127.0.0.1 --server.headless true \
+		--browser.gatherUsageStats false
 
 # SQLMesh (plan 0007, ADR 0010). plan/run use the `local` gateway: DuckDB under
 # WAREHOUSE_DIR, state in Postgres (make dev-up). transform-test uses the `test`
