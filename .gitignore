@@ -61,3 +61,6 @@ __marimo__/
 # The owner's Rejestr.io universe lists (ADR 0014): kept outside the repository; some company names
 # name people. They live in .cache/universe_lists/ (ignored above); this catches copies dropped at the root.
 /Merged*sample*.csv
+
+# The generated project overview PDF (2026-10-16): a local reading copy, regenerated rather than versioned.
+/docs/Distress_Radar_Overview.pdf
