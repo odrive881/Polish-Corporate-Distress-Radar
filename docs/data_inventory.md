@@ -170,11 +170,11 @@ The spec forbids bulk enumeration of any source. Acquisition is per entity, seed
 | LLM API key (vision tier and text extraction) | `ANTHROPIC_API_KEY`, `ANTHROPIC_WORKSPACE_ID`, `EXTRACTION_API_CONFIRMED` | C3, G2 | required from Phase 3 / 7 | terms confirmed by the owner 2026-10-06 (Commercial Terms: 30-day retention, no training, no zero data retention; plan 0013 decision 2) and `EXTRACTION_API_CONFIRMED=true` set; the key is identity-linked (`sk-ant-usr…`), so calls also need `ANTHROPIC_WORKSPACE_ID` |
 | Postgres | `POSTGRES_HOST/PORT/DB/USER/PASSWORD` | B, J | required | local Docker Compose |
 | MinIO | `MINIO_ENDPOINT/ACCESS_KEY/SECRET_KEY/BUCKET` | B | required | local Docker Compose |
-| MLflow tracking store | `MLFLOW_TRACKING_URI`, `MLFLOW_ARTIFACT_DIR` | I, J | required from Phase 6 | local SQLite store under `.data/mlflow/` by default (plan 0012); the server comes in Phase 9 |
+| MLflow tracking store | `MLFLOW_TRACKING_URI`, `MLFLOW_ARTIFACT_DIR` | I, J | required from Phase 6 | local SQLite store under `.data/mlflow/` by default (plan 0012); Phase 9 needed no server: scoring, the API and the explorer read the registry in-process from the same store (plan 0016) |
 | Sentry DSN | `SENTRY_DSN` | L | optional | not configured |
 | SOPS `age` key for encrypted committed config | — | platform | required for committed secrets | not set up |
 | GitHub Actions secrets | — | CI | required | — |
-| Static-site deploy token (GitHub Pages or Cloudflare Pages) | — | K2 | required from Phase 9 | later |
+| Static-site deploy token (GitHub Pages or Cloudflare Pages) | — | K2 | required to deploy | not requested: the site is built locally and nothing is deployed until the owner decides (plan 0016 decision 10) |
 | Cloudflare R2 credentials (hosted object store option) | S3-compatible `MINIO_*` equivalents | B | optional | later |
 
 ---

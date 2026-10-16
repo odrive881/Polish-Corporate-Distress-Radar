@@ -474,11 +474,15 @@ Rules:
 - Postgres holds scores, alerts, watchlists.
 - Models load in-process from the MLflow registry at startup.
 
+As built in Phase 9 (plan 0016, 2026-10-16): the `scoring` job (by hand, clean tree) serves the registered version under `champion`, else `incumbent`, never refitted, and scores the latest month-end in `feature_store` for the backtest's population at risk; a row missing an input the model needs is kept as "inputs incomplete" with the inputs named, never imputed; every other entity gets a `scoring_exclusions` row with its reason. The API (`src/distress_radar/api/`, `make api`) is read-only over Postgres, bound to 127.0.0.1, refuses to start when the latest stored scores came from another version than the registry serves, and wraps every response in an envelope with the served versions' identifiers and the disclaimer.
+
 ### K — Presentation
 
 - Streamlit internal explorer: company profile, score history with annotations, source-linked statements, peer comparison, watchlists.
 - Evidence static site: sector and regional dashboards, `dq_mart`, realised vs predicted rates. Builds against DuckDB, deploys static.
 - Quarto methodology report, regenerated from live data.
+
+As built in Phase 9 (plan 0016): the explorer (`app/`, `make app`, 127.0.0.1 only) shows score history out-of-time only (each backtest fold's predictions, then the served version's own scores). The public side has no sector, regional or predicted-rate page while the lists are purposive (decision 0): the `publish` job writes the only database the site reads, from fixed aggregate tables (data quality, pipeline coverage, the backtest's pooled metrics and reliability), small cells suppressed, identifiers refused; the report includes figures generated from that same database (`make report`). The site is built locally and nothing is deployed (decision 10).
 
 **Public output constraint:** the public site shows aggregated or pseudonymised results only. Named company-level risk scores are local deployment only, and every score display carries a disclaimer that it is a statistical estimate, not a statement of fact.
 
