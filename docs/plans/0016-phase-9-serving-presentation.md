@@ -78,6 +78,12 @@ tables). No company, sector, region or predicted rate. `make site` builds under 
 Windows `npm`, and Node.js is not installed in WSL yet (decision 10), so the site has not been built:
 `site/package-lock.json` comes from its first build.
 
+*Re-run on `backtest_v8` (2026-10-16, at `e106c7b`):* `publish.duckdb` written at threshold 10, nothing
+identifying in it; provenance names `backtest_v8` (commit `19ca71f`), label set `fd867aa8…` and population
+`dbdaa172…`; pipeline coverage for list v1: 609 listed, 592 identified, 518 searched on RDF, 385 with statements
+stored and parsed, 591 labelled, 353 modelled (the seed: 17 at every stage). The site itself is still not built
+(Node.js not in WSL).
+
 Tested (`tests/test_publish.py`, 18 tests): suppression, including over an upstream threshold; coverage per
 stage; the pooled rows and reliability equal to the backtest's function, bins and cells suppressed, predictions
 disagreeing with MLflow refused; cells read from a real (SQLite) MLflow store; the database replaced whole;
