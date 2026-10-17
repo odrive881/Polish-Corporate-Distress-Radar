@@ -129,6 +129,33 @@ def test_signature_containers_are_replaced_by_the_statement() -> None:
         assert personal_data_markers(result.data) == []
 
 
+def test_an_unlabelled_base64_object_is_the_statement() -> None:
+    # The shape list v2 brought: a co-signed XAdES whose document object has an Id but no
+    # Encoding. Version 3 skipped it and stored an empty ZIP.
+    payload = base64.b64encode(_signed(STATEMENT)).decode()
+    container = (
+        f'<ds:Signature xmlns:ds="{DS}"><ds:SignedInfo/><ds:Object><x:QualifyingProperties '
+        'xmlns:x="http://uri.etsi.org/01903/v1.3.2#"/></ds:Object>'
+        f'<ds:Object Id="o-id-1">{payload[:40]}\n{payload[40:]}</ds:Object></ds:Signature>'
+    ).encode()
+    result = redact_download(_zip(**{"sf.xml.XAdES": container}), NAMES)
+    redacted = zipfile.ZipFile(io.BytesIO(result.data)).read(f"{TOKEN}.xml")
+    assert b"<dtsf:KwotaA>39402504.45</dtsf:KwotaA>" in redacted
+    assert personal_data_markers(result.data) == []
+
+
+def test_unlabelled_object_text_that_is_not_base64_is_refused() -> None:
+    container = f'<ds:Signature xmlns:ds="{DS}"><ds:Object>not base64!</ds:Object></ds:Signature>'
+    with pytest.raises(RedactionError, match="invalid base64"):
+        redact_file(container.encode(), "zip:sf.xades")
+
+
+def test_a_zip_of_signatures_only_is_refused() -> None:
+    detached = f'<Signatures><ds:Signature xmlns:ds="{DS}"><ds:Object/></ds:Signature></Signatures>'
+    with pytest.raises(RedactionError, match="nothing left"):
+        redact_download(_zip(**{"sf.xml.XAdES": detached.encode()}), NAMES)
+
+
 def test_detached_signature_is_dropped_from_the_zip() -> None:
     detached = f'<Signatures><ds:Signature xmlns:ds="{DS}"><ds:Object/></ds:Signature></Signatures>'
     raw = _zip(**{"sf.xml": STATEMENT, "sf.xml.XAdES": detached.encode()})

@@ -152,7 +152,12 @@ and 163 XMP metadata: an author is usually the person who wrote the notes.
    one dropped; quoted-printable XML is decoded and redacted; XML no parser accepts (a filer's stray control
    characters) loses its `ds:Signature` elements byte for byte, its `Plik/Nazwa` becomes `plik-<n>` and its
    base64 payloads are redacted, every other byte kept, and any other attachment name refuses it. The marker
-   check looks into unparseable XML too; one stored object it then found was migrated.
+   check looks into unparseable XML too; one stored object it then found was migrated. *Version 4
+   (2026-10-17, plan 0014):* a signature container's `ds:Object` with no `Encoding` whose text is base64 is
+   decoded and redacted like a labelled one (text that is not base64 refuses the file), and a ZIP left with
+   nothing but signatures is refused. Version 3 skipped such an object, took the file for a detached
+   signature and stored an empty ZIP: three statements of the distress list's first delivery, recovered from
+   the delivered ZIPs (no other stored object had the shape, so no migration).
 6. **Fail closed, and a standing check.** A download whose members cannot all be named, or a detail without
    the `document_ref` its token needs, is not stored. The names as received live only in memory, taken from
    the details fetched in the same run: a bundle of several filings whose row was expanded in an earlier run
