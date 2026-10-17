@@ -7,7 +7,9 @@ hashed and stored, so the raw store never holds it:
 
 - XML: every `ds:Signature` element is removed. A signature *container*
   (a `ds:Signature` or `Signatures` root wrapping the statement) is replaced
-  by the statement it wraps; a detached signature file is dropped. XML sent
+  by the statement it wraps, inline or base64 with or without an `Encoding`
+  (version 4); a detached signature file is dropped, and a ZIP left with
+  nothing but signatures is refused. XML sent
   quoted-printable is decoded first. XML no parser accepts (a filer's stray
   control characters) has its `ds:Signature` elements cut out byte for byte,
   and is refused if it names attachments, which only a parse could rename.
@@ -58,7 +60,7 @@ from typing import cast
 import pymupdf
 from lxml import etree
 
-REDACTION_VERSION = "3"
+REDACTION_VERSION = "4"
 RDF_DETAIL_REDACTION_VERSION = "rdf-detail-1"
 KEPT_EXTENSIONS = frozenset(
     {
@@ -446,7 +448,10 @@ def _unwrap_container(root: etree._Element, where: str) -> Redaction | None:  # 
                 raise RedactionError(f"{step}: several inline documents")
             document = etree.tostring(inline[0], xml_declaration=True, encoding="UTF-8")
             inner = redact_file(document, step)
-        elif obj.get("Encoding") == f"{DS_NS}base64":
+        elif obj.get("Encoding") == f"{DS_NS}base64" or (
+            # Some signing tools embed the base64 document without an `Encoding` (version 4).
+            obj.get("Encoding") is None and (obj.text or "").strip()
+        ):
             payload = _b64decode(obj.text)
             if payload is None:
                 raise RedactionError(f"{step}: invalid base64")
@@ -584,6 +589,8 @@ def redact_download(raw: bytes, names: Mapping[str, str | None] | None = None) -
                 content.append((info, result.data))
     except (zipfile.BadZipFile, zipfile.LargeZipFile) as exc:
         raise RedactionError(f"unreadable ZIP: {exc}") from exc
+    if not content:
+        raise RedactionError("nothing left after redaction: the ZIP holds only signatures")
     renamed = _member_names([info.filename for info, _ in content], names)
     for (info, _), new in zip(content, renamed, strict=True):
         if info.filename != new:
