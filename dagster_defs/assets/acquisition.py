@@ -628,8 +628,9 @@ def rdf_script_import(
     recorded are written, so re-materializing adds nothing. Refusals are counted in the
     metadata and listed in the log: entities not in `entity_master`, unknown type names, rows
     with no ZIP, ZIPs with no row, incomplete listings, entities with too few filed years,
-    groups with tabs missing (their ZIP held back), searches dropped in an outage, unreadable
-    rows or ZIPs (these fail the asset after the rest is done).
+    groups with tabs missing (their ZIP held back), searches dropped in an outage, runs of
+    not-found searches held as suspected outages (`SUSPECTED_OUTAGE_RUN`), unreadable rows or
+    ZIPs (these fail the asset after the rest is done).
     Check: `personal_data`, blocking — no stored object holds natural persons' data (a store-wide
     scan, plan 0011 step F).
     Partition scheme: none (unpartitioned).
@@ -663,6 +664,7 @@ def rdf_script_import(
         "too_few_years": report.too_few_years,
         "incomplete_groups": report.incomplete_groups,
         "disagreements": report.disagreements,
+        "suspected_outages": report.suspected_outages,
     }
     for lines in listed.values():
         for line in lines:

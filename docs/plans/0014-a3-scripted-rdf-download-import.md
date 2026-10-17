@@ -65,7 +65,11 @@ re-run, record a new `backtest_v<n>` before running it. Record each round's coun
   none either, so the same 396 came back with 102 from a second outage the owner had not noticed (2026-10-13,
   19:20 to 23:29): an unbroken run of not-found searches with found ones on both sides is an outage to
   confirm with the owner, even when the owner reports none. Check for the file, or write
-  the known spans into it, before importing.
+  the known spans into it, before importing. Since 2026-10-17 the importer holds a run of
+  `SUSPECTED_OUTAGE_RUN` (10) or more not-found searches no span covers and lists it under
+  `suspected_outages`, not recorded until its span is added; measured over both deliveries, outages ran
+  103 to 405 searches and real not-found searches one or two in a row. The distress list's first folder
+  (2026-10-17) has one: 125 searches, 2026-10-16 03:55 to 08:46 Warsaw time, and no `outages.csv`.
 - **The import fails at the end by design** when any row, search or ZIP is refused. Everything else is imported
   first, but the failure skips the asset's `personal_data` check, so run the store-wide scan by hand:
   `uv run python -m distress_radar.acquisition.redaction_migration` (report only; it must say 0).

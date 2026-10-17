@@ -10,7 +10,7 @@ import json
 import uuid
 import zipfile
 from collections.abc import Iterator
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 import psycopg
@@ -50,6 +50,7 @@ from distress_radar.acquisition.script_import import (
     read_documents,
     read_entities,
     read_outages,
+    suspected_outages,
 )
 from distress_radar.settings import Settings
 
@@ -321,6 +322,22 @@ def test_outages_are_read_as_spans():
         (datetime(2026, 10, 8, 11, 57, tzinfo=UTC), datetime(2026, 10, 8, 21, 52, tzinfo=UTC))
     ]
     assert len(problems) == 1 and "backwards" in problems[0]
+
+
+def test_a_long_run_of_not_found_searches_is_a_suspected_outage():
+    def search(minute: int, found: bool) -> ListedSearch:
+        return ListedSearch(minute, KRS, T0 + timedelta(minutes=minute), found, None, True)
+
+    # Listed out of order: runs are read by search time. Two short runs, then one of ten.
+    searches = [search(m, False) for m in range(20, 10, -1)]
+    searches += [search(0, True), search(1, False), search(2, False), search(3, True)]
+    searches += [search(10, True), search(30, True)]
+
+    (run,) = suspected_outages(searches)
+    assert [s.line for s in run] == list(range(11, 21))
+    assert suspected_outages(searches, run=11) == []
+    # A run the listing ends on is suspected too: the connection may never have come back.
+    assert len(suspected_outages([search(m, False) for m in range(10)])) == 1
 
 
 def test_filed_years_count_periods_not_deleted():
@@ -784,6 +801,32 @@ def test_the_backfill_reads_the_stored_detail(conn: psycopg.Connection, tmp_path
     assert report.backfilled == 1
     assert _rows(conn)[HAR_REF][1] == STATEMENT_ID
     assert _import(conn, tmp_path, store, "run-2").backfilled == 0
+
+
+@pytest.mark.integration
+def test_a_suspected_outage_is_held_until_its_span_is_listed(
+    conn: psycopg.Connection, tmp_path: Path
+):
+    lost = [_search(found="Nie") | {"searched_at": f"2026-10-16 04:{m:02d}:00"} for m in range(10)]
+    found = _search() | {"searched_at": "2026-10-16 09:00:00"}
+    _inbox(tmp_path, None, _entities(*lost, found), {})
+    store = InMemoryObjectStore()
+
+    report = _import(conn, tmp_path, store, "run-1")
+    (held,) = report.suspected_outages
+    assert held.startswith(
+        "entities.csv lines 2..11: 10 searches found nothing in a row, 2026-10-16 04:00 to "
+        "2026-10-16 04:09 Warsaw time; held"
+    )
+    assert conn.execute("SELECT found FROM rdf_listed_entities").fetchall() == [(True,)]
+
+    # Confirmed by the owner: the span listed, the searches are an outage's, and still unrecorded.
+    (tmp_path / "outages.csv").write_bytes(
+        _csv(OUTAGE_COLUMNS, [{"from": "2026-10-16 03:55:00", "to": "2026-10-16 08:47:00"}])
+    )
+    report = _import(conn, tmp_path, store, "run-2")
+    assert (report.outage_searches, report.suspected_outages) == (10, [])
+    assert conn.execute("SELECT count(*) FROM rdf_listed_entities").fetchone() == (1,)
 
 
 @pytest.mark.integration
