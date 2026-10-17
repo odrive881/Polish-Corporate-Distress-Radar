@@ -3,8 +3,10 @@
 Scores are read, never computed: `scores_history` and `scoring_exclusions` are what the `scoring`
 job wrote. Every read is limited to the served versions, one per horizon, so a response never mixes
 in a score from a version the registry no longer serves. `check_served` refuses a database whose
-latest scores came from another version (decision 6), which is what a `scoring` run not yet made
-after a promotion looks like.
+latest month-end holds no score from the served version (decision 6), which is what a `scoring` run
+not yet made after a promotion looks like. Scores from other versions beside it are allowed: a
+re-score under a new backtest on the same month-end leaves the old version's rows there, and the
+reads never show them (loosened in plan 0018 step E).
 """
 
 from __future__ import annotations
@@ -36,7 +38,8 @@ def _served_pairs(served: Mapping[int, ServedVersion]) -> list[str]:
 
 
 def check_served(conn: Connection, served: Mapping[int, ServedVersion]) -> None:
-    """Refuse a database whose latest scores, for a served horizon, came from another version."""
+    """Refuse a database whose latest month-end, for a served horizon, holds no score from the
+    served version."""
     for horizon, version in served.items():
         rows = conn.execute(
             """
@@ -47,7 +50,7 @@ def check_served(conn: Connection, served: Mapping[int, ServedVersion]) -> None:
             (horizon, horizon),
         ).fetchall()
         stored = {(str(name), str(v)) for name, v in rows}
-        if stored and stored != {(version.name, version.version)}:
+        if stored and (version.name, version.version) not in stored:
             raise RuntimeError(
                 f"the latest {horizon}-month scores came from {sorted(stored)}, but the registry "
                 f"serves {version.name} v{version.version}: run the scoring job first"

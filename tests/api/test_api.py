@@ -330,6 +330,23 @@ def test_a_database_scored_by_another_version_is_refused(schema: str) -> None:
 
 
 @pytest.mark.integration
+def test_an_older_versions_scores_beside_the_served_ones_are_allowed_and_never_shown(
+    schema: str,
+) -> None:
+    """Plan 0018 step E: a re-score under a new backtest leaves the old version's rows at the
+    same month-end. The served version is there, so the API starts, and shows only its rows."""
+    _seed(schema)
+    with _connect(schema) as conn:
+        scores_store.insert_scores(
+            conn, [_score("0000000001", 12, model_version="3", probability=0.5)]
+        )
+    with TestClient(main.create_app(SERVED, lambda: _connect(schema))) as client:
+        rows = _envelope(client.get("/scores", params={"horizon_months": 12}))
+    assert {r["model_version"] for r in rows} == {"4"}
+    assert 0.5 not in [r["probability"] for r in rows]
+
+
+@pytest.mark.integration
 def test_an_empty_database_starts_and_says_there_are_no_scores(schema: str) -> None:
     with TestClient(main.create_app(SERVED, lambda: _connect(schema))) as empty:
         assert empty.get("/scores").status_code == 404
