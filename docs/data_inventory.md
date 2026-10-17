@@ -171,7 +171,7 @@ The spec forbids bulk enumeration of any source. Acquisition is per entity, seed
 | Postgres | `POSTGRES_HOST/PORT/DB/USER/PASSWORD` | B, J | required | local Docker Compose |
 | MinIO | `MINIO_ENDPOINT/ACCESS_KEY/SECRET_KEY/BUCKET` | B | required | local Docker Compose |
 | MLflow tracking store | `MLFLOW_TRACKING_URI`, `MLFLOW_ARTIFACT_DIR` | I, J | required from Phase 6 | local SQLite store under `.data/mlflow/` by default (plan 0012); Phase 9 needed no server: scoring, the API and the explorer read the registry in-process from the same store (plan 0016) |
-| Sentry DSN | `SENTRY_DSN` | L | optional | not configured |
+| Sentry DSN | `SENTRY_DSN` | L | optional | not configured; the owner's own project, EU region only (others refused), set after reading Sentry's terms. Reporting is built and off while it is empty (plan 0018 step H): events carry exception types, stack locations and the Dagster job and asset, never a message or a variable |
 | SOPS `age` key for encrypted committed config | — | platform | required for committed secrets | not set up |
 | GitHub Actions secrets | — | CI | required | — |
 | Static-site deploy token (GitHub Pages or Cloudflare Pages) | — | K2 | required to deploy | not requested: the site is built locally and nothing is deployed until the owner decides (plan 0016 decision 10) |

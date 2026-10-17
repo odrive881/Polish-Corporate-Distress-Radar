@@ -22,6 +22,7 @@ from distress_radar.alerts import store as alerts_store
 from distress_radar.api.db import check_served
 from distress_radar.api.deps import Connect, Served
 from distress_radar.api.routes import alerts, companies, scores, watchlists
+from distress_radar.errors import init_error_reporting
 from distress_radar.models import scores_store
 from distress_radar.models.serving import load_served
 from distress_radar.models.splits import load_backtest_config
@@ -63,6 +64,7 @@ def app_from_settings(settings: Settings | None = None) -> FastAPI:
 
 
 def main() -> None:
+    init_error_reporting()  # a no-op without SENTRY_DSN (plan 0018 step H)
     uvicorn.run(app_from_settings(), host=HOST, port=PORT)
 
 

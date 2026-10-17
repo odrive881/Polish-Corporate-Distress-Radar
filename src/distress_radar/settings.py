@@ -117,6 +117,10 @@ class Settings(BaseSettings):
     eval_gate_version: str = "eval_gate_v1"
     extraction_api_confirmed: bool = False
 
+    # Error reporting (plan 0018 decision 8): the owner's own Sentry project, in its EU region, set
+    # only after reading Sentry's terms. Unset, nothing is initialised (`errors.py`).
+    sentry_dsn: SecretStr | None = None
+
     # MLflow (plan 0012 decision 6): a local SQLite store, no service to run, until the Compose
     # server arrives with serving in Phase 9. Run artifacts go under `mlflow_artifact_dir`, set
     # when an experiment is created; left to MLflow, they would land in `./mlruns` of whatever
