@@ -12,9 +12,9 @@
 **Order:** after ADR 0013's decision. It does not wait for plan 0013 (Phase 7). A1 is the owner's
 Rejestr.io list (ADR 0014, accepted 2026-10-06), loaded in step 0.
 
-## Status: active (2026-10-16): owner decisions 1–6 accepted as recommended; steps 0 and B–D built, step F's docs written; list v1 imported three times (2026-10-09, 2026-10-13 and 2026-10-16, Progress) and everything downstream rebuilt, up to `backtest_v8`; open: the script writing every tab of an expanded row, re-searching list v1's unsearched companies, two importer questions from the second import, and step A's field-by-field comparison and step E on the seed
+## Status: active (2026-10-17): owner decisions 1–6 accepted as recommended; steps 0 and B–D built, step F's docs written; list v1 imported three times (2026-10-09, 2026-10-13 and 2026-10-16, Progress) and everything downstream rebuilt, up to `backtest_v8`; list v2's distress group imported and parsed once (2026-10-17), its legal sources and labels not yet rebuilt; open: the script writing every tab of an expanded row, re-searching list v1's unsearched companies, two importer questions from the second import, and step A's field-by-field comparison and step E on the seed
 
-### Where this stands (2026-10-16): pick up here
+### Where this stands (2026-10-16, with list v2's distress group added 2026-10-17): pick up here
 
 **The process, each time the owner hands over a new delivery** (README § "Manual RDF capture", "Scripted
 downloads", has the commands): put `outages.csv` in the folder first, import with `rdf_script_import` pointed at
@@ -37,8 +37,8 @@ re-run, record a new `backtest_v<n>` before running it. Record each round's coun
 - **Backtest:** `backtest_v8` (`config/models/backtest_v8.yaml`, commit `19ca71f`): v7 with only the label set
   and the population pinned anew. Population 370 entities (seed 17, list v1 353), 20 ever in distress, 22
   events per horizon. The champion rule promotes nothing (at most 10 paired events; it needs 50), so
-  `logistic_regression` stays the served incumbent (no version holds `champion`). The default `BACKTEST_VERSION` is still `backtest_v5`; v8 was run with
-  the variable set. Report: `WAREHOUSE_DIR/reports/backtest/backtest_v8.md`.
+  `logistic_regression` stays the served incumbent (no version holds `champion`). The default `BACKTEST_VERSION` has been `backtest_v8` since plan 0018 decision 9
+  (2026-10-17); v8 was first run with the variable set. Report: `WAREHOUSE_DIR/reports/backtest/backtest_v8.md`.
 - **Scoring:** re-run on `backtest_v8`'s population and served version 5 (plan 0016, § "Progress"): 242
   scored and 113 with inputs incomplete per horizon.
 - **Not re-run:** text signals (no new auditor reports came in this round).
@@ -56,7 +56,15 @@ re-run, record a new `backtest_v<n>` before running it. Record each round's coun
 4. **Personal data in a statement's notes** (one entity, 6 ZIPs refused): the filer names shareholders with
    their PESEL numbers in free text, which no redaction version removes. A decision for ADR 0009: leave the
    entity out, or redact free text.
-5. **List v2** (ADR 0014 addendum): its two files are received (2026-10-13); the script runs on it next.
+5. **List v2** (ADR 0014 addendum): its two files are received (2026-10-13). The distress group's first delivery
+   is imported and parsed (2026-10-17, Progress): 199 of its 200 companies resolved into `entity_master` (806
+   entities in all), 503 entities with canonical facts. 88 of them were searched only inside the 2026-10-16
+   outage and wait for the script's second search; the random group (600) has not been run yet.
+6. **The nightly registry check is on (plan 0018, from 2026-10-18).** `registry_check_nightly` fetches the KRS
+   extracts and MSiG notices of every `entity_master` entity, the distress group included, and freezes a new label
+   set each night, so the legal sources no longer wait for the 88 companies' second search; their RDF side still
+   does. Re-run `notebooks/exploration/pdf_tier_triggers.py` after the first night to settle plan 0006's
+   trigger 2.
 
 **Lessons from the 2026-10-13 and 2026-10-16 rounds:**
 

@@ -605,6 +605,8 @@ Each phase must be demonstrable before the next begins.
 | 9 | FastAPI, Streamlit explorer, Evidence site, Quarto report. **Before anything is published: set `dq_mart`'s small-cell suppression threshold (≥5 entities).** It ships `null` — suppression off — for Phases 3–8 (plan 0007 decision 9), and the publish must refuse to run while it is still `null` |
 | 10 | Scheduling, alerting, Evidently drift monitoring |
 
+As of 2026-10-17 phases 0–10 are built (plans 0001–0018); what stays open in each is listed at the top of its plan. The current plan is 0018, open only on its first unattended nightly run.
+
 Phase 1 precedes phase 2 deliberately: discovering a source is inaccessible must happen before anything is built on top of it.
 
 ---
