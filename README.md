@@ -120,7 +120,7 @@ Recordings are gitignored (`*.har`, `.cache/`). They contain session data and th
 - `entities.csv`: one row per search, with the columns `krs`, `searched_at`, `found`, `list_rows` and `complete`.
   - `complete` is `Nie` on any early stop or doubt.
   - A number RDF does not find is written `found` = `Nie`, `complete` = `Tak`.
-- `outages.csv` (optional, `from;to`): spans when the script ran without a connection. A search inside one that found nothing is not recorded, since it says nothing about RDF.
+- `outages.csv` (optional, `from;to`): spans when the script ran without a connection. A search inside one that found nothing is not recorded, since it says nothing about RDF. A run of 10 or more not-found searches in a row that no span covers is held the same way and listed as a suspected outage (`suspected_outages` in the run's log), until its span is added.
 - `<krs>/<row_document_id>.zip`: each expanded row's download, exactly as **Pobierz dokumenty** delivered it.
 
 All three files use the same format:
@@ -146,7 +146,7 @@ Each ZIP is redacted like a captured download. When it holds a correction group,
 
 **A new delivery, end to end** (as run on 2026-10-13 and 2026-10-16; where the data stands and what is open: plan 0014, § "Where this stands"). All from WSL, with `make dev-up` running:
 
-1. Check the folder has `outages.csv` (`from;to`, Warsaw time); without it, not-found searches made while the script had no connection are recorded as "not on RDF". An unbroken run of not-found searches between found ones is most likely an outage, even one the owner did not notice: confirm it with the owner and add its span.
+1. Check the folder has `outages.csv` (`from;to`, Warsaw time). The importer holds back any run of 10 or more not-found searches no span covers and lists it as a suspected outage; confirm each with the owner and add its span. A shorter run between found ones may still be an outage, and without a span it is recorded as "not on RDF".
 2. Import, reading the owner's folder in place: `uv run dagster asset materialize -m dagster_defs.definitions --select rdf_script_import --config-json '{"ops":{"rdf_script_import":{"config":{"inbox":"/mnt/e/<folder>/financial_statements"}}}}'`. Refused rows or ZIPs fail the run after everything else is imported, which skips the `personal_data` check: then run `uv run python -m distress_radar.acquisition.redaction_migration` (report only; it must find 0 objects).
 3. Parse: `--select financial_statements_canonical,restatement_events`.
 4. Legal sources (network; about two hours for ~600 entities): `--select krs_extracts,msig_notices`.

@@ -12,7 +12,9 @@ the owner (plan 0014, decision 2 and § "Progress"):
 - `documents.csv`: one row per tab of an expanded row, appended, never rewritten (`DOCUMENT_COLUMNS`).
 - `entities.csv`: one row per search (`ENTITY_COLUMNS`); `complete` is `Nie` on any early stop.
 - `outages.csv` (optional, the owner's): `from;to`, spans when the script ran without a connection.
-  A search that found nothing inside one says nothing about RDF and is not recorded.
+  A search that found nothing inside one says nothing about RDF and is not recorded. A run of
+  not-found searches no span covers, `SUSPECTED_OUTAGE_RUN` or longer, is held the same way and
+  reported, until the owner confirms it and writes its span into the file.
 - `<krs>/<row_document_id>.zip`: each expanded row's download exactly as "Pobierz dokumenty"
   delivered it, named in the rows' `file` column.
 
@@ -94,6 +96,12 @@ DOCUMENT_COLUMNS = (
 ENTITY_COLUMNS = ("krs", "searched_at", "found", "list_rows", "complete")
 OUTAGES_FILE = "outages.csv"
 OUTAGE_COLUMNS = ("from", "to")
+# An outage the owner did not notice reads as an unbroken run of not-found searches: one recorded
+# says "not on RDF" of every company in it, which the importer cannot take back (the 2026-10-13
+# and 2026-10-16 rounds were cleaned by hand, plan 0014). Measured 2026-10-17 over both
+# deliveries: every outage was a run of 103 to 405 searches; not-found searches outside one came
+# one or two in a row.
+SUSPECTED_OUTAGE_RUN = 10
 SCRIPT_KEY_PREFIX = "id-"
 LISTING_TIMEZONE = ZoneInfo("Europe/Warsaw")
 # Decision 3: pair a correction group's members with its tabs by the statement header's
@@ -403,6 +411,24 @@ def read_outages(data: bytes) -> tuple[list[tuple[datetime, datetime]], list[str
     return spans, problems
 
 
+def suspected_outages(
+    searches: Iterable[ListedSearch], run: int = SUSPECTED_OUTAGE_RUN
+) -> list[list[ListedSearch]]:
+    """The runs of at least `run` not-found searches in a row, by the time they were made."""
+    runs: list[list[ListedSearch]] = []
+    current: list[ListedSearch] = []
+    for search in sorted(searches, key=lambda s: (s.searched_at, s.line)):
+        if not search.found:
+            current.append(search)
+            continue
+        if len(current) >= run:
+            runs.append(current)
+        current = []
+    if len(current) >= run:
+        runs.append(current)
+    return runs
+
+
 def complete_search(search: ListedSearch, rows_listed: int) -> bool:
     """Whether a search read the entity's whole list: it says so, or the listing holds every row.
 
@@ -477,6 +503,7 @@ class ScriptImportReport:
     unpaired_groups: int = 0  # correction groups stored with unpaired members
     backfilled: int = 0
     outage_searches: int = 0  # found nothing while the script had no connection; not recorded
+    suspected_outages: list[str] = field(default_factory=list[str])  # runs held, not recorded
     not_in_entity_master: list[str] = field(default_factory=list[str])
     unknown_types: list[str] = field(default_factory=list[str])
     rows_without_zip: list[str] = field(default_factory=list[str])
@@ -498,6 +525,7 @@ class ScriptImportReport:
             "unpaired_groups": self.unpaired_groups,
             "backfilled": self.backfilled,
             "outage_searches": self.outage_searches,
+            "suspected_outages": len(self.suspected_outages),
             "not_in_entity_master": len(self.not_in_entity_master),
             "unknown_types": len(self.unknown_types),
             "rows_without_zip": len(self.rows_without_zip),
@@ -1009,6 +1037,17 @@ def import_listing(
     ]
     report.outage_searches = len(in_outage)
     searches = [s for s in searches if s not in in_outage]
+    held: set[int] = set()
+    for run in suspected_outages(searches):
+        held.update(s.line for s in run)
+        first, last = (s.searched_at.astimezone(LISTING_TIMEZONE) for s in (run[0], run[-1]))
+        report.suspected_outages.append(
+            f"{ENTITIES_FILE} lines {run[0].line}..{run[-1].line}: {len(run)} searches found "
+            f"nothing in a row, {first:%Y-%m-%d %H:%M} to {last:%Y-%m-%d %H:%M} Warsaw time; "
+            f"held as a suspected outage, not recorded (confirm it, then add the span to "
+            f"{OUTAGES_FILE})"
+        )
+    searches = [s for s in searches if s.line not in held]
 
     tabs: list[ListedTab] = []
     current: dict[str, ListedTab] = {}
