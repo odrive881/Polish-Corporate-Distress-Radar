@@ -19,7 +19,7 @@ monitoring), the `alerts` table (§5), and the scoring half of stage I (§6I as 
 **Order:** after plan 0016 (active only on rendering the report, which waits on the Quarto CLI). It does not wait
 for list v2 or a champion: what it schedules and alerts on is what the registry already serves.
 
-## Status: active (2026-10-17): owner decisions 0–9 accepted as recommended; step A checked (Evidently and `sentry-sdk` both usable, no ADR needed); steps B–D built (`make orchestrate`; the schedules, sensors and RDF queue, all stopped until the owner turns them on; the `alerts` table and its rules); next: step E
+## Status: active (2026-10-17): owner decisions 0–9 accepted as recommended; step A checked (Evidently and `sentry-sdk` both usable, no ADR needed); steps B–E built (`make orchestrate`; the schedules, sensors and RDF queue, all stopped until the owner turns them on; the `alerts` table and its rules; alerts in the explorer and the API); next: step F
 
 ## Why
 
@@ -241,6 +241,27 @@ five rules as pure functions; `alerts/store.py` the table. Asset `alerts` (group
 
 An "Alerts" page in `app/`: unacknowledged first, watchlists first, an acknowledge button, the disclaimer on
 every row. `GET /alerts` in `api/` in the versioned envelope. Both local only.
+
+**Built (2026-10-17).** `app/pages/4_Alerts.py`: the open alerts (a toggle shows the acknowledged ones), watchlist
+companies starred and first, then by severity and month-end, one line per alert saying what fired it
+(`explorer.data.describe`, from `detail`), the disclaimer and the list-relative caveat; tick rows and acknowledge
+them. `GET /alerts` (`api/routes/alerts.py`): open by default, `acknowledged=true` for the others, filters `krs`
+and `watchlist`, in the versioned envelope; both share `api.db.alerts`, so they order alerts alike. The API's
+startup creates the table if no `alerting` run has yet.
+
+- **Checked live:** in-process over the real database, `GET /alerts` returns the 137 stored alerts, the Art. 233
+  tripwire (high) first.
+- **Found, not fixed (it predates this plan):** `make api` refuses to start on today's database. `scoring` ran on
+  `backtest_v7` and then `backtest_v8`, both at 2026-09-30, so that month-end holds 12-month scores from v4 and
+  v5, and `check_served` (plan 0016 decision 6) demands that the latest month-end hold the served version only.
+  The served version is there; the refusal was meant for a database whose latest scores the registry no longer
+  serves. **For the owner:** loosen the check to "the served version is among the latest", or delete the
+  superseded v4 rows at that month-end.
+- **Tests:** the page runs on synthetic sources with the disclaimer, counts the open alerts and keeps its
+  acknowledge button disabled until a row is ticked, and says when nothing is acknowledged; each alert type's
+  line from its `detail`; against Postgres, `GET /alerts` open by default, watchlist first, then severity,
+  `acknowledged=true`, the `watchlist` filter, and a malformed KRS refused.
+
 
 ### F. Drift report (decision 6)
 

@@ -18,9 +18,10 @@ import psycopg
 import uvicorn
 from fastapi import FastAPI
 
+from distress_radar.alerts import store as alerts_store
 from distress_radar.api.db import check_served
 from distress_radar.api.deps import Connect, Served
-from distress_radar.api.routes import companies, scores, watchlists
+from distress_radar.api.routes import alerts, companies, scores, watchlists
 from distress_radar.models import scores_store
 from distress_radar.models.serving import load_served
 from distress_radar.models.splits import load_backtest_config
@@ -39,6 +40,7 @@ def create_app(served: Served, connect: Connect) -> FastAPI:
     async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
         with connect() as conn:
             scores_store.ensure_schema(conn)
+            alerts_store.ensure_schema(conn)
             conn.commit()
             check_served(conn, served)
         yield
@@ -46,7 +48,7 @@ def create_app(served: Served, connect: Connect) -> FastAPI:
     app = FastAPI(title="distress_radar (local)", lifespan=lifespan)
     app.state.served = served
     app.state.connect = connect
-    for module in (companies, scores, watchlists):
+    for module in (companies, scores, watchlists, alerts):
         app.include_router(module.router)
     return app
 
