@@ -169,6 +169,28 @@ the next list representative.
 
 ### Progress
 
+- **List v2's distress group, first import (2026-10-17).** The owner's folder `E:\financial_statements_distress
+  - 17.10`: `documents.csv` (696 rows, 109 entities) and `entities.csv` (263 searches, all 200 companies of
+  `Merged distress sample (65-35 split).csv`, hash as recorded in ADR 0014). The list was loaded as
+  `rejestr_io_v2_distress` and A2 run over it: 199 resolved, 1 quarantined `pkd_section_mismatch`.
+  - **Outage:** 125 not-found searches in a row, 2026-10-16 03:55 to 08:46, bounded by found ones, confirmed
+    by the owner and written to the folder's `outages.csv` (03:50 to 08:48) before the import; 88 companies
+    were searched only inside it (50 `w likwidacji`, 38 `w upadlosci`), all in the script's `queue.txt` for a
+    second search. Outside it, 3 companies are not on RDF.
+  - **Import:** 673 rows indexed for 101 entities, 661 with their document stored; 137 searches recorded.
+    6 entities with fewer than three filed years not imported; 10 ZIPs held (1 of 2 tabs listed).
+    Refused: 4 empty rows and 1 search with no time (as in list v1's deliveries), and 0000249502's 2021 ZIP,
+    whose notes attach an encrypted PDF that cannot be redacted. The `personal_data` scan finds nothing.
+  - **Redaction version 4 (commit `3866dbc`):** three statements (0000572005 2021, 0000794805 and 0000927322
+    2023) are co-signed XAdES files whose `ds:Object` holds the base64 statement with no `Encoding`; version 3
+    dropped them as detached signatures and stored one empty ZIP for all three, which parsing refused as one
+    file under three entities. After the fix their rows were detached from the empty object (deleted, its
+    version-3 `raw_redactions` rows kept) and imported again from the folder. No other delivery has the shape.
+  - **Parsing:** of the new rows' files, 628 valid, 17 quarantined (`period_mismatch`, `required_item_missing`,
+    `xsd_invalid`, as before), 15 `needs_pdf_tier`; all 101 entities have valid statements, so canonical facts
+    cover 503 entities. The four identity checks passed.
+  - **Not yet run:** the legal sources, labels, features and a backtest wait for the script's second search of
+    the 88 companies, so that they run once.
 - **List v1's third import (2026-10-16).** The script's listing as of 2026-10-16, still on list v1:
   `documents.csv` (2,499 rows, 533 entities) and `entities.csv` (1,107 searches), imported from the owner's
   folder `E:\financial_statements 16.10.2026` with the importer unchanged.
