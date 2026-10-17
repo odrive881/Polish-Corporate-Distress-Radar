@@ -19,7 +19,7 @@ monitoring), the `alerts` table (§5), and the scoring half of stage I (§6I as 
 **Order:** after plan 0016 (active only on rendering the report, which waits on the Quarto CLI). It does not wait
 for list v2 or a champion: what it schedules and alerts on is what the registry already serves.
 
-## Status: active (2026-10-17): owner decisions 0–9 accepted as recommended; step A checked (Evidently and `sentry-sdk` both usable, no ADR needed); steps B–F built (`make orchestrate`; the schedules, sensors and RDF queue, all stopped until the owner turns them on; the `alerts` table and its rules; alerts in the explorer and the API; the drift report); next: step G
+## Status: active (2026-10-17): owner decisions 0–9 accepted as recommended; step A checked (Evidently and `sentry-sdk` both usable, no ADR needed); steps B–G built (`make orchestrate`; the schedules, sensors and RDF queue, all stopped until the owner turns them on; the `alerts` table and its rules; alerts in the explorer and the API; the drift report; realised calibration); next: step H
 
 ## Why
 
@@ -295,6 +295,23 @@ its latest month-end, inputs incomplete included. Reports are linked from the ex
 
 `src/distress_radar/monitoring/realised.py` and an asset after `drift_report`. Until a window settles, it writes
 the "not evaluable" line with the first settling date.
+
+**Built (2026-10-17).** `monitoring/realised.py` and the asset `realised_calibration`, in the `monitoring` job
+with `drift`. Each stored score is joined to the latest frozen label set of its own label version
+(`scores_history.label_version`), on the backtest's distress classes, `min_events` and reliability bins.
+
+- **Settled means the whole cohort, not the row** (a choice decision 7 left open): a score counts once its window
+  has closed and an `alive` label for it would be known (the label version's lag after KRZ's launch, plan 0009),
+  whatever its outcome. The backtest's `settled_by` takes a distress label as soon as the event is known, which
+  is right for training rows (each fold's eve is a cut through history), but here it would let a cohort's early
+  failures in ahead of its survivors and score the model on a sample of failures.
+- **First real run (2026-10-17):** four cells (12 and 24 months, versions 4 and 5), none evaluable: 0 of 205 and
+  242 scores settled. The 12-month cohort of 2026-09-30 settles on 2028-09-30, the 24-month one on 2029-09-30
+  (constraint 3 said 2027-09-30 "plus the lag": the lag is 12 months).
+- **Tests:** today's scores are not evaluable and say when they settle, unscored rows left out; a failure known
+  mid-window waits for its cohort; a settled cohort is scored as the backtest scores (Brier, base rate, mean
+  predicted, reliability, by hand); the file is the same on a rerun.
+
 
 ### H. Sentry (decision 8)
 
