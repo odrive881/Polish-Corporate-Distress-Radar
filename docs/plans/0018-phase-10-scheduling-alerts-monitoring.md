@@ -19,7 +19,7 @@ monitoring), the `alerts` table (§5), and the scoring half of stage I (§6I as 
 **Order:** after plan 0016 (active only on rendering the report, which waits on the Quarto CLI). It does not wait
 for list v2 or a champion: what it schedules and alerts on is what the registry already serves.
 
-## Status: active (2026-10-17): owner decisions 0–9 accepted as recommended; nothing built yet; next: step A
+## Status: active (2026-10-17): owner decisions 0–9 accepted as recommended; step A checked (Evidently and `sentry-sdk` both usable, no ADR needed); next: step B
 
 ## Why
 
@@ -67,7 +67,8 @@ that is overdue, inputs drifting away from what the model was trained on. It is 
    Every schedule ships `default_status=STOPPED`; the owner turns each on in the UI. This also keeps import runs'
    metadata, which the CLI loses today.
 1. **The nightly registry check.** Recommended: `legal_to_labels` daily at 02:00 Warsaw time over `entity_master`,
-   at the existing pacing (ADR 0011; about 40 minutes per source for ~600 entities, plus list v2 once imported).
+   at the existing pacing (ADR 0011; measured in step A: KRS 40 minutes and MSiG 81 for 609 entities, the two run
+   side by side, so about 3 hours a night once list v2's 800 are in).
    A frozen label set is content-addressed, so a night with no new event adds no set. A night that adds one does
    **not** move any backtest: a backtest pins its label set by hash, and a new one stays a decision.
 2. **Scoring after new features.** Recommended: a run-status sensor runs `features`, then `scoring`, then `alerts`
@@ -127,6 +128,28 @@ Check that Evidently and `sentry-sdk` have releases at least two weeks old that 
 locked Polars and pandas. If Evidently does not, write the drift report on `scipy.stats` (KS test and PSI; scipy is
 already in the lock) and record why in an ADR before step F. Confirm `legal_to_labels`' runtime over the current
 `entity_master` from a real run's log.
+
+**Findings (2026-10-17).** Checked in a scratch venv; nothing in `pyproject.toml` or `uv.lock` changed yet.
+
+- **Evidently 0.7.23** (released 2026-09-11) resolves against the lock on Python 3.14 and moves no locked version.
+  It adds 22 packages, among them a web server stack it brings for its own UI (`litestar`, `uvicorn` extras,
+  `uvloop`), `nltk`, `faker`, `dynaconf`, and `plotly` pinned below 6. A `DataDriftPreset` report over two numeric
+  columns with nulls ran in about 3 seconds and gave per-column K-S drift.
+- **Evidently has telemetry.** It depends on `iterative-telemetry`, switched off by three variables
+  (`DO_NOT_TRACK`, `ITERATIVE_DO_NOT_TRACK`, `EVIDENTLY_DISABLE_TELEMETRY`). With sockets and DNS trapped, the
+  report path tried no connection with or without them; the senders sit in its UI and collector, which this
+  project does not run. Step F still sets all three before Evidently is imported, and a test asserts it.
+- **The HTML is self-contained** (3.8 MB, scripts inlined, no external load), but **not byte-reproducible**:
+  every render draws fresh widget ids (32-hex and UUIDs). Renumbering them by first appearance makes two renders
+  of the same input identical, so step F writes the report through that normalisation and its test compares
+  bytes.
+- **`sentry-sdk` 2.71.0** (2026-09-28; 2.72.0 is under two weeks old) installs, adds nothing beyond itself.
+  `sentry_sdk.init(dsn=None)` still leaves an "active" client that sends nothing, so step H's "off without
+  `SENTRY_DSN`" means `init` is never called, and its test asserts that.
+- **`legal_to_labels`' runtime:** from `legal_source_fetches` (the CLI keeps no run log): KRS 40 minutes and MSiG
+  81 to 88 for 609 entities, the two side by side, on the runs of 2026-10-09, 10-13 and 10-16. `entity_master`
+  now holds 806 (list v2's distress group, plan 0014), so about 1 hour 50 minutes tonight, and about 3 hours
+  once list v2's random group is in. Decision 1's 02:00 start ends before 06:00.
 
 ### B. Dagster home and `make orchestrate` (decision 0)
 
@@ -194,7 +217,7 @@ CLAUDE.md's pointers if anything there changes; then `make check` and the hand-r
 ## Definition of done
 
 - [x] Owner decisions 0–9 accepted (2026-10-17, as recommended).
-- [ ] Step A's findings recorded (and an ADR if Evidently is replaced).
+- [x] Step A's findings recorded (2026-10-17; Evidently kept, so no ADR).
 - [ ] Steps B–H built, with their tests in `make check`.
 - [ ] The nightly registry check has run unattended at least once from the schedule, and the chain after it
       wrote alerts, with the counts recorded here.
