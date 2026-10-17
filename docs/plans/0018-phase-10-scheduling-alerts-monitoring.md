@@ -19,7 +19,7 @@ monitoring), the `alerts` table (§5), and the scoring half of stage I (§6I as 
 **Order:** after plan 0016 (active only on rendering the report, which waits on the Quarto CLI). It does not wait
 for list v2 or a champion: what it schedules and alerts on is what the registry already serves.
 
-## Status: active (2026-10-17): owner decisions 0–9 accepted as recommended; step A checked (Evidently and `sentry-sdk` both usable, no ADR needed); steps B–H built (`make orchestrate`; the schedules, sensors and RDF queue, all stopped until the owner turns them on; the `alerts` table and its rules; alerts in the explorer and the API; the drift report; realised calibration; Sentry, off until the owner sets `SENTRY_DSN`); next: step I
+## Status: active (2026-10-17): owner decisions 0–9 accepted as recommended; step A checked (Evidently and `sentry-sdk` both usable, no ADR needed); steps B–H built (`make orchestrate`; the schedules, sensors and RDF queue, all stopped until the owner turns them on; the `alerts` table and its rules; alerts in the explorer and the API; the drift report; realised calibration; Sentry, off until the owner sets `SENTRY_DSN`); step I's sweep checked. One item is the owner's: the nightly registry check run once unattended from its schedule, with the chain's counts recorded here
 
 ## Why
 
@@ -345,6 +345,17 @@ run worker loads, and in `make api`'s `main()` (not in `create_app`, so tests ne
 README (orchestration, alerts, the queue), AGENT_SPEC §6L "as built", TECHNICAL_ARCHITECTURE, `data_inventory.md`,
 CLAUDE.md's pointers if anything there changes; then `make check` and the hand-read sweep.
 
+**Built (2026-10-17).** README: Phase 10 moved from "next to build" to what waits on the owner; scoring's sensor
+noted beside its by-hand command; the error-reporting and by-hand acquisition text split out of the realised
+calibration paragraph they had run into. AGENT_SPEC §6L dated, and realised calibration named as the backtest's
+own code, not Evidently. TECHNICAL_ARCHITECTURE L2 and L3 gain as-built notes (the drift report local only;
+Sentry off, a failure hook, the whitelist). `data_inventory.md` §7 was updated in step H. CLAUDE.md needs no
+change: the stack is unchanged (Evidently and Sentry were already in it) and nothing it points to moved.
+
+- **What waits on the owner:** set `DAGSTER_HOME` in `.env`, run `make orchestrate`, turn the schedules and
+  sensors on, and let `registry_check_nightly` run once unattended (the open item of the definition of done);
+  step D's question on `filing_overdue`'s look-back; optionally `SENTRY_DSN`, after reading Sentry's terms.
+
 ## Tests
 
 - **Point in time:** every alert's facts have `known_from <= as_of_date`, and an alert computed at an earlier
@@ -368,7 +379,7 @@ CLAUDE.md's pointers if anything there changes; then `make check` and the hand-r
 - [x] Steps B–H built, with their tests in `make check` (2026-10-17).
 - [ ] The nightly registry check has run unattended at least once from the schedule, and the chain after it
       wrote alerts, with the counts recorded here.
-- [ ] Docs swept (step I).
+- [x] Docs swept (step I, 2026-10-17).
 
 ## Risks
 

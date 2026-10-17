@@ -523,9 +523,13 @@ Load models in-process from the MLflow registry. No BentoML, Seldon, or KServe: 
 
 **→ Pick: `Evidently`.** Open source, Python-native, purpose-built for feature drift and classification-quality reporting, and its HTML reports embed cleanly into the Evidence site. It covers both halves of stage 11's monitoring requirement — input drift and realised-outcome calibration — in one tool.
 
+*As built (plan 0018):* Evidently draws the input-drift report only, with its telemetry off, and the report stays local (`WAREHOUSE_DIR/reports/drift/`): its charts draw per-row distributions that can single out a company, so it is not embedded in the Evidence site while the lists are purposive. Realised calibration reuses the backtest's evaluation (`models/evaluation.py`), so the monitor and the backtest score calibration the same way.
+
 #### L3 — Error tracking
 
 **→ Pick: Sentry** free tier for unhandled exceptions in the API and pipeline.
+
+*As built (plan 0018 step H):* off unless the owner sets `SENTRY_DSN` (EU region only). Dagster catches a step's exception, so every job carries a failure hook; each event is rebuilt from a whitelist (exception type, stack locations, job and asset), never a message, a variable or a request. Scheduling (stage L's runs) is Dagster's schedules and sensors, all shipped stopped (`dagster_defs/schedules.py`, `sensors.py`).
 
 ---
 
