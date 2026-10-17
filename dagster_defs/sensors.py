@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import dagster as dg
 
-from dagster_defs.jobs import alerting, features, legal_to_labels, scoring
+from dagster_defs.jobs import alerting, features, legal_to_labels, monitoring, scoring
 
 STOPPED = dg.DefaultSensorStatus.STOPPED
 
@@ -72,9 +72,23 @@ def alerts_after_features_or_scoring(context: dg.RunStatusSensorContext) -> dg.R
     return dg.RunRequest(run_key=context.dagster_run.run_id)
 
 
+# Plan 0018 step F: drift is measured on what was scored, so it follows scoring only.
+@dg.run_status_sensor(
+    name="monitoring_after_scoring",
+    run_status=dg.DagsterRunStatus.SUCCESS,
+    monitored_jobs=[scoring],
+    request_job=monitoring,
+    default_status=STOPPED,
+    description="After a successful scoring run: the served model's input drift report.",
+)
+def monitoring_after_scoring(context: dg.RunStatusSensorContext) -> dg.RunRequest:
+    return dg.RunRequest(run_key=context.dagster_run.run_id)
+
+
 sensors = [
     features_after_registry_check,
     features_after_rdf_import,
     scoring_after_features,
     alerts_after_features_or_scoring,
+    monitoring_after_scoring,
 ]

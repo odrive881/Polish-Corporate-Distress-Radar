@@ -21,6 +21,7 @@ Every frame names companies: local only (AGENT_SPEC §6K).
 
 from __future__ import annotations
 
+import json
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
@@ -512,3 +513,18 @@ def acknowledge_alerts(sources: Sources, alert_ids: Iterable[str]) -> int:
         done = alerts_store.acknowledge(conn, alert_ids, datetime.now(UTC))
         conn.commit()
         return done
+
+
+# --- Drift reports (plan 0018 step F) --------------------------------------------------------
+
+
+def drift_reports(sources: Sources) -> list[tuple[dict[str, Any], Path]]:
+    """Each drift report's summary and its HTML file, newest month-end first; local files only
+    (`WAREHOUSE_DIR/reports/drift/`, never published)."""
+    directory = sources.canonical_dir.parent / "reports" / "drift"
+    found: list[tuple[dict[str, Any], Path]] = []
+    for summary in sorted(directory.glob("*.json"), reverse=True):
+        html = summary.with_suffix(".html")
+        if html.exists():
+            found.append((json.loads(summary.read_text(encoding="utf-8")), html))
+    return found

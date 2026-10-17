@@ -158,6 +158,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │       ├── features/
 │       ├── models/
 │       ├── alerts/
+│       ├── monitoring/
 │       ├── api/
 │       └── explorer/
 │
@@ -183,6 +184,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │   ├── features.py
 │   │   ├── models.py                  # plan 0012: the backtest asset, its own job, run by hand
 │   │   ├── alerts.py                  # plan 0018 step D: the alerts asset; the alerting job follows features and scoring
+│   │   ├── monitoring.py              # plan 0018 step F: the drift asset; the monitoring job follows scoring
 │   │   └── publish.py                 # plan 0016 step F: the public site's database, its own job, run by hand
 │   ├── checks/                        # asset checks — accounting identities, leakage guard
 │   ├── partitions.py
@@ -361,6 +363,9 @@ src/distress_radar/
 │   ├── rules.py                   # the five rules over point-in-time scores, features and searches; deterministic ids
 │   └── store.py                   # Postgres alerts: idempotent inserts, acknowledgements kept
 │
+├── monitoring/                    # L: the served model's drift and calibration (plan 0018 steps F and G); local only
+│   └── drift.py                   # Evidently, telemetry off; reference = the served fold's training rows; ids normalised
+│
 └── api/                           # J: read-only scores API, 127.0.0.1 only (plan 0016 step D)
     ├── main.py                    # app factory; served versions resolved at startup; `make api`
     ├── routes/
@@ -376,7 +381,7 @@ src/distress_radar/explorer/       # K: what the Streamlit pages show, as frames
 └── data.py                        # sources, out-of-time score history, current status, peers, documents
 ```
 
-Subfolder names match the stage groups in `AGENT_SPEC.md` §6 exactly (acquisition = A, parsing = C, extraction = G, features = H, models = I, api = J, alerts = L). This is intentional and must be preserved: an agent implementing a stage should never need to guess which folder it belongs in.
+Subfolder names match the stage groups in `AGENT_SPEC.md` §6 exactly (acquisition = A, parsing = C, extraction = G, features = H, models = I, api = J, alerts and monitoring = L). This is intentional and must be preserved: an agent implementing a stage should never need to guess which folder it belongs in.
 
 Two modules sit at the package root because every stage uses them: `settings.py` (typed runtime settings from the environment) and `warehouse.py` (derived Parquet datasets under `WAREHOUSE_DIR`, ADR 0008). `labels.py` sits there too: outcome labels are built in SQLMesh (stage F), so there is no stage folder for their parameters and the label-set freeze (plan 0008).
 

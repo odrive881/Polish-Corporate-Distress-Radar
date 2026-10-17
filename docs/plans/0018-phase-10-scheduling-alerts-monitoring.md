@@ -19,7 +19,7 @@ monitoring), the `alerts` table (§5), and the scoring half of stage I (§6I as 
 **Order:** after plan 0016 (active only on rendering the report, which waits on the Quarto CLI). It does not wait
 for list v2 or a champion: what it schedules and alerts on is what the registry already serves.
 
-## Status: active (2026-10-17): owner decisions 0–9 accepted as recommended; step A checked (Evidently and `sentry-sdk` both usable, no ADR needed); steps B–E built (`make orchestrate`; the schedules, sensors and RDF queue, all stopped until the owner turns them on; the `alerts` table and its rules; alerts in the explorer and the API); next: step F
+## Status: active (2026-10-17): owner decisions 0–9 accepted as recommended; step A checked (Evidently and `sentry-sdk` both usable, no ADR needed); steps B–F built (`make orchestrate`; the schedules, sensors and RDF queue, all stopped until the owner turns them on; the `alerts` table and its rules; alerts in the explorer and the API; the drift report); next: step G
 
 ## Why
 
@@ -270,6 +270,26 @@ startup creates the table if no `alerting` run has yet.
 `src/distress_radar/monitoring/drift.py`: reference and current frames from `feature_store` and the served
 version's fold, one report per horizon, written byte-reproducibly where the tool allows (its timestamp pinned to
 the scored `as_of_date`). An asset `drift_report` in the chain after `scoring`.
+
+**Built (2026-10-17).** `evidently>=0.7.23,<0.8` added (locked at 0.7.23; the lock only adds packages, none moved).
+`monitoring/drift.py`; asset `drift` (group `monitoring`), job `monitoring`, sensor `monitoring_after_scoring`
+(stopped). The reference is the served fold's training rows: the version's `backtest` tag gives its config,
+its `label_set_hash` and `test_year` the labels and the split (`splits.split`, as the backtest cut them), and the
+population rule, read again, the entities; whether that population still hashes to the backtest's pin is in the
+summary (`population_matches_pin`). The current rows are the feature rows of every entity the version scored at
+its latest month-end, inputs incomplete included. Reports are linked from the explorer's home page.
+
+- **First real run (2026-10-17, at 2026-09-30):** 355 rows against 20,969 (12 months) and 17,331 (24 months),
+  population as pinned. With a reference this large Evidently uses normed Wasserstein distance (and
+  Jensen-Shannon for `going_concern_threat`), threshold 0.1: drifted at 12 months `asset_turnover` (0.107), `roa`
+  (0.115) and `working_capital_to_assets` (0.130); `equity_to_assets` (0.095) and `going_concern_threat` (0.086)
+  not. At 24 months `going_concern_threat` too. Mild, and expected: one month-end of a distress-weighted list
+  against training rows from 2001 on. A rerun wrote the same bytes.
+- **Tests:** a shifted input drifts and an unshifted one does not; the same inputs give the same bytes, report
+  and summary; telemetry is off when Evidently runs; ids renumber by first appearance at their length; an empty
+  side is refused; the current rows are the scored entities at the month-end; the reference equals the backtest's
+  own split of the population's labels; the home page lists a report.
+
 
 ### G. Realised calibration (decision 7)
 

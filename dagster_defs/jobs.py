@@ -75,4 +75,22 @@ alerting = dg.define_asset_job(
     description="Score crossings and jumps, tripwires, going-concern flags, overdue filings → alerts.",
 )
 
-jobs = [legal_to_labels, features, backtest, scoring, publish, text, rdf_queue, alerting]
+# Plan 0018 step F: the served model's input drift after each new scoring run (`sensors.py`).
+# Local reports only, never published (decision 6).
+monitoring = dg.define_asset_job(
+    "monitoring",
+    selection=dg.AssetSelection.groups("monitoring"),
+    description="The served model's input drift at the latest scored month-end → reports/drift/.",
+)
+
+jobs = [
+    legal_to_labels,
+    features,
+    backtest,
+    scoring,
+    publish,
+    text,
+    rdf_queue,
+    alerting,
+    monitoring,
+]

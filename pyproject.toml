@@ -55,6 +55,10 @@ dependencies = [
     "uvicorn>=0.32",
     "streamlit>=1.40",
     "altair>=5.4",
+    # Stage L (plan 0018 step F): input drift of the served model. Checked on Python 3.14 in step A;
+    # its telemetry is switched off before import (`monitoring/drift.py`), and only its report is
+    # used, never its UI or collector.
+    "evidently>=0.7.23,<0.8",
 ]
 
 [project.optional-dependencies]
