@@ -184,7 +184,8 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   ├── partitions.py
 │   ├── schedules.py
 │   ├── sensors.py
-│   └── definitions.py                 # Dagster Definitions entry point
+│   ├── definitions.py                 # Dagster Definitions entry point
+│   └── dagster.yaml                   # plan 0018 step B: the instance's settings, copied into DAGSTER_HOME by `make orchestrate`
 │
 ├── notebooks/                         # marimo, .py format only
 │   ├── exploration/

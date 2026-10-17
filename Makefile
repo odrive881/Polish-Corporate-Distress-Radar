@@ -3,7 +3,7 @@ export UV_LINK_MODE := copy
 
 .PHONY: install lock lint typecheck test test-integration check dev-up dev-down api app site report \
 	transform-setup transform-plan transform-run transform-test docs-check hooks models \
-	label-queue label-clear label-export eval eval-accept
+	label-queue label-clear label-export eval eval-accept orchestrate
 
 install:    ## create/sync .venv exactly from uv.lock (fails if lock is stale)
 	$(UV) sync --locked --extra dev
@@ -98,6 +98,17 @@ report:     ## regenerate the report's figures and render report/methodology.qmd
 	$(UV) run --locked python -m distress_radar.methodology
 	@case "$$(command -v quarto)" in ""|/mnt/*) echo "the Quarto CLI is not installed in WSL: see README, Setup"; exit 1;; esac
 	quarto render report/methodology.qmd --output-dir _output
+
+# Dagster's UI and daemon (plan 0018 step B, decision 0), on localhost only. DAGSTER_HOME keeps run
+# history and schedule state between starts: from the environment, else .env, else .data/dagster. It
+# must be absolute (Dagster refuses a relative one). The instance settings are dagster_defs/dagster.yaml,
+# copied in on every start. Schedules and sensors fire only while this runs.
+DAGSTER_HOME ?= $(or $(shell sed -n 's/^DAGSTER_HOME=//p' .env 2>/dev/null),$(CURDIR)/.data/dagster)
+orchestrate:  ## Dagster UI and daemon on 127.0.0.1:3000, history kept in DAGSTER_HOME (needs `make dev-up`)
+	@case "$(DAGSTER_HOME)" in /*) ;; *) echo "DAGSTER_HOME must be an absolute path: $(DAGSTER_HOME)"; exit 1;; esac
+	mkdir -p "$(DAGSTER_HOME)"
+	cp dagster_defs/dagster.yaml "$(DAGSTER_HOME)/dagster.yaml"
+	DAGSTER_HOME="$(DAGSTER_HOME)" $(UV) run --locked dagster dev -m dagster_defs.definitions -h 127.0.0.1 -p 3000
 
 app:        ## run the local Streamlit explorer (needs `make dev-up` and a scoring run)
 	$(UV) run --locked streamlit run app/Home.py --server.address 127.0.0.1 --server.headless true \

@@ -29,7 +29,9 @@ if TYPE_CHECKING:
 NOT_SEARCHED = ("rdf_not_searched", "rdf_search_incomplete")
 
 
+# Not named `publish`: the job is, and Dagster refuses an asset and a job of one name in a repository.
 @dg.asset(
+    name="publish_database",
     group_name="publish",
     deps=["dq_mart", "dq_mart_coverage", backtest],
     required_resource_keys={"postgres"},

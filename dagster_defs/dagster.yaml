@@ -1,0 +1,17 @@
+# The Dagster instance's settings (plan 0018 step B, decision 0). `make orchestrate` copies this file
+# into DAGSTER_HOME (default .data/dagster, gitignored) on every start, so edit it here, not there.
+# Run, event-log and schedule storage stay Dagster's default: SQLite under DAGSTER_HOME.
+
+# Dagster's anonymous usage statistics are never sent (nothing about a run leaves the machine).
+telemetry:
+  enabled: false
+
+# One run at a time. The nightly registry check, the scoring chain and any run started by hand queue
+# behind each other, so two runs never fetch from one source side by side and double its pace
+# (ADR 0011), and a job never reads a dataset another run is rewriting. CLI runs (`dagster job
+# execute`) run in-process and are not queued: start them only while the UI shows no run.
+run_coordinator:
+  module: dagster.core.run_coordinator
+  class: QueuedRunCoordinator
+  config:
+    max_concurrent_runs: 1
