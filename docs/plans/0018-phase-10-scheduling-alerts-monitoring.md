@@ -19,7 +19,7 @@ monitoring), the `alerts` table (§5), and the scoring half of stage I (§6I as 
 **Order:** after plan 0016 (active only on rendering the report, which waits on the Quarto CLI). It does not wait
 for list v2 or a champion: what it schedules and alerts on is what the registry already serves.
 
-## Status: active (2026-10-17): owner decisions 0–9 accepted as recommended; step A checked (Evidently and `sentry-sdk` both usable, no ADR needed); steps B–G built (`make orchestrate`; the schedules, sensors and RDF queue, all stopped until the owner turns them on; the `alerts` table and its rules; alerts in the explorer and the API; the drift report; realised calibration); next: step H
+## Status: active (2026-10-17): owner decisions 0–9 accepted as recommended; step A checked (Evidently and `sentry-sdk` both usable, no ADR needed); steps B–H built (`make orchestrate`; the schedules, sensors and RDF queue, all stopped until the owner turns them on; the `alerts` table and its rules; alerts in the explorer and the API; the drift report; realised calibration; Sentry, off until the owner sets `SENTRY_DSN`); next: step I
 
 ## Why
 
@@ -319,6 +319,27 @@ with `drift`. Each stored score is joined to the latest frozen label set of its 
 startup, a no-op without `SENTRY_DSN`; the scrubbing `before_send`. `data_inventory.md` lists the DSN as the
 owner's credential.
 
+**Built (2026-10-17).** `sentry-sdk>=2.71.0,<3`, locked at 2.71.0 (adds only itself). `errors.py`:
+`init_error_reporting()` returns without calling `sentry_sdk.init` when `SENTRY_DSN` is unset, and refuses a DSN
+outside the EU region (`*.ingest.de.sentry.io`). Called at the import of `dagster_defs/definitions.py`, which every
+run worker loads, and in `make api`'s `main()` (not in `create_app`, so tests never start it).
+
+- **A failure hook, not an excepthook.** Dagster catches a step's exception and records it, so nothing
+  unhandled ever reaches Sentry from a run. Every job carries `report_failure` (`dagster_defs/jobs.py`), which
+  hands the exception to `errors.report` with the job and the asset's name as tags.
+- **`before_send` is a whitelist, not a filter:** the event is rebuilt from the exception's type, module and
+  mechanism, each frame's function, module, line number, `in_app` and relative file name (an absolute one keeps
+  its base name), the two tags, and the event's id, time, level, release, environment and SDK. Messages, locals,
+  source lines, extra, user, request, contexts, breadcrumbs and the host's name never leave; an event without an
+  exception (a logged message) is not sent. Also off in `init`: default PII, local variables, source context,
+  breadcrumbs, request bodies, sessions, client reports, transactions.
+- **Tests** (`tests/test_errors.py`, through a recording transport): no DSN installs no client; a US DSN is
+  refused; an exception whose message, a frame's locals, extra, user and a breadcrumb hold a PESEL, a name, a KRS
+  number and a file name sends none of them (checked against a control: without the scrub, the PESEL is sent); a
+  logged message sends nothing; a failing asset in a hooked job reports its job and asset; an API error
+  (FastAPI's integration, on by default) reports without its query string.
+- Nothing is configured: `SENTRY_DSN` stays the owner's, after reading Sentry's terms (`data_inventory.md` §7).
+
 ### I. Docs sweep and close-out
 
 README (orchestration, alerts, the queue), AGENT_SPEC §6L "as built", TECHNICAL_ARCHITECTURE, `data_inventory.md`,
@@ -344,7 +365,7 @@ CLAUDE.md's pointers if anything there changes; then `make check` and the hand-r
 
 - [x] Owner decisions 0–9 accepted (2026-10-17, as recommended).
 - [x] Step A's findings recorded (2026-10-17; Evidently kept, so no ADR).
-- [ ] Steps B–H built, with their tests in `make check`.
+- [x] Steps B–H built, with their tests in `make check` (2026-10-17).
 - [ ] The nightly registry check has run unattended at least once from the schedule, and the chain after it
       wrote alerts, with the counts recorded here.
 - [ ] Docs swept (step I).

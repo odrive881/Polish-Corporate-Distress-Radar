@@ -147,6 +147,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   └── distress_radar/                # the installable package — see §2
 │       ├── __init__.py
 │       ├── settings.py                # typed runtime settings (.env)
+│       ├── errors.py                  # L: Sentry, off without SENTRY_DSN; events scrubbed to a whitelist (plan 0018 step H)
 │       ├── warehouse.py               # Parquet datasets under WAREHOUSE_DIR (ADR 0008)
 │       ├── labels.py                  # label config, label sources, the label-set freeze (plan 0008)
 │       ├── transform_project.py       # runs/audits the SQLMesh project from Python (ADR 0010)
@@ -384,7 +385,7 @@ src/distress_radar/explorer/       # K: what the Streamlit pages show, as frames
 
 Subfolder names match the stage groups in `AGENT_SPEC.md` §6 exactly (acquisition = A, parsing = C, extraction = G, features = H, models = I, api = J, alerts and monitoring = L). This is intentional and must be preserved: an agent implementing a stage should never need to guess which folder it belongs in.
 
-Two modules sit at the package root because every stage uses them: `settings.py` (typed runtime settings from the environment) and `warehouse.py` (derived Parquet datasets under `WAREHOUSE_DIR`, ADR 0008). `labels.py` sits there too: outcome labels are built in SQLMesh (stage F), so there is no stage folder for their parameters and the label-set freeze (plan 0008).
+Two modules sit at the package root because every stage uses them: `settings.py` (typed runtime settings from the environment) and `warehouse.py` (derived Parquet datasets under `WAREHOUSE_DIR`, ADR 0008). `errors.py` sits there for the same reason: the pipeline's runs and the API both report through it. `labels.py` sits there too: outcome labels are built in SQLMesh (stage F), so there is no stage folder for their parameters and the label-set freeze (plan 0008).
 
 ---
 

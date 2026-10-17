@@ -59,6 +59,9 @@ dependencies = [
     # its telemetry is switched off before import (`monitoring/drift.py`), and only its report is
     # used, never its UI or collector.
     "evidently>=0.7.23,<0.8",
+    # Stage L (plan 0018 step H): error reporting, off unless the owner sets SENTRY_DSN
+    # (`errors.py`). Locked at 2.71.0, the newest release at least two weeks old in step A.
+    "sentry-sdk>=2.71.0,<3",
 ]
 
 [project.optional-dependencies]

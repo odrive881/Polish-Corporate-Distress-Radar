@@ -41,7 +41,11 @@ from distress_radar.acquisition.krs_extract import krs_api_policy
 from distress_radar.acquisition.msig_client import msig_policy
 from distress_radar.acquisition.raw_store import S3ObjectStore
 from distress_radar.acquisition.regon_client import ENDPOINTS, ZeepBir1Service, bir1_policy
+from distress_radar.errors import init_error_reporting
 from distress_radar.settings import Settings
+
+# Each run worker loads this module, so this covers the runs; a no-op without SENTRY_DSN.
+init_error_reporting()
 
 
 class PostgresResource(dg.ConfigurableResource):
