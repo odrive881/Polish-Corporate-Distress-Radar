@@ -9,9 +9,10 @@ parameter annotation at runtime.
 """
 
 from collections import Counter
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
+from zoneinfo import ZoneInfo
 
 import dagster as dg
 import psycopg
@@ -29,11 +30,14 @@ from distress_radar.acquisition.document_retrieval import (
 )
 from distress_radar.acquisition.har_import import import_har
 from distress_radar.acquisition.raw_store import S3ObjectStore, sha256_hex
+from distress_radar.acquisition.rdf_queue import TIERS, read_queue, write_queue
 from distress_radar.acquisition.redaction_migration import stored_markers
 from distress_radar.acquisition.regon_client import resolve_entity
 from distress_radar.acquisition.report_import import import_reports
 from distress_radar.acquisition.script_import import import_listing
 from distress_radar.acquisition.universe_discovery import load_krs_list, load_seed, load_segment
+from distress_radar.features.statutory import load_filing_deadlines
+from distress_radar.models.splits import load_backtest_config
 from distress_radar.settings import Settings
 
 if TYPE_CHECKING:
@@ -683,6 +687,57 @@ def rdf_script_import(
     )
 
 
+class RdfQueueConfig(dg.Config):
+    on: str | None = None  # ISO date, Warsaw; the schedule passes its tick's date, default today
+
+
+@dg.asset(group_name="acquisition", required_resource_keys={"postgres"})
+def rdf_research_queue(
+    context: dg.AssetExecutionContext, config: RdfQueueConfig
+) -> dg.MaterializeResult:
+    """A3, the re-search queue — which companies the owner's RDF script should search next
+    (plan 0018 step C, decision 3). The pipeline never fetches RDF (ADR 0013); this replaces
+    AGENT_SPEC §6L's weekly filing check and the filing-wave scaling with a list the script reads.
+
+    Inputs: Postgres `entity_master`, `rdf_listed_entities`, `filing_index` (listed statements of a
+    downloaded type, not deleted) and `universe_candidates`; `config/statutory/filing_deadlines.yaml`;
+    the `population` rule's sources complete by capture in `config/models/<BACKTEST_VERSION>.yaml`;
+    `config/mappings/rdf_document_types.yaml`; `on`, the date the queue is for.
+    Outputs: `RDF_QUEUE_DIR/queue_<on>.txt` (default `.cache/rdf_queue`, gitignored), one KRS number a
+    line, by tier (`not_searched`, `search_incomplete`, `filing_due`, `oldest_search`), then the
+    oldest search first. Nothing else of the list is written (ADR 0014). The same records on the same
+    date give the same bytes. Counts per tier in the metadata.
+    Partition scheme: none (unpartitioned); one file per `on`, rewritten on a rerun.
+    """
+    settings = Settings()
+    on = (
+        date.fromisoformat(config.on)
+        if config.on
+        else datetime.now(ZoneInfo("Europe/Warsaw")).date()
+    )
+    population = load_backtest_config(settings.backtest_version).population
+    postgres = cast("PostgresResource", context.resources.postgres)
+    with postgres.connect() as conn:
+        entries = read_queue(
+            conn,
+            complete_by_capture=population.complete_by_capture if population else (),
+            download_codes=load_document_types().download_codes,
+            deadlines=load_filing_deadlines(),
+            on=on,
+        )
+    path = write_queue(entries, settings.rdf_queue_dir, on)
+    counts = Counter(e.tier for e in entries)
+    context.log.info(f"{len(entries)} companies queued in {path}")
+    return dg.MaterializeResult(
+        metadata={
+            "on": on.isoformat(),
+            "path": str(path),
+            "entities": len(entries),
+            **{f"{tier}_count": counts[tier] for tier in TIERS},
+        }
+    )
+
+
 acquisition_assets = [
     universe_candidates,
     entity_master,
@@ -691,4 +746,5 @@ acquisition_assets = [
     rdf_manual_import,
     rdf_auditor_report_import,
     rdf_script_import,
+    rdf_research_queue,
 ]

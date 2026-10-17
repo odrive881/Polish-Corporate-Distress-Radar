@@ -182,8 +182,9 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │   └── publish.py                 # plan 0016 step F: the public site's database, its own job, run by hand
 │   ├── checks/                        # asset checks — accounting identities, leakage guard
 │   ├── partitions.py
-│   ├── schedules.py
-│   ├── sensors.py
+│   ├── jobs.py                        # plan 0018 step C: every job, so sensors can name them
+│   ├── schedules.py                   # plan 0018 step C: the nightly registry check, the RDF re-search queue; all ship stopped
+│   ├── sensors.py                     # plan 0018 step C: registry check or import → features → scoring; all ship stopped
 │   ├── definitions.py                 # Dagster Definitions entry point
 │   └── dagster.yaml                   # plan 0018 step B: the instance's settings, copied into DAGSTER_HOME by `make orchestrate`
 │
@@ -274,6 +275,7 @@ src/distress_radar/
 │   ├── har_import.py            # A3, manual tier (HAR captures)
 │   ├── report_import.py         # A3, manual files tier: hand-downloaded auditor reports, listed dates
 │   ├── script_import.py         # A3, scripted downloads tier: the PAD script's listings and ZIPs (plan 0014; inbox RDF_SCRIPT_INBOX, gitignored)
+│   ├── rdf_queue.py             # A3: the re-search queue for the owner's script, KRS numbers only (plan 0018 step C; RDF_QUEUE_DIR, gitignored)
 │   ├── redaction.py             # invariant 6: signer data, file names, PDF metadata out before storing (ADR 0009)
 │   ├── redaction_migration.py   # re-store objects under the current redaction; the store-wide scan
 │   ├── personal_data_scan.py    # pre-commit scan of staged files (`make hooks`)

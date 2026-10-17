@@ -45,9 +45,9 @@ def test_the_scoring_job_runs_the_scores_alone_and_offline() -> None:
     assert not set(node.assets_def.required_resource_keys) & NETWORK_RESOURCES
 
 
-def test_nothing_schedules_the_scoring() -> None:
-    """Scheduling is Phase 10 (plan 0016 decision 5)."""
+def test_only_new_features_start_the_scoring() -> None:
+    """No clock scores (plan 0018 decision 2): one sensor, after a successful features run."""
     schedules = list(defs.schedules or [])
     sensors = list(defs.sensors or [])
     assert all(s.job_name != "scoring" for s in schedules)
-    assert all("scoring" not in (getattr(s, "job_name", None) or "") for s in sensors)
+    assert [s.name for s in sensors if s.job_name == "scoring"] == ["scoring_after_features"]
