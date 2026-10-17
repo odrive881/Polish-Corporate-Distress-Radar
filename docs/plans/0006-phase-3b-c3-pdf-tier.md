@@ -4,7 +4,19 @@
 
 **Order:** after plan 0005 (whose vocabulary it needs), and only when a trigger below fires. It was expected to start in Phase 4, when MSiG would force a PDF text layer; MSiG turned out to serve text (ADR 0011), so it did not. Plan 0007 no longer waits for it.
 
-## Status: deferred (2026-09-21); Phase 4 trigger did not fire (2026-09-23); triggers 1 and 2 measured over list v1 (2026-10-16): trigger 1 fires for one entity, trigger 2 does not; staying deferred is the owner's to confirm
+## Status: deferred (2026-09-21); Phase 4 trigger did not fire (2026-09-23); triggers 1 and 2 measured over list v1 (2026-10-16): trigger 1 fires for one entity, trigger 2 does not; staying deferred is the owner's to confirm; re-measured after list v2's distress group (2026-10-17, provisional until its legal sources are fetched)
+
+**Update, 2026-10-17: re-measured after list v2's distress group was imported (plan 0014, Progress), provisional.**
+Against `backtest_v8` (the notebook's `BACKTEST`; v7's population has moved): **64 files of 30 entities**, 37
+recoverable (24 entities), 22 unrecoverable with a later statement (9), 5 the entity's latest (2). The distress
+group adds 16 files of 7 entities, 9 of them unrecoverable in 3 entities: 0000314826 (five copies of its
+2018-03-31 statement), 0000488626 (2021-12-31 and 2023-01-31) and 0000859396 (2024 and 2025, its latest). The
+notebook reports none of the three as distressed and 0000859396 as a second live trigger-1 entity, but only
+because their legal sources are not fetched yet: all three are bankrupt or in liquidation on Rejestr.io.
+So **trigger 1 still fires for one live entity (0000777764)**, and **trigger 2 now touches the positive class**:
+3 distressed entities with unrecoverable PDFs, where list v1 had none. Whether those PDFs predate each event,
+and so bias features, is known only once `krs_extracts`, `msig_notices` and the labels are rebuilt (after the
+script's second search of the outage's 88 companies); re-run the notebook then and settle trigger 2.
 
 **Update, 2026-10-16 (plan 0017 step I): the triggers, measured over list v1.** By
 `notebooks/exploration/pdf_tier_triggers.py` (read-only; re-run it after each delivery), on the latest parsing

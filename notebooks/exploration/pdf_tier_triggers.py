@@ -19,7 +19,7 @@ For each `needs_pdf_tier` file on the latest parsing run (`parsed_documents`, as
   v1 scope, plan 0006).
 
 Then each entity against its legal events (an event with an outcome class, as the census counts
-them) and against `backtest_v7`'s population.
+them) and against the latest pinned backtest's population (`BACKTEST`).
 
 **Counts and KRS numbers only**: no document content, file name or company name is printed.
 Read-only: Postgres and `WAREHOUSE_DIR`. Needs `make dev-up`, and `financial_statements_canonical`
@@ -48,7 +48,7 @@ def _():
     from distress_radar.models.splits import load_backtest_config
     from distress_radar.settings import Settings
 
-    BACKTEST = "backtest_v7"
+    BACKTEST = "backtest_v8"
     settings = Settings()
     _latest_run = """
         WITH lr AS (
