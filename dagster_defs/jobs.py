@@ -75,12 +75,12 @@ alerting = dg.define_asset_job(
     description="Score crossings and jumps, tripwires, going-concern flags, overdue filings → alerts.",
 )
 
-# Plan 0018 step F: the served model's input drift after each new scoring run (`sensors.py`).
-# Local reports only, never published (decision 6).
+# Plan 0018 steps F and G: the served model's input drift and the stored scores' realised
+# calibration, after each new scoring run (`sensors.py`). Local reports only (decision 6).
 monitoring = dg.define_asset_job(
     "monitoring",
     selection=dg.AssetSelection.groups("monitoring"),
-    description="The served model's input drift at the latest scored month-end → reports/drift/.",
+    description="Input drift and realised calibration → reports/drift/, reports/calibration/.",
 )
 
 jobs = [

@@ -4,15 +4,20 @@ No `from __future__ import annotations` here: Dagster inspects the `context` ann
 definition time.
 """
 
+from datetime import date, datetime
 from typing import TYPE_CHECKING, cast
+from zoneinfo import ZoneInfo
 
 import dagster as dg
+import polars as pl
 
 from dagster_defs.assets.features import feature_store
+from dagster_defs.assets.labels import outcome_labels
 from dagster_defs.assets.models import scores
 from distress_radar.acquisition.document_retrieval import load_document_types
 from distress_radar.models.dataset import load_feature_store, load_label_set
 from distress_radar.models.population import read_population
+from distress_radar.models.scoring import latest_label_set
 from distress_radar.models.serving import load_served
 from distress_radar.models.splits import label_timing, load_backtest_config
 from distress_radar.monitoring.drift import (
@@ -21,6 +26,7 @@ from distress_radar.monitoring.drift import (
     reference_frame,
     write_drift,
 )
+from distress_radar.monitoring.realised import realised, write_realised
 from distress_radar.settings import Settings
 
 if TYPE_CHECKING:
@@ -124,4 +130,83 @@ def drift(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
     return dg.MaterializeResult(metadata=metadata)
 
 
-monitoring_assets = [drift]
+class RealisedConfig(dg.Config):
+    on: str | None = None  # ISO date, Warsaw; default today
+
+
+@dg.asset(
+    group_name="monitoring", deps=[scores, outcome_labels], required_resource_keys={"postgres"}
+)
+def realised_calibration(
+    context: dg.AssetExecutionContext, config: RealisedConfig
+) -> dg.MaterializeResult:
+    """L — the stored scores against what happened, once their cohorts are settled (plan 0018
+    step G, decision 7).
+
+    Inputs: Postgres `scores_history` (every scored row, each with its label version) and
+    `label_sets` (the latest frozen set of each label version, read under `WAREHOUSE_DIR`);
+    `config/models/<BACKTEST_VERSION>.yaml` (distress classes, `min_events`, reliability bins);
+    `on`, the day judged from.
+    Outputs: `WAREHOUSE_DIR/reports/calibration/realised_<on>.json`, one cell per horizon and model
+    version: Brier score, base rate, mean predicted and reliability, or "not evaluable" below
+    `min_events` distinct events with the day the first cohort settles. Local only.
+    Partition scheme: none (unpartitioned); one file per `on`, rewritten on a rerun.
+    """
+    settings = Settings()
+    on = (
+        date.fromisoformat(config.on)
+        if config.on
+        else datetime.now(ZoneInfo("Europe/Warsaw")).date()
+    )
+    backtest = load_backtest_config(settings.backtest_version)
+    postgres = cast("PostgresResource", context.resources.postgres)
+    cells: list[dict[str, object]] = []
+    with postgres.connect() as conn:
+        stored = pl.DataFrame(
+            conn.execute(
+                """
+                SELECT trim(krs), as_of_date, horizon_months, probability, model_name,
+                       model_version, label_version
+                FROM scores_history WHERE probability IS NOT NULL
+                """
+            ).fetchall(),
+            schema={
+                "krs": pl.String,
+                "as_of_date": pl.Date,
+                "horizon_months": pl.Int32,
+                "probability": pl.Float64,
+                "model_name": pl.String,
+                "model_version": pl.String,
+                "label_version": pl.String,
+            },
+            orient="row",
+        )
+        for label_version in sorted(stored.get_column("label_version").unique().to_list()):
+            labels = load_label_set(settings.warehouse_dir, latest_label_set(conn, label_version))
+            cells += realised(
+                stored.filter(pl.col("label_version") == label_version).drop("label_version"),
+                labels,
+                distress_classes=backtest.distress_classes,
+                timing=label_timing(labels),
+                on=on,
+                min_events=backtest.min_events,
+                bins=backtest.reliability_bins,
+            )
+    path = write_realised(cells, on, settings.warehouse_dir)
+    for cell in cells:
+        context.log.info(
+            f"{cell['model']}: {cell['settled_rows']} settled of {cell['scores']}, "
+            f"{cell['events']} events; "
+            + (f"Brier {cell['brier']}" if cell["evaluable"] else str(cell["reason"]))
+        )
+    return dg.MaterializeResult(
+        metadata={
+            "on": on.isoformat(),
+            "path": str(path),
+            "cells": len(cells),
+            "evaluable": sum(1 for c in cells if c["evaluable"]),
+        }
+    )
+
+
+monitoring_assets = [drift, realised_calibration]

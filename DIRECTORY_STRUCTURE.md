@@ -184,7 +184,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │   ├── features.py
 │   │   ├── models.py                  # plan 0012: the backtest asset, its own job, run by hand
 │   │   ├── alerts.py                  # plan 0018 step D: the alerts asset; the alerting job follows features and scoring
-│   │   ├── monitoring.py              # plan 0018 step F: the drift asset; the monitoring job follows scoring
+│   │   ├── monitoring.py              # plan 0018 steps F and G: drift and realised calibration; the monitoring job follows scoring
 │   │   └── publish.py                 # plan 0016 step F: the public site's database, its own job, run by hand
 │   ├── checks/                        # asset checks — accounting identities, leakage guard
 │   ├── partitions.py
@@ -364,7 +364,8 @@ src/distress_radar/
 │   └── store.py                   # Postgres alerts: idempotent inserts, acknowledgements kept
 │
 ├── monitoring/                    # L: the served model's drift and calibration (plan 0018 steps F and G); local only
-│   └── drift.py                   # Evidently, telemetry off; reference = the served fold's training rows; ids normalised
+│   ├── drift.py                   # Evidently, telemetry off; reference = the served fold's training rows; ids normalised
+│   └── realised.py                # stored scores against outcomes, once each cohort is settled; Brier, reliability
 │
 └── api/                           # J: read-only scores API, 127.0.0.1 only (plan 0016 step D)
     ├── main.py                    # app factory; served versions resolved at startup; `make api`
