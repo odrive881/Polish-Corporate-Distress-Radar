@@ -251,12 +251,14 @@ startup creates the table if no `alerting` run has yet.
 
 - **Checked live:** in-process over the real database, `GET /alerts` returns the 137 stored alerts, the Art. 233
   tripwire (high) first.
-- **Found, not fixed (it predates this plan):** `make api` refuses to start on today's database. `scoring` ran on
+- **Found (it predates this plan), then fixed on the owner's word (2026-10-17):** `make api` refused to start on
+  today's database. `scoring` ran on
   `backtest_v7` and then `backtest_v8`, both at 2026-09-30, so that month-end holds 12-month scores from v4 and
   v5, and `check_served` (plan 0016 decision 6) demands that the latest month-end hold the served version only.
   The served version is there; the refusal was meant for a database whose latest scores the registry no longer
-  serves. **For the owner:** loosen the check to "the served version is among the latest", or delete the
-  superseded v4 rows at that month-end.
+  serves. The owner chose to loosen the check: it now refuses only a latest month-end with no score from the
+  served version, and older versions' rows beside it are allowed (the reads never show them). Checked live:
+  `make api` starts and `GET /scores?horizon_months=12` returns 355 rows, all v5. A test holds both sides.
 - **Tests:** the page runs on synthetic sources with the disclaimer, counts the open alerts and keeps its
   acknowledge button disabled until a row is ticked, and says when nothing is acknowledged; each alert type's
   line from its `detail`; against Postgres, `GET /alerts` open by default, watchlist first, then severity,

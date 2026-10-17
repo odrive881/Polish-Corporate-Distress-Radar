@@ -476,7 +476,7 @@ Rules:
 - Postgres holds scores, alerts, watchlists.
 - Models load in-process from the MLflow registry at startup.
 
-As built in Phase 9 (plan 0016, 2026-10-16): the `scoring` job (by hand, clean tree) serves the registered version under `champion`, else `incumbent`, never refitted, and scores the latest month-end in `feature_store` for the backtest's population at risk; a row missing an input the model needs is kept as "inputs incomplete" with the inputs named, never imputed; every other entity gets a `scoring_exclusions` row with its reason. The API (`src/distress_radar/api/`, `make api`) is read-only over Postgres, bound to 127.0.0.1, refuses to start when the latest stored scores came from another version than the registry serves, and wraps every response in an envelope with the served versions' identifiers and the disclaimer.
+As built in Phase 9 (plan 0016, 2026-10-16): the `scoring` job (by hand, clean tree) serves the registered version under `champion`, else `incumbent`, never refitted, and scores the latest month-end in `feature_store` for the backtest's population at risk; a row missing an input the model needs is kept as "inputs incomplete" with the inputs named, never imputed; every other entity gets a `scoring_exclusions` row with its reason. The API (`src/distress_radar/api/`, `make api`) is read-only over Postgres, bound to 127.0.0.1, refuses to start when the latest stored month-end holds no score from the version the registry serves (older versions' rows beside it are allowed and never shown, plan 0018 step E), and wraps every response in an envelope with the served versions' identifiers and the disclaimer.
 
 ### K — Presentation
 
