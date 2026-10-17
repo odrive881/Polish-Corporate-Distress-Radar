@@ -53,7 +53,9 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 CLASSICAL_MODELS = ("altman_z2_2000", "poznan_2004")
 
 
+# Not named `backtest`: the job is, and Dagster refuses an asset and a job of one name in a repository.
 @dg.asset(
+    name="backtest_run",
     group_name="models",
     deps=[feature_store, outcome_labels],
     required_resource_keys={"postgres"},

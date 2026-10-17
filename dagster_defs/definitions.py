@@ -177,7 +177,7 @@ features = dg.define_asset_job(
 # refresh. It reads the stored `feature_store` and a frozen label set; it rebuilds neither.
 backtest = dg.define_asset_job(
     "backtest",
-    selection=dg.AssetSelection.assets("backtest"),
+    selection=dg.AssetSelection.assets("backtest_run"),
     description="The out-of-time backtest: report under WAREHOUSE_DIR, one MLflow run per cell set.",
 )
 
@@ -193,7 +193,7 @@ scoring = dg.define_asset_job(
 # the backtest's MLflow runs and predictions; it rebuilds none of them, and deploys nothing.
 publish = dg.define_asset_job(
     "publish",
-    selection=dg.AssetSelection.assets("publish"),
+    selection=dg.AssetSelection.assets("publish_database"),
     description="Aggregates only, small cells suppressed → site/sources/publish/publish.duckdb.",
 )
 

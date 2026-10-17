@@ -247,7 +247,7 @@ def test_the_publish_job_runs_the_publish_asset_alone() -> None:
     from dagster_defs.definitions import defs
 
     job = defs.resolve_job_def("publish")
-    assert {k.to_user_string() for k in job.asset_layer.selected_asset_keys} == {"publish"}
+    assert {k.to_user_string() for k in job.asset_layer.selected_asset_keys} == {"publish_database"}
 
 
 SITE = Path(__file__).parents[1] / "site"

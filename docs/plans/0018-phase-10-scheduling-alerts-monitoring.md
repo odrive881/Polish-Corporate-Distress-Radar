@@ -19,7 +19,7 @@ monitoring), the `alerts` table (§5), and the scoring half of stage I (§6I as 
 **Order:** after plan 0016 (active only on rendering the report, which waits on the Quarto CLI). It does not wait
 for list v2 or a champion: what it schedules and alerts on is what the registry already serves.
 
-## Status: active (2026-10-17): owner decisions 0–9 accepted as recommended; step A checked (Evidently and `sentry-sdk` both usable, no ADR needed); next: step B
+## Status: active (2026-10-17): owner decisions 0–9 accepted as recommended; step A checked (Evidently and `sentry-sdk` both usable, no ADR needed); step B built (`make orchestrate`); next: step C
 
 ## Why
 
@@ -155,6 +155,22 @@ already in the lock) and record why in an ADR before step F. Confirm `legal_to_l
 
 `DAGSTER_HOME` in `.env.example`, `.data/dagster/dagster.yaml` written by the make target, run storage in SQLite
 there. README § Orchestration.
+
+**Built (2026-10-17).** `make orchestrate` resolves `DAGSTER_HOME` (environment, then `.env`, then
+`<repo>/.data/dagster`), refuses a relative path (Dagster does too; an empty one silently falls back to a
+temporary home), copies `dagster_defs/dagster.yaml` in and starts `dagster dev` on 127.0.0.1:3000. The settings:
+Dagster's telemetry off, and the `QueuedRunCoordinator` at one run at a time, so the nightly fetch, the scoring
+chain and a run started by hand never overlap (two fetches side by side would double a source's pace, ADR 0011).
+Dagster reads `DAGSTER_HOME` from `.env` for CLI runs too (tested), which ends plan 0014's lost CLI metadata once
+the owner sets it.
+
+- **Found starting it the first time:** the repository had never loaded in the UI since plan 0012. The asset and
+  the job were both named `backtest` (and, from plan 0016, `publish`), which Dagster refuses once it resolves every
+  job; `dagster job execute -j <name>` builds only its own job, so no CLI run showed it. The assets are now
+  `backtest_run` and `publish_database`; the jobs keep their names, so every documented command is unchanged.
+  `tests/test_orchestration.py` resolves the whole repository and loads the instance settings, in `make check`.
+- **Checked live:** the code location loads, all six daemons report healthy (scheduler, sensor, queued run
+  coordinator among them), the UI answers on 127.0.0.1:3000 only, and the home holds its history after a stop.
 
 ### C. Schedules and sensors (decisions 1–3)
 

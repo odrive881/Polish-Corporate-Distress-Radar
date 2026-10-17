@@ -9,7 +9,7 @@ NETWORK_RESOURCES = {"bir1", "rdf_browser", "krs_api", "msig_api"}
 
 
 def test_the_backtest_is_downstream_of_the_store_and_the_labels() -> None:
-    node = defs.resolve_asset_graph().get(dg.AssetKey("backtest"))
+    node = defs.resolve_asset_graph().get(dg.AssetKey("backtest_run"))
     assert node.group_name == "models"
     assert {key.to_user_string() for key in node.parent_keys} == {"feature_store", "outcome_labels"}
 
@@ -17,9 +17,9 @@ def test_the_backtest_is_downstream_of_the_store_and_the_labels() -> None:
 def test_the_backtest_job_runs_the_backtest_alone_and_offline() -> None:
     job = defs.resolve_job_def("backtest")
     selected = job.asset_layer.selected_asset_keys
-    assert {key.to_user_string() for key in selected} == {"backtest"}
+    assert {key.to_user_string() for key in selected} == {"backtest_run"}
     graph = defs.resolve_asset_graph()
-    needed = set(graph.get(dg.AssetKey("backtest")).assets_def.required_resource_keys)
+    needed = set(graph.get(dg.AssetKey("backtest_run")).assets_def.required_resource_keys)
     assert not needed & NETWORK_RESOURCES
 
 
@@ -38,7 +38,7 @@ def test_the_scoring_job_runs_the_scores_alone_and_offline() -> None:
     assert {key.to_user_string() for key in node.parent_keys} == {
         "feature_store",
         "outcome_labels",
-        "backtest",
+        "backtest_run",
     }
     job = defs.resolve_job_def("scoring")
     assert {key.to_user_string() for key in job.asset_layer.selected_asset_keys} == {"scores"}
