@@ -19,7 +19,7 @@ monitoring), the `alerts` table (§5), and the scoring half of stage I (§6I as 
 **Order:** after plan 0016 (active only on rendering the report, which waits on the Quarto CLI). It does not wait
 for list v2 or a champion: what it schedules and alerts on is what the registry already serves.
 
-## Status: active (2026-10-17): owner decisions 0–9 accepted as recommended; step A checked (Evidently and `sentry-sdk` both usable, no ADR needed); step B built (`make orchestrate`); next: step C
+## Status: active (2026-10-17): owner decisions 0–9 accepted as recommended; step A checked (Evidently and `sentry-sdk` both usable, no ADR needed); steps B and C built (`make orchestrate`; the schedules, sensors and RDF queue, all stopped until the owner turns them on); next: step D
 
 ## Why
 
@@ -178,6 +178,29 @@ In `dagster_defs/schedules.py` and `dagster_defs/sensors.py`, wiring only: the n
 schedule; the run-status sensor chaining `features` → `scoring` → `alerts`; the RDF queue job and its schedule.
 Every schedule and sensor ships `STOPPED`. The queue's ordering is a function in
 `src/distress_radar/acquisition/rdf_queue.py`, testable without Dagster.
+
+**Built (2026-10-17).** The jobs moved to `dagster_defs/jobs.py` so the sensors can name them; `rdf_queue` is
+new. Schedules (`dagster_defs/schedules.py`): `registry_check_nightly` (`legal_to_labels`, 02:00),
+`rdf_queue_weekly` (Mondays 06:00, September to May) and `rdf_queue_filing_wave` (daily 06:00, June to August),
+all Warsaw time; a queue run gets its tick's date as config, so a rerun writes the same file. Sensors
+(`dagster_defs/sensors.py`): `features_after_registry_check`, `features_after_rdf_import` (an asset sensor: a
+failed import never materializes, so it starts nothing) and `scoring_after_features`, each keyed by its upstream
+run, so each fires once. Everything ships `STOPPED`. Decision 9 is in with it: `BACKTEST_VERSION` now defaults to
+`backtest_v8`. The queue asset is `rdf_research_queue` (not `rdf_queue`, the job's name: step B's clash).
+
+- **Tiers** (`acquisition/rdf_queue.py`): `not_searched` (never stored, which includes every company reached
+  only in an outage; not the seed, captured by hand), `search_incomplete`, `filing_due` (the latest listed
+  period end plus twelve months, through `filing_deadlines.yaml`, past and after the last complete search),
+  `oldest_search`. Within a tier the oldest complete search first, then by KRS.
+- **First real run (2026-10-17, 806 entities):** 159 `not_searched` (72 list v1, plan 0014's count exactly; 87
+  of list v2's distress group, the 2026-10-16 outage's), 4 `search_incomplete`, 6 `filing_due` (5 of them seed
+  companies, whose last statement on file is years old: some stopped filing before they failed, so the script
+  re-searches them at the cost of five searches) and 637 `oldest_search`. The file holds 806 lines, every one
+  a ten-digit KRS number.
+- **Tests:** the tiers and their order, the file's bytes and its rerun; every schedule and sensor stopped; the
+  whole chain named, with `backtest`, `publish` and `text` never started; the queue schedules' crons, time zone
+  and tick date. `test_nothing_schedules_the_scoring` (plan 0016) became `test_only_new_features_start_the_scoring`.
+
 
 ### D. The `alerts` table and rules (decisions 4–5)
 

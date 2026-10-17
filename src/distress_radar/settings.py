@@ -51,6 +51,8 @@ class Settings(BaseSettings):
     rdf_report_inbox: Path = Path(".cache/rdf_auditor_reports")
     # The owner's scripted RDF downloads: listings and ZIPs (gitignored; `acquisition/script_import.py`).
     rdf_script_inbox: Path = Path(".cache/rdf_script_inbox")
+    # The re-search queues written for the owner's script (gitignored; `acquisition/rdf_queue.py`).
+    rdf_queue_dir: Path = Path(".cache/rdf_queue")
     # Derived data (C2 output onward): Parquet written by the pipeline (ADR 0008).
     warehouse_dir: Path = Path(".data/warehouse")
 
@@ -92,8 +94,9 @@ class Settings(BaseSettings):
     # (plan 0013).
     feature_set_version: str = "feature_set_v6"
     # Which `config/models/<backtest_version>.yaml` the `backtest` job runs (plans 0012, 0013,
-    # 0015: v5 adds generation 3, the population rule and the champion rule).
-    backtest_version: str = "backtest_v5"
+    # 0015: v5 adds generation 3, the population rule and the champion rule). The default is the
+    # latest run, so scheduled scoring needs no variable (plan 0018 decision 9; v5 until then).
+    backtest_version: str = "backtest_v8"
 
     # The Polish spaCy model, unpacked by `make models` (plan 0013; ADR 0009, third addendum).
     spacy_model_dir: Path = Path(".cache/models")

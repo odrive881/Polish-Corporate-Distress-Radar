@@ -1,0 +1,70 @@
+"""The jobs (plan 0018 step C moved them here from `definitions.py`, so sensors can name them).
+
+Wiring only. A job and an asset never share a name: Dagster rejects the repository when it
+resolves every job (plan 0018 step B; `tests/test_orchestration.py`).
+"""
+
+from __future__ import annotations
+
+import dagster as dg
+
+# Plan 0008: registry bytes to a frozen label set in one run (KRS and MSiG fetched, legal
+# events rebuilt, label models rebuilt and audited, the set frozen).
+legal_to_labels = dg.define_asset_job(
+    "legal_to_labels",
+    selection=dg.AssetSelection.groups("legal", "labels"),
+    description="A4 fetches → legal_events → label models and audits → frozen outcome_labels.",
+)
+
+# Plan 0010 step G: the stored datasets the store reads, rebuilt, then the store. Offline: no
+# asset in it fetches (owner decision 4 for steps F-H); `legal_to_labels` does the fetching.
+features = dg.define_asset_job(
+    "features",
+    selection=dg.AssetSelection.assets(
+        "financial_statements_canonical", "restatement_events", "legal_events", "feature_store"
+    ),
+    description="Parsing outputs and legal events rebuilt from stored bytes → feature_store.",
+)
+
+# Plan 0012 step G: the backtest, alone and by hand. No schedule: a backtest is a decision, not a
+# refresh. It reads the stored `feature_store` and a frozen label set; it rebuilds neither.
+backtest = dg.define_asset_job(
+    "backtest",
+    selection=dg.AssetSelection.assets("backtest_run"),
+    description="The out-of-time backtest: report under WAREHOUSE_DIR, one MLflow run per cell set.",
+)
+
+# Plan 0016 step C: the served model's scores at the latest month-end, by hand like the backtest
+# (scheduling is Phase 10). It reads the registry and the stored datasets; it rebuilds neither.
+scoring = dg.define_asset_job(
+    "scoring",
+    selection=dg.AssetSelection.assets("scores"),
+    description="The served model's scores at the latest month-end → Postgres scores_history.",
+)
+
+# Plan 0016 step F: the public site's database, by hand, from a clean tree. It reads the DQ marts,
+# the backtest's MLflow runs and predictions; it rebuilds none of them, and deploys nothing.
+publish = dg.define_asset_job(
+    "publish",
+    selection=dg.AssetSelection.assets("publish_database"),
+    description="Aggregates only, small cells suppressed → site/sources/publish/publish.duckdb.",
+)
+
+# Plan 0013 step H: the notes of every stored statement read into `text_signals` and
+# `text_coverage`. By hand: model signals cost money once confirmed, and responses are stored,
+# so a rerun replays them.
+text = dg.define_asset_job(
+    "text",
+    selection=dg.AssetSelection.groups("text"),
+    description="Notes embedded in stored statements → text_signals, text_coverage.",
+)
+
+# Plan 0018 step C (decision 3): the re-search queue for the owner's script; its schedules are in
+# `schedules.py`. It reads Postgres and writes one file; it fetches nothing.
+rdf_queue = dg.define_asset_job(
+    "rdf_queue",
+    selection=dg.AssetSelection.assets("rdf_research_queue"),
+    description="Which companies the owner's RDF script should search next → .cache/rdf_queue/.",
+)
+
+jobs = [legal_to_labels, features, backtest, scoring, publish, text, rdf_queue]
