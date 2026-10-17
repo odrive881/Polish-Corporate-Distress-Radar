@@ -19,7 +19,7 @@ monitoring), the `alerts` table (§5), and the scoring half of stage I (§6I as 
 **Order:** after plan 0016 (active only on rendering the report, which waits on the Quarto CLI). It does not wait
 for list v2 or a champion: what it schedules and alerts on is what the registry already serves.
 
-## Status: draft (2026-10-17): owner decisions 0–9 proposed, none accepted; nothing built
+## Status: active (2026-10-17): owner decisions 0–9 accepted as recommended; nothing built yet; next: step A
 
 ## Why
 
@@ -60,7 +60,7 @@ that is overdue, inputs drifting away from what the model was trained on. It is 
 - Neither Evidently nor Sentry is a dependency yet. The venv runs Python 3.14, so whether each has a release
   supporting it is checked first (step A).
 
-## Owner decisions (proposed, with recommendations)
+## Owner decisions (accepted by the owner, 2026-10-17, as recommended)
 
 0. **Where Dagster runs, and its home.** Recommended: a persistent `DAGSTER_HOME` at `.data/dagster/` (gitignored)
    so run history and schedule state survive, started by a new `make orchestrate` (`dagster dev`, 127.0.0.1 only).
@@ -193,7 +193,7 @@ CLAUDE.md's pointers if anything there changes; then `make check` and the hand-r
 
 ## Definition of done
 
-- [ ] Owner decisions 0–9 accepted or amended.
+- [x] Owner decisions 0–9 accepted (2026-10-17, as recommended).
 - [ ] Step A's findings recorded (and an ADR if Evidently is replaced).
 - [ ] Steps B–H built, with their tests in `make check`.
 - [ ] The nightly registry check has run unattended at least once from the schedule, and the chain after it
