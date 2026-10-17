@@ -1,0 +1,222 @@
+# 0018 — Phase 10: schedules, alerts, drift and calibration monitoring, error reporting
+
+**Stage:** Phase 10 (AGENT_SPEC §10: "Scheduling, alerting, Evidently drift monitoring"); spec stage L (§6L,
+monitoring), the `alerts` table (§5), and the scoring half of stage I (§6I as built, plan 0016).
+- **Domain rules:** an alert at `as_of_date` uses only facts known by then (invariant 1, read from `feature_store`
+  and the stored scores, never a fresh join); alerts name companies, so they are local only, like the scores
+  (§6K, §12); statutory rules (filing deadlines, KSH tripwires) come from `config/statutory/`, never constants
+  (invariant 7); re-running any job on the same inputs writes nothing new (invariant 5); no natural person's
+  data leaves the machine, in an error report least of all (invariant 6, ADR 0009).
+- **Inputs:** `scores_history` and `scoring_exclusions` (plan 0016); `feature_store` (`feature_set_v6`:
+  `art233_triggered`, `negative_equity`, `going_concern_threat`, `going_concern_basis_abandoned`, the auditor
+  reports' opinion); `filing_index`, `rdf_listed_entities` and `config/statutory/filing_deadlines.yaml`; the
+  served version's MLflow run and its fold's training rows (the drift reference); `outcome_labels` (realised
+  outcomes); the existing jobs in `dagster_defs/definitions.py`.
+- **ADRs:** 0006 (plain idempotent DDL for `alerts`), 0008 (reports under `WAREHOUSE_DIR`), 0009 (what may
+  appear in an error report), 0011 (pacing of the KRS API and MSiG), 0013 (RDF is the owner's script, never a
+  pipeline fetch), 0014 (why a probability from these lists is not the segment's).
+
+**Order:** after plan 0016 (active only on rendering the report, which waits on the Quarto CLI). It does not wait
+for list v2 or a champion: what it schedules and alerts on is what the registry already serves.
+
+## Status: draft (2026-10-17): owner decisions 0–9 proposed, none accepted; nothing built
+
+## Why
+
+Every stage runs today, but only by hand: someone remembers to fetch the registers, rebuild the features, re-score
+and look at what changed. Phase 10 makes the pipeline notice things on its own: new legal events from the open
+registers each night, a company whose score jumps or whose statement turns up a going-concern warning, a filing
+that is overdue, inputs drifting away from what the model was trained on. It is also the last phase in §10.
+
+## The constraints that shape this phase
+
+1. **RDF cannot be scheduled.** Statements reach the pipeline only through the owner's Power Automate Desktop
+   script (ADR 0013); the importer then waits on the owner (outage spans, refused rows). The "weekly filing check"
+   of §6L becomes a **queue the pipeline writes for the script**, never a fetch.
+2. **The feature grid moves only when RDF does.** `feature_store`'s cutoff is the earliest last complete fetch
+   across sources, and RDF's is the last delivery. A monthly re-score between deliveries reproduces the same
+   `as_of_date` and writes nothing (`ON CONFLICT DO NOTHING`). Scoring is triggered by new features, not by the
+   calendar.
+3. **Nothing has a realised outcome yet.** The first stored scores are at 2026-09-30, so the first 12-month window
+   closes 2027-09-30, plus the `alive` lag allowance (plan 0009). Realised-outcome calibration is built now and
+   reports "not evaluable" until windows settle. The backtest's reliability tables are the only calibration
+   evidence until then.
+4. **Few rows.** About 240 scored entities per horizon. Drift tests on samples this size flag little and prove
+   less: drift is a report to read, never a gate.
+5. **Schedules fire only while Dagster runs.** This is the owner's laptop, not a server. A missed tick is not caught
+   up, and nothing here may assume one ran.
+6. **Probabilities are list-relative.** The lists are purposive (ADR 0014), so a probability threshold is a rank on
+   this list, not a population risk. Alert texts say so.
+
+## What there is to build on (2026-10-17)
+
+- Jobs: `legal_to_labels` (KRS API + MSiG at 15 a minute each, legal events, frozen label set), `features`
+  (offline rebuild), `backtest` and `publish` (by hand, decisions), `scoring` (by hand, clean tree,
+  `BACKTEST_VERSION` set), `text`.
+- No schedule, sensor, `DAGSTER_HOME` or structured logging exists. A CLI run's metadata is not kept (plan 0014's
+  lessons).
+- `alerts` is specified in AGENT_SPEC §5 but not created. `watchlists` exists (plan 0016).
+- `filing_deadlines.yaml` already gives each statement's deadline (plan 0010), with the COVID extensions.
+- Neither Evidently nor Sentry is a dependency yet. The venv runs Python 3.14, so whether each has a release
+  supporting it is checked first (step A).
+
+## Owner decisions (proposed, with recommendations)
+
+0. **Where Dagster runs, and its home.** Recommended: a persistent `DAGSTER_HOME` at `.data/dagster/` (gitignored)
+   so run history and schedule state survive, started by a new `make orchestrate` (`dagster dev`, 127.0.0.1 only).
+   Every schedule ships `default_status=STOPPED`; the owner turns each on in the UI. This also keeps import runs'
+   metadata, which the CLI loses today.
+1. **The nightly registry check.** Recommended: `legal_to_labels` daily at 02:00 Warsaw time over `entity_master`,
+   at the existing pacing (ADR 0011; about 40 minutes per source for ~600 entities, plus list v2 once imported).
+   A frozen label set is content-addressed, so a night with no new event adds no set. A night that adds one does
+   **not** move any backtest: a backtest pins its label set by hash, and a new one stays a decision.
+2. **Scoring after new features.** Recommended: a run-status sensor runs `features`, then `scoring`, then `alerts`
+   after each successful `rdf_script_import` or `legal_to_labels` run. `scoring`'s guards stay: it refuses a dirty
+   tree and reads `BACKTEST_VERSION`, which this decision asks to set in `.env` (see decision 9). `backtest` and
+   `publish` are never triggered: each is a decision.
+3. **The RDF re-search queue** (replaces §6L's weekly filing check and the filing-wave scaling). Recommended: a
+   weekly job writes `.cache/rdf_queue/queue_<date>.txt`, one KRS number per line, for the owner's script. In
+   order: entities never searched or searched only in an outage; then entities whose next statement's deadline has
+   passed since their last complete search; then the rest by age of the last search. Only KRS numbers, nothing
+   else (ADR 0014). From June to August, during the filing wave, the job runs daily.
+4. **Alert rules**, versioned in `config/alerts/alert_rules_v1.yaml` (the file name is the version). Recommended,
+   one rule per §5 type:
+   - `threshold_crossed`: a 12-month probability at or above 0.25 (`high`) or 0.10 (`medium`), where the
+     entity's previous score from the same model version was below it. No alert on a first score: there is no
+     "crossing".
+   - `score_jump`: from one `as_of_date` to the next under the same model version, up by at least 0.10 absolute
+     and at least ×2 (`medium`). A new model version starts a new series, never a jump.
+   - `tripwire_triggered`: `art233_triggered` or `negative_equity` turns true in `feature_store` (`high` for
+     art. 233). This reads features, not scores, so it covers micro filers and entities with incomplete inputs,
+     which the model cannot score.
+   - `going_concern_flagged`: `going_concern_threat`, `going_concern_basis_abandoned`, or an auditor's opinion
+     other than unqualified with a going-concern emphasis, turns true (`high`).
+   - `filing_overdue`: the next statement's deadline (`filing_deadlines.yaml`) passed with none listed, judged
+     **only as of the entity's last complete RDF search**. The alert's `as_of_date` is that search's date, never
+     today: what RDF shows after the search is unknown (`low`).
+   Thresholds are list-relative (constraint 6); the owner sets the numbers.
+5. **Who is alerted on, and how.** Recommended: every entity in `entity_master` in the v1 segment, with the
+   watchlists shown first; delivery only to the `alerts` table, a page in the explorer (acknowledging sets
+   `acknowledged_at`) and an API endpoint. **No email, chat or push**: an alert names a company and a statistical
+   estimate, and sending one off the machine is a publication.
+6. **Drift monitoring.** Recommended: an Evidently data-drift report per horizon on the served model's inputs
+   (the regression's four ratios, and every feature once a GBM serves). The reference is that version's training
+   rows; the current data is the latest scored `as_of_date`. Written to `WAREHOUSE_DIR/reports/drift/` and linked
+   from the explorer. **Not embedded in the public site** (§6L says it should be): Evidently's HTML draws
+   per-row distributions, whose tails can single out a company. It waits for list v2's weighted draw and a check
+   against the small-cell rule, like the site's population pages (plan 0016 decision 0).
+7. **Realised-outcome calibration.** Recommended: a monitor joining each stored score to its outcome once the
+   label version says the window is settled. It reports Brier score and reliability per horizon and model version
+   only when at least `min_events` (3) settled events exist, else "not evaluable" and the date the first window
+   settles. Same code path as the backtest's evaluation (`models/evaluation.py`).
+8. **Sentry.** Recommended: built, but **off unless `SENTRY_DSN` is set**, on the owner's account in Sentry's EU
+   region, terms read by the owner first (it is an external service). Locked down in code: `send_default_pii`
+   off, no local variables, no breadcrumbs, no request bodies; and a `before_send` that keeps only the exception
+   type, the stack's file and function names and line numbers, and the Dagster job and asset name. Exception
+   **messages are dropped**: ours carry KRS numbers, document refs and, on the import path, text a filer wrote.
+   A test feeds it an exception holding a PESEL, a name and a KRS number and asserts none survives.
+9. **The default `BACKTEST_VERSION`.** Scheduled scoring needs one set without a human. Recommended: move the
+   code default to `backtest_v8`, the latest run, so `.env` need not carry it. This is plan 0016's open item 3,
+   decided here.
+
+## Steps
+
+### A. Verify before building (no code)
+
+Check that Evidently and `sentry-sdk` have releases at least two weeks old that install on Python 3.14 with the
+locked Polars and pandas. If Evidently does not, write the drift report on `scipy.stats` (KS test and PSI; scipy is
+already in the lock) and record why in an ADR before step F. Confirm `legal_to_labels`' runtime over the current
+`entity_master` from a real run's log.
+
+### B. Dagster home and `make orchestrate` (decision 0)
+
+`DAGSTER_HOME` in `.env.example`, `.data/dagster/dagster.yaml` written by the make target, run storage in SQLite
+there. README § Orchestration.
+
+### C. Schedules and sensors (decisions 1–3)
+
+In `dagster_defs/schedules.py` and `dagster_defs/sensors.py`, wiring only: the nightly `legal_to_labels`
+schedule; the run-status sensor chaining `features` → `scoring` → `alerts`; the RDF queue job and its schedule.
+Every schedule and sensor ships `STOPPED`. The queue's ordering is a function in
+`src/distress_radar/acquisition/rdf_queue.py`, testable without Dagster.
+
+### D. The `alerts` table and rules (decisions 4–5)
+
+`src/distress_radar/alerts/` (`rules.py`, `store.py`): DDL for §5's columns plus `rule_version`, `detail`
+(JSON: the values that fired it) and `known_from`. `alert_id` is a hash of (krs, as_of_date, alert_type,
+rule_version, triggering ids), inserted `ON CONFLICT DO NOTHING`, so a re-run adds nothing. The `alerts` asset
+reads `scores_history` and `feature_store` only. `triggering_score_id` is null for the rules that read features.
+`DIRECTORY_STRUCTURE.md` gains the package and `config/alerts/`.
+
+### E. Alerts in the explorer and the API (decision 5)
+
+An "Alerts" page in `app/`: unacknowledged first, watchlists first, an acknowledge button, the disclaimer on
+every row. `GET /alerts` in `api/` in the versioned envelope. Both local only.
+
+### F. Drift report (decision 6)
+
+`src/distress_radar/monitoring/drift.py`: reference and current frames from `feature_store` and the served
+version's fold, one report per horizon, written byte-reproducibly where the tool allows (its timestamp pinned to
+the scored `as_of_date`). An asset `drift_report` in the chain after `scoring`.
+
+### G. Realised calibration (decision 7)
+
+`src/distress_radar/monitoring/realised.py` and an asset after `drift_report`. Until a window settles, it writes
+the "not evaluable" line with the first settling date.
+
+### H. Sentry (decision 8)
+
+`src/distress_radar/errors.py`: `init_error_reporting()` called from `dagster_defs/definitions.py` and the API's
+startup, a no-op without `SENTRY_DSN`; the scrubbing `before_send`. `data_inventory.md` lists the DSN as the
+owner's credential.
+
+### I. Docs sweep and close-out
+
+README (orchestration, alerts, the queue), AGENT_SPEC §6L "as built", TECHNICAL_ARCHITECTURE, `data_inventory.md`,
+CLAUDE.md's pointers if anything there changes; then `make check` and the hand-read sweep.
+
+## Tests
+
+- **Point in time:** every alert's facts have `known_from <= as_of_date`, and an alert computed at an earlier
+  `as_of_date` is unchanged when later facts arrive (added to `tests/features/test_leakage.py`'s pattern, as a
+  test of its own).
+- Each rule on hand-built frames: a crossing fires once; no alert on a first score; a model-version change is no
+  jump; a tripwire fires on the false→true change only; `filing_overdue` is judged at the last complete search
+  date, and not at all when the last search was incomplete or in an outage.
+- Idempotence: running `alerts` twice on the same inputs writes nothing the second time.
+- Queue ordering on synthetic searches, and that the file holds only KRS numbers.
+- Sentry's `before_send` drops a PESEL, a name, a KRS number and a file name from message, frames' locals and
+  extra; `init_error_reporting()` without a DSN installs nothing.
+- Every schedule and sensor's default status is `STOPPED` (a definitions test).
+- The drift and realised-calibration reports are byte-identical on a re-run, and "not evaluable" below
+  `min_events`.
+
+## Definition of done
+
+- [ ] Owner decisions 0–9 accepted or amended.
+- [ ] Step A's findings recorded (and an ADR if Evidently is replaced).
+- [ ] Steps B–H built, with their tests in `make check`.
+- [ ] The nightly registry check has run unattended at least once from the schedule, and the chain after it
+      wrote alerts, with the counts recorded here.
+- [ ] Docs swept (step I).
+
+## Risks
+
+- **Scheduled jobs on a dirty tree fail.** `scoring` refuses one by design. On a development machine the chain
+  will often stop there: the sensor reports the refusal and does not retry.
+- **Alert fatigue on a distress-weighted list.** List v1 was chosen partly by distress status, so many entities sit
+  above any threshold from their first score. Decision 4's "no alert on a first score" keeps the first run quiet.
+- **The KRS API or MSiG changes without notice** (ADR 0011). A night that fails retries once (tenacity, transient
+  errors only), then waits for the next night.
+- **Evidently on Python 3.14** may not exist yet (step A).
+- **A sensor chain can run on a half-imported delivery** when the importer fails at its end by design (plan 0014).
+  The chain triggers on a *successful* import only.
+
+## Out of scope
+
+- Any RDF fetch by the pipeline (ADR 0013), and importing deliveries without the owner.
+- Deploying the site or the report (plan 0016 decision 10), and anything public from the alerts.
+- Retraining or promotion on a schedule: a backtest stays a decision.
+- `structlog` JSON logs (§6L): Dagster's run logs, kept by decision 0, cover what is run here. Revisit if a job
+  ever runs outside Dagster.
+- KRZ (behind the WAF, ADR 0011).
