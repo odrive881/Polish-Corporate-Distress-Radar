@@ -202,7 +202,8 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   └── pages/
 │       ├── 1_Company.py                # profile, scores, out-of-time history, source-linked statements
 │       ├── 2_Peers.py                  # probabilities by PKD division, as distributions
-│       └── 3_Watchlists.py
+│       ├── 3_Watchlists.py
+│       └── 4_Alerts.py                 # plan 0018 step E: open alerts, watchlists first; acknowledge
 │
 ├── site/                               # Evidence public dashboard: aggregates only (`make site`; plan 0016 step F)
 │   ├── package.json                    # Evidence pinned; package-lock.json from the first `make site`
@@ -365,7 +366,8 @@ src/distress_radar/
     ├── routes/
     │   ├── companies.py
     │   ├── scores.py              # also /meta
-    │   └── watchlists.py
+    │   ├── watchlists.py
+    │   └── alerts.py              # plan 0018 step E: GET /alerts, read-only
     ├── schemas.py                 # the envelope: data, served versions, disclaimer
     ├── deps.py                    # per-request connection, served versions, envelope
     └── db.py

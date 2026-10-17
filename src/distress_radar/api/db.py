@@ -54,7 +54,9 @@ def check_served(conn: Connection, served: Mapping[int, ServedVersion]) -> None:
             )
 
 
-def _rows(conn: Connection, query: LiteralString, params: Sequence[object]) -> list[dict[str, Any]]:
+def _rows(
+    conn: Connection, query: LiteralString, params: Sequence[object] | Mapping[str, object]
+) -> list[dict[str, Any]]:
     with conn.cursor(row_factory=dict_row) as cursor:
         cursor.execute(query, params)
         return [_clean(row) for row in cursor.fetchall()]
@@ -166,3 +168,34 @@ def delete_watchlist(conn: Connection, name: str) -> int:
     """Remove a watchlist; the number of members it had."""
     with conn.transaction():
         return conn.execute("DELETE FROM watchlists WHERE name = %s", (name,)).rowcount
+
+
+def alerts(
+    conn: Connection,
+    *,
+    acknowledged: bool | None,
+    krs: str | None,
+    watchlist: str | None,
+    limit: int,
+) -> list[dict[str, Any]]:
+    """Alerts (plan 0018 step E): unacknowledged first, then companies on any watchlist, then by
+    severity and the latest month-end; `on_watchlist` says whether the company is on one."""
+    return _rows(
+        conn,
+        """
+        SELECT a.alert_id, a.krs, a.as_of_date, a.alert_type, a.severity, a.triggering_score_id,
+               a.rule_version, a.detail, a.known_from, a.created_at, a.acknowledged_at,
+               EXISTS (SELECT 1 FROM watchlists w WHERE w.krs = a.krs) AS on_watchlist
+        FROM alerts a
+        WHERE (%(acknowledged)s::boolean IS NULL
+               OR (a.acknowledged_at IS NOT NULL) = %(acknowledged)s::boolean)
+          AND (%(krs)s::text IS NULL OR a.krs = %(krs)s::text)
+          AND (%(watchlist)s::text IS NULL
+               OR a.krs IN (SELECT w.krs FROM watchlists w WHERE w.name = %(watchlist)s::text))
+        ORDER BY a.acknowledged_at IS NOT NULL, on_watchlist DESC,
+                 array_position(ARRAY['high', 'medium', 'low'], a.severity), a.as_of_date DESC,
+                 a.krs, a.alert_type, a.alert_id
+        LIMIT %(limit)s
+        """,
+        {"acknowledged": acknowledged, "krs": krs, "watchlist": watchlist, "limit": limit},
+    )

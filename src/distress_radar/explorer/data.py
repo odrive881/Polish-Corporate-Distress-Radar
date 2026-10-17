@@ -25,7 +25,7 @@ from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from pathlib import Path
-from typing import LiteralString
+from typing import Any, LiteralString
 
 import polars as pl
 import psycopg
@@ -33,6 +33,8 @@ from mlflow import MlflowClient
 from psycopg import Connection
 
 from distress_radar.acquisition.raw_store import ObjectStore, S3ObjectStore, raw_key
+from distress_radar.alerts import store as alerts_store
+from distress_radar.api.db import alerts as read_alerts
 from distress_radar.api.db import replace_watchlist
 from distress_radar.models.backtest import PREDICTIONS
 from distress_radar.models.serving import ServedVersion, resolve
@@ -431,3 +433,82 @@ def save_watchlist(sources: Sources, name: str, krs: Iterable[str]) -> None:
     """Set a watchlist's members (`api.db.replace_watchlist`: members kept keep `added_at`)."""
     with sources.connect() as conn:
         replace_watchlist(conn, name, krs, datetime.now(UTC))
+
+
+# --- Alerts (plan 0018 step E) ---------------------------------------------------------------
+
+ALERT_COLUMNS: Schema = {
+    "alert_id": pl.String,
+    "krs": pl.String,
+    "company": pl.String,
+    "on_watchlist": pl.Boolean,
+    "as_of_date": pl.Date,
+    "alert_type": pl.String,
+    "severity": pl.String,
+    "what": pl.String,
+    "acknowledged_at": pl.Datetime("us", "UTC"),
+}
+FEATURE_LABELS = {
+    "art233_triggered": "Art. 233 KSH tripwire: the loss exceeds the share of capital it names",
+    "negative_equity": "negative equity",
+    "going_concern_threat": "the statement reports a threat to going concern",
+    "going_concern_basis_abandoned": "the statement is not prepared on a going-concern basis",
+    "going_concern_in_notes": "the notes report a going-concern uncertainty",
+    "modified_opinion": "the auditor's opinion is modified",
+}
+
+
+def describe(alert_type: str, detail: Mapping[str, Any]) -> str:
+    """One line saying what fired an alert, from its stored `detail`."""
+    if alert_type in ("threshold_crossed", "score_jump"):
+        line = (
+            f"{detail['horizon_months']}-month probability {100 * detail['probability']:.1f}%, "
+            f"from {100 * detail['previous_probability']:.1f}% at {detail['previous_as_of_date']}"
+        )
+        if alert_type == "threshold_crossed":
+            line += f": crossed {100 * detail['level']:.0f}%"
+        return f"{line} ({detail['model']})"
+    if alert_type in ("tripwire_triggered", "going_concern_flagged"):
+        feature = str(detail["feature"])
+        return f"{FEATURE_LABELS.get(feature, feature)} (known from {detail['known_from']})"
+    if alert_type == "filing_overdue":
+        return (
+            f"no statement for the year ending {detail['expected_period_end']} (due "
+            f"{detail['deadline']}) at the RDF search of {str(detail['searched_at'])[:10]}"
+        )
+    return alert_type
+
+
+def load_alerts(sources: Sources, *, acknowledged: bool, limit: int = 2_000) -> pl.DataFrame:
+    """The alerts (`ALERT_COLUMNS`), in the API's order: watchlist companies first, then by
+    severity and the latest month-end."""
+    names = dict(sources.entities.select("krs", "name").iter_rows())
+    with sources.connect() as conn:
+        alerts_store.ensure_schema(conn)
+        conn.commit()
+        rows = read_alerts(conn, acknowledged=acknowledged, krs=None, watchlist=None, limit=limit)
+    return pl.DataFrame(
+        [
+            {
+                "alert_id": r["alert_id"],
+                "krs": r["krs"],
+                "company": names.get(r["krs"]),
+                "on_watchlist": r["on_watchlist"],
+                "as_of_date": r["as_of_date"],
+                "alert_type": r["alert_type"],
+                "severity": r["severity"],
+                "what": describe(r["alert_type"], r["detail"]),
+                "acknowledged_at": r["acknowledged_at"],
+            }
+            for r in rows
+        ],
+        schema=ALERT_COLUMNS,
+    )
+
+
+def acknowledge_alerts(sources: Sources, alert_ids: Iterable[str]) -> int:
+    """Acknowledge alerts now; one already acknowledged keeps its first time."""
+    with sources.connect() as conn:
+        done = alerts_store.acknowledge(conn, alert_ids, datetime.now(UTC))
+        conn.commit()
+        return done

@@ -14,6 +14,8 @@ import psycopg
 import pytest
 from fastapi.testclient import TestClient
 
+from distress_radar.alerts import store as alerts_store
+from distress_radar.alerts.rules import Alert, Severity, alert_id
 from distress_radar.api import main
 from distress_radar.api.schemas import DISCLAIMER
 from distress_radar.models import scores_store
@@ -166,8 +168,25 @@ def _seed(schema: str) -> None:
 @pytest.fixture
 def client(schema: str) -> Iterator[TestClient]:
     _seed(schema)
-    with TestClient(main.create_app(SERVED, lambda: _connect(schema))) as test_client:
+    app = main.create_app(SERVED, lambda: _connect(schema))
+    app.state.schema = schema
+    with TestClient(app) as test_client:
         yield test_client
+
+
+def _alert(krs: str, severity: Severity) -> Alert:
+    return Alert(
+        alert_id=alert_id(
+            "alert_rules_v1", "tripwire_triggered", krs, "art233_triggered@2026-09-30"
+        ),
+        krs=krs,
+        as_of_date=DAY,
+        alert_type="tripwire_triggered",
+        severity=severity,
+        rule_version="alert_rules_v1",
+        known_from=date(2026, 7, 1),
+        detail={"feature": "art233_triggered"},
+    )
 
 
 def _envelope(response: Any) -> Any:
@@ -268,6 +287,35 @@ def test_a_watchlist_is_replaced_read_and_deleted(client: TestClient) -> None:
     assert client.put("/watchlists/budowlane", json={"krs": ["123"]}).status_code == 422
     assert client.delete("/watchlists/budowlane").status_code == 204
     assert client.delete("/watchlists/budowlane").status_code == 404
+
+
+@pytest.mark.integration
+def test_alerts_open_by_default_watchlist_first_then_by_severity(client: TestClient) -> None:
+    """Plan 0018 step E: `GET /alerts` reads what the `alerting` job stored, nothing else."""
+    with _connect(client.app.state.schema) as conn:  # type: ignore[attr-defined]
+        alerts_store.insert_alerts(
+            conn,
+            [
+                _alert("0000000002", "high"),
+                _alert("0000000001", "low"),
+                _alert("0000000003", "medium"),
+            ],
+            NOW,
+        )
+        alerts_store.acknowledge(conn, [_alert("0000000003", "medium").alert_id], NOW)
+    client.put("/watchlists/budowlane", json={"krs": ["0000000001"]})
+
+    open_alerts = _envelope(client.get("/alerts"))
+    assert [(a["krs"], a["severity"], a["on_watchlist"]) for a in open_alerts] == [
+        ("0000000001", "low", True),
+        ("0000000002", "high", False),
+    ]
+    assert open_alerts[1]["detail"] == {"feature": "art233_triggered"}
+    done = _envelope(client.get("/alerts", params={"acknowledged": True}))
+    assert [a["krs"] for a in done] == ["0000000003"] and done[0]["acknowledged_at"]
+    listed = _envelope(client.get("/alerts", params={"watchlist": "budowlane"}))
+    assert [a["krs"] for a in listed] == ["0000000001"]
+    assert client.get("/alerts", params={"krs": "123"}).status_code == 422
 
 
 @pytest.mark.integration

@@ -115,6 +115,23 @@ class WatchlistIn(_Frozen):
     krs: list[Krs] = Field(max_length=10_000)
 
 
+class AlertOut(_Frozen):
+    """An alert as `alerts` stores it (plan 0018 step D); `detail` holds what fired it."""
+
+    alert_id: str
+    krs: str
+    as_of_date: date
+    alert_type: str
+    severity: str
+    triggering_score_id: str | None
+    rule_version: str
+    detail: dict[str, Any]
+    known_from: date
+    created_at: datetime
+    acknowledged_at: datetime | None
+    on_watchlist: bool
+
+
 class Envelope[T](_Frozen):
     meta: Meta
     disclaimer: str = DISCLAIMER

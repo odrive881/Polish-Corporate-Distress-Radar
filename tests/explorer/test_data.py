@@ -104,3 +104,31 @@ def test_a_stored_document_is_fetched_by_hash(sources: data.Sources) -> None:
     assert data.extension(b"%PDF-1.7") == ".pdf"
     assert data.extension(b"  <?xml") == ".xml"
     assert data.division("43.99.Z") == "43" and data.division(None) is None
+
+
+def test_each_alert_type_is_described_from_its_detail() -> None:
+    """Plan 0018 step E: the Alerts page's one line per alert, from `alerts.detail`."""
+    score = {
+        "horizon_months": 12,
+        "model": "distress_radar_12m v5",
+        "probability": 0.31,
+        "previous_probability": 0.08,
+        "previous_as_of_date": "2026-09-30",
+        "level": 0.25,
+    }
+    assert data.describe("threshold_crossed", score) == (
+        "12-month probability 31.0%, from 8.0% at 2026-09-30: crossed 25% (distress_radar_12m v5)"
+    )
+    assert data.describe("score_jump", score).endswith("at 2026-09-30 (distress_radar_12m v5)")
+    assert data.describe(
+        "going_concern_flagged", {"feature": "modified_opinion", "known_from": "2026-07-01"}
+    ) == ("the auditor's opinion is modified (known from 2026-07-01)")
+    overdue = {
+        "expected_period_end": "2025-12-31",
+        "deadline": "2026-07-15",
+        "searched_at": "2026-10-08T09:12:00+00:00",
+    }
+    assert data.describe("filing_overdue", overdue) == (
+        "no statement for the year ending 2025-12-31 (due 2026-07-15) at the RDF search of "
+        "2026-10-08"
+    )
