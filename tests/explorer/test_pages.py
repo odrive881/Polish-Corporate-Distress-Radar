@@ -3,6 +3,7 @@ shows a score carries the disclaimer (plan 0016 step E, AGENT_SPEC §6K)."""
 
 from __future__ import annotations
 
+import json
 from collections.abc import Iterator
 from datetime import date
 from pathlib import Path
@@ -108,3 +109,30 @@ def test_the_alerts_page_says_when_nothing_was_acknowledged() -> None:
     app.toggle[0].set_value(True).run()
     assert not app.exception, [e.value for e in app.exception]
     assert [i.value for i in app.info] == ["No acknowledged alerts."]
+
+
+def test_home_lists_the_drift_reports(synthetic: data.Sources) -> None:
+    """Plan 0018 step F: the latest reports, from their summaries, with a download each."""
+    directory = synthetic.canonical_dir.parent / "reports" / "drift"
+    directory.mkdir(parents=True)
+    (directory / "2026-09-30_12m.html").write_text("<html></html>", encoding="utf-8")
+    (directory / "2026-09-30_12m.json").write_text(
+        json.dumps(
+            {
+                "as_of_date": "2026-09-30",
+                "horizon_months": 12,
+                "model": "distress_radar_12m v5",
+                "current_rows": 355,
+                "reference_rows": 20969,
+                "population_matches_pin": True,
+                "columns": {
+                    "roa": {"drifted": True},
+                    "equity_to_assets": {"drifted": False},
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    app = _run("Home.py")
+    assert not app.info or all("drift" not in i.value for i in app.info)
+    assert len(app.dataframe) == 3  # served models, the month-end, the drift reports

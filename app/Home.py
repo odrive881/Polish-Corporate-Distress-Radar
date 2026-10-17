@@ -46,6 +46,43 @@ else:
         "search, the statements) or not at risk (already in a proceeding or deregistered)."
     )
 
+st.subheader("Input drift of the served models")
+reports = data.drift_reports(sources)
+if not reports:
+    st.info("No drift report yet: run the `monitoring` job after a scoring run.")
+else:
+    st.dataframe(
+        pl.DataFrame(
+            [
+                {
+                    "month-end": summary["as_of_date"],
+                    "horizon (months)": summary["horizon_months"],
+                    "model": summary["model"],
+                    "rows": f"{summary['current_rows']} against {summary['reference_rows']}",
+                    "drifted inputs": ", ".join(
+                        c for c, v in sorted(summary["columns"].items()) if v["drifted"]
+                    )
+                    or "none",
+                    "population as pinned": summary["population_matches_pin"],
+                }
+                for summary, _ in reports
+            ]
+        ),
+        hide_index=True,
+    )
+    for summary, html in reports[:2]:
+        st.download_button(
+            f"Drift report, {summary['horizon_months']} months, {summary['as_of_date']}",
+            html.read_bytes(),
+            file_name=html.name,
+            mime="text/html",
+        )
+    st.caption(
+        "The latest scored month-end's inputs against the served version's training rows, "
+        "2001 on. A few hundred rows flag little and prove less: read it, never gate on it. "
+        "Local files only, never published: the charts can single out a company."
+    )
+
 st.caption(
     "The companies come from purposive lists (ADR 0014), chosen partly by distress status: no "
     "share or rate on these pages is the construction sector's. Use the pages on the left for a "

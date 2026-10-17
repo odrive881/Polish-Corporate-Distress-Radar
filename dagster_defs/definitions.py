@@ -152,6 +152,7 @@ from dagster_defs.assets.features import features_assets
 from dagster_defs.assets.labels import label_assets
 from dagster_defs.assets.legal import legal_assets
 from dagster_defs.assets.models import models_assets
+from dagster_defs.assets.monitoring import monitoring_assets
 from dagster_defs.assets.parsing import parsing_assets
 from dagster_defs.assets.publish import publish_assets
 from dagster_defs.checks.accounting_identities import accounting_identity_checks
@@ -171,6 +172,7 @@ defs = dg.Definitions(
         *text_assets,
         *publish_assets,
         *alerts_assets,
+        *monitoring_assets,
     ],
     jobs=jobs,
     schedules=schedules,
