@@ -67,4 +67,12 @@ rdf_queue = dg.define_asset_job(
     description="Which companies the owner's RDF script should search next → .cache/rdf_queue/.",
 )
 
-jobs = [legal_to_labels, features, backtest, scoring, publish, text, rdf_queue]
+# Plan 0018 step D: the alerts, after new features and after new scores (`sensors.py`). Not named
+# `alerts`, the asset's name. Reads Postgres and the stored store; local only, sends nothing.
+alerting = dg.define_asset_job(
+    "alerting",
+    selection=dg.AssetSelection.assets("alerts"),
+    description="Score crossings and jumps, tripwires, going-concern flags, overdue filings → alerts.",
+)
+
+jobs = [legal_to_labels, features, backtest, scoring, publish, text, rdf_queue, alerting]

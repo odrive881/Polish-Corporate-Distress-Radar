@@ -19,7 +19,7 @@ monitoring), the `alerts` table (§5), and the scoring half of stage I (§6I as 
 **Order:** after plan 0016 (active only on rendering the report, which waits on the Quarto CLI). It does not wait
 for list v2 or a champion: what it schedules and alerts on is what the registry already serves.
 
-## Status: active (2026-10-17): owner decisions 0–9 accepted as recommended; step A checked (Evidently and `sentry-sdk` both usable, no ADR needed); steps B and C built (`make orchestrate`; the schedules, sensors and RDF queue, all stopped until the owner turns them on); next: step D
+## Status: active (2026-10-17): owner decisions 0–9 accepted as recommended; step A checked (Evidently and `sentry-sdk` both usable, no ADR needed); steps B–D built (`make orchestrate`; the schedules, sensors and RDF queue, all stopped until the owner turns them on; the `alerts` table and its rules); next: step E
 
 ## Why
 
@@ -209,6 +209,33 @@ run, so each fires once. Everything ships `STOPPED`. Decision 9 is in with it: `
 rule_version, triggering ids), inserted `ON CONFLICT DO NOTHING`, so a re-run adds nothing. The `alerts` asset
 reads `scores_history` and `feature_store` only. `triggering_score_id` is null for the rules that read features.
 `DIRECTORY_STRUCTURE.md` gains the package and `config/alerts/`.
+
+**Built (2026-10-17).** `config/alerts/alert_rules_v1.yaml` holds decision 4's numbers; `alerts/rules.py` the
+five rules as pure functions; `alerts/store.py` the table. Asset `alerts` (group `alerts`), job `alerting` (not
+`alerts`: step B's clash), and the sensor `alerts_after_features_or_scoring`, stopped like the rest.
+
+- **Read as decided, with three choices the decision left open:** (a) alerts start at `alerts_from: 2026-09-30`,
+  the first stored scores: `feature_store` reaches back to 2001 and every past change would otherwise alert at
+  once; (b) `going_concern_flagged` reads `going_concern_threat`, `going_concern_basis_abandoned` and
+  `going_concern_in_notes` (high) and `modified_opinion` (medium, since an opinion is modified for other reasons
+  too); `emphasis_of_matter` is left out, being any matter, not going concern's; (c) `filing_overdue` fires once
+  per missing period, at the first complete search showing it, against the statements submitted by that search's
+  date. The alerts also read `rdf_listed_entities` and `filing_index`, which the step's first sketch did not name.
+- **The sensor follows `features` as well as `scoring`,** so the feature rules, which cover entities the model
+  cannot score, do not wait on a scoring run a dirty tree refuses; the second run adds only the score alerts.
+- **First real run (2026-10-17):** 137 alerts on 137 companies, the rerun 0 new. 136 `filing_overdue` (low), at
+  the searches of 2026-10-07 to 10-16: 96 for FY2025 (due 2026-07-15) and 40 for FY2021–FY2024, companies whose
+  filings stopped years ago, most of them likely long failed. One `tripwire_triggered` (Art. 233, at
+  2026-09-30). No score alert: `scores_history` holds one month-end, so no series has a previous score yet.
+  **Open for the owner:** whether `filing_overdue` should look back only one filing cycle, so the 40 old
+  stoppages stop appearing (a rules v2, if so).
+- **Tests:** each rule on hand-built frames (a crossing fires once, never on a first score; two levels give the
+  higher; a jump needs both its increase and its ratio; a new model version and a not-scored row break a series;
+  a flag fires on turning true only, never on an entity's first month-end; an incomplete search judges nothing;
+  a statement submitted after a search is not seen by it); point in time: later month-ends add alerts and never
+  change earlier ones; against Postgres, a rerun inserts nothing and an acknowledgement stays, and the table
+  refuses an alert known after its date or a score rule without its score.
+
 
 ### E. Alerts in the explorer and the API (decision 5)
 

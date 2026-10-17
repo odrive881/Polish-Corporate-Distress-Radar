@@ -1,0 +1,52 @@
+# Alert rules (plan 0018 step D, owner decision 4, accepted 2026-10-17). Loaded by
+# `distress_radar.alerts.rules.load_alert_rules`; the file name is the version, and the version is
+# part of every alert's id, so a new rules file is a new set of alerts, never an edit of old ones.
+#
+# Every alert names a company: local only (decision 5). Probabilities come from a purposive list
+# (ADR 0014): a threshold here is a rank on this list, not a population risk.
+
+version: alert_rules_v1
+
+# Alerts begin with the first stored scores (plan 0016, 2026-09-30). `feature_store` is rebuilt
+# whole and reaches back to 2001; without this every past change would alert at once.
+alerts_from: 2026-09-30
+
+# threshold_crossed and score_jump read this horizon's scores. A series is one entity, horizon and
+# model version: a new model version starts a new series, and its first score alerts nothing.
+horizon_months: 12
+
+threshold_crossed:
+  # Crossed from below since the series' previous score; several at once give the highest.
+  levels:
+    - {probability: 0.25, severity: high}
+    - {probability: 0.10, severity: medium}
+
+score_jump:
+  # Both at once, since the series' previous score.
+  min_increase: 0.10
+  min_ratio: 2.0
+  severity: medium
+
+# A feature turning true since the entity's previous month-end in `feature_store` (from false or
+# null). These read features, not scores, so they cover entities the model cannot score (micro
+# filers, inputs incomplete). The entity's first month-end alerts nothing.
+tripwire_triggered:
+  features:
+    art233_triggered: high
+    negative_equity: medium
+
+going_concern_flagged:
+  features:
+    going_concern_threat: high            # the statement's introduction (P_5B / P_5A)
+    going_concern_basis_abandoned: high   # prepared without the going-concern basis
+    going_concern_in_notes: high          # the notes' going-concern uncertainty (text signal)
+    # The auditor's opinion modified, for whatever reason: going concern among them, not only.
+    # `emphasis_of_matter` is left out: it is any matter, not going concern's.
+    modified_opinion: medium
+
+# The next statement's deadline (config/statutory/filing_deadlines.yaml, from the latest period
+# end listed plus twelve months) passed before a complete RDF search that still lists none.
+# Judged only at complete searches, dated by the search: what RDF shows after it is unknown.
+# One alert per missing period, at the first search that shows it missing.
+filing_overdue:
+  severity: low

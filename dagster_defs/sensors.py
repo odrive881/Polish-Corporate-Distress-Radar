@@ -1,8 +1,9 @@
 """The sensors (plan 0018 step C, decision 2). Wiring only.
 
-New data starts the chain: a successful registry check or RDF import rebuilds the features, and
-new features are scored. Scoring follows features, not the calendar: the feature grid moves only
-when RDF does, and a re-score on the same month-end writes nothing (plan 0018, constraint 2).
+New data starts the chain: a successful registry check or RDF import rebuilds the features, new
+features are scored, and both new features and new scores are checked for alerts. Scoring
+follows features, not the calendar: the feature grid moves only when RDF does, and a re-score
+on the same month-end writes nothing (plan 0018, constraint 2).
 Each sensor fires once per upstream run (its run id is the run key), only on success: an import
 that fails at its end, by design, starts nothing (plan 0014). `scoring` keeps its guards, so on
 a dirty working tree the chain stops there. Nothing here starts `backtest`, `publish` or `text`:
@@ -13,7 +14,7 @@ from __future__ import annotations
 
 import dagster as dg
 
-from dagster_defs.jobs import features, legal_to_labels, scoring
+from dagster_defs.jobs import alerting, features, legal_to_labels, scoring
 
 STOPPED = dg.DefaultSensorStatus.STOPPED
 
@@ -55,4 +56,25 @@ def scoring_after_features(context: dg.RunStatusSensorContext) -> dg.RunRequest:
     return dg.RunRequest(run_key=context.dagster_run.run_id)
 
 
-sensors = [features_after_registry_check, features_after_rdf_import, scoring_after_features]
+# Plan 0018 step D: after features as well as after scoring. The feature rules (tripwires,
+# going-concern flags) cover entities the model cannot score, so they must not wait on a scoring
+# run that a dirty tree refuses; the second run adds the score rules' alerts. Each insert is
+# idempotent, so running twice adds nothing twice.
+@dg.run_status_sensor(
+    name="alerts_after_features_or_scoring",
+    run_status=dg.DagsterRunStatus.SUCCESS,
+    monitored_jobs=[features, scoring],
+    request_job=alerting,
+    default_status=STOPPED,
+    description="After a successful features or scoring run: compute the alerts.",
+)
+def alerts_after_features_or_scoring(context: dg.RunStatusSensorContext) -> dg.RunRequest:
+    return dg.RunRequest(run_key=context.dagster_run.run_id)
+
+
+sensors = [
+    features_after_registry_check,
+    features_after_rdf_import,
+    scoring_after_features,
+    alerts_after_features_or_scoring,
+]
