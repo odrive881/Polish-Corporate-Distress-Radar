@@ -145,6 +145,7 @@ class MsigApiResource(dg.ConfigurableResource):
 
 
 from dagster_defs.assets.acquisition import acquisition_assets
+from dagster_defs.assets.alerts import alerts_assets
 from dagster_defs.assets.dq import dq_assets
 from dagster_defs.assets.extraction import text_assets
 from dagster_defs.assets.features import features_assets
@@ -169,6 +170,7 @@ defs = dg.Definitions(
         *models_assets,
         *text_assets,
         *publish_assets,
+        *alerts_assets,
     ],
     jobs=jobs,
     schedules=schedules,

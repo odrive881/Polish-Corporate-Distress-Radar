@@ -266,6 +266,8 @@ Lives in Postgres, not Parquet — it is read by the API.
 
 `alert_id`, `krs`, `as_of_date`, `alert_type` (`threshold_crossed` | `score_jump` | `tripwire_triggered` | `going_concern_flagged` | `filing_overdue`), `severity`, `triggering_score_id`, `created_at`, `acknowledged_at`.
 
+As built (plan 0018 step D): also `rule_version`, `detail` (JSON: what fired it) and `known_from` (never after `as_of_date`). `alert_id` is a SHA-256 of the rules version, type, entity and trigger, inserted `ON CONFLICT DO NOTHING`, so a rerun adds nothing and an acknowledgement stays. The rules are `config/alerts/alert_rules_v<n>.yaml` (`alerts/rules.py`): crossings and jumps within one series of entity, 12-month horizon and model version (a first score, or a new version, alerts nothing); tripwires and going-concern flags turning true in `feature_store` since the entity's previous month-end, which covers entities the model cannot score; and `filing_overdue` at a complete RDF search, dated by the search, once per missing period. Alerts begin at the rules' `alerts_from` (2026-09-30). `triggering_score_id` is the score's key (`<krs>/<as_of>/<h>m/<model>/v<version>`), null for the rules that read features or searches.
+
 Lives in Postgres.
 
 ### `feature_store`

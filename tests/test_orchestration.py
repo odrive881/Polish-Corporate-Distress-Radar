@@ -41,6 +41,7 @@ def test_the_whole_repository_resolves():
         "publish",
         "text",
         "rdf_queue",
+        "alerting",
     }
 
 
@@ -65,6 +66,7 @@ def test_the_chain_and_what_it_never_starts():
         "features_after_registry_check": "features",
         "features_after_rdf_import": "features",
         "scoring_after_features": "scoring",
+        "alerts_after_features_or_scoring": "alerting",
     }
     assert not set(started.values()) & {"backtest", "publish", "text"}
 
