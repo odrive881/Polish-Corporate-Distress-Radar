@@ -80,7 +80,7 @@ Stage-by-stage implementation plans live in `docs/plans/`, one numbered `.md` fi
 - Each candidate is stored with its discovery source and discovery timestamp, so the provenance of the universe itself is auditable.
 - GUS aggregate statistics (entity counts by PKD section and employment band) serve as a coverage sanity check. If the discovered universe is wildly smaller or skewed compared to official counts, the run is flagged.
 
-- As built: the 17-entity hand-picked seed (`config/segments/construction_sme_v1_seed.yaml`), then a list of about 600 construction companies the owner built with Rejestr.io's search filters (ADR 0014). It was chosen partly by distress status, so it is purposive, not representative: its composition was measured after Stage 2 (ADR 0014 § Consequences, 2026-10-09: 20 of the 592 resolved companies have a distress event), and the GUS coverage check above is how it is compared with the segment. Only KRS numbers enter the pipeline. Next, list v2: a random group and a distress group drawn from one recorded Rejestr.io frame, with each company's probability of being drawn kept for weighting (ADR 0014 addendum, 2026-10-07, proposed).
+- As built: the 17-entity hand-picked seed (`config/segments/construction_sme_v1_seed.yaml`), then a list of about 600 construction companies the owner built with Rejestr.io's search filters (ADR 0014). It was chosen partly by distress status, so it is purposive, not representative: its composition was measured after Stage 2 (ADR 0014 § Consequences, 2026-10-09: 20 of the 592 resolved companies have a distress event), and the GUS coverage check above is how it is compared with the segment. Only KRS numbers enter the pipeline. Next, list v2: a random group and a distress group drawn from one recorded Rejestr.io frame, with each company's probability of being drawn kept for weighting (ADR 0014 addendum, 2026-10-07, proposed). Its two files were received on 2026-10-13 (600 random, 200 distress), not drawn by that rule; the distress group's first delivery was imported on 2026-10-17 (plan 0014), the random group's not yet.
 
 **Output:** `universe_candidates`, a list of KRS numbers with source lineage and a coverage report.
 
@@ -269,6 +269,8 @@ Stage-by-stage implementation plans live in `docs/plans/`, one numbered `.md` fi
 
 **Output:** `scores_history`, `alerts`, and `monitoring_reports`.
 
+- As built in Phase 10 (plan 0018, 2026-10-17): Dagster schedules and sensors, on since 2026-10-17. **Daily:** the open KRS API and MSiG for every entity (KRZ is not built: it sits behind a WAF, ADR 0011), then features, scoring, alerts and monitoring in a chain, each started by the previous one's success. **Weekly, and daily from June to August:** RDF cannot be fetched by the pipeline (ADR 0013), so the schedule writes a re-search queue of KRS numbers for the owner's download script instead. Scores are stored with their top drivers, not yet with how the drivers moved since the previous score. Alerts follow `config/alerts/alert_rules_v2.yaml` (all five kinds above) and stay local. Monitoring is two local reports, not a table: input drift (Evidently) and realised calibration, which waits until the first scored cohort settles (2028-09-30); score-distribution shifts and a retraining recommendation are not built.
+
 ---
 
 ## Stage 12: Outputs
@@ -298,6 +300,8 @@ For any company in scope:
 ### API
 
 - Endpoints for company scores, explanations, financial history, events, and sector aggregates, each response carrying data version metadata.
+
+As built (plans 0016 and 0018): the company profile, watchlists and alerts live in the local Streamlit explorer and the read-only API, both on 127.0.0.1 only, since they name companies; scores have no confidence ranges yet, and watchlists share the alert rules rather than thresholds of their own. The public site has no sector, regional or predicted-rate page while the lists are purposive (plan 0016 decision 0): it shows data quality, coverage and the backtest's pooled metrics, small cells suppressed, built locally and not deployed.
 
 ### Methodology and research report
 
@@ -343,3 +347,5 @@ The platform is complete when:
 - [ ] Scheduled scoring, alerting, and drift monitoring run without manual intervention.
 - [ ] Company profiles, sector dashboards, and the API are live, with full source lineage.
 - [ ] Every stage can be re-run independently and reproduces identical outputs from the same inputs.
+
+Where this stands (2026-10-17): none is ticked yet. Each has its machinery built and run on real data except the sector dashboards, which wait on a weighted list; what keeps each open is recorded in its plan. The universe has a coverage report but is purposive, not validated against the segment (ADR 0014); the PDF tier is deferred (plan 0006), so not every filed statement parses; pass rates and the backtest report are published only to a site built locally; text signals have measured precision and recall, two of them with no labelled positive yet (plan 0013); KRZ-era outcomes come from the KRS API and MSiG, not KRZ itself; the backtest compares all three generations on too few events to promote a challenger (plan 0015); the schedules are on but have not yet run unattended (plan 0018); nothing is live beyond the machine; re-runs reproducing identical outputs are tested stage by stage, not proven for the whole chain.
