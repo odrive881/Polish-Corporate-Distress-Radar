@@ -186,6 +186,27 @@ def test_a_filing_is_overdue_only_at_a_complete_search_after_its_deadline():
     assert filing_alerts(_searches(("2026-10-01", True)), filed, deadlines, RULES) == []
 
 
+def test_a_filer_that_stopped_cycles_ago_is_alerted_by_v1_only():
+    """Owner, 2026-10-17 (`alert_rules_v2`): only the latest period due is judged."""
+    stopped = _statements((date(2022, 12, 31), date(2023, 7, 1)))  # FY2023 and FY2024 also missing
+    searches = _searches(("2026-10-01", True))
+    deadlines = load_filing_deadlines()
+    assert filing_alerts(searches, stopped, deadlines, RULES) == []
+    (old,) = filing_alerts(searches, stopped, deadlines, load_alert_rules("alert_rules_v1"))
+    assert old.detail["expected_period_end"] == "2023-12-31"
+
+
+def test_v2_changes_only_the_look_back():
+    v1, v2 = load_alert_rules("alert_rules_v1"), RULES
+    assert (v2.version, v2.filing_overdue.look_back_cycles, v1.filing_overdue.look_back_cycles) == (
+        "alert_rules_v2",
+        1,
+        None,
+    )
+    skip = {"version", "filing_overdue"}
+    assert v1.model_dump(exclude=skip) == v2.model_dump(exclude=skip)
+
+
 def test_a_statement_submitted_after_the_search_is_not_seen_by_it():
     statements = _statements(
         (date(2024, 12, 31), date(2025, 7, 1)), (date(2025, 12, 31), date(2026, 10, 5))

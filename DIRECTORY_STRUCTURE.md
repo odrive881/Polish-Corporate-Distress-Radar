@@ -60,7 +60,8 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │   ├── construction_sme_v1.yaml   # declarative universe spec
 │   │   └── construction_sme_v1_seed.yaml  # the hand-picked 17-entity seed, with status hints
 │   ├── alerts/
-│   │   └── alert_rules_v1.yaml        # L: alert thresholds and flags, versioned; the version is in every alert id (plan 0018 step D)
+│   │   ├── alert_rules_v1.yaml        # L: alert thresholds and flags, versioned; the version is in every alert id (plan 0018 step D)
+│   │   └── alert_rules_v2.yaml        # v1 with `filing_overdue` looking back one cycle only (owner, 2026-10-17); the current one
 │   ├── mappings/
 │   │   ├── canonical_chart.yaml       # the canonical chart of accounts
 │   │   ├── msig_vocabulary.yaml       # procedural terms kept from MSiG notice text (ADR 0009)

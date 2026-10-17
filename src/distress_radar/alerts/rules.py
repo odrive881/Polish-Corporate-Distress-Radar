@@ -53,7 +53,7 @@ ALERT_TYPES: tuple[AlertType, ...] = (
 )
 Severity = Literal["high", "medium", "low"]
 SEVERITIES: tuple[Severity, ...] = ("high", "medium", "low")
-DEFAULT_RULES = "alert_rules_v1"
+DEFAULT_RULES = "alert_rules_v2"
 SCORES_SCHEMA: dict[str, pl.DataType | type[pl.DataType]] = {
     "krs": pl.String,
     "as_of_date": pl.Date,
@@ -100,6 +100,9 @@ class FeatureRule(_Frozen):
 
 class FilingRule(_Frozen):
     severity: Severity
+    # None (v1): every missing period alerts. n: only a period whose n-th successor is not yet
+    # overdue, so a filer that stopped more than n cycles ago is not alerted (v2: 1).
+    look_back_cycles: int | None = Field(default=None, ge=1)
 
 
 class AlertRules(_Frozen):
@@ -270,8 +273,9 @@ def filing_alerts(
     """`filing_overdue` at each complete RDF search (`SEARCHES_SCHEMA`), against the statements
     of a downloaded type, not deleted, submitted by the search's date (`STATEMENTS_SCHEMA`).
 
-    One alert per missing period, at the first complete search that shows it missing. An
-    incomplete search, or one made in an outage (never stored), judges nothing.
+    One alert per missing period, at the first complete search that shows it missing; with
+    `look_back_cycles`, only while that period is among the latest that many due. An incomplete
+    search, or one made in an outage (never stored), judges nothing.
     """
     by_krs: dict[str, list[tuple[date, date]]] = {}
     for row in statements.iter_rows(named=True):
@@ -292,6 +296,9 @@ def filing_alerts(
         due = deadlines.deadline(expected)
         if due >= searched or (krs, expected) in seen:
             continue
+        cycles = rules.filing_overdue.look_back_cycles
+        if cycles is not None and deadlines.deadline(add_months(expected, 12 * cycles)) < searched:
+            continue  # stopped filing more than `cycles` cycles before this search
         seen.add((krs, expected))
         alerts.append(
             Alert(
