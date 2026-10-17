@@ -15,7 +15,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from distress_radar.alerts import store as alerts_store
-from distress_radar.alerts.rules import Alert, Severity, alert_id
+from distress_radar.alerts.rules import DEFAULT_RULES, Alert, Severity, alert_id
 from distress_radar.api import main
 from distress_radar.api.schemas import DISCLAIMER
 from distress_radar.models import scores_store
@@ -174,16 +174,14 @@ def client(schema: str) -> Iterator[TestClient]:
         yield test_client
 
 
-def _alert(krs: str, severity: Severity) -> Alert:
+def _alert(krs: str, severity: Severity, rule_version: str = DEFAULT_RULES) -> Alert:
     return Alert(
-        alert_id=alert_id(
-            "alert_rules_v1", "tripwire_triggered", krs, "art233_triggered@2026-09-30"
-        ),
+        alert_id=alert_id(rule_version, "tripwire_triggered", krs, "art233_triggered@2026-09-30"),
         krs=krs,
         as_of_date=DAY,
         alert_type="tripwire_triggered",
         severity=severity,
-        rule_version="alert_rules_v1",
+        rule_version=rule_version,
         known_from=date(2026, 7, 1),
         detail={"feature": "art233_triggered"},
     )
@@ -299,6 +297,7 @@ def test_alerts_open_by_default_watchlist_first_then_by_severity(client: TestCli
                 _alert("0000000002", "high"),
                 _alert("0000000001", "low"),
                 _alert("0000000003", "medium"),
+                _alert("0000000004", "high", "alert_rules_v1"),  # an earlier version: never shown
             ],
             NOW,
         )

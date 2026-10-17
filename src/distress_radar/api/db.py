@@ -18,6 +18,7 @@ from typing import Any, LiteralString
 from psycopg import Connection
 from psycopg.rows import dict_row
 
+from distress_radar.alerts.rules import DEFAULT_RULES
 from distress_radar.models.serving import ServedVersion
 
 _SCORE_COLUMNS: LiteralString = """
@@ -180,9 +181,12 @@ def alerts(
     krs: str | None,
     watchlist: str | None,
     limit: int,
+    rule_version: str = DEFAULT_RULES,
 ) -> list[dict[str, Any]]:
-    """Alerts (plan 0018 step E): unacknowledged first, then companies on any watchlist, then by
-    severity and the latest month-end; `on_watchlist` says whether the company is on one."""
+    """Alerts (plan 0018 step E) of one rules version, the current one by default: an earlier
+    version's rows stay in the table as history and are never shown beside it. Unacknowledged
+    first, then companies on any watchlist, then by severity and the latest month-end;
+    `on_watchlist` says whether the company is on one."""
     return _rows(
         conn,
         """
@@ -190,7 +194,8 @@ def alerts(
                a.rule_version, a.detail, a.known_from, a.created_at, a.acknowledged_at,
                EXISTS (SELECT 1 FROM watchlists w WHERE w.krs = a.krs) AS on_watchlist
         FROM alerts a
-        WHERE (%(acknowledged)s::boolean IS NULL
+        WHERE a.rule_version = %(rule_version)s::text
+          AND (%(acknowledged)s::boolean IS NULL
                OR (a.acknowledged_at IS NOT NULL) = %(acknowledged)s::boolean)
           AND (%(krs)s::text IS NULL OR a.krs = %(krs)s::text)
           AND (%(watchlist)s::text IS NULL
@@ -200,5 +205,11 @@ def alerts(
                  a.krs, a.alert_type, a.alert_id
         LIMIT %(limit)s
         """,
-        {"acknowledged": acknowledged, "krs": krs, "watchlist": watchlist, "limit": limit},
+        {
+            "acknowledged": acknowledged,
+            "krs": krs,
+            "watchlist": watchlist,
+            "limit": limit,
+            "rule_version": rule_version,
+        },
     )

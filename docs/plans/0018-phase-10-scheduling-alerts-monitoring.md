@@ -227,8 +227,12 @@ five rules as pure functions; `alerts/store.py` the table. Asset `alerts` (group
   the searches of 2026-10-07 to 10-16: 96 for FY2025 (due 2026-07-15) and 40 for FY2021–FY2024, companies whose
   filings stopped years ago, most of them likely long failed. One `tripwire_triggered` (Art. 233, at
   2026-09-30). No score alert: `scores_history` holds one month-end, so no series has a previous score yet.
-  **Open for the owner:** whether `filing_overdue` should look back only one filing cycle, so the 40 old
-  stoppages stop appearing (a rules v2, if so).
+  **Decided by the owner (2026-10-17): one cycle.** `alert_rules_v2` adds `filing_overdue.look_back_cycles: 1`
+  and changes nothing else (a test holds the two files equal elsewhere): a missing period alerts only while the
+  period after it is not yet overdue too. The v1 rows stay in the table as history; `GET /alerts` and the
+  explorer show the current version's only (`api/db.py`, `rule_version` defaulting to `DEFAULT_RULES`). Its
+  first run: 97 alerts, all new ids: the 96 FY2025 filings and the Art. 233 tripwire; the 40 FY2021–FY2024
+  stoppages are gone. Nothing had been acknowledged under v1, so no acknowledgement was left behind.
 - **Tests:** each rule on hand-built frames (a crossing fires once, never on a first score; two levels give the
   higher; a jump needs both its increase and its ratio; a new model version and a not-scored row break a series;
   a flag fires on turning true only, never on an entity's first month-end; an incomplete search judges nothing;
@@ -354,7 +358,8 @@ change: the stack is unchanged (Evidently and Sentry were already in it) and not
 
 - **What waits on the owner:** set `DAGSTER_HOME` in `.env`, run `make orchestrate`, turn the schedules and
   sensors on, and let `registry_check_nightly` run once unattended (the open item of the definition of done);
-  step D's question on `filing_overdue`'s look-back; optionally `SENTRY_DSN`, after reading Sentry's terms.
+  optionally `SENTRY_DSN`, after reading Sentry's terms. (Step D's look-back question was decided the same day:
+  one cycle, `alert_rules_v2`.)
 
 ## Tests
 

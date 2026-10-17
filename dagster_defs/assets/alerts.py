@@ -35,9 +35,10 @@ def alerts(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
     """L — what changed since the previous month-end, score or search (plan 0018 step D,
     decisions 4 and 5).
 
-    Inputs: `config/alerts/alert_rules_v1.yaml`; Postgres `scores_history` (threshold crossings and
-    jumps, per series of one entity, horizon and model version); the stored `feature_store` of
-    `FEATURE_SET_VERSION` under `WAREHOUSE_DIR` (tripwires and going-concern flags turning true);
+    Inputs: `config/alerts/<DEFAULT_RULES>.yaml` (`alert_rules_v2` since 2026-10-17); Postgres
+    `scores_history` (threshold crossings and jumps, per series of one entity, horizon and model
+    version); the stored `feature_store` of `FEATURE_SET_VERSION` under `WAREHOUSE_DIR`
+    (tripwires and going-concern flags turning true);
     Postgres `rdf_listed_entities` and `filing_index` with `config/statutory/filing_deadlines.yaml`
     (filings overdue at a complete search). Every input is point in time, and nothing is refitted.
     Outputs: Postgres `alerts`, inserted `ON CONFLICT DO NOTHING` on a deterministic id, so a rerun
