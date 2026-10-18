@@ -12,7 +12,7 @@
 **Order:** after ADR 0013's decision. It does not wait for plan 0013 (Phase 7). A1 is the owner's
 Rejestr.io list (ADR 0014, accepted 2026-10-06), loaded in step 0.
 
-## Status: active (2026-10-18): owner decisions 1–6 accepted as recommended; steps 0 and B–D built, step F's docs written; list v1 imported three times (2026-10-09, 2026-10-13 and 2026-10-16, Progress) and everything downstream rebuilt, up to `backtest_v8`; list v2's distress group imported and parsed once (2026-10-17), its legal sources and labels not yet rebuilt (the first nightly run, 2026-10-18, met a maintenance page); what list v2 can bring to the champion rule's event floor, and the owner's decision it raises, in § "Events" (2026-10-18); open: the script writing every tab of an expanded row, re-searching list v1's unsearched companies, two importer questions from the second import, and step A's field-by-field comparison and step E on the seed
+## Status: active (2026-10-18): owner decisions 1–6 accepted as recommended; steps 0 and B–D built, step F's docs written; list v1 imported three times (2026-10-09, 2026-10-13 and 2026-10-16, Progress) and everything downstream rebuilt, up to `backtest_v8`; list v2's distress group imported and parsed once (2026-10-17), its legal sources and labels not yet rebuilt (the first nightly run, 2026-10-18, met a maintenance page); what list v2 can bring to the champion rule's event floor in § "Events" (2026-10-18), and how the rule reads it decided the same day (option (a): unweighted, a promotion provisional); open: the script writing every tab of an expanded row, re-searching list v1's unsearched companies, two importer questions from the second import, and step A's field-by-field comparison and step E on the seed
 
 ### Where this stands (2026-10-16, with list v2's distress group added 2026-10-17 and its events 2026-10-18): pick up here
 
@@ -70,7 +70,8 @@ re-run, record a new `backtest_v<n>` before running it. Record each round's coun
    does. The first night (2026-10-18) failed on the ministry's maintenance page and recorded nothing; the first
    night that gets through is the first count of the distress group's events. Re-run
    `notebooks/exploration/pdf_tier_triggers.py` after it to settle plan 0006's trigger 2.
-7. **How the champion rule reads list v2** (§ "Events" below): an owner decision, needed before `backtest_v9`.
+7. ~~**How the champion rule reads list v2**~~ decided (owner, 2026-10-18): option (a), the rule runs unweighted on
+   the lists and its verdict is the lists' (§ "Events" below).
 
 ### Events: what list v2 can bring to the champion rule (2026-10-18)
 
@@ -118,7 +119,7 @@ companies count for nothing until the script searches them again.
 4. The random group, B first and then A (the addendum's download order). A also brings the events a random draw
    holds, which only it can report a rate for.
 
-**The decision this raises (the owner's, before `backtest_v9`).** Once B is in, the comparison may reach the
+**The decision this raised (decided 2026-10-18: option (a), below).** Once B is in, the comparison may reach the
 floor and become evaluable for the first time. But B was chosen *because* its companies are in distress, and
 the rule compares *unweighted* Brier scores. AUC is little affected by sampling on the outcome; Brier scores and
 calibration are, since they are measured at an event rate far above the segment's. ADR 0014's addendum says
@@ -132,6 +133,19 @@ calibration and headline results over A and B are weighted, and weights need the
   as long as the frame is unrecorded.
 - **(c) Train on B, and evaluate the rule without it** (seed, list v1 and A only). Keeps B's selection out of the
   verdict, but the floor then waits on A's events.
+
+**Decided (owner, 2026-10-18): (a).** From `backtest_v9`, the champion rule runs as built, unweighted, on the whole
+population, the distress group included. What follows from it:
+
+- `backtest_v9`'s config says, in its comment, that its population includes an outcome-selected group and that
+  the rule's verdict is the lists', unweighted.
+- A promotion on it is **provisional**: the `champion` alias is set as the registry does on any promoting
+  verdict (plan 0015 step G), and README, this plan and plan 0016 call the served model a provisional champion
+  and name the backtest it came from. No public page or report presents its Brier score or calibration as
+  the segment's (ADR 0014 addendum, "Use").
+- Once list v2's frame is recorded and the weights can be computed, the rule is re-run weighted as a new
+  backtest version. If the weighted verdict differs, the weighted one stands.
+- Nothing changes in code: the rule, its floor and its margin stay as plan 0015 decision 7 set them.
 
 **Lessons from the 2026-10-13 and 2026-10-16 rounds:**
 
