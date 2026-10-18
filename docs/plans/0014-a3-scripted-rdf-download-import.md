@@ -143,7 +143,8 @@ population, the distress group included. What follows from it:
   verdict (plan 0015 step G), and README, this plan and plan 0016 call the served model a provisional champion
   and name the backtest it came from. No public page or report presents its Brier score or calibration as
   the segment's (ADR 0014 addendum, "Use").
-- Once list v2's frame is recorded and the weights can be computed, the rule is re-run weighted as a new
+- Once list v2's frame is recorded and the weights can be computed (the numbers needed, and what would break
+  them: ADR 0014, § "What the weights need"), the rule is re-run weighted as a new
   backtest version. If the weighted verdict differs, the weighted one stands.
 - Nothing changes in code: the rule, its floor and its margin stay as plan 0015 decision 7 set them.
 

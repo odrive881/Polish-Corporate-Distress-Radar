@@ -4,7 +4,8 @@
   representative sample (§ Consequences).
   *2026-10-07:* list v2's sampling rule, a random group and a distress group from one recorded frame, is proposed
   (§ "Addendum, 2026-10-07"). *2026-10-13:* the owner's two list v2 files are received and recorded there
-  (§ "Lists received, 2026-10-13"); they were not drawn by its rule, so the addendum stays proposed.
+  (§ "Lists received, 2026-10-13"); they were not drawn by its rule, so the addendum stays proposed. *2026-10-18:* what the weights need, and what would break them, is recorded
+  (§ "What the weights need").
 - **Date:** 2026-10-06
 - **Follows up:** 0013 (A1 was left open; ADR 0013's scripted downloads need a list of KRS numbers)
 
@@ -207,3 +208,56 @@ They replace two earlier drafts (2026-10-09: 660 rows; 199 rows that included `w
 - **Until the frame is recorded,** these lists are used like v1: purposive, their results stated as the lists',
   not the segment's. To weight them, the owner records the filter settings and the count each search returned
   (per status for B, per search for A), and how the rows were chosen from each search's results.
+
+### What the weights need (2026-10-18)
+
+The owner's question: Rejestr.io's count depends on the filters (PKD alone gives about 109,000 companies, PKD and
+at least three years of operation about 60,000, a distress status a few hundred to a few thousand per
+category). Which count do the weights need? Neither number matters in itself. What matters is the **pool each
+group was actually drawn from**, counted with the **same base filters for both groups**, so that the distress
+pool is a part of the random group's pool (D ⊂ F, above).
+
+**The numbers to record:**
+
+| # | Number | Example |
+|---|---|---|
+| 1 | N_F: the companies in the pool group A was drawn from, with exactly the filters used for A | PKD 41–43, `sp. z o.o.`, at least 3 years: about 60,000 |
+| 2 | N_D per category: the same filters as #1 plus the status filter, one count per status | the same plus `w upadłości`, plus `w likwidacji` |
+| 3 | How many were taken from each | 600 from #1; 130 and 70 from #2 (known) |
+| 4 | How the rows were chosen from each search's results | at random, the first pages, by some sort order |
+| 5 | The date and every filter setting, as Rejestr.io shows them | a screenshot is enough |
+
+The overlap d_A, the members of D drawn into A, is counted by the pipeline: A's file flags 106 `in_distress`
+(per status once their labels are in). The formula is the § "Weights" above, applied per status, since B was
+split 130/70 by status: for a status c, π = f_A + (1 − f_A) · n_Bc / (N_Dc − d_Ac). An illustration with an
+assumed N_D: a company outside D stands for N_F / n_A = 60,000 / 600 = 100 companies, and a bankrupt company of B
+for about 1,800 / (130 + its share of A's 106) ≈ 13. So a distressed company counts about eight times less than a
+healthy one, which restores the segment's mix of events and non-events.
+
+**What would break them:**
+
+1. **Different base filters for the two groups.** If A came from PKD and three years (60,000) but the distress
+   counts from PKD and status alone, without the three-year filter, D is not a part of F and the weights mix two
+   populations. The distress searches are re-run with A's filters on, and those counts are the ones recorded.
+   The same holds for the legal form: if 109,000 includes every legal form and 60,000 is `sp. z o.o.` only, the
+   60,000 is the frame.
+2. **A filter that drops dead companies.** Rejestr.io's "at least three years of operation" must keep companies
+   now bankrupt, in liquidation or deleted from KRS (the frame takes every status, § "The frame"). If it counts
+   only companies still active, F leaves out exactly the events. Check: the 60,000 search narrowed further to `w
+   upadłości` should return about what the distress search did.
+3. **How the 600 were chosen** (the serious one). N_F / n_A is a company's weight only if every company in F had
+   the same chance of being drawn. A's file is four unbroken runs of KRS numbers (§ "Lists received"), which
+   looks like whole pages of a result list sorted by KRS. A company registered outside those four periods had no
+   chance of being drawn, so its weight is undefined, not 100. Two ways out:
+   - **Recommended:** export F's KRS numbers once (§ "The frame", "Kept"), and draw A again by pipeline code
+     with a recorded seed (§ "The draw"). Companies already downloaded are reused where the new draw picks them.
+     The export must happen before the Rejestr.io trial ends (`docs/data_inventory.md`).
+   - **Fallback**, if F cannot be exported: record exactly how the four runs came about (sort order, pages), and
+     define the population as the companies registered in those four periods, weighted within each period. The
+     weighted results then speak only for those registration years, not for the segment.
+
+   The same applies to B: if its 130 and 70 are the first rows of a sorted result list, they over-represent
+   whatever that order favours, and #4 says so.
+
+Until these are recorded, plan 0014's decision 7 holds: the champion rule reads the lists unweighted and a
+promotion on them is provisional.
