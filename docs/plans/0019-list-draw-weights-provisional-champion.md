@@ -24,6 +24,18 @@ deadline, and the frame must be exported before it ends (`docs/data_inventory.md
 
 ## Status: active (2026-10-18): written on the owner's request (items 1–3 of "what can be built in the meantime"); owner decisions 0–9 accepted as recommended (2026-10-18); open: step A's three answers from the owner (the export's header, how B's rows were chosen, the trial's end date); nothing built
 
+### Outstanding (2026-10-18): the owner's
+
+Step A's three answers, before anything is built:
+
+1. **The export's header line** (no company names): its columns, its delimiter, and whether it carries a status.
+   This decides decision 2's shape.
+2. **How group B's rows were chosen** from each status search's results (at random, the first pages, by a sort
+   order). This decides decision 1: keep B or redraw it.
+3. **When the Rejestr.io trial ends.** The frame must be exported before then, and step B before that.
+
+Steps B–F are not started.
+
 ## Why
 
 List v2's two files (ADR 0014, § "Lists received, 2026-10-13") were not drawn by the addendum's rule: no frame,
