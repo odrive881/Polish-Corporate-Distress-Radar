@@ -17,7 +17,7 @@ owner decision 4's deferral (owner, 2026-10-18), and writes `config/statutory/si
 feature set or population: using the class (a feature, the segment's `size_classes` filter) is decision 9's
 later step.
 
-## Status: draft (2026-10-18): owner decisions 1 and 7 accepted (2026-10-18, below); the statute checked against the Dziennik Ustaw texts (§ "The statute"); decisions 0, 2–6, 8 and 9 not yet accepted; nothing built
+## Status: active (2026-10-18): owner decisions 0–9 accepted (1 and 7 as asked, the rest as recommended, 2026-10-18); the statute checked against the Dziennik Ustaw texts (§ "The statute"); building from step A
 
 ## Why
 
@@ -96,7 +96,7 @@ goods and materials on one line, do not carry the exact quantity (decision 2). N
 7. **Medium and large: the UoR bounds.** **Accepted (owner, 2026-10-18).** From FY2024, the statute's medium and
    large (110m / 220m / 250). Before FY2024 the statute has none (§ "The statute", 1), so see decision 8.
 
-To accept or change:
+Accepted as recommended (owner, 2026-10-18):
 
 0. **Where the code and the output live.** *Recommended:* `src/distress_radar/parsing/size_class.py` (pure,
    beside `restatements.py`), the asset `entity_size_class_history` in `dagster_defs/assets/parsing.py`
@@ -224,7 +224,7 @@ To accept or change:
 ## Definition of done
 
 - [x] Owner decisions 1 and 7 accepted (2026-10-18).
-- [ ] Owner decisions 0, 2–6, 8 and 9 accepted or changed.
+- [x] Owner decisions 0, 2–6, 8 and 9 accepted (2026-10-18, as recommended).
 - [ ] Steps A–D built, with their tests in `make check`.
 - [ ] Step E's measurements recorded here.
 - [ ] Docs swept (step F).
