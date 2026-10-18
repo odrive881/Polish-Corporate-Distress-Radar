@@ -8,7 +8,7 @@
 **Order:** after plans 0008 and 0009, which are complete. Phase 6 (baseline models, out-of-time backtest) trains
 on `feature_store` joined to a frozen label set, so nothing downstream starts before this lands.
 
-## Status: complete (2026-09-26)
+## Status: complete (2026-09-26); owner decision 4 (defer the size class) reversed by plan 0020 (owner, 2026-10-18)
 
 ## Why
 

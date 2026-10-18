@@ -1,0 +1,84 @@
+# Which filed lines give the size-class criteria (plan 0020 decision 2). Engineering, not statute:
+# the thresholds are in `config/statutory/size_thresholds.yaml`. Loaded and cross-checked by
+# `distress_radar.parsing.size_class.load_size_class_inputs`.
+#
+# Total assets is one line on every body. The statute's revenue, "przychody netto ze sprzedaży
+# towarów i produktów" (UoR art. 3 ust. 1 pkt 30a from FY2024), is one line only on the
+# calculation variant from schema 1-3 and wariant 2 (`IS.CALC.A.R2025`). Everywhere else the filed
+# lines *bound* it, and a criterion is decided only when both bounds fall on the same side of its
+# threshold (plan 0020 decision 1). Nothing is estimated: a bound the lines cannot give is absent.
+#
+# Each rule applies to a statement that carries every code in `when` (in the column being read),
+# and the first rule that applies is used; a statement carries one variant's codes only (ADR 0005
+# second addendum), so at most a few rules can apply. `low` and `high` are signed sums of codes in
+# `when`, so no term is ever missing. `low: []` is a lower bound of zero; `high: null` means no
+# upper bound. Why each bound holds:
+# - before schema 1-3, the goods line is goods *and materials* ("towarów i materiałów"); materials
+#   are not part of the statute's revenue (pkt 32 lit. b), so that line bounds goods from above;
+# - the comparative and micro headlines add the change in inventories, which can be negative, so
+#   they bound nothing by themselves;
+# - the small form's "Przychody netto ze sprzedaży" is all sales, materials included, so it is an
+#   upper bound only;
+# - the micro headline less its change in inventories (`A.1`) still adds own work capitalised and
+#   materials, both non-negative, so it is an upper bound only.
+#
+# This sums and subtracts lines of one statement, which `line_items_v3` never does for features
+# (AGENT_SPEC §4.1 forbids deriving one variant from another). It is allowed here and only here,
+# to bound a quantity the statute itself defines (owner, 2026-10-18).
+
+version: size_class_inputs_v1
+
+total_assets: BS.ASSETS
+
+revenue_rules:
+  # --- calculation variant -----------------------------------------------------------------------
+  - id: calc_r2025
+    when: [IS.CALC.A.R2025]
+    low: [[1, IS.CALC.A.R2025]]
+    high: [[1, IS.CALC.A.R2025]]
+  - id: calc_r2025_lines
+    when: [IS.CALC.A.I, IS.CALC.A.II.R2025]
+    low: [[1, IS.CALC.A.I], [1, IS.CALC.A.II.R2025]]
+    high: [[1, IS.CALC.A.I], [1, IS.CALC.A.II.R2025]]
+  - id: calc_with_products
+    when: [IS.CALC.A, IS.CALC.A.I]
+    low: [[1, IS.CALC.A.I]]
+    high: [[1, IS.CALC.A]]
+  - id: calc
+    when: [IS.CALC.A]
+    low: []
+    high: [[1, IS.CALC.A]]
+  - id: calc_lines
+    when: [IS.CALC.A.I, IS.CALC.A.II]
+    low: [[1, IS.CALC.A.I]]
+    high: [[1, IS.CALC.A.I], [1, IS.CALC.A.II]]
+
+  # --- small form (before the full comparative rules: it reuses `IS.COMP.A`) ----------------------
+  - id: small_sales
+    when: [IS.COMP.MALA.A.I]
+    low: []
+    high: [[1, IS.COMP.MALA.A.I]]
+
+  # --- comparative variant -----------------------------------------------------------------------
+  - id: comp_r2025
+    when: [IS.COMP.A.I, IS.COMP.A.IV.R2025]
+    low: [[1, IS.COMP.A.I], [1, IS.COMP.A.IV.R2025]]
+    high: [[1, IS.COMP.A.I], [1, IS.COMP.A.IV.R2025]]
+  - id: comp
+    when: [IS.COMP.A.I, IS.COMP.A.IV]
+    low: [[1, IS.COMP.A.I]]
+    high: [[1, IS.COMP.A.I], [1, IS.COMP.A.IV]]
+  - id: comp_goods_r2025
+    when: [IS.COMP.A.IV.R2025]
+    low: [[1, IS.COMP.A.IV.R2025]]
+    high: null
+  - id: comp_products
+    when: [IS.COMP.A.I]
+    low: [[1, IS.COMP.A.I]]
+    high: null
+
+  # --- micro -------------------------------------------------------------------------------------
+  - id: micro
+    when: [IS.MIKRO.A, IS.MIKRO.A.1]
+    low: []
+    high: [[1, IS.MIKRO.A], [-1, IS.MIKRO.A.1]]

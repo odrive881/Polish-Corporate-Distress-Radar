@@ -1,0 +1,66 @@
+# UoR size-class thresholds (AGENT_SPEC §4.4, plan 0020). Statutory data, not code (invariant 7).
+# Loaded and cross-checked by `distress_radar.parsing.size_class.load_size_thresholds`.
+#
+# A regime is chosen by the fiscal year's start date (`period_start`), and its thresholds are
+# applied to that year *and* to the year before it: the statute tests "w roku obrotowym, za który
+# sporządza sprawozdanie finansowe, oraz w roku poprzedzającym ten rok obrotowy". A year that
+# starts before the first regime has none, and is never classified under a later one.
+#
+# Each boundary separates `class_below` from the class above it. "Not exceeded" is at or below the
+# value ("nie przekroczyła"). An entity is on the lower side of a boundary in a year when it
+# exceeds at most one of the three values, and on the upper side when it exceeds at least two.
+# Above the last boundary the class is `large`.
+#
+# `carry_over`: from FY2024 a status is lost only after two years beyond it ("jednostka traci
+# status …, jeżeli w roku obrotowym … oraz w roku poprzedzającym … przekroczyła co najmniej dwie z
+# trzech tych wielkości"), so a year with one year on each side keeps the side of the year before.
+# Before FY2024 the continuation rules (art. 3 ust. 1b, 1d) turn on the form the entity filed,
+# which §4.4 never reads, so no carry-over is applied (plan 0020 decision 5).
+#
+# `basis: by_analogy`: the pre-2024 law defines no medium or large unit. Those boundaries take
+# FY2024's values so that a pre-2024 year above small can still be told apart, and every row they
+# decide says so (plan 0020 decision 8).
+#
+# Every value was read on 2026-10-18 from the Sejm's ELI texts (api.sejm.gov.pl/eli/acts/DU/…).
+# A change in the law is a new regime with its dates, never an edit of an old one.
+
+version: size_thresholds_v1
+
+regimes:
+  # Art. 3 ust. 1a pkt 1 (micro) and ust. 1c pkt 1 (small), identical in the consolidated texts of
+  # Dz.U. 2016 poz. 1047 and Dz.U. 2018 poz. 395. Changed for years starting after 2018-12-31 by
+  # Dz.U. 2018 poz. 2244 (art. 9, art. 43 ust. 1). Earlier years are not configured: no statement
+  # in the warehouse starts before 2017.
+  - id: uor_2017
+    fiscal_years_starting: {from: 2017-01-01, to: 2018-12-31}
+    carry_over: false
+    citation: "UoR art. 3 ust. 1a pkt 1, ust. 1c pkt 1; Dz.U. 2016 poz. 1047, Dz.U. 2018 poz. 395"
+    boundaries:
+      - {class_below: micro, basis: statutory, total_assets: "1500000", net_revenue: "3000000", average_employment: "10"}
+      - {class_below: small, basis: statutory, total_assets: "17000000", net_revenue: "34000000", average_employment: "50"}
+      - {class_below: medium, basis: by_analogy, total_assets: "110000000", net_revenue: "220000000", average_employment: "250"}
+
+  # Small raised to 25.5m / 51m by Dz.U. 2018 poz. 2244 art. 9 pkt 2 lit. b, first for years
+  # starting after 2018-12-31 (art. 43 ust. 1); unchanged in the consolidated text Dz.U. 2023
+  # poz. 120. Replaced for years starting after 2023-12-31 (Dz.U. 2024 poz. 1863 art. 14 ust. 4).
+  - id: uor_2019
+    fiscal_years_starting: {from: 2019-01-01, to: 2023-12-31}
+    carry_over: false
+    citation: "UoR art. 3 ust. 1a pkt 1, ust. 1c pkt 1; Dz.U. 2018 poz. 2244 art. 9, art. 43; Dz.U. 2023 poz. 120"
+    boundaries:
+      - {class_below: micro, basis: statutory, total_assets: "1500000", net_revenue: "3000000", average_employment: "10"}
+      - {class_below: small, basis: statutory, total_assets: "25500000", net_revenue: "51000000", average_employment: "50"}
+      - {class_below: medium, basis: by_analogy, total_assets: "110000000", net_revenue: "220000000", average_employment: "250"}
+
+  # Art. 3 ust. 1 pkt 1a–1d as set by Dz.U. 2024 poz. 1863 art. 1, first for statements for years
+  # starting after 2023-12-31 (art. 14 ust. 3); unchanged in the consolidated text Dz.U. 2026
+  # poz. 522 and by the amendments after it (Dz.U. 2026 poz. 333, 640, 644, 1206). The revenue is
+  # defined in pkt 30a: sales of materials are not part of it (pkt 32 lit. b).
+  - id: uor_2024
+    fiscal_years_starting: {from: 2024-01-01}
+    carry_over: true
+    citation: "UoR art. 3 ust. 1 pkt 1a-1d, pkt 30a; Dz.U. 2024 poz. 1863 art. 1, art. 14 ust. 3; Dz.U. 2026 poz. 522"
+    boundaries:
+      - {class_below: micro, basis: statutory, total_assets: "2000000", net_revenue: "4000000", average_employment: "10"}
+      - {class_below: small, basis: statutory, total_assets: "33000000", net_revenue: "66000000", average_employment: "50"}
+      - {class_below: medium, basis: statutory, total_assets: "110000000", net_revenue: "220000000", average_employment: "250"}

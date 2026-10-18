@@ -17,7 +17,74 @@ owner decision 4's deferral (owner, 2026-10-18), and writes `config/statutory/si
 feature set or population: using the class (a feature, the segment's `size_classes` filter) is decision 9's
 later step.
 
-## Status: active (2026-10-18): owner decisions 0–9 accepted (1 and 7 as asked, the rest as recommended, 2026-10-18); the statute checked against the Dziennik Ustaw texts (§ "The statute"); building from step A
+## Status: active (2026-10-18): owner decisions 0–9 accepted (1 and 7 as asked, the rest as recommended, 2026-10-18); steps A–F built and run (§ "Progress"); open: decision 9's later step, the owner's (whether the class becomes a feature or the segment's filter: 201 of 268 decided population entities are micro), and a unit-error check for the filer found in step E
+
+## Progress (2026-10-18): steps A–F built and run
+
+- **Step A:** `config/statutory/size_thresholds.yaml` (`size_thresholds_v1`): three regimes, `uor_2017`
+  (fiscal years starting 2017-01-01 to 2018-12-31; a few first years start in 2017, so 2017 is configured, read
+  from the consolidated texts Dz.U. 2016 poz. 1047 and 2018 poz. 395, identical in both), `uor_2019` and
+  `uor_2024`. `config/mappings/size_class_inputs_v1.yaml`: 11 revenue rules. The loader proves each one against
+  the bodies with the specs' `.R2025` overrides applied, so a rule no statement could satisfy is refused.
+- **Step B:** `parsing/size_class.py`. A criterion becomes a set of *regions* between the regime's three
+  thresholds. A year becomes the set of *levels* it can be at (the first boundary it is within), and a class is
+  decided only when every level, prior level and carried class gives the same one. Unknowns in different years
+  are treated as independent: this can leave a year `undetermined` that a joint test would decide, never the
+  reverse. One reason was corrected while running step E: `no_prior_side` is given only when the legal gap is
+  the *only* outcome, not merely a possible one (it had been given to 439 years whose figures were missing).
+- **Step C:** the asset `entity_size_class_history` (group `parsing`, after `financial_statements_canonical` and
+  `legal_events`; not in any job, materialized by hand, README "A new delivery" step 3), and the Pandera contract
+  `ENTITY_SIZE_CLASS_HISTORY` (a reason exactly when undetermined, a basis exactly when decided, exact revenue
+  equal to its bounds, one row per entity, year and date).
+- **Step D:** `tests/parsing/test_size_class.py`, 47 tests: each regime's start date and values, each statute
+  case, each revenue rule, the loaders' refusals, point in time (a correction adds a row and leaves the earlier
+  one unchanged; a later filing of 2024 adds a row for 2025 through the carry-over), quarantined statements
+  ignored, the form never read, and a property test. In that test, 1,500 random years with figures missing or
+  bounded are drawn; each decided one is filled 20 times with values on and around every threshold, and its
+  class never changes.
+
+### Step E: measured over the warehouse (2026-10-18, 2,848 files, 491 entities)
+
+2,423 rows over 2,408 entity-years (15 corrections changed a result). The latest result per entity-year:
+
+| Fiscal year | Micro | Small | Medium | Large | Undetermined |
+|---|---|---|---|---|---|
+| 2018 | 52 | 26 | 12 | 0 | 99 |
+| 2019 | 67 | 39 | 5 | 0 | 112 |
+| 2020 | 87 | 37 | 3 | 0 | 131 |
+| 2021 | 100 | 41 | 3 | 1 | 162 |
+| 2022 | 118 | 35 | 8 | 1 | 187 |
+| 2023 | 136 | 39 | 9 | 0 | 207 |
+| 2024 | 142 | 46 | 5 | 0 | 186 |
+| 2025 | 141 | 41 | 5 | 0 | 122 |
+| 2026 | 1 | 1 | 0 | 0 | 1 |
+
+- **Undetermined, by reason:** before FY2025, 414 `employment_decides` and 670 `inputs_missing` of 2,096 years
+  (52% undetermined). From FY2025, 7 and 116 of 312 (39%). No `no_prior_side`, `revenue_bounds` or `no_regime`
+  as a latest result. Decided: 1,158 `statutory`, 43 `by_analogy` (medium or large before FY2024).
+- **The class against the form filed:** micro-form statements are never classed above micro (355 micro, 327
+  undetermined). Full-form statements: 309 micro, 276 small, 50 medium. Small-form: 180 micro, 29 small, and 2
+  large (below). Choosing a fuller form than the class needs is allowed, so these are not errors, but they show
+  why §4.4 never reads the form.
+- **The backtest population:** `backtest_v8`'s 370 entities, recomputed from the stores (its pinned hash
+  matches). 268 have a decided year. In their latest decided year, **201 are micro**, 58 small, 8 medium and 1
+  large, and 102 have no decided year. The segment declares `size_classes: [small, medium]`, so most of what
+  the models are trained and tested on is outside it by statute. This is decision 9's question.
+- **Found: a filer's unit error.** `0000310926` filed its FY2021 and FY2022 statements on the thousands schema
+  (`small-2018-v1-2-tys`) with amounts in złoty, so C multiplied them by 1,000: total assets of 2.7 and 2.95
+  billion PLN between 2.2 million (FY2020) and 3.0 million (FY2023). Both files are graded `warn` and `pass`, so
+  the figures reach `feature_store` too. That is where the two "large" years come from. Stage 5's plausibility
+  check for unit mistakes (PROJECT_OVERVIEW, "values off by a factor of 1,000") is not built. Not fixed here: a
+  check of its own, the owner's to schedule.
+
+### Outstanding (2026-10-18): the owner's
+
+1. **Decision 9's later step:** whether the class becomes a feature, or the segment's `size_classes` filter
+   on the universe or a backtest population (201 of 268 decided population entities are micro).
+2. **The unit error of `0000310926`** (step E): whether to build a check for unit mistakes (values off by a
+   factor of 1,000 between years, PROJECT_OVERVIEW stage 5), and what to do with its FY2021 and FY2022 files
+   meanwhile: grade them down, quarantine them, or leave them. Until then their figures stay in the canonical
+   facts and `feature_store` as filed.
 
 ## Why
 
@@ -225,9 +292,9 @@ Accepted as recommended (owner, 2026-10-18):
 
 - [x] Owner decisions 1 and 7 accepted (2026-10-18).
 - [x] Owner decisions 0, 2–6, 8 and 9 accepted (2026-10-18, as recommended).
-- [ ] Steps A–D built, with their tests in `make check`.
-- [ ] Step E's measurements recorded here.
-- [ ] Docs swept (step F).
+- [x] Steps A–D built, with their tests in `make check` (2026-10-18).
+- [x] Step E's measurements recorded here (2026-10-18).
+- [x] Docs swept (step F, 2026-10-18).
 
 ## Risks
 

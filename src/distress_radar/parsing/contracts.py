@@ -22,6 +22,10 @@ from distress_radar.parsing.accounting_identities import (
 from distress_radar.parsing.legal_events import LEGAL_EVENTS_SCHEMA
 from distress_radar.parsing.legal_taxonomy import EVENT_OUTCOME_CLASSES
 from distress_radar.parsing.mapping_engine import CANONICAL_COLUMNS
+from distress_radar.parsing.size_class import CLASSES as SIZE_CLASSES
+from distress_radar.parsing.size_class import REASONS as SIZE_REASONS
+from distress_radar.parsing.size_class import SCHEMA as SIZE_CLASS_SCHEMA
+from distress_radar.parsing.size_class import UNDETERMINED as SIZE_UNDETERMINED
 from distress_radar.parsing.statement_introduction import DISCLOSURE_COLUMNS
 
 _SHA256 = r"^[0-9a-f]{64}$"
@@ -189,4 +193,77 @@ STATEMENT_DISCLOSURES = pa.DataFrameSchema(
     ordered=True,
     unique=["source_document_hash", "source_member", "item"],
     name="statement_disclosures",
+)
+
+
+# --- entity_size_class_history (plan 0020) -------------------------------------------------------
+
+# Lineage, the dates and the year's own identifiers are required; a figure is null when not filed.
+_SIZE_REQUIRED = {
+    "krs",
+    "fiscal_year",
+    "period_start",
+    "period_end",
+    "size_class",
+    "first_year",
+    "threshold_config_version",
+    "inputs_config_version",
+    "known_from",
+    "document_ref",
+    "source_document_hash",
+    "source_member",
+    "ingestion_run_id",
+}
+
+
+def _size_column(name: str, dtype: pl.DataType | type[pl.DataType]) -> pa.Column:
+    checks: list[pa.Check] = []
+    if name == "krs":
+        checks.append(pa.Check.str_matches(_KRS))
+    elif name == "source_document_hash":
+        checks.append(pa.Check.str_matches(_SHA256))
+    elif name == "size_class":
+        checks.append(pa.Check.isin([*SIZE_CLASSES, SIZE_UNDETERMINED]))
+    elif name == "size_class_basis":
+        checks.append(pa.Check.isin(["statutory", "by_analogy"]))
+    elif name == "undetermined_reason":
+        checks.append(pa.Check.isin(list(SIZE_REASONS)))
+    return pa.Column(dtype, checks=checks, nullable=name not in _SIZE_REQUIRED)
+
+
+def _reason_iff_undetermined(data: pa.PolarsData) -> pl.LazyFrame:
+    return data.lazyframe.select(
+        pl.col("undetermined_reason").is_not_null() == (pl.col("size_class") == SIZE_UNDETERMINED)
+    )
+
+
+def _basis_iff_decided(data: pa.PolarsData) -> pl.LazyFrame:
+    return data.lazyframe.select(
+        pl.col("size_class_basis").is_not_null() == (pl.col("size_class") != SIZE_UNDETERMINED)
+    )
+
+
+def _exact_revenue_is_its_bounds(data: pa.PolarsData) -> pl.LazyFrame:
+    return data.lazyframe.select(
+        pl.col("net_revenue").is_null()
+        | (
+            (pl.col("net_revenue") == pl.col("net_revenue_low"))
+            & (pl.col("net_revenue") == pl.col("net_revenue_high"))
+        )
+    )
+
+
+# One row per entity, fiscal year and date the result changed (§4.7): a later correction is a
+# new row, never an edit.
+ENTITY_SIZE_CLASS_HISTORY = pa.DataFrameSchema(
+    {name: _size_column(name, dtype) for name, dtype in SIZE_CLASS_SCHEMA.items()},
+    checks=[
+        pa.Check(_reason_iff_undetermined, error="a reason exactly when undetermined"),
+        pa.Check(_basis_iff_decided, error="a basis exactly when decided"),
+        pa.Check(_exact_revenue_is_its_bounds, error="exact revenue equals both its bounds"),
+    ],
+    strict=True,
+    ordered=True,
+    unique=["krs", "fiscal_year", "known_from"],
+    name="entity_size_class_history",
 )

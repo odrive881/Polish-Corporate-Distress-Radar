@@ -35,12 +35,18 @@ from distress_radar.parsing.accounting_identities import (
 )
 from distress_radar.parsing.canonical_schema import MappingConfig, load_mapping_config
 from distress_radar.parsing.contracts import (
+    ENTITY_SIZE_CLASS_HISTORY,
     FINANCIAL_STATEMENTS_CANONICAL,
     IDENTITY_CHECK_RESULTS,
     STATEMENT_DISCLOSURES,
 )
 from distress_radar.parsing.mapping_engine import SORT_KEY, MappingError, empty_frame
 from distress_radar.parsing.restatements import restatement_events as build_restatement_events
+from distress_radar.parsing.size_class import entity_size_class_history as build_size_classes
+from distress_radar.parsing.size_class import (
+    load_size_class_inputs,
+    load_size_thresholds,
+)
 from distress_radar.parsing.statements import (
     FileOutcome,
     classify_download,
@@ -60,6 +66,7 @@ CANONICAL = "financial_statements_canonical"
 RESTATEMENTS = "restatement_events"
 IDENTITY_RESULTS = "identity_check_results"
 DISCLOSURES = statement_introduction.DATASET
+SIZE_CLASSES = "entity_size_class_history"
 
 
 def _statement_type_codes() -> list[str]:
@@ -398,4 +405,46 @@ def restatement_events(context: dg.AssetExecutionContext) -> dg.MaterializeResul
     )
 
 
-parsing_assets = [financial_statements_canonical, restatement_events]
+@dg.asset(group_name="parsing", deps=[financial_statements_canonical, dg.AssetKey("legal_events")])
+def entity_size_class_history(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
+    """The statutory size class per fiscal year (AGENT_SPEC §4.4, §5; plan 0020).
+
+    Inputs: `financial_statements_canonical` (files graded `pass` or `warn`) and
+    `statement_disclosures` (average employment) from `WAREHOUSE_DIR`, `legal_events` (the
+    registration, for the first year of activity), and the configs
+    `config/statutory/size_thresholds.yaml` and `config/mappings/size_class_inputs_v1.yaml`.
+    Outputs: `WAREHOUSE_DIR/entity_size_class_history/fiscal_year=YYYY/`, one row per entity,
+    fiscal year and date its class (or why it has none) changed.
+    Partition scheme: none (unpartitioned). Offline: it reads stored datasets only.
+    """
+    settings = Settings()
+    rows = ENTITY_SIZE_CLASS_HISTORY.validate(
+        build_size_classes(
+            read_dataset(settings.warehouse_dir, CANONICAL),
+            read_dataset(settings.warehouse_dir, DISCLOSURES),
+            read_dataset(settings.warehouse_dir, "legal_events"),
+            load_size_thresholds(),
+            load_size_class_inputs(load_mapping_config()),
+        )
+    )
+    write_dataset(rows, settings.warehouse_dir, SIZE_CLASSES, "fiscal_year")
+    latest = rows.sort("known_from").group_by(["krs", "fiscal_year"]).last()
+    context.log.info(f"{rows.height} rows, {latest.height} entity-years")
+    return dg.MaterializeResult(
+        metadata={
+            "rows": rows.height,
+            "entity_years": latest.height,
+            "by_class": dict(sorted(latest.group_by("size_class").len().iter_rows())),
+            "undetermined_by_reason": dict(
+                sorted(
+                    latest.filter(pl.col("undetermined_reason").is_not_null())
+                    .group_by("undetermined_reason")
+                    .len()
+                    .iter_rows()
+                )
+            ),
+        }
+    )
+
+
+parsing_assets = [financial_statements_canonical, restatement_events, entity_size_class_history]

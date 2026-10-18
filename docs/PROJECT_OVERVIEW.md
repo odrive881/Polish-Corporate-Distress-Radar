@@ -147,7 +147,7 @@ Stage-by-stage implementation plans live in `docs/plans/`, one numbered `.md` fi
 
 - **Accounting identity checks:** total assets equal total equity and liabilities. Subtotals equal the sum of their components. The net profit on the income statement matches the balance sheet profit line. Cash movement reconciles to the change in the cash balance.
 - **Plausibility checks:** sign errors, implausible jumps between years, and suspected unit mistakes (values off by a factor of 1,000).
-- **Size classification:** the accounting-law size class is computed for each fiscal year from the balance sheet total, revenue, and average employment, using the multi-year rules the law requires. Threshold values are stored as **versioned configuration**, because statutory thresholds change over time.
+- **Size classification:** the accounting-law size class is computed for each fiscal year from the balance sheet total, revenue, and average employment, using the multi-year rules the law requires. Threshold values are stored as **versioned configuration**, because statutory thresholds change over time. As built (plan 0020, 2026-10-18): `entity_size_class_history`, exact where decidable. A year whose class a missing figure could change stays `undetermined`, and so does about half of the years before FY2025, where employment is not filed.
 - Each record receives a quality grade. Failing records are quarantined, not deleted, with the failure reason stored.
 - A data quality dashboard shows pass rates by structure version, fiscal year, and check type.
 

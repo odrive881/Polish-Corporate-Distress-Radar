@@ -112,6 +112,13 @@ A statement a form does not declare is **absent, not empty**: the small and micr
 
 Computed per fiscal year from the filed statement, never taken from a registry — and never inferred from which form the entity filed: choosing the micro form is the filer asserting a size class, and filers get it wrong (plan 0005 decision 4). Inputs: balance sheet total, net revenue, average employment. The accounting law applies thresholds over a multi-year window, so classification requires the prior year too. Thresholds come from `config/statutory/size_thresholds.yaml`, keyed by effective date range.
 
+As built (plan 0020, 2026-10-18), `parsing/size_class.py`:
+- **Regimes** by the fiscal year's start: FY2017–2018, FY2019–2023 and from FY2024 (art. 3 ust. 1 pkt 1a–1d, Dz.U. 2024 poz. 1863). Each value cites its article and Dziennik Ustaw position. A year before 2017 has no regime and no class.
+- **Exact where decidable.** A criterion that is not filed (employment before wariant 2), or that the filed lines only bound (revenue: `config/mappings/size_class_inputs_v1.yaml`), is placed in every region its bounds allow. A year gets a class only when every combination gives the same one. Otherwise it is `undetermined`, with the reason. A decided class is never one a missing figure could change.
+- **Revenue is bounded from one statement's lines**, the only place lines are added or subtracted. The statute's quantity is one line only on `IS.CALC.A.R2025`. Before wariant 2 the goods line includes materials, which the statute excludes (pkt 30a, 32 lit. b).
+- **The two-year rules.** Before FY2024 a class needs both years within it; the continuation rules (ust. 1b, 1d) read the form filed and are not applied. From FY2024 a status is kept until two years beyond it, within one regime. The first year of activity, placed by the KRS registration, is tested on itself.
+- **No medium or large before FY2024.** The pre-2024 law defines neither, so those years take FY2024's bounds and say so (`size_class_basis = by_analogy`).
+
 ### 4.5 Legal tripwires
 
 From the Commercial Companies Code (KSH), computed as boolean features:
@@ -212,9 +219,9 @@ One row per auditor report the text stage read (plan 0013 decision 0c), dated by
 
 ### `entity_size_class_history`
 
-`krs`, `fiscal_year`, `size_class` (`micro` | `small` | `medium` | `large`), `balance_sheet_total`, `net_revenue`, `average_employment`, `threshold_config_version`, `known_from`.
+`krs`, `fiscal_year`, `size_class` (`micro` | `small` | `medium` | `large` | `undetermined`), `balance_sheet_total`, `net_revenue`, `average_employment`, `threshold_config_version`, `known_from`.
 
-Computed per §4.4. Never sourced from a registry.
+Computed per §4.4. Never sourced from a registry. As built (plan 0020): also `period_start`, `period_end`, `size_class_basis` (`statutory` \| `by_analogy`), `undetermined_reason` (`no_regime` \| `no_prior_side` \| `inputs_missing` \| `employment_decides` \| `revenue_bounds`), `regime`, `first_year`, `net_revenue_low` and `net_revenue_high` (`net_revenue` only when exact), `revenue_rule`, the prior year's inputs, `inputs_config_version`, and lineage (`document_ref`, `source_document_hash`, `source_member`, `ingestion_run_id`). One row per entity, fiscal year and date its result changed; a later correction is a new row. Built from statements graded `pass` or `warn`, contract `ENTITY_SIZE_CLASS_HISTORY`.
 
 ### `restatement_events`
 
@@ -433,7 +440,7 @@ Feature families as built (feature set v1, 44 features):
 
 Feature sets v2 and v3 (plan 0012) keep v1's 44 features unchanged and add five ratios the classical models read: retained earnings (prior years' result plus the year's) to assets, operating result to assets (standing in for EBIT), equity to liabilities, long-term capital (equity plus long-term liabilities) to assets, and the result on sales to revenue. v3 also counts the 2025 calculation-variant revenue line (`IS.CALC.A.R2025`, products and goods, no longer materials) as revenue; without it, revenue was null for those statements. The leakage test runs on every feature set.
 
-Deferred, each with its reason in plan 0010: auditor change and loss-coverage history (text, Phase 7); text signals (§G, Phase 7); macro and sector context (A5 has no adapter, and sector aggregates over the seed would leak its own outcomes); size class (§4.4 needs average employment, which no structured source carried before FY2025, `docs/data_inventory.md` gap 8). Since then, `feature_set_v4` (plan 0013) adds the disclosure family (the going-concern flags, and employment from FY2025's wariant 2) and the notes' text family (going-concern and loss-coverage signals); `feature_set_v5` adds the auditor reports' opinion, auditor change and emphasis of matter, and v6 the report's age; the size class still waits on employment before FY2025.
+Deferred, each with its reason in plan 0010: auditor change and loss-coverage history (text, Phase 7); text signals (§G, Phase 7); macro and sector context (A5 has no adapter, and sector aggregates over the seed would leak its own outcomes); size class (§4.4 needs average employment, which no structured source carried before FY2025, `docs/data_inventory.md` gap 8). Since then, `feature_set_v4` (plan 0013) adds the disclosure family (the going-concern flags, and employment from FY2025's wariant 2) and the notes' text family (going-concern and loss-coverage signals); `feature_set_v5` adds the auditor reports' opinion, auditor change and emphasis of matter, and v6 the report's age; the size class is built since plan 0020 (`entity_size_class_history`, exact where decidable) but is not a feature: using it, as a feature or as the segment's `size_classes` filter, is a decision of its own (plan 0020 decision 9).
 
 **H2** Leakage tests — see §9.1. `features/leakage.py` holds both checks: §9.1 as written, and the per-family variant, which recomputes each family from the sources cut to what was public on each `as_of_date` and requires identical output. `tests/features/test_leakage.py` runs them on a synthetic warehouse with traps and shows leaky families fail; the Dagster `feature_store` asset runs them on the live store as a blocking asset check.
 

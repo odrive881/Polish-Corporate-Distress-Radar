@@ -35,7 +35,6 @@ LIVING = [
 # `test_planned_paths_are_still_planned` asks for it to be taken off this list.
 PLANNED = {
     "config/mappings/pkd_crosswalk.yaml",  # A2 crosswalk, not yet written
-    "config/statutory/size_thresholds.yaml",  # deferred with size class (plan 0010 decision 4)
 }
 _PATH = re.compile(
     r"`((?:src|config|tests|docs|dagster_defs|transform|notebooks|evals|prompts|app|site|report)"

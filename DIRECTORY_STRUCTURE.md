@@ -68,6 +68,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │   ├── msig_notice_kinds.yaml     # rules typing a reduced MSiG notice (plan 0008 step F)
 │   │   ├── pkd_crosswalk.yaml         # PKD 2007 <-> PKD 2025
 │   │   ├── rdf_document_types.yaml    # observed RDF document types, A3 download scope
+│   │   ├── size_class_inputs_v1.yaml  # which filed lines bound each size-class criterion (plan 0020)
 │   │   ├── statement_introduction.yaml  # going-concern flags, employment, audit: where and how read (plan 0013)
 │   │   ├── structure_catalog.yaml     # versions recognised but not mapped yet
 │   │   ├── xsd_tolerances_v1.yaml     # XSD violations C1 tolerates outside what it reads (plan 0017 step E)
@@ -139,7 +140,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │   ├── outcome_labels_v1.yaml     # label parameters; the file name is the label_version
 │   │   └── outcome_labels_v2.yaml     # v1 + lag allowance, petition expiry (plan 0009)
 │   └── statutory/
-│       ├── size_thresholds.yaml       # accounting-law size class thresholds, dated
+│       ├── size_thresholds.yaml       # UoR size-class thresholds per regime, dated, each value cited (plan 0020)
 │       ├── ksh_tripwires.yaml         # Art. 233 / Art. 397 ratios, dated
 │       ├── filing_deadlines.yaml      # UoR approval + filing deadlines, COVID-era extensions, dated
 │       └── procedure_taxonomy.yaml    # source event → event type → §4.6 class, dated by statute
@@ -308,6 +309,7 @@ src/distress_radar/
 │   ├── statement_introduction.py  # the introduction's disclosures → statement_disclosures (plan 0013)
 │   ├── accounting_identities.py # E2 — identity rules and grading, pure functions
 │   ├── restatements.py          # restatement_events from the facts; a copy built from older facts is stale
+│   ├── size_class.py            # entity_size_class_history: the statutory size class, exact where decidable (plan 0020)
 │   ├── contracts.py             # E1 — Pandera schemas for C2 output
 │   ├── manifest.py              # parsed_documents (Postgres)
 │   └── pdf/
