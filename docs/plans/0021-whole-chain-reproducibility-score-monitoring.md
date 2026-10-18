@@ -19,7 +19,7 @@ be built in the meantime" (owner, 2026-10-18):
 
 **Order:** after plan 0020. It waits on nothing.
 
-## Status: active (2026-10-18): asked for by the owner; the decisions below are this plan's own, taken while writing it (flag any to change); steps A–E built; `make reproduce` run once: every output reproduced (§ "Progress"); open: the first `score_intervals` run, which needs a clean tree, so it comes after this plan's commit
+## Status: complete (2026-10-18): asked for by the owner; the decisions below are this plan's own, taken while writing it (flag any to change); steps A–E built; `make reproduce` run once: every output reproduced; `score_intervals` run on the stored scores: 484 intervals (§ "Progress")
 
 ## Decisions this plan makes (flag any you disagree with)
 
@@ -70,6 +70,8 @@ be built in the meantime" (owner, 2026-10-18):
   inside their intervals at each horizon. The intervals are wide: the median upper bound is 15 (12 months) to 18
   (24 months) times the lower one, which is what about 15 training events give. Median widths are 1.3 and 3.1
   percentage points around medians of 0.5% and 1.4%.
+- **`score_intervals`, first run (after commit `aca7315`, 2026-10-18):** 484 intervals, the 242 scored companies
+  at each horizon, all with bounds; mean width 2.5 percentage points (12 months) and 5.4 (24 months).
 - **Score shift:** materialized once: "no earlier month-end of this version" at both horizons, since 2026-09-30
   is the only scored month-end.
 - **Driver movement:** in the API (`driver_movement`, `previous_as_of_date` on every score) and the explorer's
