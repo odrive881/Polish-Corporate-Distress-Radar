@@ -69,7 +69,8 @@ re-run, record a new `backtest_v<n>` before running it. Record each round's coun
    set each night, so the legal sources no longer wait for the 88 companies' second search; their RDF side still
    does. The first night (2026-10-18) failed on the ministry's maintenance page and recorded nothing; the first
    night that gets through is the first count of the distress group's events. Re-run
-   `notebooks/exploration/pdf_tier_triggers.py` after it to settle plan 0006's trigger 2.
+   `notebooks/exploration/pdf_tier_triggers.py` after it to settle plan 0006's trigger 2, and
+   `notebooks/exploration/distress_events_outlook.py` for the events (§ "Events").
 7. ~~**How the champion rule reads list v2**~~ decided (owner, 2026-10-18): option (a), the rule runs unweighted on
    the lists and its verdict is the lists' (§ "Events" below).
 
@@ -112,7 +113,10 @@ companies count for nothing until the script searches them again.
 
 1. A nightly registry check that gets through (item 6). It gives the first count of B's events, by class and
    year, and the agreement between Rejestr.io's flag and the pipeline's labels, which ADR 0014's addendum asks
-   to be reported.
+   to be reported. `notebooks/exploration/distress_events_outlook.py` (2026-10-18) reports both, and estimates
+   the champion rule's count per horizon, run and test year, with the backtest's own folds over the latest
+   label set and the population applied anew; on 2026-10-18's stores it gives `backtest_v8`'s 10, 7, 9 and 7
+   exactly. It also gives each distressed entity's reason for not counting.
 2. The script's second search of B's 88 companies (item 5), then a delivery import.
 3. `backtest_v9`, written and committed before it runs (a new label set and population change the pins; README,
    step 7 of "A new delivery"). Its report's folds table shows per year whether the floor can be reached.
