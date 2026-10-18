@@ -109,7 +109,7 @@ Full glossary: `docs/glossary.md`.
 - Prompt or extraction-model changes must hold or improve precision/recall against `evals/text_signals/*.jsonl` in CI, or the build fails.
 - New top-level directories require an ADR in `docs/adr/` before creation.
 - Close out every plan with a doc sweep: `make docs-check` (in `make check`) covers missing paths, the tree and statuses; the rest — sections describing a design that has since changed, counts quoted differently in two places, "next" statements already done — is read by hand, against the plan's own results.
-- From 2026-10-18 Dagster runs unattended (`make orchestrate`; `registry_check_nightly` at 02:00 Warsaw time, then a chain of sensors, plan 0018). The scheduled `scoring` refuses a dirty working tree, so leave the tree clean when you stop work, and check the UI for a running job before starting one by hand: the instance runs one at a time.
+- From 2026-10-18 Dagster runs unattended (`make orchestrate`; `registry_check_nightly` at 02:00 Warsaw time, then a chain of sensors, plan 0018). A night that stops on a ministry maintenance page is retried by `registry_check_retry` once the sources answer (off until the owner turns it on). The scheduled `scoring` refuses a dirty working tree, so leave the tree clean when you stop work, and check the UI for a running job before starting one by hand: the instance runs one at a time.
 - Run `make hooks` once per clone: the pre-commit hook refuses staged personal data (browser recordings, signatures, filers' file names, PDF metadata).
 
 ---

@@ -475,7 +475,7 @@ Calibration matters more than discrimination for this product. A user acting on 
 
 **→ Pick: FastAPI + Pydantic v2.** Uncontroversial and correct: async, typed, and auto-generates the OpenAPI spec. Include data-version metadata in every response payload, so any consumer can tell exactly which snapshot produced a score.
 
-*As built (plan 0016):* a read-only API over Postgres, bound to 127.0.0.1 (it serves named scores, so it never leaves the machine); the served versions are loaded from the MLflow registry at startup, and every response carries their identifiers and the disclaimer.
+*As built (plan 0016):* a read-only API over Postgres, bound to 127.0.0.1 (it serves named scores, so it never leaves the machine); the served versions are loaded from the MLflow registry at startup, and every response carries their identifiers and the disclaimer. Plan 0021 adds to each score its 90% interval (`score_intervals`, entity-bootstrap refits of the served regression) and its drivers' movement since the same version's previous score, computed on read.
 
 #### J2 — Operational store and model loading
 
@@ -523,7 +523,7 @@ Load models in-process from the MLflow registry. No BentoML, Seldon, or KServe: 
 
 **→ Pick: `Evidently`.** Open source, Python-native, purpose-built for feature drift and classification-quality reporting, and its HTML reports embed cleanly into the Evidence site. It covers both halves of stage 11's monitoring requirement — input drift and realised-outcome calibration — in one tool.
 
-*As built (plan 0018):* Evidently draws the input-drift report only, with its telemetry off, and the report stays local (`WAREHOUSE_DIR/reports/drift/`): its charts draw per-row distributions that can single out a company, so it is not embedded in the Evidence site while the lists are purposive. Realised calibration reuses the backtest's evaluation (`models/evaluation.py`), so the monitor and the backtest score calibration the same way.
+*As built (plan 0018):* Evidently draws the input-drift report only, with its telemetry off, and the report stays local (`WAREHOUSE_DIR/reports/drift/`): its charts draw per-row distributions that can single out a company, so it is not embedded in the Evidence site while the lists are purposive. Realised calibration reuses the backtest's evaluation (`models/evaluation.py`), so the monitor and the backtest score calibration the same way. Plan 0021 adds a score-shift report beside them, in its own code rather than Evidently (PSI and KS over the latest month-end's scores against the previous one's), local for the same reason, and never a gate.
 
 #### L3 — Error tracking
 
