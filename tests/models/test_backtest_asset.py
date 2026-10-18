@@ -31,8 +31,9 @@ def test_nothing_schedules_the_backtest() -> None:
     assert all("backtest" not in (getattr(s, "job_name", None) or "") for s in sensors)
 
 
-def test_the_scoring_job_runs_the_scores_alone_and_offline() -> None:
-    """Plan 0016 step C: downstream of the store, the labels and the backtest's registry."""
+def test_the_scoring_job_runs_the_scores_and_their_intervals_offline() -> None:
+    """Plan 0016 step C: downstream of the store, the labels and the backtest's registry; plan 0021:
+    and the scores' intervals after them."""
     node = defs.resolve_asset_graph().get(dg.AssetKey("scores"))
     assert node.group_name == "models"
     assert {key.to_user_string() for key in node.parent_keys} == {
@@ -41,8 +42,14 @@ def test_the_scoring_job_runs_the_scores_alone_and_offline() -> None:
         "backtest_run",
     }
     job = defs.resolve_job_def("scoring")
-    assert {key.to_user_string() for key in job.asset_layer.selected_asset_keys} == {"scores"}
+    assert {key.to_user_string() for key in job.asset_layer.selected_asset_keys} == {
+        "scores",
+        "score_intervals",
+    }
     assert not set(node.assets_def.required_resource_keys) & NETWORK_RESOURCES
+    intervals = defs.resolve_asset_graph().get(dg.AssetKey("score_intervals"))
+    assert {key.to_user_string() for key in intervals.parent_keys} == {"scores"}
+    assert not set(intervals.assets_def.required_resource_keys) & NETWORK_RESOURCES
 
 
 def test_only_new_features_start_the_scoring() -> None:

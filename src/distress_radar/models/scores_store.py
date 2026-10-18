@@ -91,6 +91,30 @@ SCHEMA_DDL: tuple[LiteralString, ...] = (
         PRIMARY KEY (krs, as_of_date, horizon_months, model_version)
     )
     """,
+    # Plan 0021 decision 5: a 90% interval per scored row, apart from `scores_history`, so a score
+    # keeps its row untouched and can be given an interval later. Null bounds exactly when a reason
+    # says why there is none (a model kind with no method, training rows not rebuilt).
+    """
+    CREATE TABLE IF NOT EXISTS score_intervals (
+        krs                  char(10) NOT NULL,
+        as_of_date           date NOT NULL,
+        horizon_months       integer NOT NULL CHECK (horizon_months > 0),
+        model_version        text NOT NULL,
+        model_name           text NOT NULL,
+        probability_low      double precision CHECK (probability_low BETWEEN 0 AND 1),
+        probability_high     double precision CHECK (probability_high BETWEEN 0 AND 1),
+        not_computed_reason  text,
+        level                double precision NOT NULL CHECK (level > 0 AND level < 1),
+        method               text NOT NULL,
+        replicates           integer NOT NULL CHECK (replicates >= 0),
+        code_commit          char(40) NOT NULL,
+        computed_at          timestamptz NOT NULL,
+        PRIMARY KEY (krs, as_of_date, horizon_months, model_version),
+        CHECK ((probability_low IS NULL) = (not_computed_reason IS NOT NULL)),
+        CHECK ((probability_low IS NULL) = (probability_high IS NULL)),
+        CHECK (probability_low <= probability_high)
+    )
+    """,
     """
     CREATE TABLE IF NOT EXISTS watchlists (
         name      text NOT NULL CHECK (name <> ''),
@@ -181,3 +205,55 @@ def insert_exclusions(conn: Connection, rows: Sequence[dict[str, object]]) -> in
             )
             inserted += cursor.rowcount
     return inserted
+
+
+INTERVAL_COLUMNS: tuple[LiteralString, ...] = (
+    "krs",
+    "as_of_date",
+    "horizon_months",
+    "model_version",
+    "model_name",
+    "probability_low",
+    "probability_high",
+    "not_computed_reason",
+    "level",
+    "method",
+    "replicates",
+    "code_commit",
+    "computed_at",
+)
+
+
+def insert_intervals(conn: Connection, rows: Sequence[dict[str, object]]) -> int:
+    """Insert `score_intervals` rows; a row whose key is already there is left as it was.
+    Returns the rows inserted."""
+    if not rows:
+        return 0
+    columns = ", ".join(INTERVAL_COLUMNS)
+    values = ", ".join("%s" for _ in INTERVAL_COLUMNS)
+    inserted = 0
+    with conn.cursor() as cursor:
+        for row in rows:
+            cursor.execute(
+                f"INSERT INTO score_intervals ({columns}) VALUES ({values}) ON CONFLICT DO NOTHING",
+                tuple(row[c] for c in INTERVAL_COLUMNS),
+            )
+            inserted += cursor.rowcount
+    return inserted
+
+
+def scores_without_interval(
+    conn: Connection, horizon_months: int, model_name: str, model_version: str
+) -> list[tuple[str, object]]:
+    """(krs, as_of_date) of a version's scored rows that have no `score_intervals` row yet."""
+    rows = conn.execute(
+        """
+        SELECT s.krs, s.as_of_date FROM scores_history s
+        LEFT JOIN score_intervals i USING (krs, as_of_date, horizon_months, model_version)
+        WHERE s.horizon_months = %s AND s.model_name = %s AND s.model_version = %s
+          AND s.probability IS NOT NULL AND i.krs IS NULL
+        ORDER BY s.as_of_date, s.krs
+        """,
+        (horizon_months, model_name, model_version),
+    ).fetchall()
+    return [(str(krs).rstrip(), day) for krs, day in rows]

@@ -3,9 +3,11 @@ and exclusion, peers as distributions, documents fetched by hash."""
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import date
 from pathlib import Path
 
+import polars as pl
 import pytest
 from tests.explorer.sources import DAY, DOCUMENT, make_sources
 
@@ -132,3 +134,30 @@ def test_each_alert_type_is_described_from_its_detail() -> None:
         "no statement for the year ending 2025-12-31 (due 2026-07-15) at the RDF search of "
         "2026-10-08"
     )
+
+
+def test_a_score_shows_its_interval(sources: data.Sources) -> None:
+    status = data.current_status(sources, "0000000001").row(0, named=True)
+    assert (status["probability_low"], status["probability_high"]) == (0.01, 0.06)
+
+
+def test_drivers_move_only_against_the_same_versions_previous_score(sources: data.Sources) -> None:
+    """Plan 0021: no movement for a version's first score; against its previous one after."""
+    assert data.drivers_since_last(sources, "0000000001", 12, DAY, "4") is None
+    earlier = sources.scores.filter(
+        (pl.col("krs") == "0000000001") & (pl.col("horizon_months") == 12)
+    ).with_columns(
+        pl.lit(date(2026, 8, 31)).alias("as_of_date"),
+        pl.lit('[{"feature": "roa", "contribution": 0.1}]').alias("top_drivers"),
+    )
+    moved = replace(sources, scores=pl.concat([sources.scores, earlier]))
+    (row,) = data.drivers_since_last(moved, "0000000001", 12, DAY, "4") or []
+    assert row["feature"] == "roa" and row["previous_contribution"] == 0.1
+    assert abs(row["change"] - 0.3) < 1e-12
+    other = replace(
+        sources,
+        scores=pl.concat(
+            [sources.scores, earlier.with_columns(pl.lit("3").alias("model_version"))]
+        ),
+    )
+    assert data.drivers_since_last(other, "0000000001", 12, DAY, "4") is None

@@ -63,10 +63,21 @@ for row in status.iter_rows(named=True):
             f"{horizon}-month probability at {row['as_of_date']} (v{row['model_version']})",
             f"{100 * row['probability']:.2f}%",
         )
+        if row["probability_low"] is not None:
+            box.caption(
+                f"90% range {100 * row['probability_low']:.2f}%–{100 * row['probability_high']:.2f}%: "
+                "the model's estimation uncertainty only, on the lists it was trained on."
+            )
         if percentile is not None:
             box.caption(f"At or above {percentile:.0f}% of its PKD division's scored companies.")
+        moved = data.drivers_since_last(
+            sources, krs, horizon, row["as_of_date"], row["model_version"]
+        )
         drivers = json.loads(row["top_drivers"]) if row["top_drivers"] else []
-        if drivers:
+        if moved:
+            box.caption("Drivers, and how each moved since this version's previous score:")
+            box.dataframe(pl.DataFrame(moved), hide_index=True)
+        elif drivers:
             box.dataframe(pl.DataFrame(drivers), hide_index=True)
     else:
         box.markdown(f"**{horizon} months, {row['as_of_date']}: not scored ({row['reason']})**")

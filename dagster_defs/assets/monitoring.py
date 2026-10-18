@@ -9,12 +9,14 @@ from typing import TYPE_CHECKING, cast
 from zoneinfo import ZoneInfo
 
 import dagster as dg
+import numpy as np
 import polars as pl
 
 from dagster_defs.assets.features import feature_store
 from dagster_defs.assets.labels import outcome_labels
 from dagster_defs.assets.models import scores
 from distress_radar.acquisition.document_retrieval import load_document_types
+from distress_radar.alerts.rules import load_alert_rules
 from distress_radar.models.dataset import load_feature_store, load_label_set
 from distress_radar.models.population import read_population
 from distress_radar.models.scoring import latest_label_set
@@ -27,6 +29,7 @@ from distress_radar.monitoring.drift import (
     write_drift,
 )
 from distress_radar.monitoring.realised import realised, write_realised
+from distress_radar.monitoring.score_shift import score_shift, write_shift
 from distress_radar.settings import Settings
 
 if TYPE_CHECKING:
@@ -209,4 +212,72 @@ def realised_calibration(
     )
 
 
-monitoring_assets = [drift, realised_calibration]
+@dg.asset(group_name="monitoring", deps=[scores], required_resource_keys={"postgres"})
+def score_shift_report(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
+    """L — the served model's scores at the latest month-end against the previous one's (plan 0021
+    decision 4).
+
+    Inputs: per horizon of `config/models/<BACKTEST_VERSION>.yaml`, the served version (MLflow);
+    Postgres `scores_history`, that version's probabilities at its latest scored month-end and at
+    the one before; the alert thresholds of `config/alerts/alert_rules_v2.yaml`.
+    Outputs: `WAREHOUSE_DIR/reports/score_shift/<as_of>_<h>m.json` (rows, mean, quartiles, the
+    share above each threshold, PSI, KS), or "not evaluable" and why. Local only: it describes
+    named companies' scores. Read, never a gate.
+    Partition scheme: none (unpartitioned); one report per horizon and scored month-end.
+    """
+    settings = Settings()
+    horizons = load_backtest_config(settings.backtest_version).horizons
+    thresholds = [level.probability for level in load_alert_rules().threshold_crossed.levels]
+    postgres = cast("PostgresResource", context.resources.postgres)
+    metadata: dict[str, object] = {}
+    with postgres.connect() as conn:
+        for horizon in horizons:
+            served, _ = load_served(settings.mlflow_tracking_uri, horizon)
+            days = [
+                d
+                for (d,) in conn.execute(
+                    """
+                    SELECT DISTINCT as_of_date FROM scores_history
+                    WHERE horizon_months = %s AND model_name = %s AND model_version = %s
+                      AND probability IS NOT NULL
+                    ORDER BY as_of_date DESC LIMIT 2
+                    """,
+                    (horizon, served.name, served.version),
+                ).fetchall()
+            ]
+            if not days:
+                context.log.warning(f"{served.name} v{served.version} has scored nothing yet")
+                continue
+
+            rows = conn.execute(
+                """
+                SELECT as_of_date, probability FROM scores_history
+                WHERE horizon_months = %s AND model_name = %s AND model_version = %s
+                  AND as_of_date = ANY(%s) AND probability IS NOT NULL
+                """,
+                (horizon, served.name, served.version, days),
+            ).fetchall()
+            by_day = {
+                d: np.array([float(p) for day, p in rows if day == d], dtype=np.float64)
+                for d in days
+            }
+            result = score_shift(
+                by_day[days[0]],
+                by_day[days[1]] if len(days) > 1 else None,
+                as_of_date=days[0],
+                previous_as_of_date=days[1] if len(days) > 1 else None,
+                horizon_months=horizon,
+                model=f"{served.name} v{served.version}",
+                thresholds=thresholds,
+            )
+            path = write_shift(result, settings.warehouse_dir)
+            context.log.info(
+                f"{horizon}m: {result.note}"
+                + (f", PSI {result.stats['psi']:.3f}" if result.evaluable else "")
+            )
+            metadata[f"{horizon}m"] = str(path)
+            metadata[f"{horizon}m_evaluable"] = result.evaluable
+    return dg.MaterializeResult(metadata=metadata)
+
+
+monitoring_assets = [drift, realised_calibration, score_shift_report]

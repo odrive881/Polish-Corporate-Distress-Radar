@@ -25,8 +25,47 @@ _SCORE_COLUMNS: LiteralString = """
     krs, as_of_date, horizon_months, probability, not_scored_reason, missing_inputs, top_drivers,
     model_name, model_version, model_alias, mlflow_run_id, training_eve, code_commit,
     data_snapshot_hash, label_version, label_set_hash, feature_set_version, feature_set_hash,
-    population_hash, scored_at
+    population_hash, scored_at, probability_low, probability_high, interval_level, interval_note,
+    previous_as_of_date, previous_drivers
 """
+# Plan 0021: each score with its interval (`score_intervals`) and the previous score's drivers of
+# the same entity, horizon and model version (for the movement, computed in the route). Read as a
+# subquery named `scores_history`, so every query below reads it as before.
+_SCORES_WITH_INTERVALS: LiteralString = """(
+    SELECT s.*, i.probability_low, i.probability_high, i.level AS interval_level,
+           i.not_computed_reason AS interval_note,
+           p.as_of_date AS previous_as_of_date, p.top_drivers AS previous_drivers
+    FROM scores_history s
+    LEFT JOIN score_intervals i USING (krs, as_of_date, horizon_months, model_version)
+    LEFT JOIN LATERAL (
+        SELECT q.as_of_date, q.top_drivers FROM scores_history q
+        WHERE q.krs = s.krs AND q.horizon_months = s.horizon_months
+          AND q.model_name = s.model_name AND q.model_version = s.model_version
+          AND q.as_of_date < s.as_of_date
+        ORDER BY q.as_of_date DESC LIMIT 1
+    ) p ON true
+) AS scores_history"""
+# Before the scoring job first creates `score_intervals`: the same columns, empty.
+_SCORES_WITHOUT_INTERVALS: LiteralString = """(
+    SELECT s.*, NULL::double precision AS probability_low, NULL::double precision AS probability_high,
+           NULL::double precision AS interval_level, NULL::text AS interval_note,
+           p.as_of_date AS previous_as_of_date, p.top_drivers AS previous_drivers
+    FROM scores_history s
+    LEFT JOIN LATERAL (
+        SELECT q.as_of_date, q.top_drivers FROM scores_history q
+        WHERE q.krs = s.krs AND q.horizon_months = s.horizon_months
+          AND q.model_name = s.model_name AND q.model_version = s.model_version
+          AND q.as_of_date < s.as_of_date
+        ORDER BY q.as_of_date DESC LIMIT 1
+    ) p ON true
+) AS scores_history"""
+
+
+def _scores(conn: Connection) -> LiteralString:
+    row = conn.execute("SELECT to_regclass('score_intervals') IS NOT NULL").fetchone()
+    return _SCORES_WITH_INTERVALS if row is not None and row[0] else _SCORES_WITHOUT_INTERVALS
+
+
 _EXCLUSION_COLUMNS: LiteralString = """
     krs, as_of_date, horizon_months, model_name, model_version, reason, population_hash,
     risk_label_set_hash, code_commit, data_snapshot_hash, scored_at
@@ -78,7 +117,7 @@ def latest_scores(
     return _rows(
         conn,
         f"""
-        SELECT DISTINCT ON (krs, horizon_months) {_SCORE_COLUMNS} FROM scores_history
+        SELECT DISTINCT ON (krs, horizon_months) {_SCORE_COLUMNS} FROM {_scores(conn)}
         WHERE krs = ANY(%s) AND model_name || ':' || model_version = ANY(%s)
         ORDER BY krs, horizon_months, as_of_date DESC
         """,
@@ -108,7 +147,7 @@ def score_history(
     return _rows(
         conn,
         f"""
-        SELECT {_SCORE_COLUMNS} FROM scores_history
+        SELECT {_SCORE_COLUMNS} FROM {_scores(conn)}
         WHERE krs = %s AND model_name || ':' || model_version = ANY(%s)
         ORDER BY as_of_date, horizon_months
         """,
@@ -135,7 +174,7 @@ def scores_at(
     return _rows(
         conn,
         f"""
-        SELECT {_SCORE_COLUMNS} FROM scores_history
+        SELECT {_SCORE_COLUMNS} FROM {_scores(conn)}
         WHERE as_of_date = %s AND model_name || ':' || model_version = ANY(%s)
           AND (%s::integer IS NULL OR horizon_months = %s::integer)
         ORDER BY krs, horizon_months

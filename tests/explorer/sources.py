@@ -38,7 +38,17 @@ def _scores() -> pl.DataFrame:
         ("0000000002", DAY, 24, None, "inputs incomplete", ["working_capital_to_assets"], None),
     ]
     return pl.DataFrame(
-        [(*r, f"distress_radar_{r[2]}m", "4", NOW) for r in rows],
+        # 0000000001's 12-month score has an interval (plan 0021); the others have none yet.
+        [
+            (
+                *r,
+                f"distress_radar_{r[2]}m",
+                "4",
+                NOW,
+                *((0.01, 0.06) if r[:3] == ("0000000001", DAY, 12) else (None, None)),
+            )
+            for r in rows
+        ],
         schema=list(data.SCORE_SCHEMA),
         orient="row",
     ).cast(data.SCORE_SCHEMA)  # type: ignore[arg-type]

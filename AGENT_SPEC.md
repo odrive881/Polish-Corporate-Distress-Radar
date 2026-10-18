@@ -269,6 +269,8 @@ Rules:
 
 Lives in Postgres, not Parquet — it is read by the API.
 
+As built (plan 0021): beside it, Postgres `score_intervals`, keyed like it (`krs`, `as_of_date`, `horizon_months`, `model_version`), with `probability_low` and `probability_high` (a 90% interval from 200 entity-bootstrap refits of the served regression: estimation uncertainty only, on the lists it was trained on), or `not_computed_reason`, plus `level`, `method`, `replicates`, `code_commit`, `computed_at`. How the drivers moved since the previous score of the same version is computed when a score is read (`models/drivers.py`), not stored.
+
 ### `alerts`
 
 `alert_id`, `krs`, `as_of_date`, `alert_type` (`threshold_crossed` | `score_jump` | `tripwire_triggered` | `going_concern_flagged` | `filing_overdue`), `severity`, `triggering_score_id`, `created_at`, `acknowledged_at`.

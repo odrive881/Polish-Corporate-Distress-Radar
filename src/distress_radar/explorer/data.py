@@ -38,6 +38,7 @@ from distress_radar.alerts import store as alerts_store
 from distress_radar.api.db import alerts as read_alerts
 from distress_radar.api.db import replace_watchlist
 from distress_radar.models.backtest import PREDICTIONS
+from distress_radar.models.drivers import driver_movement
 from distress_radar.models.serving import ServedVersion, resolve
 from distress_radar.models.splits import load_backtest_config
 from distress_radar.settings import Settings
@@ -68,6 +69,9 @@ SCORE_SCHEMA: Schema = {
     "model_name": pl.String,
     "model_version": pl.String,
     "scored_at": pl.Datetime("us", "UTC"),
+    # Plan 0021: the score's 90% interval (estimation uncertainty only), null without one.
+    "probability_low": pl.Float64,
+    "probability_high": pl.Float64,
 }
 EXCLUSION_SCHEMA: Schema = {
     "krs": pl.String,
@@ -175,11 +179,23 @@ def load_sources(settings: Settings | None = None) -> Sources:
             (),
             ENTITY_SCHEMA,
         )
+        has_intervals = conn.execute("SELECT to_regclass('score_intervals') IS NOT NULL").fetchone()
         scores = _frame(
             conn,
             """
+            SELECT s.krs, s.as_of_date, s.horizon_months, s.probability, s.not_scored_reason,
+                   s.missing_inputs, s.top_drivers::text, s.model_name, s.model_version,
+                   s.scored_at, i.probability_low, i.probability_high
+            FROM scores_history s
+            LEFT JOIN score_intervals i USING (krs, as_of_date, horizon_months, model_version)
+            WHERE s.model_name || ':' || s.model_version = ANY(%s)
+            """
+            if has_intervals and has_intervals[0]
+            else """
             SELECT krs, as_of_date, horizon_months, probability, not_scored_reason,
-                   missing_inputs, top_drivers::text, model_name, model_version, scored_at
+                   missing_inputs, top_drivers::text, model_name, model_version, scored_at,
+                   NULL::double precision AS probability_low,
+                   NULL::double precision AS probability_high
             FROM scores_history WHERE model_name || ':' || model_version = ANY(%s)
             """,
             (pairs,),
@@ -264,6 +280,8 @@ def current_status(sources: Sources, krs: str) -> pl.DataFrame:
         "missing_inputs",
         "top_drivers",
         "model_version",
+        "probability_low",
+        "probability_high",
     )
     excluded = sources.exclusions.filter(pl.col("krs") == krs).select(
         "horizon_months",
@@ -282,6 +300,24 @@ def current_status(sources: Sources, krs: str) -> pl.DataFrame:
         .last()
         .drop("_excluded")
     )
+
+
+def drivers_since_last(
+    sources: Sources, krs: str, horizon_months: int, as_of_date: date, model_version: str
+) -> list[dict[str, Any]] | None:
+    """Plan 0021: how a score's drivers moved since the previous score of the same entity, horizon
+    and model version; None for the first score of a version."""
+    series = sources.scores.filter(
+        (pl.col("krs") == krs)
+        & (pl.col("horizon_months") == horizon_months)
+        & (pl.col("model_version") == model_version)
+        & (pl.col("as_of_date") <= as_of_date)
+        & pl.col("probability").is_not_null()
+    ).sort("as_of_date")
+    if series.height < 2:
+        return None
+    previous, current = series.tail(2).get_column("top_drivers").to_list()
+    return driver_movement(current, previous)
 
 
 def score_history(sources: Sources, krs: str) -> pl.DataFrame:

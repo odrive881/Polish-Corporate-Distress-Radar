@@ -5,6 +5,7 @@ A thin wrapper: the run is `distress_radar.models.backtest`, the report
 its own `backtest` job, by hand, never on a schedule: a backtest is a decision, not a refresh.
 """
 
+import json
 from datetime import UTC, datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -12,6 +13,7 @@ from typing import TYPE_CHECKING, cast
 
 import dagster as dg
 import polars as pl
+from mlflow import MlflowClient
 
 from dagster_defs.assets.features import feature_store
 from dagster_defs.assets.labels import outcome_labels
@@ -22,6 +24,12 @@ from distress_radar.models.backtest import POOLED, run_backtest, write_predictio
 from distress_radar.models.baselines import load_classical_model
 from distress_radar.models.dataset import load_feature_store, load_label_set
 from distress_radar.models.explain import write_explanations
+from distress_radar.models.intervals import (
+    LEVEL,
+    METHOD,
+    bootstrap_intervals,
+    not_computed,
+)
 from distress_radar.models.population import Population, read_lists, read_population
 from distress_radar.models.registry import (
     code_commit,
@@ -41,8 +49,9 @@ from distress_radar.models.scoring import (
     latest_month_end,
     score_month_end,
 )
-from distress_radar.models.serving import load_served
+from distress_radar.models.serving import load_served, model_files, resolve
 from distress_radar.models.splits import label_timing, load_backtest_config
+from distress_radar.monitoring.drift import reference_frame
 from distress_radar.settings import Settings
 
 if TYPE_CHECKING:
@@ -256,4 +265,104 @@ def scores(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
     )
 
 
-models_assets = [backtest, scores]
+@dg.asset(group_name="models", deps=[scores], required_resource_keys={"postgres"})
+def score_intervals(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
+    """J — a 90% interval for every served score that has none yet (plan 0021 decision 5).
+
+    Inputs: per horizon of `config/models/<BACKTEST_VERSION>.yaml`, the served version (MLflow) and
+    its `model.json`; the backtest it was registered by (its `backtest` tag), whose label set, test
+    year and population rule rebuild its fold's training rows from the stored `feature_store`, as
+    the drift report does; Postgres `scores_history` rows of that version with a probability and no
+    `score_intervals` row; the code commit of a clean working tree, refused otherwise.
+    Outputs: Postgres `score_intervals`, one row per such score: the 5th and 95th percentiles of
+    200 entity-bootstrap refits of the regression (estimation uncertainty only), or no bounds and
+    the reason (a model kind with no method; a refit that does not reproduce the served
+    coefficients). Inserted with `ON CONFLICT DO NOTHING`, so a rerun adds nothing, and earlier
+    scores are given intervals on the first run after this asset existed. Local only.
+    Partition scheme: none (unpartitioned).
+    """
+    settings = Settings()
+    commit = code_commit(REPO_ROOT)  # before any work: a dirty tree is refused up front
+    computed_at = datetime.now(UTC)
+    client = MlflowClient(tracking_uri=settings.mlflow_tracking_uri)
+    postgres = cast("PostgresResource", context.resources.postgres)
+    lines: list[str] = []
+    total = 0
+    with postgres.connect() as conn:
+        scores_store.ensure_schema(conn)
+        for horizon in load_backtest_config(settings.backtest_version).horizons:
+            served = resolve(client, horizon)
+            body = json.loads(model_files(client, served)["model.json"])
+            pending = scores_store.scores_without_interval(
+                conn, horizon, served.name, served.version
+            )
+            if not pending:
+                lines.append(f"- {horizon}m: {served.name} v{served.version}: nothing new")
+                continue
+            config = load_backtest_config(served.tags["backtest"])
+            features = load_feature_store(
+                settings.warehouse_dir, served.tags["feature_set_version"]
+            )
+            keys = pl.DataFrame(
+                pending, schema={"krs": pl.String, "as_of_date": pl.Date}, orient="row"
+            )
+            rows = features.join(keys, on=["krs", "as_of_date"], how="inner").sort(
+                "as_of_date", "krs"
+            )
+            if body.get("kind") != "rank_logistic":
+                run = not_computed(rows)
+            else:
+                labels = load_label_set(settings.warehouse_dir, served.tags["label_set_hash"])
+                entities = None
+                if config.population is not None:
+                    entities = read_population(
+                        conn,
+                        labels.get_column("krs").unique().to_list(),
+                        config.population,
+                        load_document_types().download_codes,
+                    ).included
+                train = reference_frame(
+                    features,
+                    labels,
+                    horizon_months=horizon,
+                    test_year=served.test_year,
+                    distress_classes=config.distress_classes,
+                    entities=entities,
+                    timing=label_timing(labels),
+                )
+                run = bootstrap_intervals(
+                    train,
+                    rows,
+                    config.logistic_regression,
+                    (list(body["coefficients"]), float(body["intercept"])),
+                )
+            inserted = scores_store.insert_intervals(
+                conn,
+                [
+                    {
+                        **r,
+                        "horizon_months": horizon,
+                        "model_version": served.version,
+                        "model_name": served.name,
+                        "level": LEVEL,
+                        "method": METHOD,
+                        "replicates": run.replicates_fitted,
+                        "code_commit": commit,
+                        "computed_at": computed_at,
+                    }
+                    for r in run.rows.iter_rows(named=True)
+                ],
+            )
+            total += inserted
+            lines.append(
+                f"- {horizon}m: {served.name} v{served.version}: {inserted} intervals, "
+                f"{run.replicates_fitted} draws" + (f"; none: {run.reason}" if run.reason else "")
+            )
+        conn.commit()
+    context.log.info(f"{total} score intervals inserted")
+    return dg.MaterializeResult(
+        metadata={"inserted": total, "horizons": dg.MetadataValue.md("\n".join(lines))}
+    )
+
+
+models_assets = [backtest, scores, score_intervals]

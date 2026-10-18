@@ -3,7 +3,7 @@ export UV_LINK_MODE := copy
 
 .PHONY: install lock lint typecheck test test-integration check dev-up dev-down api app site report \
 	transform-setup transform-plan transform-run transform-test docs-check hooks models \
-	label-queue label-clear label-export eval eval-accept orchestrate
+	label-queue label-clear label-export eval eval-accept orchestrate reproduce
 
 install:    ## create/sync .venv exactly from uv.lock (fails if lock is stale)
 	$(UV) sync --locked --extra dev
@@ -109,6 +109,9 @@ orchestrate:  ## Dagster UI and daemon on 127.0.0.1:3000, history kept in DAGSTE
 	mkdir -p "$(DAGSTER_HOME)"
 	cp dagster_defs/dagster.yaml "$(DAGSTER_HOME)/dagster.yaml"
 	DAGSTER_HOME="$(DAGSTER_HOME)" $(UV) run --locked dagster dev -m dagster_defs.definitions -h 127.0.0.1 -p 3000
+
+reproduce:  ## the offline chain run twice from the same inputs, outputs compared (needs `make dev-up`; plan 0021)
+	DAGSTER_HOME="$(DAGSTER_HOME)" $(UV) run --locked python -m dagster_defs.reproduce
 
 app:        ## run the local Streamlit explorer (needs `make dev-up` and a scoring run)
 	$(UV) run --locked streamlit run app/Home.py --server.address 127.0.0.1 --server.headless true \

@@ -151,6 +151,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │       ├── settings.py                # typed runtime settings (.env)
 │       ├── errors.py                  # L: Sentry, off without SENTRY_DSN; events scrubbed to a whitelist (plan 0018 step H)
 │       ├── warehouse.py               # Parquet datasets under WAREHOUSE_DIR (ADR 0008)
+│       ├── reproducibility.py         # layout-independent dataset digests, compared by `make reproduce` (plan 0021)
 │       ├── labels.py                  # label config, label sources, the label-set freeze (plan 0008)
 │       ├── transform_project.py       # runs/audits the SQLMesh project from Python (ADR 0010)
 │       ├── methodology.py             # K: the methodology report's figures, from the publish database (plan 0016 step G)
@@ -185,9 +186,9 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │   ├── dq.py                      # E3/F: SQLMesh DQ models, audits as asset checks
 │   │   ├── extraction.py              # plan 0013: notes and auditor reports → text_signals, text_coverage; its own job
 │   │   ├── features.py
-│   │   ├── models.py                  # plan 0012: the backtest asset, its own job, run by hand
+│   │   ├── models.py                  # plan 0012: the backtest asset, its own job, run by hand; scores and score_intervals (plan 0021)
 │   │   ├── alerts.py                  # plan 0018 step D: the alerts asset; the alerting job follows features and scoring
-│   │   ├── monitoring.py              # plan 0018 steps F and G: drift and realised calibration; the monitoring job follows scoring
+│   │   ├── monitoring.py              # plan 0018 steps F and G: drift and realised calibration; plan 0021: score shift; the monitoring job follows scoring
 │   │   └── publish.py                 # plan 0016 step F: the public site's database, its own job, run by hand
 │   ├── checks/                        # asset checks — accounting identities, leakage guard
 │   ├── partitions.py
@@ -195,6 +196,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   ├── schedules.py                   # plan 0018 step C: the nightly registry check, the RDF re-search queue; all ship stopped
 │   ├── sensors.py                     # plan 0018 step C: registry check or import → features → scoring; the retry after a maintenance page; all ship stopped
 │   ├── definitions.py                 # Dagster Definitions entry point
+│   ├── reproduce.py                   # plan 0021: `make reproduce`, the offline chain run twice into scratch copies, compared
 │   └── dagster.yaml                   # plan 0018 step B: the instance's settings, copied into DAGSTER_HOME by `make orchestrate`
 │
 ├── notebooks/                         # marimo, .py format only
@@ -362,7 +364,9 @@ src/distress_radar/
 │   ├── registry.py                # MLflow runs with the four identifiers; registered versions per horizon
 │   ├── serving.py                 # the served version (champion, else incumbent), a scorer per kind, top_drivers
 │   ├── scoring.py                 # the latest month-end: who is scored, why the rest are not, each row's metadata
-│   └── scores_store.py            # Postgres scores_history, scoring_exclusions and watchlists
+│   ├── drivers.py                 # how a score's drivers moved since the version's previous score (plan 0021)
+│   ├── intervals.py               # 90% score intervals: entity-bootstrap refits of the served regression (plan 0021)
+│   └── scores_store.py            # Postgres scores_history, scoring_exclusions, score_intervals and watchlists
 │
 ├── alerts/                        # L: what changed, for whom (plan 0018 step D); local only
 │   ├── rules.py                   # the five rules over point-in-time scores, features and searches; deterministic ids
@@ -370,6 +374,7 @@ src/distress_radar/
 │
 ├── monitoring/                    # L: the served model's drift and calibration (plan 0018 steps F and G); local only
 │   ├── drift.py                   # Evidently, telemetry off; reference = the served fold's training rows; ids normalised
+│   ├── score_shift.py             # the latest month-end's scores against the previous one's: PSI, KS, quartiles (plan 0021)
 │   └── realised.py                # stored scores against outcomes, once each cohort is settled; Brier, reliability
 │
 └── api/                           # J: read-only scores API, 127.0.0.1 only (plan 0016 step D)

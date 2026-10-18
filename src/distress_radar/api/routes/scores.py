@@ -31,7 +31,7 @@ def scores(
     rows = db.scores_at(conn, served, day, horizon_months)
     if not rows:
         raise HTTPException(404, f"no scores from the served versions at {day}")
-    return envelope(served, [ScoreOut(**r) for r in rows])
+    return envelope(served, [ScoreOut.from_row(r) for r in rows])
 
 
 @router.get("/meta")

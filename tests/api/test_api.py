@@ -349,3 +349,48 @@ def test_an_older_versions_scores_beside_the_served_ones_are_allowed_and_never_s
 def test_an_empty_database_starts_and_says_there_are_no_scores(schema: str) -> None:
     with TestClient(main.create_app(SERVED, lambda: _connect(schema))) as empty:
         assert empty.get("/scores").status_code == 404
+
+
+@pytest.mark.integration
+def test_a_score_carries_its_interval_and_how_its_drivers_moved(client: TestClient) -> None:
+    """Plan 0021: the interval from `score_intervals`, and the movement against the previous
+    score of the same version; the first score of a series has neither previous nor movement."""
+    with _connect(client.app.state.schema) as conn:  # type: ignore[attr-defined]
+        scores_store.insert_intervals(
+            conn,
+            [
+                {
+                    "krs": "0000000001",
+                    "as_of_date": DAY,
+                    "horizon_months": 12,
+                    "model_version": "4",
+                    "model_name": "distress_radar_12m",
+                    "probability_low": 0.01,
+                    "probability_high": 0.12,
+                    "not_computed_reason": None,
+                    "level": 0.9,
+                    "method": "entity_bootstrap_refit",
+                    "replicates": 200,
+                    "code_commit": "a" * 40,
+                    "computed_at": NOW,
+                }
+            ],
+        )
+        conn.commit()
+    data = _envelope(client.get("/companies/0000000001"))
+    twelve, twenty_four = data["scores"]
+    assert (twelve["probability_low"], twelve["probability_high"]) == (0.01, 0.12)
+    assert twelve["interval_level"] == 0.9 and twelve["interval_note"] is None
+    assert twelve["previous_as_of_date"] == EARLIER.isoformat()
+    assert twelve["driver_movement"] == [
+        {
+            "feature": "roa",
+            "contribution": 0.4,
+            "previous_contribution": 0.4,
+            "change": 0.0,
+            "value": None,
+            "previous_value": None,
+        }
+    ]
+    assert twenty_four["probability_low"] is None and twenty_four["driver_movement"] is None
+    assert twenty_four["previous_as_of_date"] is None

@@ -54,9 +54,10 @@ backtest = dg.define_asset_job(
 # (scheduling is Phase 10). It reads the registry and the stored datasets; it rebuilds neither.
 scoring = dg.define_asset_job(
     "scoring",
-    selection=dg.AssetSelection.assets("scores"),
+    selection=dg.AssetSelection.assets("scores", "score_intervals"),
     hooks=HOOKS,
-    description="The served model's scores at the latest month-end → Postgres scores_history.",
+    description="The served model's scores at the latest month-end → Postgres scores_history, "
+    "and their intervals → score_intervals (plan 0021).",
 )
 
 # Plan 0016 step F: the public site's database, by hand, from a clean tree. It reads the DQ marts,
@@ -102,7 +103,8 @@ monitoring = dg.define_asset_job(
     "monitoring",
     selection=dg.AssetSelection.groups("monitoring"),
     hooks=HOOKS,
-    description="Input drift and realised calibration → reports/drift/, reports/calibration/.",
+    description="Input drift, realised calibration and score shift → reports/drift/, "
+    "reports/calibration/, reports/score_shift/.",
 )
 
 jobs = [

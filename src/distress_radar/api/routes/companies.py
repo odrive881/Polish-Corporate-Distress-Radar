@@ -30,7 +30,7 @@ def latest_by_horizon(
             kept_scores.pop(row["horizon_months"], None)
             kept_exclusions[row["horizon_months"]] = row
     return (
-        [ScoreOut(**kept_scores[h]) for h in sorted(kept_scores)],
+        [ScoreOut.from_row(kept_scores[h]) for h in sorted(kept_scores)],
         [ExclusionOut(**kept_exclusions[h]) for h in sorted(kept_exclusions)],
     )
 
@@ -55,4 +55,4 @@ def company_scores(
     conn: Annotated[Connection, Depends(connection)],
     served: Annotated[Served, Depends(served_versions)],
 ) -> Envelope[list[ScoreOut]]:
-    return envelope(served, [ScoreOut(**r) for r in db.score_history(conn, served, krs)])
+    return envelope(served, [ScoreOut.from_row(r) for r in db.score_history(conn, served, krs)])
