@@ -19,7 +19,7 @@ monitoring), the `alerts` table (§5), and the scoring half of stage I (§6I as 
 **Order:** after plan 0016 (active only on rendering the report, which waits on the Quarto CLI). It does not wait
 for list v2 or a champion: what it schedules and alerts on is what the registry already serves.
 
-## Status: active (2026-10-17): owner decisions 0–9 accepted as recommended; step A checked (Evidently and `sentry-sdk` both usable, no ADR needed); steps B–H built (`make orchestrate`; the schedules, sensors and RDF queue, all stopped until the owner turns them on; the `alerts` table and its rules; alerts in the explorer and the API; the drift report; realised calibration; Sentry, off until the owner sets `SENTRY_DSN`); step I's sweep checked; `alert_rules_v2` (one-cycle look-back, owner, 2026-10-17). The owner set `DAGSTER_HOME` and turned every schedule and sensor on (2026-10-17, 21:40); the first unattended `registry_check_nightly` (2026-10-18 02:00) fired and failed: both ministry sources served a maintenance page all night (§ "First night"); maintenance pages now stop a run at once; open: a night that gets through, and the chain's counts, recorded here
+## Status: active (2026-10-17): owner decisions 0–9 accepted as recommended; step A checked (Evidently and `sentry-sdk` both usable, no ADR needed); steps B–H built (`make orchestrate`; the schedules, sensors and RDF queue, all stopped until the owner turns them on; the `alerts` table and its rules; alerts in the explorer and the API; the drift report; realised calibration; Sentry, off until the owner sets `SENTRY_DSN`); step I's sweep checked; `alert_rules_v2` (one-cycle look-back, owner, 2026-10-17). The owner set `DAGSTER_HOME` and turned every schedule and sensor on (2026-10-17, 21:40); the first unattended `registry_check_nightly` (2026-10-18 02:00) fired and failed: both ministry sources served a maintenance page all night (§ "First night"); maintenance pages now stop a run at once, and `registry_check_retry` re-runs such a night once both sources answer (owner, 2026-10-18; shipped stopped); open: a night that gets through, and the chain's counts, recorded here
 
 ## Why
 
@@ -379,6 +379,18 @@ the same morning. Tests: `tests/acquisition/test_base.py` (the page, not retried
 HTML are not it; both policies carry the check) and `tests/acquisition/test_legal_unavailable.py` (both assets stop
 at the first page, after any earlier entity's own error).
 
+**Retry (owner, 2026-10-18).** The maintenance page was still up at 14:30, so a night that stops on one would
+otherwise wait a whole day. The sensor `registry_check_retry` (`dagster_defs/sensors.py`), hourly, re-runs
+`legal_to_labels` when its latest run failed with "is unavailable" (never for another failure, which needs a
+person), once both sources answer a probe (`acquisition/availability.py`). It retries at most 3 times after one
+night (tags `distress_radar/retry_of`, `retry_number`), never between 22:00 and 02:00 Warsaw time, so it cannot
+meet the night's own run, and once per failed run (its run key). The probe asks the KRS API for the extract of
+KRS 0000000000, a number no company has, and MSiG for that number's notice count, so its answers name no one. It
+sends one request per source, through no cache, and keeps nothing it receives. A retried run that succeeds
+starts the chain like the night's own. Like every sensor it ships stopped. Tests:
+`tests/test_registry_retry.py` (a real failed run in an ephemeral instance; the probe on a maintenance page, a
+404 and a 503). Last night's run is not retried by it: it failed before the fix, on "failed for 806 entities".
+
 ## Tests
 
 - **Point in time:** every alert's facts have `known_from <= as_of_date`, and an alert computed at an earlier
@@ -410,9 +422,9 @@ at the first page, after any earlier entity's own error).
   will often stop there: the sensor reports the refusal and does not retry.
 - **Alert fatigue on a distress-weighted list.** List v1 was chosen partly by distress status, so many entities sit
   above any threshold from their first score. Decision 4's "no alert on a first score" keeps the first run quiet.
-- **The KRS API or MSiG changes without notice** (ADR 0011). Each request retries a transient error (tenacity);
-  the run itself is not retried, so a night that fails waits for the next night or a run by hand. (Corrected
-  2026-10-18: this line said a failed night retries once; nothing retries a run.)
+- **The KRS API or MSiG changes without notice** (ADR 0011). Each request retries a transient error (tenacity).
+  A night that stops on a maintenance page is retried by `registry_check_retry` once both sources answer (§ "First
+  night", Retry, 2026-10-18); a night that fails for any other reason waits for the next night or a run by hand.
 - **Evidently on Python 3.14** may not exist yet (step A).
 - **A sensor chain can run on a half-imported delivery** when the importer fails at its end by design (plan 0014).
   The chain triggers on a *successful* import only.

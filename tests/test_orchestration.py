@@ -62,6 +62,8 @@ def test_the_chain_and_what_it_never_starts():
     started = {s.name: s.job_name for s in [*repository.schedule_defs, *repository.sensor_defs]}
     assert started == {
         "registry_check_nightly": "legal_to_labels",
+        # the retry of a night that stopped on a maintenance page (owner, 2026-10-18)
+        "registry_check_retry": "legal_to_labels",
         "rdf_queue_weekly": "rdf_queue",
         "rdf_queue_filing_wave": "rdf_queue",
         "features_after_registry_check": "features",

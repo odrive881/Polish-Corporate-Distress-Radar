@@ -193,7 +193,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   ├── partitions.py
 │   ├── jobs.py                        # plan 0018 step C: every job, so sensors can name them
 │   ├── schedules.py                   # plan 0018 step C: the nightly registry check, the RDF re-search queue; all ship stopped
-│   ├── sensors.py                     # plan 0018 step C: registry check or import → features → scoring; all ship stopped
+│   ├── sensors.py                     # plan 0018 step C: registry check or import → features → scoring; the retry after a maintenance page; all ship stopped
 │   ├── definitions.py                 # Dagster Definitions entry point
 │   └── dagster.yaml                   # plan 0018 step B: the instance's settings, copied into DAGSTER_HOME by `make orchestrate`
 │
@@ -291,6 +291,7 @@ src/distress_radar/
 │   ├── personal_data_scan.py    # pre-commit scan of staged files (`make hooks`)
 │   ├── krs_extract.py           # A4 — full KRS extracts (open KRS API), redacted, content-addressed
 │   ├── msig_client.py           # A4 — MSiG notices, reduced to person-free records at fetch time
+│   ├── availability.py          # A4 — probes whether the KRS API and MSiG answer again, person-free (plan 0018)
 │   └── reference_data.py        # A5
 │
 ├── parsing/
