@@ -12,9 +12,9 @@
 **Order:** after ADR 0013's decision. It does not wait for plan 0013 (Phase 7). A1 is the owner's
 Rejestr.io list (ADR 0014, accepted 2026-10-06), loaded in step 0.
 
-## Status: active (2026-10-17): owner decisions 1–6 accepted as recommended; steps 0 and B–D built, step F's docs written; list v1 imported three times (2026-10-09, 2026-10-13 and 2026-10-16, Progress) and everything downstream rebuilt, up to `backtest_v8`; list v2's distress group imported and parsed once (2026-10-17), its legal sources and labels not yet rebuilt; open: the script writing every tab of an expanded row, re-searching list v1's unsearched companies, two importer questions from the second import, and step A's field-by-field comparison and step E on the seed
+## Status: active (2026-10-18): owner decisions 1–6 accepted as recommended; steps 0 and B–D built, step F's docs written; list v1 imported three times (2026-10-09, 2026-10-13 and 2026-10-16, Progress) and everything downstream rebuilt, up to `backtest_v8`; list v2's distress group imported and parsed once (2026-10-17), its legal sources and labels not yet rebuilt (the first nightly run, 2026-10-18, met a maintenance page); what list v2 can bring to the champion rule's event floor, and the owner's decision it raises, in § "Events" (2026-10-18); open: the script writing every tab of an expanded row, re-searching list v1's unsearched companies, two importer questions from the second import, and step A's field-by-field comparison and step E on the seed
 
-### Where this stands (2026-10-16, with list v2's distress group added 2026-10-17): pick up here
+### Where this stands (2026-10-16, with list v2's distress group added 2026-10-17 and its events 2026-10-18): pick up here
 
 **The process, each time the owner hands over a new delivery** (README § "Manual RDF capture", "Scripted
 downloads", has the commands): put `outages.csv` in the folder first, import with `rdf_script_import` pointed at
@@ -28,10 +28,13 @@ re-run, record a new `backtest_v<n>` before running it. Record each round's coun
   from it is copied into the repository. Its `documents.csv` (2,499 rows, 533 entities), `entities.csv`
   (1,107 searches) and, from the next import on, `outages.csv` (both known spans, written 2026-10-16) are
   stored raw. The script was still on list v1 (2 of its entities are also on list v2).
-- **Imported so far:** 402 entities have canonical facts (17 seed, the rest list v1); the import skips
-  entities with fewer than three filed years (134 in the last round) until a later listing has three.
-- **Legal sources:** `krs_extracts` and `msig_notices` fetched for all 609 entities in `entity_master` on
-  2026-10-16 (40 min and 1 h 21 min; each run fetches every entity).
+- **Imported so far:** 402 entities had canonical facts after this round (17 seed, the rest list v1), 503 since
+  list v2's distress group (2026-10-17, item 5); the import skips entities with fewer than three filed years
+  (134 in the last round) until a later listing has three.
+- **Legal sources:** `krs_extracts` and `msig_notices` fetched for all 609 entities then in `entity_master` on
+  2026-10-16 (40 min and 1 h 21 min; each run fetches every entity). Not yet for the distress group's 197 new
+  entities: the first nightly run (2026-10-18) met a maintenance page on both sources and recorded nothing
+  (plan 0018, § "First night"). Everything below is still on the 609.
 - **Labels:** `outcome_labels_v2`, label set `fd867aa80a4d…` (111,088 rows), frozen 2026-10-16.
 - **Features:** `feature_set_v6`, rebuilt 2026-10-16; `leakage` passed.
 - **Backtest:** `backtest_v8` (`config/models/backtest_v8.yaml`, commit `19ca71f`): v7 with only the label set
@@ -48,8 +51,8 @@ re-run, record a new `backtest_v<n>` before running it. Record each round's coun
 1. **The script writes only an expanded row's first tab.** 34 ZIPs of correction groups are held, and 31
    entities are left out of the backtest for it (`statements_held_back`).
 2. **72 list v1 companies have no search** (`rdf_not_searched`; 179 before the 2026-10-16 round), most
-   searched only during an outage (2026-10-08, or 2026-10-13 evening). Re-searching them is the largest
-   source of new events.
+   searched only during an outage (2026-10-08, or 2026-10-13 evening). Re-searching them adds list v1's
+   missing events; the distress group's 88 (item 5) are likely to add more (§ "Events" below).
 3. **A correction listed as a row of its own** (3 entities, 4 rows, refused): the importer assumes an expanded
    row's own tab is the original. Decide whether such a row is read as a correction (a change to
    `script_import.py`'s `_tab` rule, then a re-import).
@@ -59,12 +62,76 @@ re-run, record a new `backtest_v<n>` before running it. Record each round's coun
 5. **List v2** (ADR 0014 addendum): its two files are received (2026-10-13). The distress group's first delivery
    is imported and parsed (2026-10-17, Progress): 199 of its 200 companies resolved into `entity_master` (806
    entities in all), 503 entities with canonical facts. 88 of them were searched only inside the 2026-10-16
-   outage and wait for the script's second search; the random group (600) has not been run yet.
+   outage and wait for the script's second search; the random group (600) has not been run yet. Of everything
+   open, the 88's second search is the one most likely to add events (§ "Events" below).
 6. **The nightly registry check is on (plan 0018, from 2026-10-18).** `registry_check_nightly` fetches the KRS
    extracts and MSiG notices of every `entity_master` entity, the distress group included, and freezes a new label
    set each night, so the legal sources no longer wait for the 88 companies' second search; their RDF side still
-   does. Re-run `notebooks/exploration/pdf_tier_triggers.py` after the first night to settle plan 0006's
-   trigger 2.
+   does. The first night (2026-10-18) failed on the ministry's maintenance page and recorded nothing; the first
+   night that gets through is the first count of the distress group's events. Re-run
+   `notebooks/exploration/pdf_tier_triggers.py` after it to settle plan 0006's trigger 2.
+7. **How the champion rule reads list v2** (§ "Events" below): an owner decision, needed before `backtest_v9`.
+
+### Events: what list v2 can bring to the champion rule (2026-10-18)
+
+Events, not entities, are what the project lacks, and list v2 is where most of them will come from.
+
+**What the floor counts.** The champion rule (plan 0015 step F, `models/champion.py`) needs at least 50 *distinct
+events* in the paired rows: the test rows both the incumbent and the challenger scored, in the folds where both
+trained on 3 or more events. The floor must hold at both horizons and in both the `main` and `no_regime` runs. It
+counts events, not distressed companies: a company's event counts only if it falls inside a test year's window
+(test years 2020–2025, so events from 2020 to the data cutoff), with a filed statement before it, and the
+company is in the population. `backtest_v8`: 10 events (12 months, `main`), 7 (`no_regime`), 9 and 7 at 24
+months. All 22 of its events per horizon come from the seed (11) and list v1 (11), from 20 entities ever in
+distress; `main`'s test years hold 3, 3, 3, 3, 5 and 7 (2020 to 2025, 12 months).
+
+**What list v2 holds** (Rejestr.io's status flags at the draw, not the pipeline's labels):
+
+- **Distress group (B):** 200 companies, 130 `w upadlosci` and 70 `w likwidacji` (ADR 0014, § "Lists received").
+- **Random group (A):** 600 companies, 106 of them flagged `in_distress` by Rejestr.io. Not downloaded yet.
+
+That is about 300 companies flagged in distress, against the 20 ever in distress in `backtest_v8`'s population.
+A fraction of them reaching the population would clear the floor.
+
+**What B looks like so far** (measured 2026-10-18 from `filing_index`): 103 of the 200 have filings indexed and
+101 have canonical facts. Their last filed fiscal year: 2025 for 70, 2026 for 1, 2024 for 22, 2023 for 6, 2022
+for 2 and 2020 for 2. Most kept filing until recently, so their events are likely recent (2024 to 2026). That is
+where the folds are thinnest and where the `no_regime` run (which leaves out 2020–21) needs them. Their event
+dates are not known yet: only the KRS extract and MSiG give them, and B's legal sources have not been fetched
+(item 6). Only 2 of B's companies, both seed entities, have a legal fetch.
+
+**Why not all of them will count** (ADR 0014 addendum, "Things to expect"): fewer than three filed years (6 of B
+so far), not on RDF (3), a last statement long before the event, an event before 2020 (no test year), an entity
+already in a proceeding at every month-end it could be scored (excluded, not labelled), a Rejestr.io flag with no
+event the pipeline can date, and the registry's entry lag near the cutoff. And an entity whose RDF search is not
+complete is outside the population (`acquisition_complete`, plan 0015 decision 10), so B's 88 unsearched
+companies count for nothing until the script searches them again.
+
+**What has to happen, in order:**
+
+1. A nightly registry check that gets through (item 6). It gives the first count of B's events, by class and
+   year, and the agreement between Rejestr.io's flag and the pipeline's labels, which ADR 0014's addendum asks
+   to be reported.
+2. The script's second search of B's 88 companies (item 5), then a delivery import.
+3. `backtest_v9`, written and committed before it runs (a new label set and population change the pins; README,
+   step 7 of "A new delivery"). Its report's folds table shows per year whether the floor can be reached.
+4. The random group, B first and then A (the addendum's download order). A also brings the events a random draw
+   holds, which only it can report a rate for.
+
+**The decision this raises (the owner's, before `backtest_v9`).** Once B is in, the comparison may reach the
+floor and become evaluable for the first time. But B was chosen *because* its companies are in distress, and
+the rule compares *unweighted* Brier scores. AUC is little affected by sampling on the outcome; Brier scores and
+calibration are, since they are measured at an event rate far above the segment's. ADR 0014's addendum says
+calibration and headline results over A and B are weighted, and weights need the frame, which is not recorded
+(§ "Lists received"). The model functions already take a weight (plan 0015 decision 9).
+
+- **(a) Run the rule unweighted on the lists, and state its verdict as the lists'.** A promotion is then
+  provisional, and re-checked weighted once the frame is recorded. *Recommended:* the served model is already
+  calibrated on purposive lists and says so, and this is the only way the rule is tested on real numbers soon.
+- **(b) Hold promotion until the weights exist.** The rule stays not evaluable however many events come in, for
+  as long as the frame is unrecorded.
+- **(c) Train on B, and evaluate the rule without it** (seed, list v1 and A only). Keeps B's selection out of the
+  verdict, but the floor then waits on A's events.
 
 **Lessons from the 2026-10-13 and 2026-10-16 rounds:**
 
