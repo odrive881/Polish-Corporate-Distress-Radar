@@ -22,7 +22,7 @@ plan 0014's decision 7 (2026-10-18) visible wherever a champion is shown.
 and step G runs the draw once the owner has exported one. Step B goes first because the Rejestr.io trial has a
 deadline, and the frame must be exported before it ends (`docs/data_inventory.md`).
 
-## Status: draft (2026-10-18): written on the owner's request (items 1–3 of "what can be built in the meantime"); owner decisions 0–9 below not yet accepted; nothing built
+## Status: active (2026-10-18): written on the owner's request (items 1–3 of "what can be built in the meantime"); owner decisions 0–9 accepted as recommended (2026-10-18); open: step A's three answers from the owner (the export's header, how B's rows were chosen, the trial's end date); nothing built
 
 ## Why
 
@@ -56,7 +56,7 @@ provisional until one can. Three things are missing, and all three can be built 
 - The backtest report's banner already says "Purposive lists, not evidence" whenever the population holds a
   list (`report.py`).
 
-## Owner decisions (to accept or change)
+## Owner decisions (accepted by the owner, 2026-10-18, as recommended)
 
 0. **Where the draw spec lives.** A draw is statutory-like config: data, versioned, never constants (invariant
    7's spirit). *Recommended:* `config/segments/construction_sme_v1_draw_v<n>.yaml`, beside the segment spec it
@@ -215,7 +215,7 @@ provisional until one can. Three things are missing, and all three can be built 
 
 ## Definition of done
 
-- [ ] Owner decisions 0–9 accepted or changed.
+- [x] Owner decisions 0–9 accepted (2026-10-18, as recommended).
 - [ ] Step A's answers recorded (export format, how B was chosen, the trial's end date).
 - [ ] Steps B–F built, with their tests in `make check`.
 - [ ] Step G: the real draw run on the owner's frame, its counts recorded here and in ADR 0014.
