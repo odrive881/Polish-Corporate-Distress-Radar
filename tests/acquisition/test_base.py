@@ -10,15 +10,19 @@ from distress_radar.acquisition.base import (
     PermanentSourceError,
     SourceNotFound,
     SourcePolicy,
+    SourceUnavailable,
     TransientSourceError,
     build_source_client,
     in_memory_limiter,
+    ms_maintenance_page,
 )
+from distress_radar.acquisition.krs_extract import krs_api_policy
+from distress_radar.acquisition.msig_client import msig_policy
 
 POLICY = SourcePolicy(name="test_source", requests_per_minute=10_000, max_attempts=3)
 
 
-def _get(tmp_path: Path, handler, url: str = "https://source.test/doc", **kwargs):
+def _get(tmp_path: Path, handler, url: str = "https://source.test/doc", policy=POLICY, **kwargs):
     calls: list[httpx.Request] = []
 
     def recording(request: httpx.Request) -> httpx.Response:
@@ -27,9 +31,9 @@ def _get(tmp_path: Path, handler, url: str = "https://source.test/doc", **kwargs
 
     async def run() -> httpx.Response:
         client = build_source_client(
-            POLICY,
+            policy,
             cache_dir=tmp_path / "cache",
-            limiter=in_memory_limiter(POLICY),
+            limiter=in_memory_limiter(policy),
             transport=httpx.MockTransport(recording),
             wait=wait_none(),
         )
@@ -118,3 +122,47 @@ def test_cacheable_response_is_served_from_disk_cache(tmp_path: Path):
     assert len(first_calls) == 1
     assert len(second_calls) == 0
     assert (tmp_path / "cache" / "test_source.sqlite").exists()
+
+
+# The page both Ministry of Justice sources served all night on 2026-10-17/18, as HTTP 200.
+MAINTENANCE = (
+    b"<html><head><title>Przerwa techniczna</title></head><body>Szanowni Pa&#324;stwo, "
+    b"uprzejmie informujemy, &#380;e trwa przerwa techniczna w dost&#281;pie do systemu.</body></html>"
+)
+MS_POLICY = SourcePolicy(
+    name="ms_test",
+    requests_per_minute=10_000,
+    max_attempts=3,
+    unavailable_check=ms_maintenance_page,
+)
+
+
+def test_a_maintenance_page_is_the_source_unavailable_and_not_retried(tmp_path: Path):
+    def handler(_: httpx.Request, n: int) -> httpx.Response:
+        return httpx.Response(200, content=MAINTENANCE, headers={"Content-Type": "text/html"})
+
+    with pytest.raises(SourceUnavailable, match="ms_test is unavailable: maintenance page") as info:
+        _get(tmp_path, handler, policy=MS_POLICY)
+    assert len(info.value.calls) == 1  # type: ignore[attr-defined]
+
+
+@pytest.mark.parametrize(
+    ("body", "content_type"),
+    [
+        (b'{"tresc": "Przerwa techniczna w pracy zak\u0142adu"}', "application/json"),
+        (b"<html><title>Not found</title></html>", "text/html"),
+    ],
+)
+def test_json_quoting_the_phrase_or_other_html_is_not_maintenance(
+    tmp_path: Path, body: bytes, content_type: str
+):
+    def handler(_: httpx.Request, n: int) -> httpx.Response:
+        return httpx.Response(200, content=body, headers={"Content-Type": content_type})
+
+    response, _ = _get(tmp_path, handler, policy=MS_POLICY)
+    assert response.content == body
+
+
+def test_both_ministry_sources_watch_for_the_maintenance_page():
+    assert krs_api_policy(15).unavailable_check is ms_maintenance_page
+    assert msig_policy(15).unavailable_check is ms_maintenance_page

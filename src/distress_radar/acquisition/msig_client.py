@@ -40,7 +40,12 @@ import httpx
 import yaml
 from pydantic import BaseModel, ConfigDict, Field
 
-from distress_radar.acquisition.base import PermanentSourceError, SourceClient, SourcePolicy
+from distress_radar.acquisition.base import (
+    PermanentSourceError,
+    SourceClient,
+    SourcePolicy,
+    ms_maintenance_page,
+)
 from distress_radar.acquisition.models import (
     LegalSourceFetch,
     MsigNoticeRow,
@@ -99,7 +104,11 @@ _PESEL_SHAPED = re.compile(r"(?<!\d)\d{11}(?!\d)")
 
 
 def msig_policy(requests_per_minute: int) -> SourcePolicy:
-    return SourcePolicy(name=RAW_SOURCE, requests_per_minute=requests_per_minute)
+    return SourcePolicy(
+        name=RAW_SOURCE,
+        requests_per_minute=requests_per_minute,
+        unavailable_check=ms_maintenance_page,
+    )
 
 
 class Vocabulary(BaseModel):

@@ -7,6 +7,9 @@ Every adapter gets the same four things from here:
   responses) is not. `ContentCheckFailed` is neither: the response arrived but
   is not real content (e.g. an anti-bot challenge page). It is the seam where
   plan 0003 routes to a Playwright tier (ADR 0004), so it is never retried here.
+  `SourceUnavailable` is neither either: the source says it is down (a maintenance page
+  served as HTTP 200), so every request until it returns would fail alike, and a run stops
+  at the first rather than spending its pacing on each entity (2026-10-18).
 - **Persistent pacing.** A `pyrate-limiter` bucket in Postgres, so pacing
   survives process restarts. Limits come from per-source settings.
 - **HTTP cache.** A `hishel` SQLite cache under `HTTP_CACHE_DIR`. The limiter
@@ -71,8 +74,27 @@ class ContentCheckFailed(SourceError):
         self.reason = reason
 
 
+class SourceUnavailable(SourceError):
+    """The source says it is down for every request (a maintenance page), not for this one."""
+
+
 ContentCheck = Callable[[httpx.Response], str | None]
 """Returns `None` if the response is real content, else a short reason string."""
+
+MS_MAINTENANCE_MARKER = "Przerwa techniczna"
+
+
+def ms_maintenance_page(response: httpx.Response) -> str | None:
+    """The Ministry of Justice's maintenance page, which the open KRS API and MSiG both served
+    as HTTP 200 HTML on the night of 2026-10-17/18 ("Przerwa techniczna": a technical break in
+    access to the system). Neither source answers in HTML otherwise, so a JSON body that
+    happens to quote the phrase is never taken for it."""
+    html = (
+        "html" in response.headers.get("content-type", "") or response.content.lstrip()[:1] == b"<"
+    )
+    if html and MS_MAINTENANCE_MARKER in response.content.decode("utf-8", "replace"):
+        return f"maintenance page ({MS_MAINTENANCE_MARKER})"
+    return None
 
 
 @dataclass(frozen=True)
@@ -83,6 +105,8 @@ class SourcePolicy:
     requests_per_minute: int
     max_attempts: int = 4
     timeout_seconds: float = 30.0
+    # A response saying the whole source is down: raised as `SourceUnavailable`, not retried.
+    unavailable_check: ContentCheck | None = None
 
     def rates(self) -> list[Rate]:
         return [Rate(self.requests_per_minute, Duration.MINUTE)]
@@ -184,6 +208,10 @@ class SourceClient:
         except (httpx.TransportError, httpx.DecodingError) as exc:
             raise TransientSourceError(f"{type(exc).__name__} fetching {url}: {exc}") from exc
         raise_for_status_class(response)
+        if self.policy.unavailable_check is not None:
+            reason = self.policy.unavailable_check(response)
+            if reason is not None:
+                raise SourceUnavailable(f"{self.policy.name} is unavailable: {reason}")
         if content_check is not None:
             reason = content_check(response)
             if reason is not None:

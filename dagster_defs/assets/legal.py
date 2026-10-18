@@ -8,17 +8,18 @@ Dagster run id.
 import asyncio
 import json
 from collections import Counter
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import TYPE_CHECKING, cast
 
 import dagster as dg
 
 from dagster_defs.assets.acquisition import SEGMENTS_DIR, SegmentConfig, entity_master
 from distress_radar.acquisition import manifest
-from distress_radar.acquisition.base import PermanentSourceError, SourceError
+from distress_radar.acquisition.base import PermanentSourceError, SourceError, SourceUnavailable
 from distress_radar.acquisition.krs_extract import fetch_extract
 from distress_radar.acquisition.models import QuarantineRecord
 from distress_radar.acquisition.msig_client import (
+    Vocabulary,
     extraction_key,
     fetch_entity_notices,
     load_vocabulary,
@@ -54,6 +55,16 @@ if TYPE_CHECKING:
 _REASON = "reason:"
 
 
+def _unavailable(source: str, exc: SourceUnavailable, done: int, entities: int) -> dg.Failure:
+    """A source down for every request (2026-10-18: a maintenance page all night): the run stops
+    at the first such answer. Entities fetched before it are committed; the rest wait."""
+    return dg.Failure(
+        description=f"{source}: {exc}; stopped after {done} of {entities} entities, "
+        "nothing recorded for the rest",
+        metadata={"entities_done": done, "entities": entities},
+    )
+
+
 def _quarantine_check(name: str, counts: Counter[str]) -> dg.AssetCheckResult:
     """This run's quarantined records by reason: a warning, since quarantine is by design."""
     reasons = {
@@ -76,7 +87,7 @@ async def _fetch_all(
 ) -> tuple[Counter[str], list[str]]:
     outcomes: Counter[str] = Counter()
     failures: list[str] = []
-    for krs in entities:
+    for done, krs in enumerate(entities):
         previous = manifest.latest_legal_fetch(conn, krs, "KRS")
         try:
             result = await fetch_extract(
@@ -86,6 +97,8 @@ async def _fetch_all(
                 ingestion_run_id=context.run_id,
                 previous=previous,
             )
+        except SourceUnavailable as exc:
+            raise _unavailable("KRS API", exc, done, len(entities)) from exc
         except SourceError as exc:
             level = (
                 context.log.error if isinstance(exc, PermanentSourceError) else context.log.warning
@@ -120,7 +133,8 @@ def krs_extracts(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
     and A4 `quarantine_events` rows (`krs_extract_not_found`, `krs_extract_unredactable`).
     Every run fetches every entity, since the latest fetch sets the source cutoff; an
     unchanged extract adds a fetch row and no raw object. Each entity commits on its own;
-    a source error leaves it for the next run and fails the asset.
+    a source error leaves it for the next run and fails the asset, and a maintenance page
+    (`SourceUnavailable`) stops the run at once.
     Partition scheme: none (unpartitioned), seed scale (plan 0008 decision 8).
     """
     postgres = cast("PostgresResource", context.resources.postgres)
@@ -158,6 +172,44 @@ def krs_extracts(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
     )
 
 
+async def _search_all(
+    context: dg.AssetExecutionContext,
+    conn: "Connection",
+    client: "SourceClient",
+    store: "ObjectStore",
+    entities: list[str],
+    vocabulary: Vocabulary,
+    today: date,
+    outcomes: Counter[str],
+    failures: list[str],
+) -> None:
+    for done, krs in enumerate(entities):
+        known = manifest.known_msig_notices(conn, krs, extraction_key(vocabulary))
+        try:
+            result = await fetch_entity_notices(
+                krs,
+                client=client,
+                store=store,
+                vocabulary=vocabulary,
+                ingestion_run_id=context.run_id,
+                known=known,
+                today=today,
+            )
+        except SourceUnavailable as exc:
+            raise _unavailable("MSiG", exc, done, len(entities)) from exc
+        except SourceError as exc:
+            context.log.error(f"KRS {krs}: {exc}")
+            failures.append(krs)
+            continue
+        manifest.record_a4_result(conn, result)
+        conn.commit()
+        outcomes["new_notices"] += len(result.notices)
+        outcomes["known_notices"] += len(known)
+        outcomes["quarantined"] += len(result.quarantine)
+        outcomes.update(f"{_REASON}{q.reason_code}" for q in result.quarantine)
+        outcomes["entities_with_notices"] += bool(result.notices or known)
+
+
 @dg.asset(
     group_name="legal",
     deps=[entity_master],
@@ -177,7 +229,8 @@ def msig_notices(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
     `raw_redactions`, `msig_notices`, one `legal_source_fetches` row per entity and run
     (source `MSiG`), and A4 `quarantine_events` rows (`msig_krs_mismatch`,
     `msig_notice_unredactable`). Each entity commits on its own; a source error leaves it
-    for the next run and fails the asset.
+    for the next run and fails the asset, and a maintenance page (`SourceUnavailable`) stops
+    the run at once.
     Partition scheme: none (unpartitioned), seed scale (plan 0008 decision 8).
     """
     postgres = cast("PostgresResource", context.resources.postgres)
@@ -197,29 +250,9 @@ def msig_notices(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
 
         async def run() -> None:
             async with msig_api.client() as client:
-                for krs in entities:
-                    known = manifest.known_msig_notices(conn, krs, extraction_key(vocabulary))
-                    try:
-                        result = await fetch_entity_notices(
-                            krs,
-                            client=client,
-                            store=store,
-                            vocabulary=vocabulary,
-                            ingestion_run_id=context.run_id,
-                            known=known,
-                            today=today,
-                        )
-                    except SourceError as exc:
-                        context.log.error(f"KRS {krs}: {exc}")
-                        failures.append(krs)
-                        continue
-                    manifest.record_a4_result(conn, result)
-                    conn.commit()
-                    outcomes["new_notices"] += len(result.notices)
-                    outcomes["known_notices"] += len(known)
-                    outcomes["quarantined"] += len(result.quarantine)
-                    outcomes.update(f"{_REASON}{q.reason_code}" for q in result.quarantine)
-                    outcomes["entities_with_notices"] += bool(result.notices or known)
+                await _search_all(
+                    context, conn, client, store, entities, vocabulary, today, outcomes, failures
+                )
 
         asyncio.run(run())
         counts = manifest.table_counts(conn)

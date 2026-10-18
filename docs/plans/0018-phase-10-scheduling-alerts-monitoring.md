@@ -19,7 +19,7 @@ monitoring), the `alerts` table (§5), and the scoring half of stage I (§6I as 
 **Order:** after plan 0016 (active only on rendering the report, which waits on the Quarto CLI). It does not wait
 for list v2 or a champion: what it schedules and alerts on is what the registry already serves.
 
-## Status: active (2026-10-17): owner decisions 0–9 accepted as recommended; step A checked (Evidently and `sentry-sdk` both usable, no ADR needed); steps B–H built (`make orchestrate`; the schedules, sensors and RDF queue, all stopped until the owner turns them on; the `alerts` table and its rules; alerts in the explorer and the API; the drift report; realised calibration; Sentry, off until the owner sets `SENTRY_DSN`); step I's sweep checked; `alert_rules_v2` (one-cycle look-back, owner, 2026-10-17). The owner set `DAGSTER_HOME` and turned every schedule and sensor on (2026-10-17, 21:40); open: the first unattended `registry_check_nightly` (2026-10-18 02:00) and the chain's counts, recorded here
+## Status: active (2026-10-17): owner decisions 0–9 accepted as recommended; step A checked (Evidently and `sentry-sdk` both usable, no ADR needed); steps B–H built (`make orchestrate`; the schedules, sensors and RDF queue, all stopped until the owner turns them on; the `alerts` table and its rules; alerts in the explorer and the API; the drift report; realised calibration; Sentry, off until the owner sets `SENTRY_DSN`); step I's sweep checked; `alert_rules_v2` (one-cycle look-back, owner, 2026-10-17). The owner set `DAGSTER_HOME` and turned every schedule and sensor on (2026-10-17, 21:40); the first unattended `registry_check_nightly` (2026-10-18 02:00) fired and failed: both ministry sources served a maintenance page all night (§ "First night"); maintenance pages now stop a run at once; open: a night that gets through, and the chain's counts, recorded here
 
 ## Why
 
@@ -362,6 +362,23 @@ change: the stack is unchanged (Evidently and Sentry were already in it) and not
   optionally `SENTRY_DSN`, after reading Sentry's terms. (Step D's look-back question was decided the same day:
   one cycle, `alert_rules_v2`.)
 
+## First night (2026-10-18)
+
+`registry_check_nightly` fired at 02:02 and `legal_to_labels` failed at 02:56: `krs_extracts` and `msig_notices`
+both "failed for 806 entities". From the first request, the open KRS API and MSiG served the Ministry of Justice's
+maintenance page ("Przerwa techniczna … trwa przerwa techniczna w dostępie do systemu") as HTTP 200 HTML, still at
+08:15. Each response was taken for one entity's bad record (`PermanentSourceError`, "not JSON"), so both assets
+walked all 806 entities at their pacing before failing. Nothing was written to Postgres or MinIO; the HTTP cache
+stored the 1,612 pages but never serves them (no cache headers, tested), and no sensor started anything.
+
+**Fix (2026-10-18):** `SourceUnavailable` in `acquisition/base.py`, raised when a policy's `unavailable_check`
+matches and never retried; `ms_maintenance_page` (HTML holding "Przerwa techniczna") is set on both ministry
+sources' policies, and `krs_extracts` and `msig_notices` stop at the first one: "KRS API: krs_api is unavailable:
+maintenance page …; stopped after n of 806 entities, nothing recorded for the rest". Checked against the live page
+the same morning. Tests: `tests/acquisition/test_base.py` (the page, not retried; JSON quoting the phrase and other
+HTML are not it; both policies carry the check) and `tests/acquisition/test_legal_unavailable.py` (both assets stop
+at the first page, after any earlier entity's own error).
+
 ## Tests
 
 - **Point in time:** every alert's facts have `known_from <= as_of_date`, and an alert computed at an earlier
@@ -393,8 +410,9 @@ change: the stack is unchanged (Evidently and Sentry were already in it) and not
   will often stop there: the sensor reports the refusal and does not retry.
 - **Alert fatigue on a distress-weighted list.** List v1 was chosen partly by distress status, so many entities sit
   above any threshold from their first score. Decision 4's "no alert on a first score" keeps the first run quiet.
-- **The KRS API or MSiG changes without notice** (ADR 0011). A night that fails retries once (tenacity, transient
-  errors only), then waits for the next night.
+- **The KRS API or MSiG changes without notice** (ADR 0011). Each request retries a transient error (tenacity);
+  the run itself is not retried, so a night that fails waits for the next night or a run by hand. (Corrected
+  2026-10-18: this line said a failed night retries once; nothing retries a run.)
 - **Evidently on Python 3.14** may not exist yet (step A).
 - **A sensor chain can run on a half-imported delivery** when the importer fails at its end by design (plan 0014).
   The chain triggers on a *successful* import only.

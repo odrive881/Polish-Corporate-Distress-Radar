@@ -33,6 +33,7 @@ from distress_radar.acquisition.base import (
     SourceClient,
     SourceNotFound,
     SourcePolicy,
+    ms_maintenance_page,
 )
 from distress_radar.acquisition.models import (
     LegalSourceFetch,
@@ -53,7 +54,11 @@ _SKIPPED_HEADERS = frozenset({"set-cookie"})
 
 
 def krs_api_policy(requests_per_minute: int) -> SourcePolicy:
-    return SourcePolicy(name=RAW_SOURCE, requests_per_minute=requests_per_minute)
+    return SourcePolicy(
+        name=RAW_SOURCE,
+        requests_per_minute=requests_per_minute,
+        unavailable_check=ms_maintenance_page,
+    )
 
 
 def extract_url(krs: str) -> str:
