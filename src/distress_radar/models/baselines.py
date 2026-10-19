@@ -37,7 +37,7 @@ from distress_radar.models.classical import (
     parameters,
     with_probability,
 )
-from distress_radar.models.dataset import TARGET
+from distress_radar.models.dataset import TARGET, row_weight
 from distress_radar.models.splits import Fold, LogisticConfig, events
 from distress_radar.parsing.canonical_schema import CONFIG_DIR
 
@@ -172,7 +172,9 @@ def fit_predict_classical(
     )
     if note:
         return FoldPredictions(summary, empty_predictions())
-    ranks, mapper = fit_rank_logistic(train.select("score").to_numpy(), y, mapping)
+    ranks, mapper = fit_rank_logistic(
+        train.select("score").to_numpy(), y, mapping, row_weight(train)
+    )
     (slope,), intercept = parameters(mapper)
     summary = replace(summary, coefficients=(("score_rank", slope),), intercept=intercept)
     if test.is_empty():

@@ -299,6 +299,12 @@ def log_backtest(
             "label_alive_lag_months": str(result.timing.alive_lag_months),
             "krz_launch": result.timing.krz_launch.isoformat(),
             **model_params(config, model),
+            # A weighted backtest's draw (plan 0019 step D), beside the four identifiers.
+            **(
+                {"draw_spec_sha256": config.weights.draw_spec_sha256}
+                if config.weights is not None
+                else {}
+            ),
         }
         tags = {
             "mlflow.runName": f"{config.backtest}/{model}/{horizon}m/{run}",

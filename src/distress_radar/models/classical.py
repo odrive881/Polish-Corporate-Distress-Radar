@@ -24,7 +24,7 @@ import numpy.typing as npt
 import polars as pl
 from sklearn.linear_model import LogisticRegression
 
-from distress_radar.models.dataset import TARGET
+from distress_radar.models.dataset import TARGET, row_weight
 from distress_radar.models.splits import Fold, LogisticConfig, events
 
 Array = npt.NDArray[np.float64]
@@ -133,8 +133,8 @@ class FoldPredictions:
 def fit_rank_logistic(
     x: Array, y: npt.NDArray[np.bool_], config: LogisticConfig, weight: Array | None = None
 ) -> tuple[RankTransform, LogisticRegression]:
-    """The configured penalised fit on fold-fitted ranks. An optional per-row weight (plan 0014
-    item 4, unused until list v2) weights the fit, each row counting as that many rows. The rank
+    """The configured penalised fit on fold-fitted ranks. An optional per-row weight (a weighted
+    backtest's 1/π, plan 0019 step D) weights the fit, each row counting as that many rows. The rank
     transform stays unweighted: fitted on the training rows as drawn, it is a monotone recoding of
     each input, which keeps every ordering whatever the weights."""
     ranks = RankTransform.fit(x)
@@ -198,7 +198,7 @@ def fit_predict_logistic(fold: Fold, config: LogisticConfig) -> FoldPredictions:
     )
     if note:
         return FoldPredictions(summary, empty_predictions())
-    ranks, model = fit_rank_logistic(_matrix(train, columns), y, config)
+    ranks, model = fit_rank_logistic(_matrix(train, columns), y, config, row_weight(train))
     coefficients, intercept = parameters(model)
     summary = replace(
         summary,

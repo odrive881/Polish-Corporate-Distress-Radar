@@ -14,6 +14,9 @@ complete, and reports every other one with its reason:
 - `statements_held_back`: a statement of a downloaded type is listed but not stored (a ZIP the
   importer held back for missing tabs, plan 0014).
 
+In a weighted backtest (plan 0019 decision 5) only one draw's entities are modelled: any other is
+left out first, as `not_in_draw`, and the acquisition rule then applies to the drawn ones.
+
 An entity whose discovery source is named in `complete_by_capture` (the seed, captured by hand and
 closed out in plan 0003) needs no stored search; the held-back rule still applies to it.
 
@@ -35,6 +38,7 @@ import polars as pl
 from psycopg import Connection
 from pydantic import BaseModel, ConfigDict, Field
 
+DRAW_REASON = "not_in_draw"
 REASONS = (
     "rdf_not_searched",
     "rdf_not_found",
@@ -72,15 +76,17 @@ class PopulationConfig(BaseModel):
 @dataclass(frozen=True)
 class Population:
     included: frozenset[str]
-    excluded: dict[str, str]  # krs -> reason, one of REASONS
+    excluded: dict[str, str]  # krs -> reason, one of REASONS (or DRAW_REASON when drawn)
+    drawn: bool = False  # whether only one draw's entities could be included
 
     @property
     def entities_hash(self) -> str:
         return entities_hash(self.included)
 
     def reasons(self) -> dict[str, int]:
-        """Excluded entities per reason, in `REASONS` order, zeros kept."""
-        counts: dict[str, int] = dict.fromkeys(REASONS, 0)
+        """Excluded entities per reason, in `REASONS` order, zeros kept; `not_in_draw` first when
+        the population is a draw's."""
+        counts: dict[str, int] = dict.fromkeys(((DRAW_REASON,) if self.drawn else ()) + REASONS, 0)
         for reason in self.excluded.values():
             counts[reason] += 1
         return counts
@@ -98,12 +104,14 @@ def classify(
     *,
     complete_by_capture: Iterable[str],
     download_codes: Iterable[str],
+    draw: frozenset[str] | None = None,
 ) -> Population:
     """Each entity in `entities` included, or excluded with the first reason that applies.
 
     `searches`: stored RDF searches (`SEARCHES_SCHEMA`), the latest per entity decides.
     `filings`: non-deleted `filing_index` rows (`FILINGS_SCHEMA`), `stored` when their bytes are.
     `sources`: `universe_candidates` (`SOURCES_SCHEMA`); an entity may come from several.
+    `draw`: a weighted backtest's drawn entities; any other is `not_in_draw`.
     """
     captured = set(
         sources.filter(pl.col("discovery_source").is_in(list(complete_by_capture)))
@@ -124,7 +132,9 @@ def classify(
     excluded: dict[str, str] = {}
     for krs in sorted(set(entities)):
         search = latest.get(krs)
-        if krs not in captured and search is None:
+        if draw is not None and krs not in draw:
+            excluded[krs] = DRAW_REASON
+        elif krs not in captured and search is None:
             excluded[krs] = "rdf_not_searched"
         elif krs not in captured and search is not None and not search[0]:
             excluded[krs] = "rdf_not_found"
@@ -136,7 +146,7 @@ def classify(
             excluded[krs] = "statements_held_back"
         else:
             included.add(krs)
-    return Population(included=frozenset(included), excluded=excluded)
+    return Population(included=frozenset(included), excluded=excluded, drawn=draw is not None)
 
 
 def read_population(
@@ -144,6 +154,7 @@ def read_population(
     entities: Iterable[str],
     config: PopulationConfig,
     download_codes: Iterable[str],
+    draw: frozenset[str] | None = None,
 ) -> Population:
     """`classify` over the Postgres acquisition records: `rdf_listed_entities`, `filing_index`
     (non-deleted rows) and `universe_candidates`."""
@@ -176,6 +187,7 @@ def read_population(
         sources,
         complete_by_capture=config.complete_by_capture,
         download_codes=download_codes,
+        draw=draw,
     )
 
 

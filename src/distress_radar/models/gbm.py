@@ -21,7 +21,9 @@ window closed before it and settled on its eve. That inner split, never the test
 
 Both versions are scored: `lightgbm_raw`, and `lightgbm`, the calibrated one, which is the
 model's result; the latter carries each test row's SHAP values (`explain.py`, step E). Every fit is byte-reproducible: deterministic, row-wise, one thread, fixed seeds.
-The fitting functions take an optional per-row weight (decision 9), unused until list v2.
+The fitting functions take an optional per-row weight (decision 9). In a weighted backtest (plan
+0019 step D) every fit is weighted by the rows' 1/π: the inner and the fold's boosters, the Platt
+map, and Optuna's trials, judged by the inner year's weighted Brier score.
 """
 
 # polars's, scikit-learn's, LightGBM's and Optuna's signatures reference types pyright cannot
@@ -52,7 +54,7 @@ from distress_radar.models.classical import (
     one_class_note,
     with_probability,
 )
-from distress_radar.models.dataset import LABEL_COLUMNS, TARGET
+from distress_radar.models.dataset import LABEL_COLUMNS, TARGET, WEIGHT, row_weight
 from distress_radar.models.evaluation import brier
 from distress_radar.models.explain import explanation_frame, shap_values
 from distress_radar.models.splits import (
@@ -69,7 +71,7 @@ from distress_radar.models.splits import (
 RAW = "lightgbm_raw"
 CALIBRATED = "lightgbm"
 # Never a model input, whatever the feature set holds: the row's identity and the label.
-NOT_INPUTS = frozenset({*KEY_COLUMNS, TARGET, *LABEL_COLUMNS})
+NOT_INPUTS = frozenset({*KEY_COLUMNS, TARGET, *LABEL_COLUMNS, WEIGHT})
 
 
 def model_inputs(columns: list[str]) -> list[str]:
@@ -166,9 +168,11 @@ def tune(
     validation: tuple[Array, npt.NDArray[np.bool_]],
     config: LightGbmConfig,
     tuning: TuningConfig,
+    weights: tuple[Array | None, Array | None] = (None, None),
 ) -> tuple[dict[str, float], tuple[TuningTrial, ...]]:
     """The settings of the trial with the lowest Brier score on `validation` (untuned settings
-    keep decision 1's values), and every trial, for the registry's child run."""
+    keep decision 1's values), and every trial, for the registry's child run. `weights`, the
+    training and validation rows' weights, weight each trial's fit and its Brier score."""
 
     def objective(trial: optuna.Trial) -> float:
         values = hyperparameters(config)
@@ -179,8 +183,8 @@ def tune(
                 )
             else:
                 values[name] = trial.suggest_float(name, space.low, space.high, log=space.log)
-        booster = fit_booster(*train, config, values)
-        return brier(validation[1], probability(booster, validation[0]))
+        booster = fit_booster(*train, config, values, weights[0])
+        return brier(validation[1], probability(booster, validation[0]), weights[1])
 
     optuna.logging.set_verbosity(optuna.logging.WARNING)
     study = optuna.create_study(
@@ -260,12 +264,15 @@ def fit_predict_gbm(
             feature_matrix(inner.test, columns),
             inner.test.get_column(TARGET).to_numpy(),
         )
+        inner_weights = (row_weight(inner.train), row_weight(inner.test))
         inner_note = one_class_note(inner_train[1]) or one_class_note(inner_validation[1])
         tuning_note = _gate(
             inner.test_year, inner_events, inner_note, config.tuning.min_tuning_events, "tuning"
         )
         if not tuning_note:
-            values, trials = tune(inner_train, inner_validation, config.lightgbm, config.tuning)
+            values, trials = tune(
+                inner_train, inner_validation, config.lightgbm, config.tuning, inner_weights
+            )
             tuning_note = (
                 f"tuned on {inner.test_year} ({inner_events} events, {config.tuning.trials} trials)"
             )
@@ -273,13 +280,19 @@ def fit_predict_gbm(
             inner.test_year, inner_events, inner_note, config.min_events, "calibration"
         )
         if not calibration_note:
-            inner_booster = fit_booster(*inner_train, config.lightgbm, values)
-            platt = fit_platt(raw_score(inner_booster, inner_validation[0]), inner_validation[1])
+            inner_booster = fit_booster(*inner_train, config.lightgbm, values, inner_weights[0])
+            platt = fit_platt(
+                raw_score(inner_booster, inner_validation[0]),
+                inner_validation[1],
+                inner_weights[1],
+            )
             calibration_note = f"Platt on {inner.test_year} ({inner_events} events)"
     else:
         tuning_note = "defaults: no settled inner year"
         calibration_note = "raw: no settled inner year"
-    booster = fit_booster(feature_matrix(fold.train, columns), y, config.lightgbm, values)
+    booster = fit_booster(
+        feature_matrix(fold.train, columns), y, config.lightgbm, values, row_weight(fold.train)
+    )
     summary = replace(
         summary,
         hyperparameters=tuple((k, float(v)) for k, v in values.items()),

@@ -11,11 +11,11 @@ and 8); otherwise its metrics are None and the report prints `n/a (<k events)`.
 Intervals resample entities, not rows: a company's month-ends move together, since one event
 labels up to `horizon` of them. The draws come from a fixed seed, so a report is reproducible.
 
-Weights (plan 0014 item 4, for list v2's weighted results, ADR 0014 addendum): the Brier score, log
-loss, AUC, the base rate and the reliability table take an optional per-row weight, each row
-counting as that many rows (an integer weight gives exactly the result of repeating the row).
-Without one they compute exactly as before. Top-decile precision has no weighted form yet, and no
-cell, interval or report reads a weight until list v2 supplies one.
+Weights (plan 0019 step D, ADR 0014 addendum): every metric, the base rate and the reliability
+table take an optional per-row weight, each row counting as that many rows (an integer weight gives
+exactly the result of repeating the row). Without one they compute exactly as before. A weighted
+cell reads its rows' `draw_weight` and resamples entities within each `draw_stratum`, each stratum
+keeping its size (decision 6); an unweighted cell resamples all entities as before.
 """
 
 # polars's signatures reference types pyright cannot resolve; scoped to this module.
@@ -30,18 +30,19 @@ import numpy as np
 import numpy.typing as npt
 import polars as pl
 
-from distress_radar.models.dataset import TARGET
+from distress_radar.models.dataset import TARGET, WEIGHT
 from distress_radar.models.splits import BootstrapConfig, events
 
 Labels = npt.NDArray[np.bool_]
 Probabilities = npt.NDArray[np.float64]
-Metric = Callable[[Labels, Probabilities], float | None]
+Weights = npt.NDArray[np.float64]
+Metric = Callable[[Labels, Probabilities, Weights | None], float | None]
+
+# A weighted cell's bootstrap stratum per row (`weights.py`), constant per entity.
+STRATUM = "draw_stratum"
 
 # Log loss clips probabilities away from 0 and 1, where it is infinite.
 _EPSILON = 1e-15
-
-
-Weights = npt.NDArray[np.float64]
 
 
 def _check_weight(y: Labels, weight: Weights) -> None:
@@ -113,13 +114,30 @@ def auc(y: Labels, p: Probabilities, weight: Weights | None = None) -> float | N
     return float((pos * (below + neg / 2)).sum()) / (w_pos * w_neg)
 
 
-def top_decile_precision(y: Labels, p: Probabilities) -> float | None:
-    """The share of distress among the highest-scored tenth (rounded up; ties by row order)."""
+def top_decile_precision(
+    y: Labels, p: Probabilities, weight: Weights | None = None
+) -> float | None:
+    """The share of distress among the highest-scored tenth (rounded up; ties by row order).
+
+    Weighted (decision 9): the weighted share of distress among the highest-scored rows whose
+    weights make up a tenth of the total, the row on the boundary counting with the part of its
+    weight that fits. Where a tenth of the total is a whole number, an integer weight gives exactly
+    the result of repeating the row, and equal weights the unweighted result; elsewhere the two
+    differ by the unweighted form's rounding up to a whole row."""
     if y.size == 0:
         return None
-    k = math.ceil(y.size / 10)
-    top = np.argsort(-p, kind="stable")[:k]
-    return float(y[top].mean())
+    order = np.argsort(-p, kind="stable")
+    if weight is None:
+        k = math.ceil(y.size / 10)
+        return float(y[order[:k]].mean())
+    _check_weight(y, weight)
+    target = float(weight.sum()) / 10
+    if target <= 0:
+        return None
+    w = weight[order]
+    before = np.concatenate([[0.0], np.cumsum(w)[:-1]])
+    taken = np.clip(target - before, 0.0, w)
+    return float((taken * y[order]).sum()) / target
 
 
 METRICS: dict[str, Metric] = {
@@ -137,26 +155,54 @@ def _arrays(predictions: pl.DataFrame) -> tuple[Labels, Probabilities]:
     )
 
 
+def _weights(predictions: pl.DataFrame) -> Weights | None:
+    if WEIGHT not in predictions.columns:
+        return None
+    return predictions.get_column(WEIGHT).to_numpy().astype(np.float64)
+
+
 def point_metrics(predictions: pl.DataFrame) -> dict[str, float | None]:
+    """Every metric; weighted when the rows carry `draw_weight`."""
     y, p = _arrays(predictions)
-    return {name: metric(y, p) for name, metric in METRICS.items()}
+    w = _weights(predictions)
+    return {name: metric(y, p, w) for name, metric in METRICS.items()}
+
+
+def resample_entities(strata: list[list[str]], rng: np.random.Generator) -> list[str]:
+    """One bootstrap replicate: each stratum's entities drawn with replacement, as many as it
+    holds, stratum by stratum. One stratum is the plain entity bootstrap."""
+    return [
+        members[i] for members in strata for i in rng.integers(0, len(members), size=len(members))
+    ]
 
 
 def bootstrap_intervals(
     predictions: pl.DataFrame, config: BootstrapConfig
 ) -> dict[str, tuple[float, float] | None]:
-    """Percentile intervals over entity resamples; None where under half the draws define it."""
+    """Percentile intervals over entity resamples; None where under half the draws define it.
+
+    With `draw_weight` and `draw_stratum` columns, the metrics are weighted and each stratum's
+    entities are resampled within it, in stratum order, each keeping its size (decision 6)."""
     y, p = _arrays(predictions)
+    w = _weights(predictions)
     krs = predictions.get_column("krs").to_list()
     entities = sorted(set(krs))
     rows_of = {e: np.flatnonzero(np.array(krs) == e) for e in entities}
+    if STRATUM in predictions.columns:
+        stratum_of = dict(
+            predictions.select("krs", STRATUM).unique().iter_rows()  # one stratum per entity
+        )
+        strata = [
+            [e for e in entities if stratum_of[e] == s] for s in sorted(set(stratum_of.values()))
+        ]
+    else:
+        strata = [entities]
     rng = np.random.default_rng(config.seed)
     draws: dict[str, list[float]] = {name: [] for name in METRICS}
     for _ in range(config.replicates):
-        picked = rng.integers(0, len(entities), size=len(entities))
-        rows = np.concatenate([rows_of[entities[i]] for i in picked])
+        rows = np.concatenate([rows_of[e] for e in resample_entities(strata, rng)])
         for name, metric in METRICS.items():
-            value = metric(y[rows], p[rows])
+            value = metric(y[rows], p[rows], None if w is None else w[rows])
             if value is not None:
                 draws[name].append(value)
     tail = (1 - config.level) / 2

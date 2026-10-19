@@ -192,6 +192,19 @@ class ChampionConfig(BaseModel):
     min_promotion_events: int = Field(ge=1)
 
 
+class WeightsConfig(BaseModel):
+    """Plan 0019 step D: a weighted backtest. Only the entities of one draw are modelled
+    (decision 5), each row weighted by its entity's 1/π from `universe_draws` under the pinned
+    spec, and the bootstrap resamples entities within each draw stratum (decisions 6 and 10)."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    draw_spec_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    random: str  # the random group's list version, e.g. `rejestr_io_v3_random`
+    distress: str | None = None  # the distress group's, once drawn
+    bootstrap: Literal["stratified"]
+
+
 # Generation 3's sections (plan 0015): a config names all of them or none (before backtest_v5).
 GENERATION_3 = ("lightgbm", "tuning", "calibration", "survival", "champion")
 
@@ -217,6 +230,14 @@ class BacktestConfig(BaseModel):
     calibration: CalibrationConfig | None = None
     survival: SurvivalConfig | None = None
     champion: ChampionConfig | None = None
+    # Plan 0019 step D: absent, every config computes exactly as before.
+    weights: WeightsConfig | None = None
+
+    @model_validator(mode="after")
+    def _weighted(self) -> BacktestConfig:
+        if self.weights is not None and self.population is None:
+            raise ValueError("a weighted backtest needs a population rule: drawn and complete")
+        return self
 
     @model_validator(mode="after")
     def _generation_3(self) -> BacktestConfig:

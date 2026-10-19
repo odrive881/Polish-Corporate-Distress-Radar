@@ -6,6 +6,13 @@ is a row filter only; no model reads it); and `entity_disjoint` (plan 0015 owner
 `main`'s fitted models scored only on the test rows of entities no model of the fold has seen in
 training, which shows how much of a result is recognising a company rather than reading its state.
 
+With `weights` (plan 0019 step D, a config with a `weights` section), only one draw's entities are
+modelled, every fit is weighted by its rows' 1/π, and every cell is weighted, its intervals
+resampling entities within each draw stratum. Beside those headline cells, each pooled cell is also
+given for the random group alone (self-weighting, the addendum's check) and unweighted (the
+sample's, not the segment's), in `basis_cells`. The survival models' time-dependent metrics stay
+unweighted.
+
 With `lists` (the universe lists each entity came from), every event count is also given per list,
 since each list is purposive. With a `champion` section, the rule of `champion.py` judges generation
 3 against the regression on the pooled rows.
@@ -36,8 +43,8 @@ from distress_radar.models.classical import (
     empty_predictions,
     fit_predict_logistic,
 )
-from distress_radar.models.dataset import ModellingDataset, modelling_dataset
-from distress_radar.models.evaluation import METRICS, cell, reliability
+from distress_radar.models.dataset import WEIGHT, ModellingDataset, modelling_dataset
+from distress_radar.models.evaluation import METRICS, STRATUM, cell, reliability
 from distress_radar.models.explain import KEYS, importance
 from distress_radar.models.gbm import fit_predict_gbm
 from distress_radar.models.population import Population
@@ -57,9 +64,12 @@ from distress_radar.models.survival import (
     fold_predictions,
     survival_records,
 )
+from distress_radar.models.weights import DrawWeights
 from distress_radar.warehouse import write_dataset
 
 RUNS = ("main", "no_regime", "entity_disjoint")
+# A weighted backtest's pooled cells beside the headline: the random group alone, and unweighted.
+BASES = ("a_alone", "unweighted")
 POOLED = 0  # the `test_year` of a pooled cell
 PREDICTIONS = "model_predictions"  # the scored test rows' dataset: local only
 
@@ -104,6 +114,10 @@ class BacktestResult:
     latest: dict[tuple[int, str], tuple[int, FittedModel]] = field(
         default_factory=dict[tuple[int, str], tuple[int, FittedModel]]
     )
+    # A weighted backtest's draw (plan 0019 step D), and its pooled cells on the other bases
+    # (`BASES`), one row per basis, run, horizon and model; None when unweighted.
+    weights: DrawWeights | None = None
+    basis_cells: pl.DataFrame | None = None
 
 
 def _for_run(dataset: ModellingDataset, run: str) -> ModellingDataset:
@@ -202,11 +216,23 @@ def run_backtest(
     models: list[ClassicalModel],
     population: Population | None = None,
     lists: dict[str, frozenset[str]] | None = None,
+    weights: DrawWeights | None = None,
 ) -> BacktestResult:
     """Every model on every fold. With a `population` rule in the config, only its included
-    entities are modelled; `population` must be the rule's outcome and match its pinned hash."""
+    entities are modelled; `population` must be the rule's outcome and match its pinned hash.
+    With a `weights` section, `weights` is the pinned draw's, and the population must be drawn
+    from it."""
     if (config.population is None) != (population is None):
         raise ValueError("a population is given exactly when the config names a rule")
+    if (config.weights is None) != (weights is None):
+        raise ValueError("weights are given exactly when the config names a draw")
+    if config.weights is not None and weights is not None:
+        if weights.draw_spec_sha256 != config.weights.draw_spec_sha256:
+            raise ValueError("the weights are not the pinned draw's")
+        if population is None or not population.drawn:
+            raise ValueError("a weighted backtest's population is a draw's")
+        if not population.included <= weights.members:
+            raise ValueError("the population holds entities the draw did not draw")
     excluded_distress = 0
     if config.population is not None and population is not None:
         if population.entities_hash != config.population.entities_hash:
@@ -222,6 +248,17 @@ def run_backtest(
             .n_unique()
         )
         labels = labels.filter(pl.col("krs").is_in(list(population.included)))
+    if weights is not None:
+        labels = labels.join(weights.frame.select("krs", WEIGHT), on="krs", how="left")
+
+    def weighted(rows: pl.DataFrame) -> pl.DataFrame:
+        """Rows with their weight and stratum, for a weighted cell; as they are otherwise."""
+        if weights is None:
+            return rows
+        return rows.join(weights.frame.select("krs", WEIGHT, STRATUM), on="krs", how="left")
+
+    random_group = sorted(weights.random_group) if weights is not None else []
+    basis_cells: list[dict[str, object]] = []
     records = (
         survival_records(features, labels, config.survival.max_months, config.distress_classes)
         if config.survival is not None
@@ -306,7 +343,7 @@ def run_backtest(
                         "train_rows": s.train_rows,
                         "rows_left_out": s.train_rows_left_out + s.test_rows_left_out,
                         **cell(
-                            result.predictions,
+                            weighted(result.predictions),
                             fitted=s.fitted,
                             train_events=s.train_events,
                             min_events=config.min_events,
@@ -363,7 +400,7 @@ def run_backtest(
                             for r in speaking
                         ),
                         **cell(
-                            pooled,
+                            weighted(pooled),
                             fitted=bool(speaking),
                             train_events=min((r.summary.train_events for r in speaking), default=0),
                             min_events=config.min_events,
@@ -371,9 +408,39 @@ def run_backtest(
                         ),
                     }
                 )
+                if weights is not None:
+                    for basis, rows in (
+                        ("a_alone", pooled.filter(pl.col("krs").is_in(random_group))),
+                        ("unweighted", pooled),
+                    ):
+                        basis_cells.append(
+                            {
+                                "basis": basis,
+                                **key,
+                                "model": model,
+                                "test_year": POOLED,
+                                "fitted": bool(speaking),
+                                "note": "",
+                                "train_rows": sum(r.summary.train_rows for r in speaking),
+                                "rows_left_out": 0,
+                                **cell(
+                                    rows,
+                                    fitted=bool(speaking),
+                                    train_events=min(
+                                        (r.summary.train_events for r in speaking), default=0
+                                    ),
+                                    min_events=config.min_events,
+                                    bootstrap=config.bootstrap,
+                                ),
+                            }
+                        )
                 if not pooled.is_empty():
                     tables.append(
-                        reliability(pooled, config.reliability_bins).select(
+                        reliability(
+                            weighted(pooled),
+                            config.reliability_bins,
+                            WEIGHT if weights is not None else None,
+                        ).select(
                             *(pl.lit(v).alias(k) for k, v in key.items()),
                             pl.lit(model).alias("model"),
                             pl.all(),
@@ -442,6 +509,10 @@ def run_backtest(
         champion=verdict,
         trials=pl.DataFrame(trials, schema=TRIALS) if config.lightgbm is not None else None,
         latest=latest,
+        weights=weights,
+        basis_cells=pl.DataFrame(basis_cells, schema={"basis": pl.String, **_cell_schema()})
+        if weights is not None
+        else None,
     )
 
 

@@ -51,6 +51,7 @@ from distress_radar.models.scoring import (
 )
 from distress_radar.models.serving import load_served, model_files, resolve
 from distress_radar.models.splits import label_timing, load_backtest_config
+from distress_radar.models.weights import DrawWeights, read_draw_weights
 from distress_radar.monitoring.drift import reference_frame
 from distress_radar.settings import Settings
 
@@ -80,7 +81,9 @@ def backtest(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
     coefficients in `config/models/`; the code commit of a clean working tree, refused otherwise;
     Postgres `universe_candidates`, whose lists every event count is broken down by; for a config
     with a `population` rule (plan 0015 decision 10), also `rdf_listed_entities` and
-    `filing_index`, which decide the entities modelled, refused unless they give the pinned hash.
+    `filing_index`, which decide the entities modelled, refused unless they give the pinned hash;
+    for a config with `weights` (plan 0019 step D), `universe_draws` under the pinned draw spec,
+    whose entities alone are modelled, each weighted by 1/π.
     Outputs: the Markdown report at `WAREHOUSE_DIR/reports/backtest/<BACKTEST_VERSION>.md`,
     replaced whole, the same bytes for the same inputs; one MLflow run per model, horizon and
     run (`main`, `no_regime`, `entity_disjoint`) in `MLFLOW_TRACKING_URI`, each with the four
@@ -99,15 +102,19 @@ def backtest(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
     models = [load_classical_model(m, feature_set) for m in CLASSICAL_MODELS]
     labels = load_label_set(settings.warehouse_dir, config.label_set_hash)
     population: Population | None = None
+    weights: DrawWeights | None = None
     postgres = cast("PostgresResource", context.resources.postgres)
     with postgres.connect() as conn:
         lists = read_lists(conn)
+        if config.weights is not None:
+            weights = read_draw_weights(conn, config.weights)
         if config.population is not None:
             population = read_population(
                 conn,
                 labels.get_column("krs").unique().to_list(),
                 config.population,
                 load_document_types().download_codes,
+                weights.members if weights is not None else None,
             )
     result = run_backtest(
         load_feature_store(settings.warehouse_dir, config.feature_set_version),
@@ -117,6 +124,7 @@ def backtest(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
         models,
         population,
         lists,
+        weights,
     )
     snapshot, files = data_snapshot(settings.warehouse_dir)
     # Per-row predictions and SHAP values name companies: local only, never the report or MLflow.

@@ -6,6 +6,10 @@ belong to Phase 8's survival models. Every other labelled row must find its feat
 feature grid covers every labelled date (plan 0010), so a miss is a bug, raised, never dropped.
 
 Nothing is imputed here or later (invariant 4): feature nulls reach the models as nulls.
+
+In a weighted backtest (plan 0019 step D) the label rows arrive with `draw_weight`, each entity's
+1/π from its draw, and every row of the dataset carries it. It is never a model input (it has no
+`*__known_from` companion), never read from a label, and constant per entity.
 """
 
 # polars's and pandera's signatures reference types pyright cannot resolve; scoped to this module.
@@ -17,6 +21,8 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
+import numpy as np
+import numpy.typing as npt
 import pandera.polars as pa
 import polars as pl
 
@@ -38,6 +44,15 @@ LABEL_COLUMNS = [
     "regime_flag",
 ]
 TARGET = "distress"
+# A weighted backtest's per-row weight, 1/π of the row's entity (plan 0019 step D).
+WEIGHT = "draw_weight"
+
+
+def row_weight(rows: pl.DataFrame) -> npt.NDArray[np.float64] | None:
+    """The rows' weights, or None in an unweighted backtest (no `draw_weight` column)."""
+    if WEIGHT not in rows.columns:
+        return None
+    return rows.get_column(WEIGHT).to_numpy().astype(np.float64)
 
 
 @dataclass(frozen=True)
@@ -102,7 +117,10 @@ def modelling_dataset(
         classes = sorted(unknown.get_column("outcome_class").unique().to_list())
         raise ValueError(f"outcome classes neither alive nor distress: {classes}")
     feature_columns = [c for c in features.columns if c not in KEY_COLUMNS]
-    frame = labelled.select("krs", "as_of_date", *LABEL_COLUMNS).join(
+    weight = [WEIGHT] if WEIGHT in labelled.columns else []
+    if weight and labelled.get_column(WEIGHT).null_count():
+        raise ValueError("a weighted label row has no draw weight")
+    frame = labelled.select("krs", "as_of_date", *LABEL_COLUMNS, *weight).join(
         features.select("krs", "as_of_date", *feature_columns),
         on=["krs", "as_of_date"],
         how="left",
@@ -117,7 +135,7 @@ def modelling_dataset(
     frame = frame.with_columns(pl.col("outcome_class").is_in(distress_classes).alias(TARGET)).sort(
         "krs", "as_of_date"
     )
-    frame = frame.select("krs", "as_of_date", TARGET, *LABEL_COLUMNS, *feature_columns)
+    frame = frame.select("krs", "as_of_date", TARGET, *LABEL_COLUMNS, *feature_columns, *weight)
     dataset_contract().validate(frame.select("krs", "as_of_date", TARGET, *LABEL_COLUMNS))
     return ModellingDataset(
         frame=frame,

@@ -57,7 +57,7 @@ from distress_radar.models.classical import (
     empty_predictions,
     with_probability,
 )
-from distress_radar.models.dataset import TARGET, event_day
+from distress_radar.models.dataset import TARGET, WEIGHT, event_day, row_weight
 from distress_radar.models.gbm import feature_matrix, fit_booster, hyperparameters, model_inputs
 from distress_radar.models.splits import (
     BacktestConfig,
@@ -120,6 +120,8 @@ def survival_records(
     distress = pl.col("outcome_class").is_in(list(distress_classes))
     # A censored row with a trigger left by merger (the grid's only censoring event).
     merged = pl.col("censored") & pl.col("trigger_event_type").is_not_null()
+    # A weighted backtest's rows carry their entity's 1/π (plan 0019 step D), never an input.
+    weight = [WEIGHT] if WEIGHT in rows.columns else []
     frame = rows.select(
         "krs",
         "as_of_date",
@@ -132,6 +134,7 @@ def survival_records(
         pl.when(distress).then(month).cast(pl.Int32).alias("event_month"),
         pl.when(merged).then(month).cast(pl.Int32).alias("exit_month"),
         pl.when(merged).then(pl.col("event_known_from")).alias("exit_known_from"),
+        *weight,
     )
     if not frame.filter(pl.col("as_of_date") != pl.col("as_of_date").dt.month_end()).is_empty():
         raise ValueError("survival records count months from month-end as_of_dates")
@@ -332,8 +335,9 @@ def fit_survival(
     forest: RandomSurvivalForest | None = None
     if not note:
         x = feature_matrix(train, columns)
-        hazard = fit_hazard(x, time, event, config.lightgbm)
-        forest = fit_forest(x, time, event, config.survival.comparison)
+        weight = row_weight(train)
+        hazard = fit_hazard(x, time, event, config.lightgbm, weight)
+        forest = fit_forest(x, time, event, config.survival.comparison, weight)
     fit = SurvivalFit(
         test_year=test_year,
         columns=columns,

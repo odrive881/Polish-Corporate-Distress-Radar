@@ -22,7 +22,7 @@ plan 0014's decision 7 (2026-10-18) visible wherever a champion is shown.
 and step G runs the draw once the owner has exported one. Step B goes first because the Rejestr.io trial has a
 deadline, and the frame must be exported before it ends (`docs/data_inventory.md`).
 
-## Status: active (2026-10-18): written on the owner's request (items 1–3 of "what can be built in the meantime"); owner decisions 0–9 accepted as recommended (2026-10-18); 2026-10-19: list v3's random group drawn by the owner's script and checked (ADR 0014, § "List v3's random group"), decision 10 accepted by the owner (2026-10-19); steps B and C built (2026-10-19); open: the distress group's redraw, `ind=F`'s meaning, scripted access, the trial's end date; nothing built
+## Status: active (2026-10-18): written on the owner's request (items 1–3 of "what can be built in the meantime"); owner decisions 0–9 accepted as recommended (2026-10-18); 2026-10-19: list v3's random group drawn by the owner's script and checked (ADR 0014, § "List v3's random group"), decision 10 accepted by the owner (2026-10-19); steps B–D built (2026-10-19); open: the distress group's redraw, `ind=F`'s meaning, scripted access, the trial's end date; nothing built
 
 ### Outstanding (2026-10-19): the owner's
 
@@ -45,7 +45,7 @@ And two new ones, from the log:
 
 Decision 10 is accepted (2026-10-19), so step B can be built for both designs now.
 
-Steps B and C are built (2026-10-19, "Built" under each); steps D–F are not started.
+Steps B–D are built (2026-10-19, "Built" under each); steps E–F are not started.
 
 ## Why
 
@@ -241,6 +241,37 @@ frames and logs only. As written above, with these differences:
   segment's. The banner says which draw and spec hash it rests on.
 - MLflow: `draw_spec_sha256` is logged as a parameter beside the four required IDs. The population hash already
   covers the entities.
+
+**Built (2026-10-19).** As written above, with these differences:
+
+- **The config section** is `weights: {draw_spec_sha256, random, distress, bootstrap: stratified}`. It names
+  both groups' list versions, since a draw has two, and it requires a `population` rule.
+- **`models/weights.py`** reads `universe_draws` under the pinned spec. Each drawn entity gets the weight
+  1/π and a stratum:
+  - `B:<status>` for a distress-group company;
+  - `A:<registration year>` for one from a systematic random group (decision 10's bands are single years);
+  - `A` for one from a permutation.
+
+  A company in both groups is resampled with B. Two different π for one company refuse the draw.
+- **The population.** `population.classify` takes the draw and leaves every other entity out first, as
+  `not_in_draw`. That reason is listed only in a weighted run, so unweighted reports keep their reason rows.
+- **How the weight travels.** It is a `draw_weight` column on the label rows, so the modelling dataset and the
+  survival records carry it. It is never an input: it has no `*__known_from` companion, and LightGBM's
+  `NOT_INPUTS` names it.
+  - **Weighted fits:** the regression, the classical models' mappings, LightGBM (Optuna's fits and its
+    inner-year Brier score, the Platt map, the fold's booster) and both survival models.
+  - **Unweighted:** the survival models' time-dependent metrics (concordance, integrated Brier).
+  - **The champion rule** still reads unweighted rows; step E changes that.
+- **Top-decile precision, weighted,** counts the share of the boundary row's weight that fits in the top tenth.
+  It equals the unweighted form only where a tenth of the total is a whole number of rows. The unweighted form
+  rounds up to a whole row, so equal weights can differ from it by that rounding. The test of equal weights
+  leaves it out for that reason.
+- **The three blocks.** A weighted run's `cells` are the headline. `basis_cells` holds every pooled cell
+  twice more: `a_alone` (the random group's rows, unweighted) and `unweighted` (all rows). The report prints them
+  per horizon as "Pooled, by basis", under a banner naming the draw spec. Its reliability table is weighted.
+- **Checked:** `make check`; `tests/models/test_weighted_backtest.py`. A synthetic unweighted backtest's report, cells and
+  reliability table are byte-identical to the code before this step (compared against the previous commit's code
+  in a worktree). Not run on real data: that waits on step G's draw.
 
 ### E. The weighted champion rule (decision 7)
 

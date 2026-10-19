@@ -250,6 +250,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
     │   ├── test_champion.py            # synthetic results that pass, fail each condition, or fall short
     │   ├── test_report_generation3.py  # the entity-disjoint run, events per list, the report's new sections
     │   ├── test_population.py          # the acquisition-complete rule, its pin, the report's section
+    │   ├── test_weighted_backtest.py   # weights from a draw, weighted metrics, the stratified bootstrap, every basis
     │   ├── test_evaluation.py          # hand-computed metrics, bootstrap, the report's bytes
     │   ├── test_weights.py             # an integer weight is a repeated row: metrics, reliability, the regression
     │   ├── test_registry.py            # the four identifiers, a dirty tree refused
@@ -355,6 +356,7 @@ src/distress_radar/
 │   ├── dataset.py                 # feature_store joined to one frozen label set, the binary target
 │   ├── splits.py                  # purged expanding-window folds and their per-fold report
 │   ├── population.py              # entities whose acquisition is complete (plan 0015 decision 10)
+│   ├── weights.py                 # a weighted backtest's 1/π and bootstrap strata, from universe_draws (plan 0019 step D)
 │   ├── baselines.py               # Altman, Polish discriminant models: config/models/ loader
 │   ├── classical.py               # logistic regression
 │   ├── evaluation.py              # metrics, entity bootstrap, reliability, the n/a rule per cell

@@ -5,7 +5,9 @@ since a harness that looks finished invites reading its numbers. A cell below `m
 verdict `n/a (<k events)` and no numbers; a cell whose model could not be fitted says why. The
 runs sit on adjacent rows. With generation 3 (plan 0015 step F): its inner year per fold, each
 fold's feature importance (never a company or a row), the survival models' metrics, and the
-champion rule's verdict. Nothing time-dependent is written, so the same inputs give the same bytes.
+champion rule's verdict. A weighted backtest (plan 0019 step D) says which draw it rests on, and
+gives each pooled cell weighted (the headline), for the random group alone, and unweighted. Nothing
+time-dependent is written, so the same inputs give the same bytes.
 """
 
 # polars's signatures reference types pyright cannot resolve; scoped to this module.
@@ -18,7 +20,7 @@ from pathlib import Path
 
 import polars as pl
 
-from distress_radar.models.backtest import POOLED, RUNS, BacktestResult
+from distress_radar.models.backtest import BASES, POOLED, RUNS, BacktestResult
 from distress_radar.models.evaluation import METRICS
 from distress_radar.models.explain import TOP, top_features
 
@@ -33,6 +35,11 @@ _RUN_TITLES = {
     "main": "all rows",
     "no_regime": "2020-21 regime rows left out",
     "entity_disjoint": "`main`'s models, scored only on entities no model of the fold trained on",
+}
+_BASIS_TITLES = {
+    "weighted": "weighted, both groups (the headline)",
+    "a_alone": "random group alone, unweighted (self-weighting: the check)",
+    "unweighted": "both groups, unweighted (the sample's, not the segment's)",
 }
 
 
@@ -74,6 +81,11 @@ def _by_list(counts: dict[str, int]) -> str:
 
 def _caveat(result: BacktestResult, horizon: int) -> str:
     k = result.config.min_events
+    if result.weights is not None:
+        return (
+            f"_Weighted to the draw: {result.events[horizon]} distinct events at {horizon} "
+            f"months among {result.entities} drawn entities; cells below {k} events print n/a._"
+        )
     kind = "Purposive lists" if result.lists else "Seed output"
     return (
         f"_{kind}, not evidence: {result.events[horizon]} distinct events at {horizon} "
@@ -87,6 +99,20 @@ def _opening(result: BacktestResult) -> str:
     k = config.min_events
     level = round(config.bootstrap.level * 100)
     counts = ", ".join(f"{n} distinct events at {h} months" for h, n in result.events.items())
+    weights = config.weights
+    if weights is not None:
+        groups = f"`{weights.random}`" + (f" and `{weights.distress}`" if weights.distress else "")
+        return (
+            f"> **Weighted to a recorded draw.** {result.entities} entities drawn from one frame "
+            f"({groups}, draw spec `{weights.draw_spec_sha256}`), "
+            f"{result.distress_entities} of them ever in distress; {counts}. Every fit and every "
+            "cell weights a row by its entity's 1/π, so the metrics speak for the frame the draw "
+            "was taken from; a pooled cell is also given for the random group alone and "
+            "unweighted. The survival models' time-dependent metrics, and the champion rule, read "
+            f"the rows unweighted. A cell with fewer than {k} distinct training or test events "
+            f"prints n/a. Intervals are {level}% percentile intervals over "
+            f"{config.bootstrap.replicates} resamples of entities within each draw stratum."
+        )
     if result.lists:
         who = (
             f"> **Purposive lists, not evidence.** {result.entities} entities"
@@ -327,6 +353,53 @@ def _population(result: BacktestResult) -> list[str]:
     ]
 
 
+def _bases(result: BacktestResult, horizon: int, caveat: str) -> list[str]:
+    """A weighted backtest's pooled cells on every basis (plan 0019 step D)."""
+    if result.basis_cells is None:
+        return []
+    k = result.config.min_events
+    headline = result.cells.filter(
+        (pl.col("horizon_months") == horizon) & (pl.col("test_year") == POOLED)
+    ).select(pl.lit("weighted").alias("basis"), pl.all())
+    others = result.basis_cells.filter(pl.col("horizon_months") == horizon)
+    order = {b: i for i, b in enumerate(("weighted", *BASES))}
+    rows = pl.concat([headline, others]).sort(
+        "model", "run", pl.col("basis").replace_strict(order, return_dtype=pl.Int32)
+    )
+    return [
+        "",
+        "### Pooled, by basis",
+        "",
+        caveat,
+        "",
+        "; ".join(f"`{b}`: {_BASIS_TITLES[b]}" for b in order) + ".",
+        "",
+        *_table(
+            [
+                "model",
+                "run",
+                "basis",
+                "scored rows",
+                "test events",
+                "verdict",
+                *(_METRIC_TITLES[m] for m in METRICS),
+            ],
+            [
+                [
+                    str(row["model"]),
+                    str(row["run"]),
+                    f"`{row['basis']}`",
+                    str(row["scored_rows"]),
+                    str(row["test_events"]),
+                    _verdict(row, k),
+                    *(_metric(row, m) for m in METRICS),
+                ]
+                for row in rows.iter_rows(named=True)
+            ],
+        ),
+    ]
+
+
 def render_report(result: BacktestResult, code_commit: str) -> str:
     config = result.config
     k = config.min_events
@@ -395,7 +468,10 @@ def render_report(result: BacktestResult, code_commit: str) -> str:
                 for row in cells.iter_rows(named=True)
             ],
         )
+        lines += _bases(result, horizon, caveat)
         lines += ["", "### Reliability, pooled", "", caveat, ""]
+        if result.weights is not None:
+            lines += ["Mean predicted and observed are weighted; rows are counts.", ""]
         speaking = cells.filter((pl.col("test_year") == POOLED) & pl.col("evaluable"))
         bins = (
             result.reliability.join(
