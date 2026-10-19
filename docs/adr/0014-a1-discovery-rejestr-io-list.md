@@ -6,6 +6,9 @@
   (§ "Addendum, 2026-10-07"). *2026-10-13:* the owner's two list v2 files are received and recorded there
   (§ "Lists received, 2026-10-13"); they were not drawn by its rule, so the addendum stays proposed. *2026-10-18:* what the weights need, and what would break them, is recorded
   (§ "What the weights need").
+  *2026-10-19:* list v3's random group is drawn by the owner's script, systematically from a recorded frame of
+  59,547, and checked (§ "List v3's random group"); its distress group is to be redrawn the same way, so the
+  addendum stays proposed.
 - **Date:** 2026-10-06
 - **Follows up:** 0013 (A1 was left open; ADR 0013's scripted downloads need a list of KRS numbers)
 
@@ -261,3 +264,68 @@ healthy one, which restores the segment's mix of events and non-events.
 
 Until these are recorded, plan 0014's decision 7 holds: the champion rule reads the lists unweighted and a
 promotion on them is provisional.
+
+### List v3's random group, 2026-10-19
+
+The owner drew a new group A with their own script against Rejestr.io's search, and kept a run log beside it.
+Both files stay outside the repository (`E:\Rejestr.io company pull\most_recent_run\`); the log names every drawn
+company, and some names name people, so only its counts, settings and hash are copied here. An earlier file of the
+same day (`rejestr_sample.csv`, 13:04, "1 in 40 of about 58,000", whose step and total did not agree) is
+superseded and not used.
+
+| File | Rows | SHA-256 |
+|---|---|---|
+| `rejestr_sample_2026-10-19_1403.csv` (`krs, company_name, status`, in a seeded random order) | 600 | `6af8e190654be47aeb257b8f57313343e07155d717841c2e61a4e9a7ba3da7b4` |
+| `rejestr_log_2026-10-19_1403.txt` (filters, totals, sampling, every pick with its position) | — | `25da25574f0c9ca0105be7fe17e6634f41bc6b56861e03a06e070c964707f2b3` |
+
+**The frame, as the log records it** (2026-10-19, 14:03–14:37 Warsaw time):
+
+| Filter | Setting |
+|---|---|
+| Legal form (`lf`) | `szoo` (`sp. z o.o.`) |
+| Industry (`ind`) | `F` (Budownictwo, sekcja PKD F); whether Rejestr.io reads the primary PKD, and which PKD version, is not yet known |
+| Registration date (`rd`) | 2001-01-01 to 2022-12-31 |
+| Status, location, finances, reporting type, employment, beneficial owner, CEO gender | not set |
+
+N_F = 59,547, both as the full search's total and as the sum of its 22 registration-year slices (2001: 977 …
+2021: 8,644, 2022: 7,316; every year's count is in the log).
+
+**The draw: systematic, with a random start.** The year slices were taken 2001 to 2022, each sorted by
+registration date, newest first, and concatenated. The step is N_F / 600 = 99.245, the start 6.229329 (random in
+[0, step)), the script's seed 3160363883, and pick i is position ⌊start + i · step⌋. This is not § "The draw"'s
+seeded permutation of an exported frame, but it is an equal-probability design: every company in F had the
+same chance, **π = 600 / 59,547**, so a weight of 99.245 each. Sorting by registration year before stepping
+stratifies it implicitly by year.
+
+**Checked by the pipeline's side (2026-10-19), reading only KRS, position, date and status:** every one of the 600
+positions equals ⌊start + i · step⌋, and its page, offset and year agree with it; every registration date lies in
+its slice's year; the CSV and the log hold the same 600 KRS numbers, well-formed and distinct; every year's
+picks are within one of N_year / step (2001: 10 of 9.8 … 2021: 87 of 87.1).
+
+**Composition (Rejestr.io's flags, not the pipeline's labels):** 4 `W upadłości`, 19 `W likwidacji` (3.8%), 16
+`W zawieszeniu` (not distress, § "Lists received"; the CSV leaves their status blank), and 86 deregistered (14%),
+so the frame keeps dead companies (§ "What the weights need", item 2). 73 were registered in 2022, after §
+"The frame"'s 2022-01-01 cut: they stay in, and the pipeline's filed-years rule decides whether they count. The
+group shares 6 companies with list v2's A, 3 with list v2's B, none with the superseded 13:04 file.
+
+**What it settles, of § "What the weights need":** #1 (N_F), #3 (n_A = 600), #4 (how the rows were chosen) and
+#5 (date and filters) for group A. Item 3 there, the serious one, no longer applies to A.
+
+**Still open:**
+
+1. **Group B is redrawn** by the same script with the same filters plus one status filter, once for `W upadłości`
+   and once for `W likwidacji`, each with its exact N_Dc, step, random start and log. List v2's B cannot be
+   weighted (its filters and how its rows were chosen are unrecorded). From A's flags, N_D is of the order of
+   2,300, of which about 400 bankrupt, so 130 bankrupt companies would be about a third of all of them.
+2. **Whether `ind=F` is the primary PKD,** and which PKD version. If it matches any listed PKD, F is wider than §
+   "The frame"'s segment; still a valid frame, recorded as such.
+3. **Scripted access to Rejestr.io** (618 requests, pauses of 0.9–1.8 s). The terms confirmed on 2026-10-07 were
+   for use by hand. Whether they allow the script is the owner's to confirm, as RDF's rate was (ADR 0007).
+4. **A full frame export** (KRS, registration date, status, deregistered flag; no names), about 600 requests at 100
+   a page, would let pipeline code check the log against F and extend the draw later. Recommended while the
+   trial lasts; without it, the log is the record.
+
+The new groups get `discovery_source` versions `rejestr_io_v3_random` and `rejestr_io_v3_distress` (plan 0019
+decision 3). With the two-group formula of § "Weights" applied per status, π for a company of D_c is
+600 / 59,547 + (1 − 600 / 59,547) · n_Bc / (N_Dc − d_Ac). Plan 0019 builds it (its decision 10 for the systematic
+design).

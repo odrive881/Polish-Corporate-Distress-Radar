@@ -22,17 +22,26 @@ plan 0014's decision 7 (2026-10-18) visible wherever a champion is shown.
 and step G runs the draw once the owner has exported one. Step B goes first because the Rejestr.io trial has a
 deadline, and the frame must be exported before it ends (`docs/data_inventory.md`).
 
-## Status: active (2026-10-18): written on the owner's request (items 1–3 of "what can be built in the meantime"); owner decisions 0–9 accepted as recommended (2026-10-18); open: step A's three answers from the owner (the export's header, how B's rows were chosen, the trial's end date); nothing built
+## Status: active (2026-10-18): written on the owner's request (items 1–3 of "what can be built in the meantime"); owner decisions 0–9 accepted as recommended (2026-10-18); 2026-10-19: list v3's random group drawn by the owner's script and checked (ADR 0014, § "List v3's random group"), decision 10 proposed; open: the distress group's redraw, `ind=F`'s meaning, scripted access, the trial's end date; nothing built
 
-### Outstanding (2026-10-18): the owner's
+### Outstanding (2026-10-19): the owner's
 
-Step A's three answers, before anything is built:
+Step A's three questions, as they stand after list v3's random group (ADR 0014, § "List v3's random group"):
 
-1. **The export's header line** (no company names): its columns, its delimiter, and whether it carries a status.
-   This decides decision 2's shape.
-2. **How group B's rows were chosen** from each status search's results (at random, the first pages, by a sort
-   order). This decides decision 1: keep B or redraw it.
-3. **When the Rejestr.io trial ends.** The frame must be exported before then, and step B before that.
+1. ~~**The export's header line.**~~ *Overtaken, 2026-10-19:* the owner's script drew group A itself, from a
+   frame of N_F = 59,547 it counted but did not export, and logged every pick. A full frame export (KRS,
+   registration date, status, deregistered flag) is still recommended while the trial lasts: it lets step B's
+   code check the log against F. Without it, the log is the record (decision 10).
+2. ~~**How group B's rows were chosen.**~~ *Overtaken:* list v2's B is not kept (decision 1's alternative). B is
+   redrawn by the same script, same filters plus `W upadłości`, then `W likwidacji`, each logged with N_Dc, step
+   and start.
+3. **When the Rejestr.io trial ends.** Still open: B's redraw, and the frame export if wanted, must happen before.
+
+And two new ones, from the log:
+
+4. **Whether Rejestr.io's `ind=F` is the primary PKD,** and which PKD version.
+5. **Whether Rejestr.io's terms allow the script** (618 requests for group A). Those confirmed on 2026-10-07
+   were for use by hand.
 
 Steps B–F are not started.
 
@@ -113,10 +122,23 @@ provisional until one can. Three things are missing, and all three can be built 
    stands").
 9. **Weighted top-decile precision.** *Recommended:* built, as the weighted share of events among the rows whose
    cumulative weight makes up the top 10%. Without it the weighted report has a blank column.
+10. **A systematic draw done outside the pipeline** (proposed, 2026-10-19; list v3's group A, ADR 0014).
+    *Recommended:* the draw spec (decision 0) takes a `design`: `permutation` (step B's draw from an exported
+    frame, as written) or `systematic`. A `systematic` spec records N_F per registration-year slice, the sort,
+    n, the step, the start, the script's seed and the run log's SHA-256. Step B then reads the log rather than
+    drawing: it refuses the log if its hash differs, if any pick is not at ⌊start + i · step⌋, or if a slice's
+    count or the picks' years disagree with the spec, and π = n / N_F for every pick (per status in B, with the
+    two-group formula), in `Fraction`. Only the log's KRS, position, year and status columns are read; its names
+    never leave the reader. If a frame export arrives, the same checks also run against it. Decision 6's strata
+    for A become registration-year bands, which the systematic step stratified implicitly. *Alternative:* redraw
+    A by step B's permutation from an exported frame, which costs the owner a full export and the downloads
+    of a new 600.
 
 ## Steps
 
 ### A. Verify before building (no code)
+
+*2026-10-19:* overtaken in part by list v3's random group; § "Outstanding" says what remains.
 
 - From the owner: Rejestr.io's export format (column names, delimiter, whether a status is included), using the
   header line only, without company names. That decides decision 2's shape.
@@ -193,6 +215,9 @@ provisional until one can. Three things are missing, and all three can be built 
 
 ### G. The real draw (waits on the owner's export)
 
+*2026-10-19:* group A of list v3 is drawn (ADR 0014, § "List v3's random group"); under decision 10, step G
+writes its `systematic` spec from the log and waits only on B's redraw.
+
 - Write the spec from the owner's numbers (ADR 0014, § "What the weights need": the five numbers), commit it,
   run `universe_draw` and then `entity_master`, and record the counts here and in ADR 0014's addendum. The
   addendum's status then goes to the owner to accept.
@@ -228,6 +253,7 @@ provisional until one can. Three things are missing, and all three can be built 
 ## Definition of done
 
 - [x] Owner decisions 0–9 accepted (2026-10-18, as recommended).
+- [ ] Decision 10 (a systematic draw done outside the pipeline) accepted or declined.
 - [ ] Step A's answers recorded (export format, how B was chosen, the trial's end date).
 - [ ] Steps B–F built, with their tests in `make check`.
 - [ ] Step G: the real draw run on the owner's frame, its counts recorded here and in ADR 0014.
