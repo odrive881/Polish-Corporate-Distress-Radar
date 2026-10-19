@@ -1,8 +1,8 @@
 # 0022 — Outcome labels, version 3: restructuring openings and endings
 
 **Stage:** C (legal events) and F (labels), after plans 0009 and 0014. **Status: complete (2026-10-19):
-mappings, tests and label version built; label set `afeba985…` frozen (§ "Result"). Retraining on v3 is the
-owner's call (decision 6).**
+mappings, tests and label version built; label set `afeba985…` frozen (§ "Result"); the models retrained on
+it by `backtest_v9` on the owner's request (§ "Retraining", 2026-10-19).**
 
 ## Why
 
@@ -70,8 +70,8 @@ Four causes, all of them the seed's 49 notices and 17 extracts never showing a f
 6. **Scoring's risk set and the realised calibration read the latest set of `LABEL_VERSION`,** not of the served
    model's training label version. No new v2 set will be frozen, so the old rule would have frozen the risk set
    at the 2026-10-19 v2 set without anyone noticing. Who is in a proceeding now, and what happened, are the
-   current labels' answer; the model's own label version stays on every score row. The served models are still
-   trained on v2: retraining or a backtest on v3 is the owner's call (`backtest_v8` pins a v2 set).
+   current labels' answer; the model's own label version stays on every score row. Retraining on v3 was the
+   owner's call (`backtest_v8` pins a v2 set); asked for on 2026-10-19 and done as `backtest_v9` (§ "Retraining").
 
 ## What changed
 
@@ -136,6 +136,32 @@ move:
 66 rows fewer in all: months now excluded as in a proceeding. The served models (trained on v2) are unchanged;
 from tonight scoring's risk set comes from v3 (decision 6). The GR count of decision 5 is 2 of 141.
 
+## Retraining (2026-10-19, run `8de34f05`, commit `756661d`)
+
+`config/models/backtest_v9.yaml` is `backtest_v8` with two pins changed, committed before the run: the label
+set `afeba985…` and the population on that day's stores, 458 entities (seed 17, list v1 353, list v2's distress
+group 90, two of them seed entities; v8 had 370). The population moves with the stores, so v8's population
+cannot be re-pinned: the label change and list v2's distress group arrive in one version. As plan 0014 decision 7
+requires, its comment says the distress group is outcome-selected and the rule's verdict is the lists',
+unweighted. The `backtest_run` step took 11 min 10 s (no fold tuned: no inner year holds 30 events).
+
+- **Events:** 107 entities ever in distress, 116 distinct events per horizon (seed 11, list v1 11, the distress
+  group 96), against v8's 20 and 22.
+- **Champion rule: nothing promoted.** For the first time the paired rows clear the 50-event floor in `main`
+  (57 at 12 months, 50 at 24), but `no_regime` holds 36 and 23, so every challenger is not evaluable. In `main`
+  none would pass anyway: the survival forest's Brier difference is -0.002 [-0.006–0.002] at 12 months and
+  -0.005 [-0.022–0.013] at 24, LightGBM's and the survival LightGBM's lie above zero.
+- **Served:** the regression, version 6 of `distress_radar_12m` and `_24m`, `incumbent`, training eve
+  2024-12-31, label set `afeba985…`. The default `BACKTEST_VERSION` is now `backtest_v9`, so the nightly
+  scoring serves version 6 from 2026-10-20; earlier rows keep version 5 and its label version.
+- **Worth a look:** the regression's pooled 12-month `no_regime` AUC is 0.393 [0.269–0.514], below chance, on
+  1,959 rows and 36 events, its smallest fold trained on 7; and its pooled 24-month `no_regime` cell (201
+  rows, 23 events) prints its AUC as undefined. Both are thin cells, not yet a finding.
+- **Not re-run:** `publish` (the public site still reads `backtest_v8`'s database; re-publishing is a
+  separate step, and ADR 0014's addendum forbids presenting this population's Brier scores as the segment's).
+
+Report: `WAREHOUSE_DIR/reports/backtest/backtest_v9.md`.
+
 ## Out of scope
 
-Retraining or re-pinning a backtest on v3 (the owner's decision); chapter IV; KRZ.
+Chapter IV; KRZ; weighting the champion rule (plan 0019).

@@ -96,8 +96,9 @@ class Settings(BaseSettings):
     feature_set_version: str = "feature_set_v6"
     # Which `config/models/<backtest_version>.yaml` the `backtest` job runs (plans 0012, 0013,
     # 0015: v5 adds generation 3, the population rule and the champion rule). The default is the
-    # latest run, so scheduled scoring needs no variable (plan 0018 decision 9; v5 until then).
-    backtest_version: str = "backtest_v8"
+    # latest run, so scheduled scoring needs no variable (plan 0018 decision 9; v5 until then; v9,
+    # label v3, since plan 0022).
+    backtest_version: str = "backtest_v9"
 
     # The Polish spaCy model, unpacked by `make models` (plan 0013; ADR 0009, third addendum).
     spacy_model_dir: Path = Path(".cache/models")

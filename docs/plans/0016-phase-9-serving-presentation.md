@@ -20,6 +20,10 @@ registry holds and says so, and the public site's population-level pages wait fo
 
 ### Where this stands (2026-10-16): pick up here
 
+*Since 2026-10-19:* `backtest_v9` (plan 0022, label v3, 458 entities) registered version 6 of both models, the
+regression, `incumbent`, and the default `BACKTEST_VERSION` is v9, so scheduled scoring serves version 6 from the
+night of 2026-10-20. The public site still reads `backtest_v8`'s `publish.duckdb` until `publish` is re-run.
+
 **Built and run, on `backtest_v8`** (370-entity population; served: the regression, v5 of `distress_radar_12m`
 and `_24m`, alias `incumbent`, training eve 2024-12-31; nothing promoted):
 
