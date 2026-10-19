@@ -18,6 +18,7 @@ from distress_radar.acquisition.sampling import (
     PermutationSpec,
     SystematicSpec,
     draw,
+    draw_from_spec,
     draw_systematic,
     load_draw_spec,
     read_frame,
@@ -468,3 +469,30 @@ def test_spec_refuses_unknown_keys(tmp_path: Path):
     body["frame"]["company_names"] = "kept"
     with pytest.raises(ValueError, match="company_names"):
         _spec(tmp_path, body)
+
+
+def test_each_group_has_a_download_order_that_is_a_permutation(tmp_path: Path):
+    a_log = _a_log(tmp_path)
+    spec = _systematic(tmp_path, a_log)
+    rows = draw_systematic(spec, _logs(a_log), ingestion_run_id="run-1", created_at=NOW).rows
+    assert sorted(r.draw_order for r in rows) == list(range(40))
+    # Not the log's order, which runs through the registration years.
+    assert [r.draw_order for r in rows] != list(range(40))
+    assert {r.source_sha256 for r in rows} == {_sha(a_log)}
+
+    other = tmp_path / "permutation"
+    other.mkdir()
+    pspec, frame = _permutation(other)
+    prow = draw(frame, pspec).rows
+    assert [r.draw_order for r in prow if r.group == "A"] == list(range(20))
+
+
+def test_draw_from_spec_takes_the_designs_own_source(tmp_path: Path):
+    a_log = _a_log(tmp_path)
+    spec = _systematic(tmp_path, a_log)
+    with pytest.raises(DrawRefused, match="run logs"):
+        draw_from_spec(spec, frame=a_log, logs={}, ingestion_run_id="run-1", created_at=NOW)
+    result = draw_from_spec(
+        spec, frame=None, logs=_logs(a_log), ingestion_run_id="run-1", created_at=NOW
+    )
+    assert len(result.rows) == 40

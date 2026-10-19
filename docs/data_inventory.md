@@ -112,7 +112,7 @@ The KRZ and MSiG sources both contain consumer bankruptcies. Natural persons mus
 
 | Item | Source | Stage | Feeds | Req. | Spec ref | Status |
 |---|---|---|---|---|---|---|
-| Candidate KRS lists | commercial registry aggregators, used within their terms of service | A1 (1) | `universe_candidates` (with `discovery_source`, `discovered_at`) | required | SPEC §6A; OVERVIEW stage 1 | aggregator not chosen; hand-picked seed in use |
+| Candidate KRS lists | commercial registry aggregators, used within their terms of service | A1 (1) | `universe_candidates` (with `discovery_source`, `discovered_at`) | required | SPEC §6A; OVERVIEW stage 1 | Rejestr.io (ADR 0014): the seed, list v1 and v2 as plain lists; a drawn list's groups and π in `universe_draws` (plan 0019) |
 | New-registration feeds | registry feeds | A1 (1) | `universe_candidates` | optional | OVERVIEW stage 1 | not started |
 | Official entity counts by PKD section and employment band | GUS aggregate statistics | A1 (1) | coverage sanity check / report | required | OVERVIEW stage 1 | not started |
 | Segment spec | `config/segments/construction_sme_v1.yaml` | A1 (1) | universe filter | required | SPEC §6A | present |

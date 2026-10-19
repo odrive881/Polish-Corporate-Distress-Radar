@@ -226,6 +226,12 @@ class DrawnCompany:
     inclusion_probability: Fraction
     # The registration-year slice it was drawn from (systematic draws only): the implicit strata.
     registration_year: int | None
+    # Its place in the group's download order, from 0: the permutation's order, or for a systematic
+    # run the same seeded hash order over its picks, so that whatever part of a group has been
+    # downloaded at any moment is itself a random sample (the addendum's "Download order").
+    draw_order: int
+    # The frame file's SHA-256 (permutation) or the run log's (systematic) it was drawn from.
+    source_sha256: str
 
 
 @dataclass(frozen=True)
@@ -339,8 +345,10 @@ def draw(frame: Frame, spec: PermutationSpec) -> DrawResult:
             stratum=frame.strata[krs],
             inclusion_probability=pi[frame.strata[krs]],
             registration_year=None,
+            draw_order=rank,
+            source_sha256=spec.frame.sha256,
         )
-        for krs in group_a
+        for rank, krs in enumerate(group_a)
     ]
     if spec.distress is not None:
         for key in spec.distress_statuses:
@@ -353,8 +361,10 @@ def draw(frame: Frame, spec: PermutationSpec) -> DrawResult:
                     stratum=key,
                     inclusion_probability=pi[key],
                     registration_year=None,
+                    draw_order=rank,
+                    source_sha256=spec.frame.sha256,
                 )
-                for krs in members[: spec.distress.n.get(key, 0)]
+                for rank, krs in enumerate(members[: spec.distress.n.get(key, 0)])
             )
     return DrawResult(rows=rows, quarantine=list(frame.quarantine))
 
@@ -604,6 +614,12 @@ def draw_systematic(
             )
             for line in log.malformed_lines
         )
+        ranks = {
+            krs: rank
+            for rank, krs in enumerate(
+                sorted((p.krs for p in log.picks), key=lambda krs: (_order_key(run.seed, krs), krs))
+            )
+        }
         for pick in log.picks:
             if key == "random":
                 group: Literal["A", "B"] = RANDOM_GROUP
@@ -624,6 +640,27 @@ def draw_systematic(
                     stratum=stratum,
                     inclusion_probability=pi(stratum),
                     registration_year=pick.year,
+                    draw_order=ranks[pick.krs],
+                    source_sha256=log.sha256,
                 )
             )
     return result
+
+
+def draw_from_spec(
+    spec: PermutationSpec | SystematicSpec,
+    *,
+    frame: Path | None,
+    logs: Mapping[str, Path],
+    ingestion_run_id: str,
+    created_at: datetime,
+) -> DrawResult:
+    """The draw a spec describes, from its frame file (permutation) or its run logs (systematic)."""
+    if isinstance(spec, PermutationSpec):
+        if frame is None or logs:
+            raise DrawRefused("a permutation draw takes a frame file and no run logs")
+        read = read_frame(frame, spec, ingestion_run_id=ingestion_run_id, created_at=created_at)
+        return draw(read, spec)
+    if frame is not None:
+        raise DrawRefused("a systematic draw takes run logs, not a frame file")
+    return draw_systematic(spec, logs, ingestion_run_id=ingestion_run_id, created_at=created_at)

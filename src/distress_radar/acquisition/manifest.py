@@ -38,6 +38,7 @@ from distress_radar.acquisition.models import (
 from distress_radar.acquisition.msig_client import MsigResult
 from distress_radar.acquisition.raw_store import raw_key
 from distress_radar.acquisition.regon_client import A2Result
+from distress_radar.acquisition.sampling import DrawnCompany
 
 SCHEMA_DDL: tuple[LiteralString, ...] = (
     """
@@ -100,6 +101,28 @@ SCHEMA_DDL: tuple[LiteralString, ...] = (
         regon_hint        text,
         nip_hint          text,
         PRIMARY KEY (krs, discovery_source)
+    )
+    """,
+    # One row per drawn company, list version and draw spec (plan 0019 step C, decision 4). π is
+    # kept as an exact fraction: 600 / 59,547 has no finite decimal. A spec that adds a group can
+    # change π for companies already drawn, so rows are keyed by the spec that gave them, and a
+    # weighted backtest pins one spec's hash.
+    """
+    CREATE TABLE IF NOT EXISTS universe_draws (
+        krs                    char(10) NOT NULL,
+        list_version           text NOT NULL,
+        draw_spec_sha256       text NOT NULL,
+        draw_group             text NOT NULL CHECK (draw_group IN ('A', 'B')),
+        stratum                text NOT NULL,
+        pi_numerator           bigint NOT NULL CHECK (pi_numerator > 0),
+        pi_denominator         bigint NOT NULL CHECK (pi_denominator >= pi_numerator),
+        inclusion_probability  numeric GENERATED ALWAYS AS
+                                   (pi_numerator::numeric / pi_denominator) STORED,
+        registration_year      integer,
+        draw_order             integer NOT NULL CHECK (draw_order >= 0),
+        source_sha256          text NOT NULL,
+        ingestion_run_id       text NOT NULL,
+        PRIMARY KEY (krs, list_version, draw_spec_sha256)
     )
     """,
     """
@@ -403,6 +426,44 @@ def insert_universe_candidates(conn: Connection, rows: Iterable[UniverseCandidat
                 row.nip_hint,
             ),
         )
+
+
+def insert_universe_draws(
+    conn: Connection, rows: Iterable[DrawnCompany], *, draw_spec_sha256: str, ingestion_run_id: str
+) -> None:
+    """Record each drawn company's group, stratum and exact π under the spec that drew it."""
+    for row in rows:
+        pi = row.inclusion_probability
+        conn.execute(
+            """
+            INSERT INTO universe_draws
+                (krs, list_version, draw_spec_sha256, draw_group, stratum, pi_numerator,
+                 pi_denominator, registration_year, draw_order, source_sha256, ingestion_run_id)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT DO NOTHING
+            """,
+            (
+                row.krs,
+                row.list_version,
+                draw_spec_sha256,
+                row.group,
+                row.stratum,
+                pi.numerator,
+                pi.denominator,
+                row.registration_year,
+                row.draw_order,
+                row.source_sha256,
+                ingestion_run_id,
+            ),
+        )
+
+
+def resolved_among(conn: Connection, krs_numbers: Iterable[str]) -> int:
+    """How many of these KRS numbers are already in `entity_master` (their downloads reused)."""
+    row = conn.execute(
+        "SELECT count(*) FROM entity_master WHERE trim(krs) = ANY(%s)", (sorted(set(krs_numbers)),)
+    ).fetchone()
+    return int(row[0]) if row is not None else 0
 
 
 def insert_entity_master(conn: Connection, row: EntityMasterRow) -> None:
@@ -903,6 +964,7 @@ def table_counts(conn: Connection) -> dict[str, int]:
         "raw_documents",
         "raw_document_fetches",
         "universe_candidates",
+        "universe_draws",
         "entity_master",
         "entity_reconciliation_log",
         "quarantine_events",

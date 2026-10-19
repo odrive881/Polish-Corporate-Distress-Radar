@@ -16,6 +16,7 @@ from zoneinfo import ZoneInfo
 
 import dagster as dg
 import psycopg
+from pydantic import Field
 
 from distress_radar.acquisition import manifest
 from distress_radar.acquisition.base import PermanentSourceError, SourceError
@@ -29,11 +30,18 @@ from distress_radar.acquisition.document_retrieval import (
     retrieve_document,
 )
 from distress_radar.acquisition.har_import import import_har
+from distress_radar.acquisition.models import UniverseCandidate
 from distress_radar.acquisition.raw_store import S3ObjectStore, sha256_hex
 from distress_radar.acquisition.rdf_queue import TIERS, read_queue, write_queue
 from distress_radar.acquisition.redaction_migration import stored_markers
 from distress_radar.acquisition.regon_client import resolve_entity
 from distress_radar.acquisition.report_import import import_reports
+from distress_radar.acquisition.sampling import (
+    DrawRefused,
+    draw_from_spec,
+    load_draw_spec,
+    spec_sha256,
+)
 from distress_radar.acquisition.script_import import import_listing
 from distress_radar.acquisition.universe_discovery import load_krs_list, load_seed, load_segment
 from distress_radar.features.statutory import load_filing_deadlines
@@ -120,9 +128,85 @@ def universe_candidates(
     )
 
 
+class UniverseDrawConfig(dg.Config):
+    # The draw spec's file name in `config/segments/`, e.g. `construction_sme_v1_draw_v1.yaml`.
+    draw_spec: str
+    # A permutation draw's frame file, outside the repository (ADR 0014).
+    frame: str = ""
+    # A systematic draw's run logs, outside the repository: `random` and each distress status.
+    logs: dict[str, str] = Field(default_factory=dict[str, str])
+
+
+@dg.asset(group_name="acquisition", required_resource_keys={"postgres"})
+def universe_draw(
+    context: dg.AssetExecutionContext, config: UniverseDrawConfig
+) -> dg.MaterializeResult:
+    """A1 — a drawn list (plan 0019 step C, decisions 3, 4 and 10; ADR 0014 addendum).
+
+    Inputs: the draw spec in `config/segments/`; its frame file (permutation) or its run logs
+    (systematic), both kept outside the repository and read for KRS numbers, positions, years
+    and statuses alone. No network.
+    Outputs: Postgres `universe_draws` (each drawn company's group, stratum, exact π, draw order
+    and the frame's or log's hash, under the spec's hash), the drawn companies'
+    `universe_candidates` rows under their list version (`entity_master` then resolves them as
+    for any list), and malformed KRS numbers as `quarantine_events` rows (stage A1). A frame or
+    log that disagrees with the spec fails the run and writes nothing. Inserts are
+    `ON CONFLICT DO NOTHING`, so re-materializing adds no rows.
+    Partition scheme: none (unpartitioned); one materialization per spec.
+    """
+    spec_path = SEGMENTS_DIR / config.draw_spec
+    spec = load_draw_spec(spec_path)
+    draw_spec_hash = spec_sha256(spec_path)
+    now = datetime.now(UTC)
+    try:
+        result = draw_from_spec(
+            spec,
+            frame=Path(config.frame) if config.frame else None,
+            logs={key: Path(path) for key, path in config.logs.items()},
+            ingestion_run_id=context.run_id,
+            created_at=now,
+        )
+    except DrawRefused as exc:
+        raise dg.Failure(description=f"draw refused: {exc}") from exc
+    candidates = [
+        UniverseCandidate(
+            krs=row.krs,
+            discovery_source=row.list_version,
+            discovered_at=now,
+            ingestion_run_id=context.run_id,
+        )
+        for row in result.rows
+    ]
+    postgres = cast("PostgresResource", context.resources.postgres)
+    with postgres.connect() as conn:
+        manifest.ensure_schema(conn)
+        manifest.insert_universe_draws(
+            conn, result.rows, draw_spec_sha256=draw_spec_hash, ingestion_run_id=context.run_id
+        )
+        manifest.insert_universe_candidates(conn, candidates)
+        manifest.insert_quarantine(conn, result.quarantine)
+        conn.commit()
+        resolved = manifest.resolved_among(conn, (row.krs for row in result.rows))
+    groups = Counter(f"{row.list_version}/{row.stratum}" for row in result.rows)
+    return dg.MaterializeResult(
+        metadata={
+            "draw_spec": config.draw_spec,
+            "draw_spec_sha256": draw_spec_hash,
+            "design": spec.design,
+            "frame_size": spec.frame.size,
+            "source_sha256": ", ".join(sorted({row.source_sha256 for row in result.rows})),
+            "drawn_rows": len(result.rows),
+            "drawn_companies": len({row.krs for row in result.rows}),
+            "already_resolved": resolved,
+            "quarantined": len(result.quarantine),
+            **{f"n_{key}": count for key, count in sorted(groups.items())},
+        }
+    )
+
+
 @dg.asset(
     group_name="acquisition",
-    deps=[universe_candidates],
+    deps=[universe_candidates, universe_draw],
     required_resource_keys={"postgres", "raw_object_store", "bir1"},
 )
 def entity_master(context: dg.AssetExecutionContext, config: SegmentConfig) -> dg.MaterializeResult:
@@ -740,6 +824,7 @@ def rdf_research_queue(
 
 acquisition_assets = [
     universe_candidates,
+    universe_draw,
     entity_master,
     filing_index,
     raw_filing_documents,

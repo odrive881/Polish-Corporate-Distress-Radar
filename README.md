@@ -142,7 +142,7 @@ All three files use the same format:
 - flags as `Tak` / `Nie`, as RDF shows them;
 - dates as `YYYY-MM-DD` or `DD.MM.YYYY`, and a time with no offset is read as Warsaw time.
 
-A2 must have run first, since only entities in `entity_master` are imported. A list of KRS numbers kept outside the repository (ADR 0014) is loaded as candidates with `universe_candidates`' `krs_list` and `krs_list_source` config (e.g. `rejestr_io_v1`); only its KRS column is read.
+A2 must have run first, since only entities in `entity_master` are imported. A list of KRS numbers kept outside the repository (ADR 0014) is loaded as candidates with `universe_candidates`' `krs_list` and `krs_list_source` config (e.g. `rejestr_io_v1`); only its KRS column is read. A drawn list (plan 0019) is loaded instead with `universe_draw`, configured with its draw spec in `config/segments/` and its frame file or run logs (`logs: {random: <path>, <status>: <path>}`), all kept outside the repository; a file that disagrees with the spec fails the run and writes nothing.
 
 Import: `uv run dagster asset materialize -m dagster_defs.definitions --select rdf_script_import`. The import:
 

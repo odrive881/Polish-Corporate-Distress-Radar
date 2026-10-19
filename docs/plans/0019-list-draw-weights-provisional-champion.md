@@ -22,7 +22,7 @@ plan 0014's decision 7 (2026-10-18) visible wherever a champion is shown.
 and step G runs the draw once the owner has exported one. Step B goes first because the Rejestr.io trial has a
 deadline, and the frame must be exported before it ends (`docs/data_inventory.md`).
 
-## Status: active (2026-10-18): written on the owner's request (items 1–3 of "what can be built in the meantime"); owner decisions 0–9 accepted as recommended (2026-10-18); 2026-10-19: list v3's random group drawn by the owner's script and checked (ADR 0014, § "List v3's random group"), decision 10 accepted by the owner (2026-10-19); step B built (2026-10-19); open: the distress group's redraw, `ind=F`'s meaning, scripted access, the trial's end date; nothing built
+## Status: active (2026-10-18): written on the owner's request (items 1–3 of "what can be built in the meantime"); owner decisions 0–9 accepted as recommended (2026-10-18); 2026-10-19: list v3's random group drawn by the owner's script and checked (ADR 0014, § "List v3's random group"), decision 10 accepted by the owner (2026-10-19); steps B and C built (2026-10-19); open: the distress group's redraw, `ind=F`'s meaning, scripted access, the trial's end date; nothing built
 
 ### Outstanding (2026-10-19): the owner's
 
@@ -45,7 +45,7 @@ And two new ones, from the log:
 
 Decision 10 is accepted (2026-10-19), so step B can be built for both designs now.
 
-Step B is built (2026-10-19, § "B. The draw", "Built"); steps C–F are not started.
+Steps B and C are built (2026-10-19, "Built" under each); steps D–F are not started.
 
 ## Why
 
@@ -200,6 +200,28 @@ frames and logs only. As written above, with these differences:
   `entity_master` then runs as for any list.
 - `rdf_queue` (plan 0018) puts a draw's never-searched companies first in addendum order: B, then A in
   permutation order, so whatever part of A is downloaded at any moment is itself a random sample.
+
+**Built (2026-10-19).** As written above, with these differences:
+
+- **π is stored as an exact fraction.** `pi_numerator` and `pi_denominator` hold it, with `inclusion_probability`
+  a generated `numeric` beside them. A `numeric` alone cannot hold 600 / 59,547 exactly: it has no finite decimal.
+- **The key adds the spec's hash:** `(krs, list_version, draw_spec_sha256)`. A spec that adds a group changes π
+  for companies already drawn (a D member of A, once B exists). So each spec keeps its own rows, and a weighted
+  backtest pins one (step D).
+- **The columns:**
+  - `draw_group`, since `group` is a reserved word.
+  - `source_sha256`, the frame file's or the run log's hash, in place of `frame_sha256`, since a systematic draw
+    has no frame file.
+  - `registration_year`, the implicit strata of a systematic draw (decision 6).
+  - `draw_order`, the download order.
+- **The download order of a systematic run** is the same seeded hash order as a permutation's, over the run's
+  picks. It is not the CSV's shuffle, which nothing checks. The queue (`rdf_queue.py`) puts the never-searched
+  drawn companies first: B, then A, each in draw order, then everyone else. Other tiers are unchanged.
+- `universe_draw` writes nothing when a file disagrees with its spec. Its metadata holds the spec's and sources'
+  hashes, N_F, the rows per list version and stratum, and how many drawn companies `entity_master` already
+  holds. `entity_master` lists it beside `universe_candidates` as an upstream.
+- **Tested:** the manifest (π exact and reduced, reinserts no-ops, one row per spec), the queue's order, and each
+  group's download order. Not materialized on real data: that waits on step G's spec.
 
 ### D. Weights through the backtest (decisions 5, 6, 9)
 

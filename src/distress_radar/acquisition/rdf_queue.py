@@ -14,14 +14,17 @@ of `entity_master` lands in the first tier that fits it:
    so RDF may hold a statement the pipeline has not seen.
 4. `oldest_search`: everything else, the longest since a complete search first.
 
-Within a tier: the oldest search first (never searched before any), then by KRS. The file holds
+Within a tier: the oldest search first (never searched before any), then by KRS. Among the never
+searched, a drawn list's companies come first (plan 0019 step C): its distress group, then its
+random group, each in its draw order, so that whatever part of a group the script has reached is
+itself a random sample (ADR 0014 addendum, "Download order"). The file holds
 KRS numbers only, one a line (ADR 0014: nothing else of the list leaves the pipeline), and the
 same inputs on the same date give the same bytes.
 """
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -45,6 +48,9 @@ STATEMENTS_SCHEMA: dict[str, pl.DataType | type[pl.DataType]] = {
     "period_end": pl.Date,
 }
 _WARSAW = ZoneInfo("Europe/Warsaw")
+# (group, draw order): B before A, then the draw's order. Undrawn companies after every drawn one.
+DrawRank = tuple[int, int]
+_UNDRAWN: DrawRank = (2, 0)
 
 
 @dataclass(frozen=True)
@@ -63,13 +69,16 @@ def build_queue(
     captured: Iterable[str],
     deadlines: FilingDeadlines,
     on: date,
+    draw_ranks: Mapping[str, DrawRank] | None = None,
 ) -> list[QueueEntry]:
     """Every entity in `entities`, in the order the script should search them on `on`.
 
     `searches`: stored RDF searches (`SEARCHES_SCHEMA`), `rdf_listed_entities`.
     `statements`: the period ends of listed, non-deleted statements (`STATEMENTS_SCHEMA`).
     `captured`: entities whose source is complete by capture (the seed).
+    `draw_ranks`: drawn companies' (group, draw order), `universe_draws`; orders the never searched.
     """
+    ranks = draw_ranks or {}
     captured_set = set(captured)
     latest: dict[str, bool] = {
         r["krs"]: r["complete"]
@@ -109,6 +118,7 @@ def build_queue(
             TIERS.index(e.tier),
             e.last_complete_search is not None,
             e.last_complete_search or date.min,
+            ranks.get(e.krs, _UNDRAWN) if e.tier == "not_searched" else _UNDRAWN,
             e.krs,
         )
     )
@@ -125,7 +135,8 @@ def read_queue(
 ) -> list[QueueEntry]:
     """`build_queue` over the Postgres records: `entity_master`, `rdf_listed_entities`,
     `filing_index` (listed statements of a downloaded type, not deleted, as the population rule
-    reads them) and `universe_candidates` (the sources complete by capture)."""
+    reads them), `universe_candidates` (the sources complete by capture) and `universe_draws`
+    (the drawn companies' order, when the table exists)."""
     entities = [r[0] for r in conn.execute("SELECT trim(krs) FROM entity_master").fetchall()]
     searches = pl.DataFrame(
         conn.execute("SELECT trim(krs), searched_at, complete FROM rdf_listed_entities").fetchall(),
@@ -151,8 +162,27 @@ def read_queue(
             (sorted(complete_by_capture),),
         ).fetchall()
     ]
+    draw_ranks: dict[str, DrawRank] = {}
+    if conn.execute("SELECT to_regclass('universe_draws')").fetchone() not in (None, (None,)):
+        draw_ranks = {
+            krs: (group, order)
+            for krs, group, order in conn.execute(
+                """
+                SELECT DISTINCT ON (trim(krs)) trim(krs),
+                       CASE draw_group WHEN 'B' THEN 0 ELSE 1 END AS g, draw_order
+                FROM universe_draws
+                ORDER BY trim(krs), g, draw_order
+                """
+            ).fetchall()
+        }
     return build_queue(
-        entities, searches, statements, captured=captured, deadlines=deadlines, on=on
+        entities,
+        searches,
+        statements,
+        captured=captured,
+        deadlines=deadlines,
+        on=on,
+        draw_ranks=draw_ranks,
     )
 
 

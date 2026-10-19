@@ -302,7 +302,7 @@ Five adapters, one module each under `src/distress_radar/acquisition/`. All shar
 
 | Stage | Source | Protocol | Output |
 |---|---|---|---|
-| A1 | Registry aggregators | HTTPS | `universe_candidates` (krs, discovery_source, discovered_at) |
+| A1 | Registry aggregators | HTTPS | `universe_candidates` (krs, discovery_source, discovered_at); for a drawn list, `universe_draws` (group, stratum, exact π, draw order, under the draw spec's hash; plan 0019) |
 | A2 | GUS REGON BIR1 | SOAP (`zeep`) | `entity_master` — validated identifiers, PKD codes, legal form, status |
 | A3 | Financial document repository (RDF) | Per-entity lookup through the public UI; four tiers, below | Raw documents → object store; `filing_index`, `rdf_listed_entities` |
 | A4 | Full KRS extract (open KRS API) + MSiG notice search API; KRZ not built (WAF, ADR 0011) | HTTPS JSON (`krs_extract.py`, `msig_client.py`) | Redacted extracts and person-free notice records → object store; `legal_source_fetches`, `msig_notices` |

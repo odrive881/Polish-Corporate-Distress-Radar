@@ -6,7 +6,8 @@ Each test runs in a throwaway schema so it never touches real manifest data.
 import uuid
 from collections.abc import Iterator
 from datetime import UTC, date, datetime
-from typing import Any
+from fractions import Fraction
+from typing import Any, Literal
 
 import psycopg
 import pytest
@@ -29,6 +30,7 @@ from distress_radar.acquisition.models import (
 )
 from distress_radar.acquisition.msig_client import MsigResult
 from distress_radar.acquisition.raw_store import RawDocumentMeta
+from distress_radar.acquisition.sampling import DrawnCompany
 from distress_radar.settings import Settings
 
 pytestmark = pytest.mark.integration
@@ -141,6 +143,7 @@ def test_ensure_schema_is_idempotent(conn: psycopg.Connection):
         "raw_documents": 0,
         "raw_document_fetches": 0,
         "universe_candidates": 0,
+        "universe_draws": 0,
         "entity_master": 0,
         "entity_reconciliation_log": 0,
         "quarantine_events": 0,
@@ -163,6 +166,7 @@ def test_reinserts_are_noops(conn: psycopg.Connection):
         "raw_documents": 2,
         "raw_document_fetches": 2,
         "universe_candidates": 2,
+        "universe_draws": 0,
         "entity_master": 1,
         "entity_reconciliation_log": 1,
         "quarantine_events": 1,
@@ -624,3 +628,65 @@ def test_an_old_raw_redactions_table_is_rekeyed_and_lost_rows_recovered(conn: ps
         "SELECT received_sha256, redacted_sha256, redaction_version FROM raw_redactions ORDER BY 3"
     ).fetchall()
     assert rows == [(received, old, "msig-notice-1"), (received, new, "msig-notice-1+cccccccccccc")]
+
+
+def _drawn(
+    krs: str, pi: Fraction, *, group: Literal["A", "B"] = "A", order: int = 0
+) -> DrawnCompany:
+    return DrawnCompany(
+        krs=krs,
+        list_version="rejestr_io_v3_random" if group == "A" else "rejestr_io_v3_distress",
+        group=group,
+        stratum="none" if group == "A" else "w_upadlosci",
+        inclusion_probability=pi,
+        registration_year=2015,
+        draw_order=order,
+        source_sha256="ef" * 32,
+    )
+
+
+def test_universe_draws_keep_pi_exact_and_reinserts_are_noops(conn: psycopg.Connection):
+    manifest.ensure_schema(conn)
+    rows = [
+        _drawn("0000000001", Fraction(600, 59547)),
+        _drawn("0000000002", Fraction(1, 3), group="B"),
+    ]
+    for _ in range(2):
+        manifest.insert_universe_draws(
+            conn, rows, draw_spec_sha256="aa" * 32, ingestion_run_id="run-1"
+        )
+    stored = conn.execute(
+        "SELECT trim(krs), draw_group, pi_numerator, pi_denominator, inclusion_probability "
+        "FROM universe_draws ORDER BY krs"
+    ).fetchall()
+    # 600 / 59,547 reduces to 200 / 19,849, and has no finite decimal: the fraction is the record.
+    assert [(k, g, Fraction(n, d)) for k, g, n, d, _ in stored] == [
+        ("0000000001", "A", Fraction(600, 59547)),
+        ("0000000002", "B", Fraction(1, 3)),
+    ]
+    assert stored[0][2:4] == (200, 19849)
+    assert abs(float(stored[0][4]) - 600 / 59547) < 1e-12
+
+
+def test_a_new_spec_records_its_own_pi_beside_the_old(conn: psycopg.Connection):
+    manifest.ensure_schema(conn)
+    manifest.insert_universe_draws(
+        conn,
+        [_drawn("0000000001", Fraction(1, 100))],
+        draw_spec_sha256="aa" * 32,
+        ingestion_run_id="r1",
+    )
+    manifest.insert_universe_draws(
+        conn,
+        [_drawn("0000000001", Fraction(1, 10))],
+        draw_spec_sha256="bb" * 32,
+        ingestion_run_id="r2",
+    )
+    assert manifest.table_counts(conn)["universe_draws"] == 2
+
+
+def test_resolved_among_counts_drawn_companies_already_in_entity_master(conn: psycopg.Connection):
+    manifest.ensure_schema(conn)
+    _write_everything(conn, "run-1")
+    resolved = manifest.resolved_entities(conn)
+    assert manifest.resolved_among(conn, [*resolved, "0000999999"]) == len(resolved)
