@@ -8,7 +8,8 @@
   (§ "What the weights need").
   *2026-10-19:* list v3's random group is drawn by the owner's script, systematically from a recorded frame of
   59,547, and checked (§ "List v3's random group"); its distress group is to be redrawn the same way, so the
-  addendum stays proposed.
+  addendum stays proposed. *2026-10-20:* the distress group is redrawn by the owner's distress script (17:21 the
+  same day), checked, and its draw spec written (§ "List v3's distress group"); the addendum goes to the owner.
 - **Date:** 2026-10-06
 - **Follows up:** 0013 (A1 was left open; ADR 0013's scripted downloads need a list of KRS numbers)
 
@@ -313,7 +314,7 @@ group shares 6 companies with list v2's A, 3 with list v2's B, none with the sup
 
 **Still open:**
 
-1. **Group B is redrawn** by the same script with the same filters plus one status filter, once for `W upadłości`
+1. ~~**Group B is redrawn**~~ *Done, 2026-10-19 (§ "List v3's distress group").* By the same script with the same filters plus one status filter, once for `W upadłości`
    and once for `W likwidacji`, each with its exact N_Dc, step, random start and log. List v2's B cannot be
    weighted (its filters and how its rows were chosen are unrecorded). From A's flags, N_D is of the order of
    2,300, of which about 400 bankrupt, so 130 bankrupt companies would be about a third of all of them.
@@ -329,3 +330,45 @@ The new groups get `discovery_source` versions `rejestr_io_v3_random` and `rejes
 decision 3). With the two-group formula of § "Weights" applied per status, π for a company of D_c is
 600 / 59,547 + (1 − 600 / 59,547) · n_Bc / (N_Dc − d_Ac). Plan 0019 builds it (its decision 10 for the systematic
 design, accepted by the owner 2026-10-19).
+
+### List v3's distress group, 2026-10-19
+
+The owner redrew group B with a second script (the same step principle, one run per status) and kept one run log
+for both runs beside its CSV. Both files stay outside the repository (`E:\Rejestr.io company
+pull\most_recent_distressed_run\`); the log names every drawn company, so only counts, settings and hashes are
+copied here.
+
+| File | Rows | SHA-256 |
+|---|---|---|
+| `rejestr_distressed_2026-10-19_1721.csv` (`krs, company_name, status`, in a seeded random order) | 200 | `2c81fcaa47dab56500073fa1a18980e22d06b232d32ae9f59d6124ad5523b126` |
+| `rejestr_distressed_log_2026-10-19_1721.txt` (filters, the filter funnel, both runs, every pick) | — | `fd65884e6443ecf1b498ccee42bf54d4f300823ad384020d6d6a5e9b0590727e` |
+
+**The runs** (2026-10-19, 17:21–17:24 Warsaw time, seed 1381911424): group A's filters plus one status filter
+each, the same year slices and sort.
+
+| Status (filter) | N_Dc | n_Bc | Step | Start | π for a company of D_c alone |
+|---|---|---|---|---|---|
+| `W upadłości` (`bpcy`) | 209 | 130 | 1.607692 | 0.558806 | 1 − (1 − 600/59,547)(1 − 130/209) ≈ 0.626 |
+| `W likwidacji` (`liq`) | 1,998 | 70 | 28.542857 | 2.395162 | 1 − (1 − 600/59,547)(1 − 70/1,998) ≈ 0.045 |
+
+- **Independent runs, so the formula is not the addendum's.** B was not drawn from D minus A: each run stepped
+  over the whole of D_c. A company carrying the statuses C has π = 1 − (1 − 600/59,547) · Π (1 − n_Bc/N_Dc) over
+  c in C, as plan 0019 step B computes it. This replaces the dependent formula of § "List v3's random group"'s
+  last paragraph. 4 companies of F carry both statuses; 3 of them were drawn (in the `bpcy` run), π ≈ 0.639.
+- **The frame drifted by 2.** The distress script's funnel counts 59,549 with A's filters, three hours after A's
+  59,547. Each B run's N_Dc is counted against the frame as it then stood; the spec records 59,549 on both runs
+  (`frame_size`), and N_F stays 59,547.
+- **D is Rejestr.io's flag on 2026-10-19, still registered.** None of the 200 is deregistered, so a bankruptcy
+  closed and struck off is not in D; and the flag cannot be filtered to entries on or after 2019-01-01 (§ "The
+  distress stratum"). Of the 86 bankrupt picks already in `legal_events` (from list v2's B), about 80% opened in
+  2019 or later, the rest in 2010–2018, before v1's years: those stay in their group and drop out by the
+  pipeline's own filters, counted.
+
+**Checked by the pipeline's side (2026-10-20), against the draw spec
+`config/segments/construction_sme_v1_draw_v1.yaml`:** both runs pass `draw_systematic` (every pick at ⌊start +
+i · step⌋ in its slice's year, no warning, no shifted pick, the CSV and the log hold the same 200 KRS numbers).
+With A: 800 rows, 793 companies, 7 in both groups (A's 4 bankrupt companies and 3 of its 19 in liquidation), none
+quarantined. 86 of B are list v2's B, so their downloads are reused.
+
+**Still open:** items 2–4 of § "List v3's random group" (`ind=F`'s meaning, scripted access, a frame export),
+running `universe_draw`, and the owner's acceptance of the addendum.

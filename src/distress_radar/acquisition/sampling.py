@@ -10,8 +10,8 @@ frame, so that every drawn company's probability of being drawn, π, is known ex
 - `systematic`: the owner's script drew each group itself, with a fixed step and a random start
   over the frame's registration-year slices, and logged every pick (decision 10). The draw is
   not repeated: its run logs are checked against the spec, pick by pick, and π = n / N for each
-  run. A and B are then two independent draws, so a member of D_c has
-  π = 1 − (1 − π_A)(1 − π_Bc).
+  run. A and B are then independent draws, so a company carrying the distress statuses C has
+  π = 1 − (1 − π_A) · Π_{c ∈ C} (1 − π_Bc). B's runs may share one log, one run per status.
 
 π is exact (`Fraction`) here; it becomes `numeric` only when stored. A weight is a fact about how a
 company was drawn, never about its outcome: nothing here reads a label.
@@ -144,6 +144,10 @@ class SystematicRun(_Frozen):
     # As the log prints it; exact as a decimal.
     start: str
     seed: int = Field(ge=0)
+    # The frame's count as this run's log printed it, when the search returned another number than
+    # `frame.size` by the run's time (F drifts between runs taken hours apart). None: the log
+    # prints no frame count, or prints `frame.size`.
+    frame_size: int | None = Field(default=None, ge=1)
 
     _hash = field_validator("log_sha256")(_check_sha256)
 
@@ -193,7 +197,8 @@ class SystematicSpec(_Frozen):
                 raise ValueError(f"distress run {stratum!r} is not in distress_statuses")
             if self.distress_statuses[stratum].filter_value is None:
                 raise ValueError(f"distress status {stratum!r} needs its filter_value")
-            if self.distress[stratum].size > self.frame.size:
+            run = self.distress[stratum]
+            if run.size > (run.frame_size if run.frame_size is not None else self.frame.size):
                 raise ValueError(f"distress run {stratum!r} is larger than the frame")
         return self
 
@@ -379,12 +384,14 @@ class LogPick:
     year: int
     krs: str
     registration_year: int
-    status: str | None
+    # Rejestr.io's distress labels on the company at the run's time; a company may carry two
+    # ("W likwidacji; W upadłości"), and an unflagged one none.
+    statuses: tuple[str, ...]
 
 
 @dataclass(frozen=True)
 class RunLog:
-    """What a run log says, without a single company name."""
+    """What a run log says about one run, without a single company name."""
 
     sha256: str
     result: str
@@ -399,18 +406,29 @@ class RunLog:
     seed: int
     picks: list[LogPick]
     malformed_lines: list[int]
+    # The frame's count as the log printed it at the run's time, when it prints one apart from
+    # the run's own total (a distress log's filter funnel); None otherwise.
+    frame_total: int | None = None
 
 
-_PICK_COLUMNS = ("global_pos", "year", "krs", "registration_date", "status")
+_PICK_COLUMNS = ("#", "global_pos", "year", "krs", "registration_date", "status")
+# A distress log holds one run per status: a section `SAMPLING - <LABEL> (op=<filter>)` each, a
+# raw filter line `Raw filter JSON [<label>]: {...}` each, and one PICKS table whose `sampled_as`
+# column names the run a pick belongs to.
+_RUN_SECTION = re.compile(r"^SAMPLING - .+ \(op=(\S+)\)$")
+_RUN_FILTERS = re.compile(r"^\s*Raw filter JSON \[(.+)\]\s*:\s*(\{.*\})\s*$")
+_FULL_RANGE = re.compile(r"full-range query returned (\d+)")
+_FUNNEL_LINE = re.compile(r"^\s*(.*?)\s+(\d+)\s*$")
+_YEAR_LINE = re.compile(r"^\s+(\d{4}):\s+(\d+)\s*$")
 
 
-def _field(lines: list[str], label: str, name: str) -> str:
+def _field(lines: list[str], label: str, name: str | None = None) -> str:
     pattern = re.compile(rf"^\s*{re.escape(label)}\s*:\s*(\S+)")
     for line in lines:
         match = pattern.match(line)
         if match:
             return match.group(1)
-    raise DrawRefused(f"{name}: no {label!r} line")
+    raise DrawRefused(f"{name}: no {label!r} line" if name else f"no {label!r} line")
 
 
 def _section(lines: list[str], title: str) -> list[str]:
@@ -427,56 +445,134 @@ def _section(lines: list[str], title: str) -> list[str]:
     return body
 
 
-def read_run_log(path: Path) -> RunLog:
-    """Parse the owner's script's run log. Only its settings and the picks' KRS, position, year,
-    registration year and status are kept; every other column, a name among them, is dropped
-    on the line it was read from."""
-    raw = path.read_bytes()
-    name = path.name
-    lines = raw.decode("utf-8-sig").splitlines()
+def _year_slices(lines: list[str]) -> dict[int, int]:
+    slices: dict[int, int] = {}
+    for line in lines:
+        match = _YEAR_LINE.match(line)
+        if match:
+            slices[int(match.group(1))] = int(match.group(2))
+    return slices
+
+
+def _statuses(value: str) -> tuple[str, ...]:
+    return tuple(part.strip() for part in value.split(";") if part.strip() not in ("", "-"))
+
+
+@dataclass(frozen=True)
+class _RunPart:
+    """The part of a log that differs between a one-run log and a run of a distress log."""
+
+    filters: dict[str, Any]
+    total: int
+    year_slices: dict[int, int]
+    settings: list[str]
+    # The `sampled_as` value of the run's picks, or None when every pick is the run's.
+    label: str | None
+    frame_total: int | None
+
+
+def _single_run(lines: list[str]) -> _RunPart:
     filters_line = next(
         (line for line in lines if line.strip().startswith("Raw filter JSON")), None
     )
     if filters_line is None:
-        raise DrawRefused(f"{name}: no 'Raw filter JSON' line")
+        raise DrawRefused("no 'Raw filter JSON' line")
+    return _RunPart(
+        filters=cast(dict[str, Any], json.loads(filters_line.split(":", 1)[1])),
+        total=int(_field(lines, "Exact total returned for full range")),
+        year_slices=_year_slices(_section(lines, "TOTALS")),
+        settings=lines,
+        label=None,
+        frame_total=None,
+    )
+
+
+def _stratum_run(lines: list[str], status_filter: str | None) -> _RunPart:
+    runs: dict[str, tuple[str, dict[str, Any]]] = {}
+    for line in lines:
+        match = _RUN_FILTERS.match(line)
+        if match:
+            filters = cast(dict[str, Any], json.loads(match.group(2)))
+            runs[str(filters.get("op"))] = (match.group(1), filters)
+    if status_filter is None or status_filter not in runs:
+        raise DrawRefused(f"no run with the status filter {status_filter!r}")
+    label, filters = runs[status_filter]
+    title = next(
+        line.strip()
+        for line in lines
+        if (match := _RUN_SECTION.match(line.strip())) and match.group(1) == status_filter
+    )
+    section = _section(lines, title)
+    full_range = next((m for line in section if (m := _FULL_RANGE.search(line))), None)
+    if full_range is None:
+        raise DrawRefused(f"the {status_filter!r} run prints no full-range total")
+    # The frame is the funnel's last count before the first status filter is added.
+    funnel = _section(lines, "TOTALS AT EACH FILTERING STEP")
+    frame_total: int | None = None
+    for line in funnel:
+        if line.strip().startswith("+ Status"):
+            break
+        match = _FUNNEL_LINE.match(line)
+        if match:
+            frame_total = int(match.group(2))
+    return _RunPart(
+        filters=filters,
+        total=int(full_range.group(1)),
+        year_slices=_year_slices(section),
+        settings=section,
+        label=label,
+        frame_total=frame_total,
+    )
+
+
+def read_run_log(path: Path, status_filter: str | None = None) -> RunLog:
+    """Parse the owner's script's run log. Only its settings and the picks' KRS, position, year,
+    registration year and statuses are kept; every other column, a name among them, is dropped
+    on the line it was read from.
+
+    A log of one run (group A's script) is read whole. A distress log holds one run per status
+    (the distress script), and is read for the run whose status filter is `status_filter` alone.
+    """
+    raw = path.read_bytes()
+    name = path.name
+    lines = raw.decode("utf-8-sig").splitlines()
+    multi = any(_RUN_SECTION.match(line.strip()) for line in lines)
     try:
-        filters = cast(dict[str, Any], json.loads(filters_line.split(":", 1)[1]))
+        part = _stratum_run(lines, status_filter) if multi else _single_run(lines)
         sort_lines = _section(lines, "SORT ORDER")
-        totals = _section(lines, "TOTALS")
         warnings = [line.strip() for line in _section(lines, "WARNINGS")]
     except (json.JSONDecodeError, DrawRefused) as exc:
         raise DrawRefused(f"{name}: {exc}") from exc
     if not sort_lines:
         raise DrawRefused(f"{name}: SORT ORDER is empty")
-    slices: dict[int, int] = {}
-    for line in totals:
-        match = re.match(r"^\s+(\d{4}):\s+(\d+)\s*$", line)
-        if match:
-            slices[int(match.group(1))] = int(match.group(2))
 
     try:
-        header_index = next(i for i, line in enumerate(lines) if line.strip().startswith("#\t"))
-    except StopIteration:
+        title_index = next(i for i, line in enumerate(lines) if line.startswith("PICKS"))
+        header_index = title_index + 1
+        header = lines[header_index].strip().split("\t")
+    except (StopIteration, IndexError):
         raise DrawRefused(f"{name}: no PICKS table") from None
-    header = lines[header_index].strip().split("\t")
-    missing = [column for column in _PICK_COLUMNS if column not in header]
+    columns = (*_PICK_COLUMNS, "sampled_as") if multi else _PICK_COLUMNS
+    missing = [column for column in columns if column not in header]
     if missing:
         raise DrawRefused(f"{name}: PICKS lacks {missing}")
-    index = {column: header.index(column) for column in _PICK_COLUMNS}
+    index = {column: header.index(column) for column in columns}
 
     picks: list[LogPick] = []
     malformed: list[int] = []
     for number, line in enumerate(lines[header_index + 1 :], start=header_index + 2):
-        cells = line.strip().split("\t")
-        if not cells[0].isdigit():
-            if line.strip():
-                break
+        if not line.strip():
             continue
+        cells = line.strip().split("\t")
+        if len(cells) <= index["#"] or not cells[index["#"]].isdigit():
+            break
         try:
             values = {column: cells[i].strip() for column, i in index.items()}
         except IndexError:
             raise DrawRefused(f"{name}: line {number} is short of columns") from None
         del cells
+        if part.label is not None and values["sampled_as"] != part.label:
+            continue
         if not is_krs(values["krs"]):
             malformed.append(number)
             continue
@@ -487,7 +583,7 @@ def read_run_log(path: Path) -> RunLog:
                 year=int(values["year"]),
                 krs=values["krs"],
                 registration_year=date.fromisoformat(values["registration_date"]).year,
-                status=None if values["status"] in ("", "-") else values["status"],
+                statuses=_statuses(values["status"]),
             )
         except ValueError:
             raise DrawRefused(f"{name}: line {number} has a malformed position or date") from None
@@ -498,16 +594,17 @@ def read_run_log(path: Path) -> RunLog:
             sha256=hashlib.sha256(raw).hexdigest(),
             result=_field(lines, "Result", name),
             warnings=[w for w in warnings if w != "none"],
-            filters=filters,
+            filters=part.filters,
             sort=sort_lines[0].split()[0],
-            total=int(_field(lines, "Exact total returned for full range", name)),
-            year_slices=slices,
-            n=int(_field(lines, "Companies wanted", name)),
-            step=Decimal(_field(lines, "Step", name)),
-            start=_field(lines, "Start", name),
+            total=part.total,
+            year_slices=part.year_slices,
+            n=int(_field(part.settings, "Companies wanted", name)),
+            step=Decimal(_field(part.settings, "Step", name)),
+            start=_field(part.settings, "Start", name),
             seed=int(_field(lines, "Seed", name)),
             picks=picks,
             malformed_lines=malformed,
+            frame_total=part.frame_total,
         )
     except (ValueError, InvalidOperation) as exc:
         raise DrawRefused(f"{name}: {exc}") from exc
@@ -537,6 +634,13 @@ def check_run_log(
         refuse("its filters differ from the frame's")
     if status != status_filter:
         refuse(f"its status filter is {status!r}, the spec's {status_filter!r}")
+    # A frame count the log prints must be the spec's: N_F, or the count the spec records for this
+    # run when the frame had drifted by the run's time.
+    if run.frame_size is not None and log.frame_total is None:
+        refuse("the spec gives a frame count for this run, the log prints none")
+    frame_size = run.frame_size if run.frame_size is not None else frame.size
+    if log.frame_total is not None and log.frame_total != frame_size:
+        refuse(f"its frame count is {log.frame_total}, the spec's {frame_size}")
     if log.sort != run.sort:
         refuse(f"sorted {log.sort!r}, the spec says {run.sort!r}")
     if log.year_slices != run.year_slices:
@@ -582,9 +686,12 @@ def draw_systematic(
 ) -> DrawResult:
     """Check each run's log against the spec and give every pick its π.
 
-    `logs` maps `random` and each drawn distress status to its run log. A and B are independent
-    runs, so a company of D_c has π = 1 − (1 − n_A/N_F)(1 − n_Bc/N_Dc); a company of D_c the A
-    run picked is in D_c by the status the A log shows.
+    `logs` maps `random` and each drawn distress status to its run log; the distress runs may
+    share one log. A and the runs of B are independent runs, so a company has
+    π = 1 − (1 − n_A/N_F) · Π (1 − n_Bc/N_Dc) over the distress statuses c it carries in any log
+    that names it: one in D_bpcy and D_liq could have been drawn by either B run. A distress
+    script that finds its target already taken shifts to a neighbour and logs a warning, which
+    refuses the log, so an accepted log holds no shifted pick.
     """
     expected = {"random", *spec.distress}
     if set(logs) != expected:
@@ -593,20 +700,19 @@ def draw_systematic(
     pi_a = Fraction(spec.random.n, spec.random.size)
     pi_b = {key: Fraction(run.n, run.size) for key, run in spec.distress.items()}
 
-    def pi(stratum: str) -> Fraction:
-        if stratum == NO_STRATUM or stratum not in pi_b:
-            return pi_a
-        return 1 - (1 - pi_a) * (1 - pi_b[stratum])
+    def strata_of(pick: LogPick) -> list[str]:
+        return [key for key, st in spec.distress_statuses.items() if st.label in pick.statuses]
 
-    by_label = {status.label: key for key, status in spec.distress_statuses.items()}
-    result = DrawResult()
     runs: list[tuple[str, SystematicRun, str | None]] = [("random", spec.random, None)]
     runs.extend(
         (key, run, spec.distress_statuses[key].filter_value) for key, run in spec.distress.items()
     )
+    result = DrawResult()
+    read: list[tuple[str, SystematicRun, RunLog]] = []
+    flagged: dict[str, set[str]] = {}
     for key, run, status_filter in runs:
         path = logs[key]
-        log = read_run_log(path)
+        log = read_run_log(path, status_filter)
         check_run_log(log, run, spec.frame, status_filter=status_filter, name=path.name)
         result.quarantine.extend(
             _quarantine_line(
@@ -614,6 +720,22 @@ def draw_systematic(
             )
             for line in log.malformed_lines
         )
+        for pick in log.picks:
+            strata = strata_of(pick)
+            if key != "random" and key not in strata:
+                raise DrawRefused(
+                    f"{path.name}: line {pick.line} is not {spec.distress_statuses[key].label!r}"
+                )
+            flagged.setdefault(pick.krs, set()).update(strata)
+        read.append((key, run, log))
+
+    def pi(krs: str) -> Fraction:
+        missed = 1 - pi_a
+        for stratum in flagged[krs]:
+            missed *= 1 - pi_b.get(stratum, Fraction(0))
+        return 1 - missed
+
+    for key, run, log in read:
         ranks = {
             krs: rank
             for rank, krs in enumerate(
@@ -623,14 +745,9 @@ def draw_systematic(
         for pick in log.picks:
             if key == "random":
                 group: Literal["A", "B"] = RANDOM_GROUP
-                stratum = by_label.get(pick.status or "", NO_STRATUM)
+                stratum = next(iter(strata_of(pick)), NO_STRATUM)
             else:
                 group = DISTRESS_GROUP
-                if pick.status != spec.distress_statuses[key].label:
-                    raise DrawRefused(
-                        f"{path.name}: line {pick.line} is not "
-                        f"{spec.distress_statuses[key].label!r}"
-                    )
                 stratum = key
             result.rows.append(
                 DrawnCompany(
@@ -638,7 +755,7 @@ def draw_systematic(
                     list_version=run.list_version,
                     group=group,
                     stratum=stratum,
-                    inclusion_probability=pi(stratum),
+                    inclusion_probability=pi(pick.krs),
                     registration_year=pick.year,
                     draw_order=ranks[pick.krs],
                     source_sha256=log.sha256,

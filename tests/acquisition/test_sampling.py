@@ -356,8 +356,10 @@ def test_systematic_pi_for_two_independent_runs(tmp_path: Path):
     rows = draw_systematic(spec, _logs(a_log, b_log), ingestion_run_id="run-1", created_at=NOW).rows
     pi_a, pi_b = Fraction(40, 800), Fraction(10, 50)
     union = 1 - (1 - pi_a) * (1 - pi_b)
+    # A company is in D_c if any log flags it c: B's picks are A's first ten, flagged in B alone.
+    in_b = {r.krs for r in rows if r.group == "B"}
     for row in rows:
-        expected = union if row.stratum == "w_upadlosci" else pi_a
+        expected = union if row.stratum == "w_upadlosci" or row.krs in in_b else pi_a
         assert row.inclusion_probability == expected
     # A company in both runs has a row in each, with the same π.
     both = [r for r in rows if r.krs == _krs(1_000)]
@@ -496,3 +498,157 @@ def test_draw_from_spec_takes_the_designs_own_source(tmp_path: Path):
         spec, frame=None, logs=_logs(a_log), ingestion_run_id="run-1", created_at=NOW
     )
     assert len(result.rows) == 40
+
+
+# --- A distress log with one run per status (the owner's distress script) ----------------------
+
+L_SLICES = {2001: 6, 2002: 10, 2003: 14}
+
+
+def _distress_log_text(
+    *,
+    frame_total: int = 800,
+    statuses: dict[tuple[str, int], str] | None = None,
+    warnings: str = "none",
+) -> str:
+    """Two runs in one log, laid out as the distress script writes it: W upadłości (n=10 of
+    D_SLICES, start 1.5) then W likwidacji (n=5 of L_SLICES, start 2.25), KRS numbers from 2000."""
+    runs = [
+        ("W upadłości", "bankrupt", D_SLICES, 10, "1.5"),
+        ("W likwidacji", "liquidation", L_SLICES, 5, "2.25"),
+    ]
+    raw = {"lf": "szoo", "ind": "F", "loc": None, "rd": FILTERS["rd"], "cs": None}
+    lines = [
+        "REJESTR.IO DISTRESSED SAMPLE RUN LOG",
+        "=" * 60,
+        "Search started : 2026-10-19 17:21:39 (Europe/Warsaw)",
+        "Result         : OK",
+        "",
+        "FILTERS (common to all statuses)",
+        *(
+            f"  Raw filter JSON [{label}]: {json.dumps({'op': op, **raw})}"
+            for label, op, *_ in runs
+        ),
+        "",
+        "SORT ORDER",
+        "  rd:desc (Data rejestracji: od najnowszej); applied inside each registration-year slice",
+        "",
+        "TOTALS AT EACH FILTERING STEP",
+        "  Spółka z o.o.                                        845663",
+        "  + Budownictwo                                        91712",
+        f"  + Data rejestracji {FILTERS['rd']}             {frame_total}",
+        *(
+            f"  + Status {label} (op={op})                       {sum(slices.values())}"
+            for label, op, slices, *_ in runs
+        ),
+        "    (companies with both statuses)                     2",
+        "",
+    ]
+    for label, op, slices, n, start in runs:
+        size = sum(slices.values())
+        lines += [
+            f"SAMPLING - {label.upper()} (op={op})",
+            f"  Total sampled from : {size}  (full-range query returned {size})",
+            f"  Companies wanted   : {n}   collected: {n}",
+            f"  Step               : {float(Fraction(size, n)):.6f}  (= {size} / {n})",
+            f"  Start              : {start}  (random, 0 <= start < step)",
+            "  Totals per registration year:",
+            *(f"    {year}: {count}" for year, count in sorted(slices.items())),
+            "",
+        ]
+    lines += [
+        "RUN",
+        "  Seed         : 12  (put in SEED setting to reproduce this run)",
+        "",
+        "WARNINGS",
+        f"  {warnings}",
+        "",
+        "PICKS (in list order)",
+        (
+            "  sampled_as\t#\tglobal_pos\tyear\tpage\toffset\tkrs\tregistration_date\tremoved"
+            "\tstatus\tcompany_name"
+        ),
+    ]
+    krs = 2_000
+    for label, _, slices, n, start in runs:
+        for i, position in enumerate(_positions(sum(slices.values()), n, start)):
+            year = _year_of(position, slices)
+            status = (statuses or {}).get((label, i), label)
+            lines.append(
+                f"  {label}\t{i + 1}\t{position}\t{year}\t1\t{position}\t{_krs(krs)}"
+                f"\t{year}-06-30\tfalse\t{status}\t{NAME} {krs}"
+            )
+            krs += 1
+    return "\r\n".join(lines) + "\r\n"
+
+
+def _distress_body(a_log: Path, d_log: Path, **frame_sizes: int) -> dict[str, Any]:
+    body = _systematic_body(a_log)
+    runs = {
+        "w_upadlosci": _run(d_log, slices=D_SLICES, n=10, start="1.5", seed=12, version="v3_d"),
+        "w_likwidacji": _run(d_log, slices=L_SLICES, n=5, start="2.25", seed=12, version="v3_d"),
+    }
+    for key, size in frame_sizes.items():
+        runs[key]["frame_size"] = size
+    body["distress"] = runs
+    return body
+
+
+def _distress_draw(tmp_path: Path, text: str, **frame_sizes: int):
+    a_log = _a_log(tmp_path)
+    d_log = _write_log(tmp_path, "d.txt", text)
+    spec = _spec(tmp_path, _distress_body(a_log, d_log, **frame_sizes))
+    assert isinstance(spec, SystematicSpec)
+    logs = {"random": a_log, "w_upadlosci": d_log, "w_likwidacji": d_log}
+    return draw_systematic(spec, logs, ingestion_run_id="run-1", created_at=NOW)
+
+
+def test_a_distress_log_is_read_one_run_per_status(tmp_path: Path):
+    d_log = _write_log(tmp_path, "d.txt", _distress_log_text())
+    bankrupt = read_run_log(d_log, "bankrupt")
+    liquidation = read_run_log(d_log, "liquidation")
+    assert (bankrupt.n, bankrupt.total, bankrupt.year_slices) == (10, 50, D_SLICES)
+    assert (liquidation.n, liquidation.total, liquidation.year_slices) == (5, 30, L_SLICES)
+    assert [p.krs for p in liquidation.picks] == [_krs(2_010 + i) for i in range(5)]
+    assert bankrupt.frame_total == liquidation.frame_total == 800
+    assert NAME not in repr(bankrupt) + repr(liquidation)
+    with pytest.raises(DrawRefused, match="no run with the status filter"):
+        read_run_log(d_log, "suspended")
+
+
+def test_a_distress_log_gives_each_run_its_pi(tmp_path: Path):
+    rows = _distress_draw(tmp_path, _distress_log_text()).rows
+    pi_a = Fraction(40, 800)
+    b = [r for r in rows if r.group == "B"]
+    assert len(b) == 15 and {r.list_version for r in b} == {"v3_d"}
+    by_stratum = {r.stratum: r.inclusion_probability for r in b}
+    assert by_stratum == {
+        "w_upadlosci": 1 - (1 - pi_a) * (1 - Fraction(10, 50)),
+        "w_likwidacji": 1 - (1 - pi_a) * (1 - Fraction(5, 30)),
+    }
+    assert sorted(r.draw_order for r in b if r.stratum == "w_likwidacji") == list(range(5))
+
+
+def test_a_pick_with_both_statuses_counts_both_runs(tmp_path: Path):
+    both = "W likwidacji; W upadłości"
+    rows = _distress_draw(tmp_path, _distress_log_text(statuses={("W upadłości", 3): both})).rows
+    pi_a = Fraction(40, 800)
+    row = next(r for r in rows if r.krs == _krs(2_003))
+    assert row.stratum == "w_upadlosci"
+    assert row.inclusion_probability == 1 - (1 - pi_a) * (1 - Fraction(10, 50)) * (
+        1 - Fraction(5, 30)
+    )
+
+
+def test_a_drifted_frame_count_must_be_in_the_spec(tmp_path: Path):
+    text = _distress_log_text(frame_total=802)
+    with pytest.raises(DrawRefused, match="frame count is 802"):
+        _distress_draw(tmp_path, text)
+    rows = _distress_draw(tmp_path, text, w_upadlosci=802, w_likwidacji=802).rows
+    assert len(rows) == 55
+
+
+def test_a_warned_distress_log_is_refused(tmp_path: Path):
+    text = _distress_log_text(warnings="W likwidacji pick #3: target already taken/missing")
+    with pytest.raises(DrawRefused, match="warning"):
+        _distress_draw(tmp_path, text)

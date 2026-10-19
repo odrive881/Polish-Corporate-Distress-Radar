@@ -1,0 +1,139 @@
+# Draw spec for list v3 of construction_sme_v1 (plan 0019 decisions 0 and 10; ADR 0014,
+# § "List v3's random group"). Declarative data, not code: how each group was drawn, so that every
+# drawn company's probability of being drawn, π, is exact.
+#
+# Design: systematic. The owner's scripts drew both groups against Rejestr.io's search and logged
+# every pick; the logs stay outside the repository (they hold company names), and only their
+# SHA-256 is here. `universe_draw` checks each log against this spec, pick by pick, before
+# anything is stored:
+#   random        E:\Rejestr.io company pull\most_recent_run\rejestr_log_2026-10-19_1403.txt
+#   w_upadlosci,  E:\Rejestr.io company pull\most_recent_distressed_run\
+#   w_likwidacji    rejestr_distressed_log_2026-10-19_1721.txt (one log, one run per status)
+#
+# π = 600/59,547 for a company of F; a company carrying distress statuses C (in any log) has
+# π = 1 − (1 − 600/59,547) · Π_(c in C) (1 − n_Bc/N_Dc).
+design: systematic
+segment: construction_sme_v1
+version: 1
+
+frame:
+  source: rejestr_io
+  taken_on: 2026-10-19
+  # As the logs' raw filter JSON prints them, unset ones left out. Whether `ind: F` reads the
+  # predominant PKD, and which PKD version, is not yet known (ADR 0014, open item 2).
+  filters:
+    lf: szoo
+    ind: F
+    rd: "2001-01-01:2022-12-31"
+  # N_F at 14:03 (group A's run). The distress run, at 17:21, counted 59,549 with the same filters:
+  # the drift is recorded on its runs as `frame_size`.
+  size: 59547
+
+distress_statuses:
+  w_upadlosci:
+    label: W upadłości
+    filter_value: bpcy
+  w_likwidacji:
+    label: W likwidacji
+    filter_value: liq
+
+random:
+  list_version: rejestr_io_v3_random
+  log_sha256: 25da25574f0c9ca0105be7fe17e6634f41bc6b56861e03a06e070c964707f2b3
+  taken_on: 2026-10-19
+  sort: rd:desc
+  n: 600
+  start: "6.229329"
+  seed: 3160363883
+  year_slices:
+    2001: 977
+    2002: 1325
+    2003: 926
+    2004: 1079
+    2005: 565
+    2006: 789
+    2007: 1029
+    2008: 739
+    2009: 699
+    2010: 991
+    2011: 1209
+    2012: 1579
+    2013: 2015
+    2014: 2252
+    2015: 3750
+    2016: 4050
+    2017: 4366
+    2018: 4336
+    2019: 5224
+    2020: 5687
+    2021: 8644
+    2022: 7316
+
+# Rejestr.io flags now, still registered: no deregistered company carries a status, so a
+# bankruptcy closed and struck off is not in D. D is the flag at the run's time, not § "The
+# distress stratum"'s first entry on or after 2019-01-01, which Rejestr.io cannot filter (ADR 0014).
+distress:
+  w_upadlosci:
+    list_version: rejestr_io_v3_distress
+    log_sha256: fd65884e6443ecf1b498ccee42bf54d4f300823ad384020d6d6a5e9b0590727e
+    taken_on: 2026-10-19
+    sort: rd:desc
+    n: 130
+    start: "0.558806"
+    seed: 1381911424
+    frame_size: 59549
+    year_slices:
+      2001: 10
+      2002: 22
+      2003: 17
+      2004: 7
+      2005: 6
+      2006: 5
+      2007: 8
+      2008: 5
+      2009: 5
+      2010: 11
+      2011: 9
+      2012: 9
+      2013: 10
+      2014: 9
+      2015: 12
+      2016: 4
+      2017: 11
+      2018: 9
+      2019: 11
+      2020: 10
+      2021: 12
+      2022: 7
+  w_likwidacji:
+    list_version: rejestr_io_v3_distress
+    log_sha256: fd65884e6443ecf1b498ccee42bf54d4f300823ad384020d6d6a5e9b0590727e
+    taken_on: 2026-10-19
+    sort: rd:desc
+    n: 70
+    start: "2.395162"
+    seed: 1381911424
+    frame_size: 59549
+    year_slices:
+      2001: 53
+      2002: 62
+      2003: 54
+      2004: 66
+      2005: 45
+      2006: 57
+      2007: 56
+      2008: 41
+      2009: 49
+      2010: 54
+      2011: 70
+      2012: 86
+      2013: 89
+      2014: 94
+      2015: 121
+      2016: 112
+      2017: 111
+      2018: 123
+      2019: 156
+      2020: 149
+      2021: 218
+      2022: 132

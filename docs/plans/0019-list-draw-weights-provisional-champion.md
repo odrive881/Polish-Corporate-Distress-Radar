@@ -22,7 +22,7 @@ plan 0014's decision 7 (2026-10-18) visible wherever a champion is shown.
 and step G runs the draw once the owner has exported one. Step B goes first because the Rejestr.io trial has a
 deadline, and the frame must be exported before it ends (`docs/data_inventory.md`).
 
-## Status: active (2026-10-18): written on the owner's request (items 1–3 of "what can be built in the meantime"); owner decisions 0–9 accepted as recommended (2026-10-18); 2026-10-19: list v3's random group drawn by the owner's script and checked (ADR 0014, § "List v3's random group"), decision 10 accepted by the owner (2026-10-19); steps B–D built (2026-10-19); open: the distress group's redraw, `ind=F`'s meaning, scripted access, the trial's end date; nothing built
+## Status: active (2026-10-18): written on the owner's request (items 1–3 of "what can be built in the meantime"); owner decisions 0–9 accepted as recommended (2026-10-18); 2026-10-19: list v3's random group drawn by the owner's script and checked (ADR 0014, § "List v3's random group"), decision 10 accepted by the owner (2026-10-19); steps B–D built (2026-10-19); 2026-10-20: the distress group redrawn, the draw spec written (step G); open: running `universe_draw`, `ind=F`'s meaning, scripted access, the trial's end date; nothing built
 
 ### Outstanding (2026-10-19): the owner's
 
@@ -187,6 +187,13 @@ frames and logs only. As written above, with these differences:
 - **Checked against the real log, locally (not committed):** list v3's A log, with a spec written from it,
   passes every check. That gives 600 picks, each with π = 600 / 59,547: 577 `none`, 19 `w_likwidacji`, 4
   `w_upadlosci`. The picks equal the CSV's KRS numbers.
+- **The distress log (2026-10-20).** The owner's distress script writes one log for both statuses: a `SAMPLING -
+  <status> (op=<filter>)` section and a raw filter line per run, a filter funnel, and one PICKS table whose
+  `sampled_as` column names the run. `read_run_log(path, status_filter)` reads such a log for one run; both
+  distress keys of `logs` then name the same file. A pick may carry two statuses (`W likwidacji; W upadłości`):
+  a B pick needs its run's among them, and π counts every distress run whose status the company carries in any
+  log, 1 − (1 − π_A) · Π (1 − π_Bc). A log whose funnel prints a frame count other than N_F is refused unless
+  the run records that count as `frame_size` (the frame drifts between runs taken hours apart).
 - **Not built:** D as separate exports (decision 2's fallback). It waits on the export's header, if a frame is
   ever exported. The real spec file is step G's.
 
@@ -297,6 +304,10 @@ frames and logs only. As written above, with these differences:
 
 *2026-10-19:* group A of list v3 is drawn (ADR 0014, § "List v3's random group"); under decision 10 (accepted), step G
 writes its `systematic` spec from the log and waits only on B's redraw.
+
+*2026-10-20:* B is redrawn (ADR 0014, § "List v3's distress group") and the spec is written,
+`config/segments/construction_sme_v1_draw_v1.yaml`: A and both B runs, checked against the real logs locally
+(800 rows, 793 companies, none quarantined). `universe_draw` and `entity_master` are not run yet.
 
 - Write the spec from the owner's numbers (ADR 0014, § "What the weights need": the five numbers), commit it,
   run `universe_draw` and then `entity_master`, and record the counts here and in ADR 0014's addendum. The
