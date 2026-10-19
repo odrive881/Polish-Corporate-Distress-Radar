@@ -328,4 +328,4 @@ group shares 6 companies with list v2's A, 3 with list v2's B, none with the sup
 The new groups get `discovery_source` versions `rejestr_io_v3_random` and `rejestr_io_v3_distress` (plan 0019
 decision 3). With the two-group formula of § "Weights" applied per status, π for a company of D_c is
 600 / 59,547 + (1 − 600 / 59,547) · n_Bc / (N_Dc − d_Ac). Plan 0019 builds it (its decision 10 for the systematic
-design).
+design, accepted by the owner 2026-10-19).
