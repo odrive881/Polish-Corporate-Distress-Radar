@@ -1,7 +1,8 @@
 # 0022 — Outcome labels, version 3: restructuring openings and endings
 
-**Stage:** C (legal events) and F (labels), after plans 0009 and 0014. **Status: in progress (2026-10-19):
-mappings, tests and label version built; the rebuild is in § "Result".**
+**Stage:** C (legal events) and F (labels), after plans 0009 and 0014. **Status: complete (2026-10-19):
+mappings, tests and label version built; label set `afeba985…` frozen (§ "Result"). Retraining on v3 is the
+owner's call (decision 6).**
 
 ## Why
 
@@ -113,9 +114,27 @@ discontinued 2025-11-21).
   mapping's range** (7) and **0000370981's simplified restructuring announced 2021-12-07**, after the procedure's
   end date (plan 0014's open item).
 
-## Result
+## Result (2026-10-19, run `4360de66`)
 
-To be filled in by the rebuild (`legal_events` and the `labels` group, from stored bytes).
+`legal_events` and the `labels` group rebuilt from stored bytes (no fetch): **label set `afeba985d8d9…`
+(`outcome_labels_v3`, 146,608 rows)** against last night's `228e8dee2468…` (`outcome_labels_v2`, 146,674). Every
+audit and `seed_acceptance` pass; `legal_events_quarantine` warns at 314. **462 rows change, on 11 entities**, the
+7 above and the same proceedings at 0000066923, 0000074968, 0000205656 and 0000404461; no other entity's labels
+move:
+
+| v2 | v3 | Rows | What it is |
+|---|---|---|---|
+| `alive` | restructuring | 170 | a window that held an opening nothing recorded |
+| bankruptcy | restructuring | 94 | the restructuring came first |
+| bankruptcy | excluded | 75 | the entity was already in restructuring at `as_of_date` |
+| excluded | bankruptcy | 61 | a GR case no longer a bankruptcy, or a discontinuance reopening the months before the bankruptcy |
+| `alive` | excluded | 43 | already in restructuring |
+| restructuring | excluded | 12 | |
+| excluded or absent | `alive` / restructuring | 5 | |
+| censored | excluded | 2 | |
+
+66 rows fewer in all: months now excluded as in a proceeding. The served models (trained on v2) are unchanged;
+from tonight scoring's risk set comes from v3 (decision 6). The GR count of decision 5 is 2 of 141.
 
 ## Out of scope
 
