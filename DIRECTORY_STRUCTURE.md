@@ -138,7 +138,8 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │   └── poznan_2004.yaml           # the Poznań model, Hamrol, Czajka, Piechocki (2004)
 │   ├── labels/
 │   │   ├── outcome_labels_v1.yaml     # label parameters; the file name is the label_version
-│   │   └── outcome_labels_v2.yaml     # v1 + lag allowance, petition expiry (plan 0009)
+│   │   ├── outcome_labels_v2.yaml     # v1 + lag allowance, petition expiry (plan 0009)
+│   │   └── outcome_labels_v3.yaml     # v2 over taxonomy v2 and notice kinds v2, which it names (plan 0022)
 │   └── statutory/
 │       ├── size_thresholds.yaml       # UoR size-class thresholds per regime, dated, each value cited (plan 0020)
 │       ├── ksh_tripwires.yaml         # Art. 233 / Art. 397 ratios, dated

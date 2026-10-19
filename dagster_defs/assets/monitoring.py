@@ -146,8 +146,9 @@ def realised_calibration(
     """L — the stored scores against what happened, once their cohorts are settled (plan 0018
     step G, decision 7).
 
-    Inputs: Postgres `scores_history` (every scored row, each with its label version) and
-    `label_sets` (the latest frozen set of each label version, read under `WAREHOUSE_DIR`);
+    Inputs: Postgres `scores_history` (every scored row) and `label_sets` (the latest frozen set
+    of `LABEL_VERSION`, read under `WAREHOUSE_DIR`: what happened is the current labels' answer,
+    whatever version a model was trained on, plan 0022);
     `config/models/<BACKTEST_VERSION>.yaml` (distress classes, `min_events`, reliability bins);
     `on`, the day judged from.
     Outputs: `WAREHOUSE_DIR/reports/calibration/realised_<on>.json`, one cell per horizon and model
@@ -163,13 +164,12 @@ def realised_calibration(
     )
     backtest = load_backtest_config(settings.backtest_version)
     postgres = cast("PostgresResource", context.resources.postgres)
-    cells: list[dict[str, object]] = []
     with postgres.connect() as conn:
         stored = pl.DataFrame(
             conn.execute(
                 """
                 SELECT trim(krs), as_of_date, horizon_months, probability, model_name,
-                       model_version, label_version
+                       model_version
                 FROM scores_history WHERE probability IS NOT NULL
                 """
             ).fetchall(),
@@ -180,21 +180,21 @@ def realised_calibration(
                 "probability": pl.Float64,
                 "model_name": pl.String,
                 "model_version": pl.String,
-                "label_version": pl.String,
             },
             orient="row",
         )
-        for label_version in sorted(stored.get_column("label_version").unique().to_list()):
-            labels = load_label_set(settings.warehouse_dir, latest_label_set(conn, label_version))
-            cells += realised(
-                stored.filter(pl.col("label_version") == label_version).drop("label_version"),
-                labels,
-                distress_classes=backtest.distress_classes,
-                timing=label_timing(labels),
-                on=on,
-                min_events=backtest.min_events,
-                bins=backtest.reliability_bins,
-            )
+        labels = load_label_set(
+            settings.warehouse_dir, latest_label_set(conn, settings.label_version)
+        )
+        cells = realised(
+            stored,
+            labels,
+            distress_classes=backtest.distress_classes,
+            timing=label_timing(labels),
+            on=on,
+            min_events=backtest.min_events,
+            bins=backtest.reliability_bins,
+        )
     path = write_realised(cells, on, settings.warehouse_dir)
     for cell in cells:
         context.log.info(

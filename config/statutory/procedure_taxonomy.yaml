@@ -7,8 +7,14 @@
 # A mapping is looked up by (source, locator, `when`) on the event's date: its `event_date`, or its
 # `known_from` when the source gives no decision date. A source event that no mapping resolves is
 # quarantined (`legal_event_type_unmapped`), never mapped by guess and never dropped.
+#
+# Version 2 (plan 0022, label version 3): the restructuring records list v2's distress group
+# brought — the registry's arrangement section, its restructuring endings and revocations, an
+# opening that does not name its procedure, GR-register cases entered in the bankruptcy section —
+# and MSiG's accelerated-arrangement and unspecified openings. A label version names the taxonomy
+# version it is built from (`config/labels/`), so a change here is a new version.
 
-version: 1
+version: 2
 
 # Acts and procedures, with the dates they applied. A mapping's range must lie inside its statute's.
 statutes:
@@ -117,8 +123,14 @@ event_types:
   - event_type: restructuring_arrangement_confirmed
     stage: signal
     precludes_silent_exit: false
-  # The KRS extract's "POSTĘPOWANIE RESTRUKTURYZACYJNE" does not say which of the four
-  # Prawo restrukturyzacyjne procedures was opened; MSiG and KRZ do.
+  # An approved arrangement revoked by the court (Prawo restrukturyzacyjne art. 176): a signal.
+  # It opens nothing; a bankruptcy that follows is its own event.
+  - event_type: arrangement_revoked
+    stage: signal
+    precludes_silent_exit: false
+  # An opening whose source does not say which of the four Prawo restrukturyzacyjne procedures
+  # it is: the KRS extract's "POSTĘPOWANIE RESTRUKTURYZACYJNE", its arrangement section, and an
+  # MSiG notice that names no procedure (version 2). MSiG and KRZ usually do say.
   - event_type: restructuring_proceedings_opened
     stage: opening
     outcome_class: restructuring
@@ -197,15 +209,27 @@ mappings:
     # Named for an enforceability clause, but it is the order's date: on 0000277937's restructuring
     # order, 01.04.2021 is the day MSiG 88/2021 gives for the order.
     date_field: dataNadaniaKlauzuliWykonalnosci
+  # A GR-register case in this section is a restructuring the registry entered as a bankruptcy:
+  # 0000384681's "XVIII GR 20/20 (XVIII GRP 8/20)" names its court "PRZYSPIESZONE POSTĘPOWANIE
+  # UKŁADOWE" and a court supervisor, not a trustee; 0000236155's "V GR 4/18" is the arrangement
+  # MSiG announces for 27.04.2018. Bankruptcy cases are GU (plan 0022: 2 of 141 records were GR).
   - source: KRS
     locator: dane.dzial6.postepowanieUpadlosciowe.informacjaOOgloszeniuUpadlosci
+    when: {field: sygnatura, excludes: GR}
     event_type: bankruptcy_declared
     statute: pu_1934
     date_field: data
   - source: KRS
     locator: dane.dzial6.postepowanieUpadlosciowe.informacjaOOgloszeniuUpadlosci
+    when: {field: sygnatura, excludes: GR}
     event_type: bankruptcy_declared
     statute: pu_2003
+    date_field: data
+  - source: KRS
+    locator: dane.dzial6.postepowanieUpadlosciowe.informacjaOOgloszeniuUpadlosci
+    when: {field: sygnatura, contains: GR}
+    event_type: restructuring_proceedings_opened
+    statute: pr_2015
     date_field: data
   - source: KRS
     locator: dane.dzial6.postepowanieUpadlosciowe.opisZakonczeniaProcesuUpadlosci
@@ -240,6 +264,43 @@ mappings:
     locator: dane.dzial6.postepowanieRestrukturyzacyjneNaprawczePrzymusowaRestrukturyzacjaUporzadkowanaLikwidacja.otwarciePostepowaniaRestrukturyzacyjnegoNaprawczegoPrzymusowejRestrukturyzacjiUporzadkowanejLikwidacji
     when: {field: rodzajPostepowania, equals: POSTĘPOWANIE RESTRUKTURYZACYJNE}
     event_type: restructuring_proceedings_opened
+    statute: pr_2015
+    date_field: dataNadaniaKlauzuliWykonalnosci
+  # Some openings carry no kind at all: 0000152748's of 24.05.2017 (V GR 2/17) is the arrangement
+  # MSiG announces for that day, its kind given nowhere in the extract.
+  - source: KRS
+    locator: dane.dzial6.postepowanieRestrukturyzacyjneNaprawczePrzymusowaRestrukturyzacjaUporzadkowanaLikwidacja.otwarciePostepowaniaRestrukturyzacyjnegoNaprawczegoPrzymusowejRestrukturyzacjiUporzadkowanejLikwidacji
+    when: {field: rodzajPostepowania, absent: true}
+    event_type: restructuring_proceedings_opened
+    statute: pr_2015
+    date_field: dataNadaniaKlauzuliWykonalnosci
+  # The section's ending: "UMORZENIE POSTĘPOWANIA" or "ZAKOŃCZENIE PRZEZ ZATWIERDZENIE UKŁADU"
+  # (0000205656, 0000373685). Either closes the restructuring.
+  - source: KRS
+    locator: dane.dzial6.postepowanieRestrukturyzacyjneNaprawczePrzymusowaRestrukturyzacjaUporzadkowanaLikwidacja.zakonczeniePostepowaniaRestrukturyzacyjnegoNaprawczegoPrzymusowejRestrukturyzacjiUporzadkowanejLikwidacji
+    event_type: restructuring_proceeding_ended
+    statute: pu_2003_naprawcze
+    date_field: data
+  - source: KRS
+    locator: dane.dzial6.postepowanieRestrukturyzacyjneNaprawczePrzymusowaRestrukturyzacjaUporzadkowanaLikwidacja.zakonczeniePostepowaniaRestrukturyzacyjnegoNaprawczegoPrzymusowejRestrukturyzacjiUporzadkowanejLikwidacji
+    event_type: restructuring_proceeding_ended
+    statute: pr_2015
+    date_field: data
+  - source: KRS
+    locator: dane.dzial6.postepowanieRestrukturyzacyjneNaprawczePrzymusowaRestrukturyzacjaUporzadkowanaLikwidacja.uchylenieUkladu
+    event_type: arrangement_revoked
+    statute: pr_2015
+    date_field: dataNadaniaKlauzuliWykonalnosci
+  # The registry's arrangement section. Its opening does not say which procedure: 0000236155's
+  # "V G 4/18" of 27.04.2018 is an accelerated arrangement in MSiG, so it is the generic opening.
+  - source: KRS
+    locator: dane.dzial6.postepowanieUkladowe.otwarciePostepowaniaUkladowego
+    event_type: restructuring_proceedings_opened
+    statute: pr_2015
+    date_field: dataNadaniaKlauzuliWykonalnosci
+  - source: KRS
+    locator: dane.dzial6.postepowanieUkladowe.uchylenieUkladu
+    event_type: arrangement_revoked
     statute: pr_2015
     date_field: dataNadaniaKlauzuliWykonalnosci
   # "PRZYMUSOWA RESTRUKTURYZACJA" and "UPORZĄDKOWANA LIKWIDACJA" are bank resolution (BFG), outside
@@ -348,6 +409,16 @@ mappings:
     locator: notice
     when: {field: notice_kind, equals: remedial_proceedings_opened}
     event_type: remedial_proceedings_opened
+    statute: pr_2015
+  - source: MSiG
+    locator: notice
+    when: {field: notice_kind, equals: accelerated_arrangement_opened}
+    event_type: accelerated_arrangement_opened
+    statute: pr_2015
+  - source: MSiG
+    locator: notice
+    when: {field: notice_kind, equals: restructuring_opened}
+    event_type: restructuring_proceedings_opened
     statute: pr_2015
   - source: MSiG
     locator: notice

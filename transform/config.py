@@ -32,8 +32,9 @@ from sqlmesh.core.config import (
 )
 from sqlmesh.core.config.connection import DuckDBAttachOptions
 
-from distress_radar.labels import LABEL_SOURCES, load_label_config
+from distress_radar.labels import LABEL_SOURCES, check_mapping_versions, load_label_config
 from distress_radar.parsing.legal_taxonomy import load_procedure_taxonomy
+from distress_radar.parsing.msig_notice_kinds import load_notice_kinds
 from distress_radar.settings import Settings
 
 # Parquet datasets under WAREHOUSE_DIR, written by `dagster_defs/assets/parsing.py`,
@@ -73,6 +74,8 @@ warehouse = settings.warehouse_dir.resolve()
 # and the statutory taxonomy, passed to the SQL as variables, never restated in it.
 labels = load_label_config(settings.label_version)
 taxonomy = load_procedure_taxonomy()
+# Labels are only as defined as the mappings their events came through (plan 0022).
+check_mapping_versions(labels, taxonomy.version, load_notice_kinds().version)
 LABEL_VARIABLES: dict[str, str | int | None] = {
     "label_version": labels.label_version,
     "label_grid_start": labels.as_of_grid.start.isoformat(),

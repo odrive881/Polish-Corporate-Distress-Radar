@@ -17,6 +17,7 @@ from distress_radar.parsing.canonical_schema import CONFIG_DIR
 from distress_radar.parsing.legal_taxonomy import (
     EVENT_OUTCOME_CLASSES,
     ProcedureTaxonomy,
+    When,
     load_procedure_taxonomy,
 )
 
@@ -132,6 +133,34 @@ def test_empty_bankruptcy_ending_is_not_an_event(taxonomy: ProcedureTaxonomy) ->
         "bankruptcy_proceeding_ended",
         "pu_2003",
     )
+
+
+def test_excludes_and_absent_tests() -> None:
+    """Version 2 (plan 0022): a value without a substring, an empty one included; a missing field."""
+    excludes = When(field="sygnatura", excludes="GR")
+    assert excludes.matches({"sygnatura": "V GU 271/20"})
+    assert excludes.matches({})
+    assert not excludes.matches({"sygnatura": "V GR 4/18"})
+    absent = When(field="rodzajPostepowania", absent=True)
+    assert absent.matches({}) and absent.matches({"rodzajPostepowania": " "})
+    assert not absent.matches({"rodzajPostepowania": "POSTĘPOWANIE RESTRUKTURYZACYJNE"})
+    with pytest.raises(ValidationError, match="exactly one of"):
+        When(field="sygnatura", excludes="GR", absent=True)
+
+
+def test_a_bankruptcy_section_record_splits_on_its_register(taxonomy: ProcedureTaxonomy) -> None:
+    on = date(2020, 6, 2)
+    assert _resolved(taxonomy, BANKRUPTCY, on, sygnatura="XVIII GR 20/20") == (
+        "restructuring_proceedings_opened",
+        "pr_2015",
+    )
+    assert _resolved(taxonomy, BANKRUPTCY, on, sygnatura="XVIII GU 248/21") == (
+        "bankruptcy_declared",
+        "pu_2003",
+    )
+    assert _resolved(taxonomy, BANKRUPTCY, on) == ("bankruptcy_declared", "pu_2003")
+    # The GR register began with the Prawo restrukturyzacyjne: an earlier one is not mapped.
+    assert _resolved(taxonomy, BANKRUPTCY, date(2015, 6, 1), sygnatura="V GR 4/15") is None
 
 
 def test_deregistration_read_from_entry_description(taxonomy: ProcedureTaxonomy) -> None:

@@ -25,6 +25,9 @@ class _Frozen(BaseModel):
 
 class PreferDates(_Frozen):
     prefer: tuple[tuple[str, ...], ...]
+    # When no preferred term dates the event: the first body date, or none (version 2, plan 0022:
+    # a body can quote only a statute's own date, which is never the decision).
+    otherwise: Literal["first_body_date", "none"] = "first_body_date"
 
 
 class NoticeRule(_Frozen):
@@ -92,6 +95,8 @@ def event_date(rule: NoticeRule, extracted: Mapping[str, Any], published: date) 
         for d in body:
             if any(t in d["terms_before"] for t in group):
                 return date.fromisoformat(d["date"])
+    if isinstance(rule.date, PreferDates) and rule.date.otherwise == "none":
+        return None
     return date.fromisoformat(body[0]["date"]) if body else None
 
 

@@ -94,17 +94,27 @@ class When(_Frozen):
     equals: str | None = None
     contains: str | None = None
     present: Literal[True] | None = None  # the record is an event only once the field is filled
+    # Version 2 (plan 0022). `excludes`: the value does not contain it, an empty one included.
+    # `absent`: the field is missing or empty.
+    excludes: str | None = None
+    absent: Literal[True] | None = None
 
     @model_validator(mode="after")
     def _one_test(self) -> When:
-        if sum(t is not None for t in (self.equals, self.contains, self.present)) != 1:
+        tests = (self.equals, self.contains, self.present, self.excludes, self.absent)
+        if sum(t is not None for t in tests) != 1:
             raise ValueError(
-                f"when on {self.field}: give exactly one of `equals`, `contains` or `present`"
+                f"when on {self.field}: give exactly one of `equals`, `contains`, `present`, "
+                "`excludes` or `absent`"
             )
         return self
 
     def matches(self, fields: Mapping[str, str]) -> bool:
         value = (fields.get(self.field) or "").strip()
+        if self.absent is not None:
+            return not value
+        if self.excludes is not None:
+            return self.excludes not in value
         if not value:
             return False
         if self.equals is not None:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import shutil
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -10,7 +11,12 @@ import yaml
 from pydantic import ValidationError
 
 from distress_radar.parsing.canonical_schema import CONFIG_DIR
-from distress_radar.parsing.msig_notice_kinds import NoticeKinds, load_notice_kinds
+from distress_radar.parsing.msig_notice_kinds import (
+    NoticeKinds,
+    NoticeRule,
+    event_date,
+    load_notice_kinds,
+)
 
 
 def test_repository_rules_load_against_the_vocabulary() -> None:
@@ -55,3 +61,16 @@ def test_an_additional_rule_is_never_the_kind_and_must_be_an_event() -> None:
                 "rules": [{"kind": "x", "chapters": ["IX"], "event": False, "additional": True}],
             }
         )
+
+
+def test_otherwise_none_leaves_an_unpreferred_notice_undated() -> None:
+    """Version 2 (plan 0022): a body quoting only the statute's date gives no event date."""
+    rule = NoticeRule(kind="x", chapters=["IX"], date={"prefer": [["postanowieni"]]})
+    extracted = {"dates": [{"date": "2015-05-15", "in": "body", "terms_before": []}]}
+    assert event_date(rule, extracted, date(2019, 10, 23)) == date(2015, 5, 15)
+    undated = NoticeRule(
+        kind="x", chapters=["IX"], date={"prefer": [["postanowieni"]], "otherwise": "none"}
+    )
+    assert event_date(undated, extracted, date(2019, 10, 23)) is None
+    preferred = [{"date": "2019-10-01", "in": "body", "terms_before": ["postanowieni"]}]
+    assert event_date(undated, {"dates": preferred}, date(2019, 10, 23)) == date(2019, 10, 1)

@@ -15,11 +15,14 @@ from pydantic import ValidationError
 from distress_radar.labels import (
     OUTCOME_LABELS_SCHEMA,
     LabelConfig,
+    check_mapping_versions,
     freeze_label_set,
     label_set_hash,
     load_label_config,
 )
 from distress_radar.parsing.canonical_schema import CONFIG_DIR
+from distress_radar.parsing.legal_taxonomy import load_procedure_taxonomy
+from distress_radar.parsing.msig_notice_kinds import load_notice_kinds
 from distress_radar.settings import Settings
 
 
@@ -44,8 +47,24 @@ def test_version_2_adds_only_the_lag_allowance_and_petition_expiry() -> None:
     assert changed == {"label_version", "alive_lag_months", "petition_expiry_months"}
 
 
-def test_the_default_label_version_is_2() -> None:
-    assert Settings().label_version == "outcome_labels_v2"
+def test_version_3_changes_only_the_mapping_versions() -> None:
+    v2 = load_label_config("outcome_labels_v2")
+    v3 = load_label_config("outcome_labels_v3")
+    assert (v2.taxonomy_version, v2.notice_kinds_version) == (1, 1)
+    assert (v3.taxonomy_version, v3.notice_kinds_version) == (2, 2)
+    changed = {k for k, v in v3.model_dump().items() if v != v2.model_dump()[k]}
+    assert changed == {"label_version", "taxonomy_version", "notice_kinds_version"}
+
+
+def test_the_default_label_version_is_3_and_matches_the_mappings() -> None:
+    config = load_label_config(Settings().label_version)
+    assert config.label_version == "outcome_labels_v3"
+    check_mapping_versions(config, load_procedure_taxonomy().version, load_notice_kinds().version)
+
+
+def test_labels_are_not_built_from_other_mappings() -> None:
+    with pytest.raises(ValueError, match="procedure taxonomy v1 and notice kinds v1"):
+        check_mapping_versions(load_label_config("outcome_labels_v2"), 2, 2)
 
 
 @pytest.mark.parametrize(

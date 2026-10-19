@@ -184,8 +184,9 @@ def scores(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
     Inputs: per horizon of `config/models/<BACKTEST_VERSION>.yaml`, the registered version under
     the alias `champion`, else `incumbent`, in `MLFLOW_TRACKING_URI` (refused when neither); the
     stored `feature_store` under `WAREHOUSE_DIR`, refused unless it holds the feature set the
-    version was trained on; the latest frozen label set of the version's label version (Postgres
-    `label_sets`), whose grid at that month-end is the risk set; for a config with a `population`
+    version was trained on; the latest frozen label set of `LABEL_VERSION` (Postgres
+    `label_sets`), whose grid at that month-end is the risk set: who is in a proceeding now is
+    the current labels' answer, whatever version the model was trained on (plan 0022); for a config with a `population`
     rule, `rdf_listed_entities`, `filing_index` and `universe_candidates`, which decide the
     entities scored; the code commit of a clean working tree, refused otherwise.
     Outputs: Postgres `scores_history`, one row per entity of the population at risk, horizon and
@@ -221,7 +222,7 @@ def scores(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
         )
         scores_store.ensure_schema(conn)
         for horizon, (version, scorer) in served.items():
-            label_hash = latest_label_set(conn, version.tags["label_version"])
+            label_hash = latest_label_set(conn, settings.label_version)
             risk_set = at_risk(load_label_set(settings.warehouse_dir, label_hash), as_of_date)
             month_end = score_month_end(features, as_of_date, population, risk_set, scorer)
             score_context = ScoreContext(

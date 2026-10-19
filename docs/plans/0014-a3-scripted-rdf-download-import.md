@@ -211,7 +211,10 @@ As of 2026-10-07:
 7. **(2026-10-12) Legal records over list v1 that no rule maps** (`quarantine_events`, stage C4, 88 rows, all
    from 2026-10-09): the notice kinds and the taxonomy were written against the seed's 49 notices, and list
    v1 brings forms they have not met. Quarantined, never guessed, as designed; mapping them is a new version
-   of `msig_notice_kinds.yaml` or `procedure_taxonomy.yaml`, and so label version 3. By what they could do to
+   of `msig_notice_kinds.yaml` or `procedure_taxonomy.yaml`, and so label version 3. *2026-10-19: grown to 342
+   with list v2's distress group; the restructuring forms (chapter IX, `postepowanieUkladowe`, the openings
+   without a kind, and the composition at 0000205656) are mapped in plan 0022, label version 3; chapter IV,
+   the suspensions and the rest stay quarantined (plan 0022, § "Left quarantined").* By what they could do to
    a label:
    - **Probably a wrong label:** 0000370981, a simplified restructuring announced 2021-12-07, after the
      mapping's end date (2021-11-30); MSiG is its only source, and the company is labelled `alive` across it.

@@ -20,11 +20,15 @@
 # - `publication`: the notice's publication date. The simplified restructuring opens on
 #   the day it is announced (tarcza 4.0, art. 15).
 # - `prefer`: the first body date with a term from the first group just before it, else the
-#   second group, and so on. After that, the first body date, else none.
+#   second group, and so on. After that, the first body date, else none; with `otherwise: none`,
+#   none (version 2: a restructuring notice can quote only the statute's own 15.05.2015).
 #
 # Written against the seed's 49 notices (2026-09-23): every rule has at least one of them.
+# Version 2 (plan 0022, label version 3) adds chapter IX's openings and endings from list v2's
+# distress group, each checked against the registry's own record of the same case. A label
+# version names the notice-kinds version it is built from (`config/labels/`).
 
-version: 1
+version: 2
 
 rules:
   # --- bankruptcy (chapter III) ----------------------------------------------------------------
@@ -77,6 +81,40 @@ rules:
     any: [otworzy, otwarci]
     none: [spis wierzytelności, zgromadzeni]
     date: {prefer: [[postanowieni]]}
+  # Version 2. The court "otworzył przyspieszone postępowanie układowe": 9 openings over list v2,
+  # each on the day the registry gives (0000236155, V G 4/18, 27.04.2018). One that names no
+  # procedure is the generic opening (0000152748, 24.05.2017; its later notices call it
+  # accelerated). Notices about an approval or a creditors' list quote the opening too, so they
+  # are not openings. With no "postanowieni" date the notice is left undated: the registry's
+  # record of the same case dates it.
+  - kind: accelerated_arrangement_opened
+    chapters: [IX]
+    all: [postanowieni, przyspieszon]
+    any: [otworzy, otwarci]
+    none: [zatwierdzeni, zatwierdzi, uprawomocni, sanac, spis wierzytelności, zgromadzeni]
+    date: {prefer: [[postanowieni]], otherwise: none}
+  - kind: restructuring_opened
+    chapters: [IX]
+    all: [postanowieni, otworzy, układ]
+    none: [zatwierdzeni, zatwierdzi, uprawomocni, sanac, spis wierzytelności, zgromadzeni, uproszczon]
+    date: {prefer: [[postanowieni]], otherwise: none}
+  # Version 2. Discontinued: the decision's notice also cites the pending bankruptcy petition the
+  # court now hears (Prawo restrukturyzacyjne art. 9b), so "układ" occurs, which the rule above
+  # cannot allow. 0000205656's of 05.10.2020 is the registry's "UMORZENIE POSTĘPOWANIA" of that
+  # day. An approval's terms say "umorzenie" of debt, so an approval or an opening is not one.
+  - kind: restructuring_ended
+    chapters: [IX]
+    all: [postanowieni, umorz, restrukturyzac]
+    none: [otworzy, otwarci, zatwierdzi, uprawomocni, sanac, zgromadzeni, spis wierzytelności, zarządc]
+    date: {prefer: [[postanowieni]], otherwise: none}
+  # Version 2. Ended, said as "prawomocn" rather than "uprawomocni" (which contains it, so the
+  # two rules never overlap), dated by the ending itself: 0000066923's of 18.11.2021. An
+  # administrator's or a creditors' meeting notice in a sanacja says both too: procedural.
+  - kind: restructuring_ended
+    chapters: [IX]
+    all: [zakończ, prawomocn]
+    none: [uprawomocni, zarządc, zgromadzeni, spis wierzytelności]
+    date: {prefer: [[zakończ], [prawomocn], [postanowieni]]}
   # Opening a restructuring disposes of a pending bankruptcy petition (Prawo
   # restrukturyzacyjne art. 9a–9b), and the opening notice says so: 0000386777's sanacja notice
   # of 2020 (VI GU 751/19, VI GRs 3/20) dismisses the bankruptcy petition. This closes the

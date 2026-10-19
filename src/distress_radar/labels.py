@@ -65,6 +65,11 @@ class LabelConfig(_Frozen):
     # Version 2 (plan 0009). Absent from version 1, whose labels they leave unchanged.
     alive_lag_months: int = Field(default=0, ge=0)
     petition_expiry_months: int | None = Field(default=None, ge=1)
+    # Version 3 (plan 0022). The mapping versions the labels are built from: `legal_events` reads
+    # whatever `procedure_taxonomy.yaml` and `msig_notice_kinds.yaml` say now, so a label version
+    # names the ones it was defined with, and building it from any other is refused.
+    taxonomy_version: int = Field(default=1, ge=1)
+    notice_kinds_version: int = Field(default=1, ge=1)
 
     @model_validator(mode="after")
     def _consistent(self) -> LabelConfig:
@@ -85,6 +90,19 @@ def load_label_config(label_version: str, config_dir: Path = CONFIG_DIR) -> Labe
     if config.label_version != path.stem:
         raise ValueError(f"{path}: label_version must match the file name")
     return config
+
+
+def check_mapping_versions(
+    config: LabelConfig, taxonomy_version: int, notice_kinds_version: int
+) -> None:
+    """Refuse to build `config`'s labels from mappings other than the ones it names."""
+    wanted = (config.taxonomy_version, config.notice_kinds_version)
+    if wanted != (taxonomy_version, notice_kinds_version):
+        raise ValueError(
+            f"{config.label_version} is built from procedure taxonomy v{wanted[0]} and notice "
+            f"kinds v{wanted[1]}; the config holds v{taxonomy_version} and "
+            f"v{notice_kinds_version}. Set LABEL_VERSION to the version that names them."
+        )
 
 
 # --- freezing a label set (plan 0008 decision 7) -------------------------------------------------

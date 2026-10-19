@@ -128,7 +128,8 @@ def test_an_entry_without_a_date_is_rejected_not_guessed(taxonomy: ProcedureTaxo
 def test_unknown_sections_and_values_are_rejected(taxonomy: ProcedureTaxonomy) -> None:
     extract = copy.deepcopy(_extract("0000277937"))
     dzial6 = extract["odpis"]["dane"]["dzial6"]
-    dzial6["postepowanieUkladowe"] = [{"nrWpisuWprow": "37", "data": "01.01.2020"}]
+    # A suspension of business: deliberately unmapped (plan 0022), so still an unknown section.
+    dzial6["zawieszenieWznowienie"] = [{"nrWpisuWprow": "37", "data": "01.01.2020"}]
     opening = dzial6[
         "postepowanieRestrukturyzacyjneNaprawczePrzymusowaRestrukturyzacjaUporzadkowanaLikwidacja"
     ][0][
@@ -141,8 +142,73 @@ def test_unknown_sections_and_values_are_rejected(taxonomy: ProcedureTaxonomy) -
             "legal_event_type_unmapped",
             "dane.dzial6.postepowanieRestrukturyzacyjneNaprawczePrzymusowaRestrukturyzacjaUporzadkowanaLikwidacja",
         ),
-        ("legal_event_type_unmapped", "dane.dzial6.postepowanieUkladowe"),
+        ("legal_event_type_unmapped", "dane.dzial6.zawieszenieWznowienie"),
     ]
+
+
+# --- KRS: restructuring records (plan 0022, taxonomy v2) ------------------------------------------
+
+_RESTRUCTURING = (
+    "postepowanieRestrukturyzacyjneNaprawczePrzymusowaRestrukturyzacjaUporzadkowanaLikwidacja"
+)
+_OPENING = "otwarciePostepowaniaRestrukturyzacyjnegoNaprawczegoPrzymusowejRestrukturyzacjiUporzadkowanejLikwidacji"
+_ENDING = "zakonczeniePostepowaniaRestrukturyzacyjnegoNaprawczegoPrzymusowejRestrukturyzacjiUporzadkowanejLikwidacji"
+
+
+def test_a_gr_case_in_the_bankruptcy_section_is_a_restructuring(
+    taxonomy: ProcedureTaxonomy,
+) -> None:
+    """0000384681's accelerated arrangement was entered as a bankruptcy declaration."""
+    extract = copy.deepcopy(_extract("0000181328"))
+    [declared] = extract["odpis"]["dane"]["dzial6"]["postepowanieUpadlosciowe"][0][
+        "informacjaOOgloszeniuUpadlosci"
+    ]
+    declared["sygnatura"] = "XVIII GR 20/20 (XVIII GRP 8/20)"
+    out = _krs(taxonomy, "0000181328", extract)
+    assert _by_type(out.events, "bankruptcy_declared") == []
+    [opened] = _by_type(out.events, "restructuring_proceedings_opened")
+    assert (opened.outcome_class, opened.event_date) == ("restructuring", date(2025, 5, 20))
+    assert out.rejects == []
+
+
+def test_a_gu_case_and_an_unsigned_one_stay_bankruptcies(taxonomy: ProcedureTaxonomy) -> None:
+    extract = copy.deepcopy(_extract("0000181328"))
+    [declared] = extract["odpis"]["dane"]["dzial6"]["postepowanieUpadlosciowe"][0][
+        "informacjaOOgloszeniuUpadlosci"
+    ]
+    assert len(_by_type(_krs(taxonomy, "0000181328", extract).events, "bankruptcy_declared")) == 1
+    del declared["sygnatura"]
+    assert len(_by_type(_krs(taxonomy, "0000181328", extract).events, "bankruptcy_declared")) == 1
+
+
+def test_the_registrys_restructuring_records_open_close_and_revoke(
+    taxonomy: ProcedureTaxonomy,
+) -> None:
+    extract = copy.deepcopy(_extract("0000277937"))
+    dzial6 = extract["odpis"]["dane"]["dzial6"]
+    group = dzial6[_RESTRUCTURING][0]
+    del group[_OPENING][0]["rodzajPostepowania"]  # 0000152748's opening names no kind
+    group[_ENDING] = [
+        {"data": "25.06.2025", "nrWpisuWprow": "46", "opis": "UMORZENIE POSTĘPOWANIA"}
+    ]
+    dzial6["postepowanieUkladowe"] = [
+        {
+            "otwarciePostepowaniaUkladowego": [
+                {"dataNadaniaKlauzuliWykonalnosci": "15.07.2016", "nrWpisuWprow": "42"}
+            ],
+            "uchylenieUkladu": [
+                {"dataNadaniaKlauzuliWykonalnosci": "28.02.2019", "nrWpisuWprow": "43"}
+            ],
+        }
+    ]
+    out = _krs(taxonomy, "0000277937", extract)
+    assert out.rejects == []
+    opened = sorted(e.event_date for e in _by_type(out.events, "restructuring_proceedings_opened"))
+    assert opened == [date(2016, 7, 15), date(2021, 7, 2)]
+    [ended] = _by_type(out.events, "restructuring_proceeding_ended")
+    assert (ended.event_date, ended.ends) == (date(2025, 6, 25), ("restructuring",))
+    [revoked] = _by_type(out.events, "arrangement_revoked")
+    assert (revoked.stage, revoked.outcome_class) == ("signal", None)
 
 
 # --- KRS: registry changes (plan 0010 step B) ----------------------------------------------------
@@ -350,6 +416,103 @@ def test_a_simplified_restructuring_outside_its_window_is_unmapped(
     record["notice"]["dateOfPublication"] = "2022-03-01T00:00:00"  # the procedure ended 2021-11-30
     [reject] = _msig(taxonomy, kinds, "", record).rejects
     assert reject.reason_code == "legal_event_type_unmapped"
+
+
+# --- MSiG: chapter IX openings and endings (plan 0022, notice kinds v2) ---------------------------
+
+
+def _ix(terms: list[str], dates: list[tuple[str, list[str]]]) -> dict[str, Any]:
+    """A reduced chapter IX notice: 0000277937_300337 with its terms and body dates replaced."""
+    record = _notice("0000277937_300337")
+    record["extracted"]["chapter_code"] = "IX"
+    record["extracted"]["terms"] = terms
+    record["extracted"]["dates"] = [
+        {"date": d, "in": "body", "terms_before": before} for d, before in dates
+    ]
+    return record
+
+
+_OPENING_TERMS = [
+    "postanowieni", "obwieszcz", "ogłoszeni", "wpis do rejestru", "upadłoś", "nadzorc",
+    "restrukturyzac", "układ", "przyspieszon", "otwarci", "otworzy", "wierzyciel",
+]  # fmt: skip
+
+
+def test_an_accelerated_arrangement_opening_is_dated_by_its_decision(
+    taxonomy: ProcedureTaxonomy, kinds: NoticeKinds
+) -> None:
+    """0000236155's notice of 2018-06-05: the opening of 27.04.2018 the registry also gives."""
+    record = _ix(_OPENING_TERMS, [("2018-04-27", ["postanowieni"]), ("2015-05-20", [])])
+    [event] = _msig(taxonomy, kinds, "", record).events
+    assert (event.event_type, event.outcome_class, event.stage, event.event_date) == (
+        "accelerated_arrangement_opened",
+        "restructuring",
+        "opening",
+        date(2018, 4, 27),
+    )
+
+
+def test_an_opening_quoting_only_the_statute_stays_undated(
+    taxonomy: ProcedureTaxonomy, kinds: NoticeKinds
+) -> None:
+    """0000533967's opening quotes 15.05.2015, the Prawo restrukturyzacyjne's date, and no other."""
+    [event] = _msig(taxonomy, kinds, "", _ix(_OPENING_TERMS, [("2015-05-15", [])])).events
+    assert (event.event_type, event.event_date) == ("accelerated_arrangement_opened", None)
+
+
+def test_an_opening_naming_no_procedure_is_the_generic_opening(
+    taxonomy: ProcedureTaxonomy, kinds: NoticeKinds
+) -> None:
+    terms = ["postanowieni", "wpis do rejestru", "nadzorc", "restrukturyzac", "układ", "otworzy"]
+    record = _ix(terms, [("2017-05-24", ["postanowieni"])])
+    [event] = _msig(taxonomy, kinds, "", record).events
+    assert (event.event_type, event.event_date) == (
+        "restructuring_proceedings_opened",
+        date(2017, 5, 24),
+    )
+
+
+def test_an_approval_quoting_the_opening_is_not_an_opening(
+    taxonomy: ProcedureTaxonomy, kinds: NoticeKinds
+) -> None:
+    """0000384681's notice of 2021-01-22 mentions the opening and an approval, and stays out."""
+    terms = [*_OPENING_TERMS, "zatwierdzeni", "uprawomocni", "prawomocn", "umorz"]
+    out = _msig(taxonomy, kinds, "", _ix(terms, [("2021-01-12", ["postanowieni"])]))
+    assert out.events == []
+    assert [r.reason_code for r in out.rejects] == ["msig_notice_unclassified"]
+
+
+def test_a_discontinuance_citing_the_petition_ends_the_restructuring(
+    taxonomy: ProcedureTaxonomy, kinds: NoticeKinds
+) -> None:
+    """0000533967's notice of 2021-04-02: discontinued 25.02.2021, bankrupt 12.05.2021."""
+    terms = [
+        "postanowieni", "obwieszcz", "ogłoszeni", "wpis do rejestru", "upadłoś",
+        "wniosek o ogłoszenie upadłości", "umorz", "restrukturyzac", "układ", "przyspieszon",
+    ]  # fmt: skip
+    record = _ix(terms, [("2021-02-25", ["postanowieni"]), ("2015-05-15", ["umorz"])])
+    [event] = _msig(taxonomy, kinds, "", record).events
+    assert (event.event_type, event.ends, event.event_date) == (
+        "restructuring_proceeding_ended",
+        ("restructuring",),
+        date(2021, 2, 25),
+    )
+
+
+def test_an_ending_said_as_final_is_dated_by_the_ending(
+    taxonomy: ProcedureTaxonomy, kinds: NoticeKinds
+) -> None:
+    """0000066923's notice of 2021-12-16 ends the arrangement on 18.11.2021."""
+    terms = ["postanowieni", "zawiadamia", "prawomocn", "zakończ", "restrukturyzac", "układ"]
+    dates = [("2021-11-18", ["zakończ"]), ("2021-10-29", ["postanowieni", "prawomocn"])]
+    [event] = _msig(taxonomy, kinds, "", _ix(terms, dates)).events
+    assert (event.event_type, event.event_date) == (
+        "restructuring_proceeding_ended",
+        date(2021, 11, 18),
+    )
+    # The same words in a sanacja administrator's notice are procedural: no event, no reject.
+    out = _msig(taxonomy, kinds, "", _ix([*terms, "zarządc", "zgromadzeni"], dates))
+    assert (out.events, out.rejects) == ([], [])
 
 
 def test_notice_signatures_become_aliases(taxonomy: ProcedureTaxonomy, kinds: NoticeKinds) -> None:
