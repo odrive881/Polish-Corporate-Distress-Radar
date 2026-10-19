@@ -284,6 +284,7 @@ src/distress_radar/
 │   ├── raw_store.py             # B1 — content-addressed object store, sidecars
 │   ├── manifest.py              # B2 — Postgres manifest (filing_index, quarantine_events, ...)
 │   ├── universe_discovery.py    # A1
+│   ├── sampling.py              # A1: a list's draw from its spec (permutation of a frame, or a checked systematic run log) and each company's π (plan 0019)
 │   ├── regon_client.py          # A2 — zeep SOAP wrapper, session/token handling
 │   ├── document_retrieval.py    # A3
 │   ├── har_import.py            # A3, manual tier (HAR captures)

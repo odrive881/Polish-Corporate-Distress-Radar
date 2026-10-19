@@ -22,7 +22,7 @@ plan 0014's decision 7 (2026-10-18) visible wherever a champion is shown.
 and step G runs the draw once the owner has exported one. Step B goes first because the Rejestr.io trial has a
 deadline, and the frame must be exported before it ends (`docs/data_inventory.md`).
 
-## Status: active (2026-10-18): written on the owner's request (items 1–3 of "what can be built in the meantime"); owner decisions 0–9 accepted as recommended (2026-10-18); 2026-10-19: list v3's random group drawn by the owner's script and checked (ADR 0014, § "List v3's random group"), decision 10 accepted by the owner (2026-10-19); open: the distress group's redraw, `ind=F`'s meaning, scripted access, the trial's end date; nothing built
+## Status: active (2026-10-18): written on the owner's request (items 1–3 of "what can be built in the meantime"); owner decisions 0–9 accepted as recommended (2026-10-18); 2026-10-19: list v3's random group drawn by the owner's script and checked (ADR 0014, § "List v3's random group"), decision 10 accepted by the owner (2026-10-19); step B built (2026-10-19); open: the distress group's redraw, `ind=F`'s meaning, scripted access, the trial's end date; nothing built
 
 ### Outstanding (2026-10-19): the owner's
 
@@ -45,7 +45,7 @@ And two new ones, from the log:
 
 Decision 10 is accepted (2026-10-19), so step B can be built for both designs now.
 
-Steps B–F are not started.
+Step B is built (2026-10-19, § "B. The draw", "Built"); steps C–F are not started.
 
 ## Why
 
@@ -164,6 +164,31 @@ provisional until one can. Three things are missing, and all three can be built 
   - Extending a draw (the addendum's "Extending later") is the same call with a larger n: the first n_A of a
     larger n_A are the same companies. Tested.
 - No company name, or any column besides KRS and status, is held in memory past the reader.
+
+**Built (2026-10-19).** `acquisition/sampling.py`, tested in `tests/acquisition/test_sampling.py` on synthetic
+frames and logs only. As written above, with these differences:
+
+- **The order is not numpy's.** A permutation draw sorts F by the SHA-256 of `"<seed>:<krs>"`. NumPy does not
+  promise that `default_rng`'s stream stays the same across versions; a hash does. It is just as random, and a
+  larger n still extends a draw.
+- **Decision 10's design.** `load_draw_spec` reads either design (`design: permutation | systematic`).
+  `read_run_log` keeps only a log's settings and each pick's KRS, position, year, registration year and status.
+  `draw_systematic` refuses a log unless:
+  - its hash is the spec's;
+  - its result is OK, with no warnings;
+  - its filters equal the frame's, with the status filter unset for A and the stratum's for B;
+  - its sort, year slices, total, n, seed, start and step agree with the spec;
+  - every pick lies at ⌊start + i · step⌋, in its slice's year;
+  - every B pick carries its stratum's status.
+
+  π is n_A / N_F, and 1 − (1 − π_A)(1 − π_Bc) for a member of D_c, since A and B are independent runs. A
+  company in both runs has a row in each, with the same π. The spec allows A alone (π_Bc is then 0), so list
+  v3's A can be stored before B is redrawn.
+- **Checked against the real log, locally (not committed):** list v3's A log, with a spec written from it,
+  passes every check. That gives 600 picks, each with π = 600 / 59,547: 577 `none`, 19 `w_likwidacji`, 4
+  `w_upadlosci`. The picks equal the CSV's KRS numbers.
+- **Not built:** D as separate exports (decision 2's fallback). It waits on the export's header, if a frame is
+  ever exported. The real spec file is step G's.
 
 ### C. Storing the draw (decisions 3–4)
 
