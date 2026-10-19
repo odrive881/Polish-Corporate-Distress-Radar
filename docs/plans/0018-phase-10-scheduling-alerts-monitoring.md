@@ -19,7 +19,7 @@ monitoring), the `alerts` table (§5), and the scoring half of stage I (§6I as 
 **Order:** after plan 0016 (active only on rendering the report, which waits on the Quarto CLI). It does not wait
 for list v2 or a champion: what it schedules and alerts on is what the registry already serves.
 
-## Status: active (2026-10-17): owner decisions 0–9 accepted as recommended; step A checked (Evidently and `sentry-sdk` both usable, no ADR needed); steps B–H built (`make orchestrate`; the schedules, sensors and RDF queue, all stopped until the owner turns them on; the `alerts` table and its rules; alerts in the explorer and the API; the drift report; realised calibration; Sentry, off until the owner sets `SENTRY_DSN`); step I's sweep checked; `alert_rules_v2` (one-cycle look-back, owner, 2026-10-17). The owner set `DAGSTER_HOME` and turned every schedule and sensor on (2026-10-17, 21:40); the first unattended `registry_check_nightly` (2026-10-18 02:00) fired and failed: both ministry sources served a maintenance page all night (§ "First night"); maintenance pages now stop a run at once, and `registry_check_retry` re-runs such a night once both sources answer (owner, 2026-10-18; shipped stopped); open: a night that gets through, and the chain's counts, recorded here
+## Status: complete (2026-10-19; active from 2026-10-17): owner decisions 0–9 accepted as recommended; step A checked (Evidently and `sentry-sdk` both usable, no ADR needed); steps B–H built (`make orchestrate`; the schedules, sensors and RDF queue, all stopped until the owner turns them on; the `alerts` table and its rules; alerts in the explorer and the API; the drift report; realised calibration; Sentry, off until the owner sets `SENTRY_DSN`); step I's sweep checked; `alert_rules_v2` (one-cycle look-back, owner, 2026-10-17). The owner set `DAGSTER_HOME` and turned every schedule and sensor on (2026-10-17, 21:40); the first unattended `registry_check_nightly` (2026-10-18 02:00) fired and failed: both ministry sources served a maintenance page all night (§ "First night"); maintenance pages now stop a run at once, and `registry_check_retry` re-runs such a night once both sources answer (owner, 2026-10-18; shipped stopped); the second night (2026-10-19) got through, the whole chain, its counts recorded (§ "Second night"); open: nothing of this plan's own
 
 ## Why
 
@@ -391,6 +391,24 @@ starts the chain like the night's own. Like every sensor it ships stopped. Tests
 `tests/test_registry_retry.py` (a real failed run in an ephemeral instance; the probe on a maintenance page, a
 404 and a 503). Last night's run is not retried by it: it failed before the fix, on "failed for 806 entities".
 
+## Second night (2026-10-19)
+
+The schedule's second `registry_check_nightly` got through, and the chain ran after it unattended, every run a
+success (Dagster's run history and the materializations' metadata; times in Warsaw time):
+
+| Run | Time | What it wrote |
+|---|---|---|
+| `legal_to_labels` | 02:00–04:53 | 806 entities: KRS extracts 201 new, 605 unchanged; MSiG 807 new notices (190 entities with notices, 1 quarantined); `legal_events` 4,254 rows in 3,276 groups; `outcome_labels` frozen under `outcome_labels_v2`, 146,674 rows, cutoff 2026-10-19 |
+| `features` | 04:53–05:08 | `financial_statements_canonical` 720,777 facts from 2,958 downloads; `feature_store` 85,450 rows, 806 entities, `feature_set_v6` |
+| `scoring` | 05:08–05:11 | as of 2026-09-30: 10 scores and 384 exclusions inserted, 10 intervals |
+| `alerting` | 05:08 and 05:12 | `alert_rules_v2`: 99 alerts (96 filings overdue, 2 going-concern flags, 1 Art. 233 tripwire), 2 new; the second run inserted none |
+| `monitoring` | 05:12–05:17 | drift per horizon (12 months: `asset_turnover`, `roa` drifted), score shift not yet evaluable, realised calibration 0 of 4 cells evaluable |
+| `rdf_queue` | 06:00 | 806 entities: 159 never searched, 4 incomplete, 6 with a statement due, 637 by age |
+
+`alerting` started twice; the second inserted nothing, as idempotence requires. The night's
+labels were label version 2: label v3 (plan 0022) was frozen by hand later the same day, and the models retrained
+on it (version 6 per horizon) serve from the night of 2026-10-20.
+
 ## Tests
 
 - **Point in time:** every alert's facts have `known_from <= as_of_date`, and an alert computed at an earlier
@@ -412,8 +430,8 @@ starts the chain like the night's own. Like every sensor it ships stopped. Tests
 - [x] Owner decisions 0–9 accepted (2026-10-17, as recommended).
 - [x] Step A's findings recorded (2026-10-17; Evidently kept, so no ADR).
 - [x] Steps B–H built, with their tests in `make check` (2026-10-17).
-- [ ] The nightly registry check has run unattended at least once from the schedule, and the chain after it
-      wrote alerts, with the counts recorded here.
+- [x] The nightly registry check has run unattended at least once from the schedule, and the chain after it
+      wrote alerts, with the counts recorded here (2026-10-19, § "Second night").
 - [x] Docs swept (step I, 2026-10-17).
 
 ## Risks

@@ -22,7 +22,7 @@ plan 0014's decision 7 (2026-10-18) visible wherever a champion is shown.
 and step G runs the draw once the owner has exported one. Step B goes first because the Rejestr.io trial has a
 deadline, and the frame must be exported before it ends (`docs/data_inventory.md`).
 
-## Status: active (2026-10-18): written on the owner's request (items 1–3 of "what can be built in the meantime"); owner decisions 0–9 accepted as recommended (2026-10-18); 2026-10-19: list v3's random group drawn by the owner's script and checked (ADR 0014, § "List v3's random group"), decision 10 accepted by the owner (2026-10-19); steps B–D built (2026-10-19); 2026-10-20: the distress group redrawn, the draw spec written (step G); open: running `universe_draw`, `ind=F`'s meaning, scripted access, the trial's end date; nothing built
+## Status: active (2026-10-18): written on the owner's request (items 1–3 of "what can be built in the meantime"); owner decisions 0–9 accepted as recommended (2026-10-18); 2026-10-19: list v3's random group drawn by the owner's script and checked (ADR 0014, § "List v3's random group"), decision 10 accepted by the owner (2026-10-19); steps B–D built (2026-10-19); 2026-10-20: the distress group redrawn, the draw spec written (step G); open: running `universe_draw` and `entity_master` on the spec, the weighted backtest (step G), the docs sweep (step H), `ind=F`'s meaning, scripted access, the trial's end date
 
 ### Outstanding (2026-10-19): the owner's
 
