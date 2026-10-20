@@ -351,6 +351,38 @@ def test_v6_is_v5_with_the_report_age() -> None:
     assert added == {"auditor_report_age_years": ("audit", "float")}
 
 
+def test_v7_is_v6_with_the_size_class() -> None:
+    """Plan 0020 decision 9 (owner, 2026-10-20): v6 unchanged, then the size class, whose
+    thresholds and revenue rules are in the hash; v6's hash reads neither."""
+    v6 = load_feature_set("feature_set_v6")
+    v7 = load_feature_set("feature_set_v7")
+    old = len(v6.feature_set.features)
+    assert v7.feature_set.features[:old] == v6.feature_set.features
+    added = {f.name: (f.family, feature_dtype(f)) for f in v7.feature_set.features[old:]}
+    assert added == {"size_class": ("size", "count")}
+    assert (
+        v7.size_class_inputs is not None and v7.size_class_inputs.version == "size_class_inputs_v1"
+    )
+    assert v7.size_thresholds is not None
+
+
+def test_the_size_thresholds_are_in_v7s_hash_only(tmp_path: Path) -> None:
+    config = tmp_path / "config"
+    shutil.copytree(CONFIG_DIR, config)
+    before = {
+        v: load_feature_set(v, config).feature_set_hash
+        for v in ("feature_set_v6", "feature_set_v7")
+    }
+    thresholds = config / "statutory" / "size_thresholds.yaml"
+    thresholds.write_text(thresholds.read_text("utf-8") + "\n# edited\n", "utf-8")
+    after = {
+        v: load_feature_set(v, config).feature_set_hash
+        for v in ("feature_set_v6", "feature_set_v7")
+    }
+    assert after["feature_set_v6"] == before["feature_set_v6"]
+    assert after["feature_set_v7"] != before["feature_set_v7"]
+
+
 @pytest.mark.parametrize(
     ("feature", "message"),
     [

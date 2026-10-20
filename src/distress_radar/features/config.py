@@ -9,6 +9,8 @@ them, so a bad edit fails at load time rather than as a wrong or silently null f
 - names are unique, and a volatility names a ratio feature;
 - a disclosure feature names an item `config/mappings/statement_introduction.yaml` reads, of its
   kind, and a text feature a `signal_type` of AGENT_SPEC §5 (plan 0013 decision 7);
+- a size-class feature's thresholds and revenue rules load, and one version of the rules serves
+  the whole set (plan 0020 decision 9);
 - `include_quarantined_statements` is stated, never defaulted (plan 0010 owner decision 3).
 
 `feature_set_hash` hashes the files that shape the output, like a structure spec hash.
@@ -40,6 +42,12 @@ from distress_radar.parsing.legal_taxonomy import (
     load_procedure_taxonomy,
 )
 from distress_radar.parsing.mapping_engine import VARIANT_SECTIONS
+from distress_radar.parsing.size_class import (
+    SizeClassInputs,
+    SizeThresholds,
+    load_size_class_inputs,
+    load_size_thresholds,
+)
 from distress_radar.parsing.statement_introduction import (
     IntroductionConfig,
     load_introduction_config,
@@ -55,6 +63,7 @@ Family = Literal[
     "disclosure",
     "text",
     "audit",
+    "size",
 ]
 # The facts of an auditor report the `audit` family reads (`auditor_reports`, plan 0013 decision 0c).
 AuditItem = Literal["modified_opinion", "auditor_changed"]
@@ -89,6 +98,7 @@ KIND_FAMILIES: dict[str, tuple[Family, ...]] = {
     "audit_flag": ("audit",),
     "audit_years": ("audit",),
     "audit_age": ("audit",),
+    "size_class": ("size",),
 }
 
 
@@ -350,6 +360,20 @@ class AuditAgeFeature(_Feature):
         return set()
 
 
+class SizeClassFeature(_Feature):
+    """The statutory size class of the latest fiscal year known (AGENT_SPEC §4.4, plan 0020
+    decision 9), as its rank: 0 micro, 1 small, 2 medium, 3 large. Null while that year is
+    `undetermined`: a class a missing figure could change is never guessed (invariant 4). Computed
+    from the figures known at `as_of_date`, by `size_class_inputs`' revenue rules and
+    `config/statutory/size_thresholds.yaml`."""
+
+    kind: Literal["size_class"]
+    size_class_inputs: str = Field(pattern=r"^size_class_inputs_v[0-9]+$")
+
+    def inputs(self) -> set[str]:
+        return set()
+
+
 Feature = Annotated[
     RatioFeature
     | GrowthFeature
@@ -364,7 +388,8 @@ Feature = Annotated[
     | TextYearsFeature
     | AuditFlagFeature
     | AuditYearsFeature
-    | AuditAgeFeature,
+    | AuditAgeFeature
+    | SizeClassFeature,
     Field(discriminator="kind"),
 ]
 
@@ -407,7 +432,15 @@ class FeatureSet(_Frozen):
                 raise ValueError(f"{f.name}: a {f.family} feature cannot be a {f.kind}")
             if isinstance(f, VolatilityFeature) and f.of not in ratios:
                 raise ValueError(f"{f.name}: `of: {f.of}` is not a ratio feature")
+        if len(self.size_class_inputs()) > 1:
+            raise ValueError(f"size-class features name several rules: {self.size_class_inputs()}")
         return self
+
+    def size_class_inputs(self) -> list[str]:
+        """The revenue rules the set's size-class features read: none, or one version."""
+        return sorted(
+            {f.size_class_inputs for f in self.features if isinstance(f, SizeClassFeature)}
+        )
 
     def check_against(
         self,
@@ -467,6 +500,9 @@ class FeatureConfig(_Frozen):
     taxonomy: ProcedureTaxonomy
     introduction: IntroductionConfig
     feature_set_hash: str
+    # Loaded only for a set with a size-class feature (plan 0020 decision 9).
+    size_thresholds: SizeThresholds | None = None
+    size_class_inputs: SizeClassInputs | None = None
 
 
 # The files that shape a build's output besides the feature set and its line-item map.
@@ -474,12 +510,19 @@ _STATUTORY_FILES = ("ksh_tripwires.yaml", "filing_deadlines.yaml", "procedure_ta
 
 
 def feature_set_hash(feature_set: FeatureSet, config_dir: Path = CONFIG_DIR) -> str:
-    """SHA-256 over the feature set, its line-item map and the statutory files it reads."""
+    """SHA-256 over the feature set, its line-item map and the statutory files it reads; for a set
+    with a size-class feature, also the size thresholds and the revenue rules (sets without one
+    hash as before)."""
     paths = [
         config_dir / "features" / f"{feature_set.feature_set_version}.yaml",
         config_dir / "features" / f"{feature_set.line_items}.yaml",
         *(config_dir / "statutory" / name for name in _STATUTORY_FILES),
     ]
+    for version in feature_set.size_class_inputs():
+        paths += [
+            config_dir / "statutory" / "size_thresholds.yaml",
+            config_dir / "mappings" / f"{version}.yaml",
+        ]
     digest = hashlib.sha256()
     for path in paths:
         digest.update(path.name.encode())
@@ -498,11 +541,13 @@ def load_feature_set(version: str, config_dir: Path = CONFIG_DIR) -> FeatureConf
             "file name"
         )
     line_items = load_line_items(feature_set.line_items, config_dir)
-    line_items.check_against(load_mapping_config(config_dir))
+    mapping = load_mapping_config(config_dir)
+    line_items.check_against(mapping)
     tripwires = load_ksh_tripwires(config_dir)
     taxonomy = load_procedure_taxonomy(config_dir)
     introduction = load_introduction_config(config_dir=config_dir)
     feature_set.check_against(line_items, tripwires, taxonomy, introduction)
+    size_rules = feature_set.size_class_inputs()
     return FeatureConfig(
         feature_set=feature_set,
         line_items=line_items,
@@ -511,6 +556,10 @@ def load_feature_set(version: str, config_dir: Path = CONFIG_DIR) -> FeatureConf
         taxonomy=taxonomy,
         introduction=introduction,
         feature_set_hash=feature_set_hash(feature_set, config_dir),
+        size_thresholds=load_size_thresholds(config_dir) if size_rules else None,
+        size_class_inputs=load_size_class_inputs(mapping, config_dir, size_rules[0])
+        if size_rules
+        else None,
     )
 
 
@@ -540,7 +589,7 @@ def feature_dtype(feature: Feature) -> Literal["boolean", "count", "float"]:
         | AuditFlagFeature,
     ):
         return "boolean"
-    if isinstance(feature, TextYearsFeature | AuditYearsFeature):
+    if isinstance(feature, TextYearsFeature | AuditYearsFeature | SizeClassFeature):
         return "count"
     if isinstance(feature, FilingFeature):
         if feature.metric in _BOOLEAN_METRICS:

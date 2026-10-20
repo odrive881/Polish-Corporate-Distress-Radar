@@ -261,11 +261,20 @@ def _text_coverage() -> pl.DataFrame:
     return pl.DataFrame(rows, schema=TEXT_COVERAGE_SCHEMA, orient="row")
 
 
+def _size_lines(micro: bool, figures: dict[str, Decimal]) -> list[tuple[str, Decimal]]:
+    """The revenue lines the size-class rules read (v7): products and goods on the full form, the
+    micro form's other-revenue line, so revenue is exact rather than unknown."""
+    if micro:
+        return [("IS.MIKRO.A.1", Decimal(0))]
+    return [("IS.COMP.A.I", figures["revenue"]), ("IS.COMP.A.IV", Decimal(0))]
+
+
 def _canonical(config: FeatureConfig) -> pl.DataFrame:
     rows: list[dict[str, object]] = []
     for krs, ref, year, filed, _, _, current, prior in STATEMENTS:
         micro = krs == B
         for column, figures in (("current_year", current), ("prior_year", prior)):
+            lines: list[tuple[str, Decimal]] = []
             for name, value in figures.items():
                 if name not in config.line_items.inputs:
                     continue  # an input a later line-item map added
@@ -280,6 +289,10 @@ def _canonical(config: FeatureConfig) -> pl.DataFrame:
                     }
                     else codes[0]
                 )
+                lines.append((code, value))
+            if config.size_class_inputs is not None:
+                lines += _size_lines(micro, figures)
+            for code, value in lines:
                 rows.append(
                     {
                         "krs": krs,
@@ -406,6 +419,7 @@ def _month_ends(first: date, last: date) -> list[date]:
         "feature_set_v4",
         "feature_set_v5",
         "feature_set_v6",
+        "feature_set_v7",
     ],
 )
 def config(request: pytest.FixtureRequest) -> FeatureConfig:
@@ -868,3 +882,55 @@ def test_the_report_age_grows_until_a_later_report_is_filed(grid: pl.DataFrame) 
     # ra23 states no opinion, but how old it is is known
     assert age(A, date(2024, 11, 30)) == pytest.approx(335 / 365.25)
     assert age(B, date(2024, 11, 30)) is None
+
+
+# --- feature set v7: the size class (plan 0020 decision 9) ----------------------------------------
+
+
+@pytest.fixture(scope="module")
+def v7() -> FeatureConfig:
+    return load_feature_set("feature_set_v7")
+
+
+@pytest.fixture(scope="module")
+def v7_sources(v7: FeatureConfig) -> FeatureSources:
+    return FeatureSources(
+        canonical=_canonical(v7),
+        restatements=_restatements(),
+        legal_events=_legal_events(),
+        filing_index=_filing_index(),
+        parse_status=_parse_status(),
+        disclosures=_disclosures(),
+        text_coverage=_text_coverage(),
+        auditor_reports=_auditor_reports(),
+    )
+
+
+def test_the_size_class_is_known_from_the_filing_that_sets_it(
+    grid: pl.DataFrame, v7_sources: FeatureSources, v7: FeatureConfig
+) -> None:
+    inputs, _ = feature_inputs(v7_sources, v7)
+    store = assemble(grid, fd.compute_features(grid, inputs, v7), v7)
+    # a20 is filed the day after the month-end: nothing on 2021-06-30.
+    assert _row(store, A, date(2021, 6, 30))["size_class"] is None
+    july = _row(store, A, date(2021, 7, 31))
+    assert july["size_class__known_from"] == date(2021, 7, 1)
+    # Every synthetic filer is tiny: micro wherever a class is decided, never a guess.
+    assert set(store.get_column("size_class").drop_nulls().to_list()) <= {0}
+    assert store.get_column("size_class").drop_nulls().len() > 0
+
+
+def _size_by_period_end(
+    grid: pl.DataFrame, inputs: fd.FeatureInputs, config: FeatureConfig
+) -> pl.DataFrame:
+    """Classes treated as known at the fiscal year's end, not the filing that set them."""
+    size = inputs.size.with_columns(pl.col("period_end").alias("known_from"))
+    return fd.size(grid, replace(inputs, size=size), config)
+
+
+def test_a_leaky_size_family_fails_the_truncation_check(
+    grid: pl.DataFrame, v7_sources: FeatureSources, v7: FeatureConfig
+) -> None:
+    traps = grid.filter(pl.col("as_of_date").is_in(TRAP_DAYS))
+    differences = truncation_differences(traps, v7_sources, v7, {"size": _size_by_period_end})
+    assert not differences.is_empty()

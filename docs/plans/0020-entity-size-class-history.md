@@ -17,7 +17,35 @@ owner decision 4's deferral (owner, 2026-10-18), and writes `config/statutory/si
 feature set or population: using the class (a feature, the segment's `size_classes` filter) is decision 9's
 later step.
 
-## Status: active (2026-10-18): owner decisions 0–9 accepted (1 and 7 as asked, the rest as recommended, 2026-10-18); steps A–F built and run (§ "Progress"); decision 9's later step answered by the owner (2026-10-20): the class becomes a feature (`feature_set_v7`), not the segment's filter, since list v3's random draw may bring more small and medium companies (201 of 268 decided population entities are micro); open: building that feature, and a unit-error check for the filer found in step E
+## Status: active (2026-10-18): owner decisions 0–9 accepted (1 and 7 as asked, the rest as recommended, 2026-10-18); steps A–F built and run (§ "Progress"); decision 9's later step answered by the owner (2026-10-20): the class becomes a feature (`feature_set_v7`), not the segment's filter, since list v3's random draw may bring more small and medium companies (201 of 268 decided population entities are micro); the feature built (2026-10-20, § "The feature"); open: a backtest pinning `feature_set_v7` (the owner's), and a unit-error check for the filer found in step E
+
+## The feature (2026-10-20): `feature_set_v7`
+
+Built on the owner's answer to decision 9 (2026-10-20). Decisions taken while building it, each to flag if
+unwanted:
+
+1. **One feature, a rank.** `size_class`: 0 micro, 1 small, 2 medium, 3 large (`count` dtype). A rank, since the
+   classes are ordered and a tree splits them in order; the regression reads none of it unless a backtest names
+   it. *Alternative:* one flag per class.
+2. **The latest fiscal year known speaks**, by its latest row, dated by the filing that set it (a correction
+   replaces from its own date, a deleted filing stops speaking), as the disclosure family reads statements.
+   While that year is `undetermined`, the feature is null, never an older year's class (invariant 4).
+3. **Recomputed at assembly, never read from the stored dataset.** `feature_inputs` runs
+   `entity_size_class_history` on the sources it already loads (2 s on the full store). Found while building:
+   the stored dataset (2026-10-18) differed from a recompute in 24 rows' `first_year` and prior-year figures,
+   after the night of 2026-10-19 added registrations; the classes were the same, but a stored copy can lag. From
+   sources cut at a date, the recompute is the history as an observer could compute it then, so the blocking
+   truncation check tests the class itself, not a cut of a table.
+4. **The hash.** A set with the class also hashes `config/statutory/size_thresholds.yaml` and its
+   `size_class_inputs_v<n>.yaml`; sets without it hash exactly as before (tested).
+5. **Not the default.** `FEATURE_SET_VERSION` stays `feature_set_v6`: the store holds one set, and `backtest_v9`
+   (which scoring serves) pins v6. Using v7 is a new `backtest_v<n>` pinning it, then a store rebuild.
+
+**Checked:** the leakage tests run v7 (the synthetic statements gain the revenue lines the size rules read, for
+v7 only; a size family dated by period end fails the truncation check); unit tests of the rules; `make check`.
+On the live stores, read-only (806 grid entities, 85,450 rows): 14,387 rows (16.8%) have a class, 355 entities;
+latest values 256 micro, 84 small, 14 medium, 1 large; the size family's truncation check on 26 month-ends
+from 2012-01-31 to 2026-08-31 found no difference.
 
 ## Progress (2026-10-18): steps A–F built and run
 

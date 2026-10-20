@@ -43,6 +43,8 @@ from distress_radar.features.contracts import (
 )
 from distress_radar.features.panel import FILINGS_SCHEMA, build_panel
 from distress_radar.labels import LABEL_SOURCES
+from distress_radar.parsing.size_class import SCHEMA as SIZE_CLASS_SCHEMA
+from distress_radar.parsing.size_class import entity_size_class_history
 from distress_radar.parsing.statement_introduction import DISCLOSURE_COLUMNS
 from distress_radar.warehouse import read_dataset, write_dataset
 
@@ -245,7 +247,8 @@ def load_sources(
     """The sources, the entities and their fetches, from the warehouse and the manifest.
 
     `statement_disclosures`, `text_coverage` and `auditor_reports` are read only when the
-    feature set has a family that reads them.
+    feature set has a family that reads them (the size class reads employment from the
+    disclosures).
     """
     families = {f.family for f in config.feature_set.features}
     filing_index = pl.DataFrame(
@@ -270,7 +273,7 @@ def load_sources(
         filing_index=filing_index,
         parse_status=parse_status,
         disclosures=read_dataset(warehouse_dir, DISCLOSURES_DATASET)
-        if "disclosure" in families
+        if families & {"disclosure", "size"}
         else _empty_disclosures(),
         text_coverage=read_dataset(warehouse_dir, TEXT_COVERAGE_DATASET)
         .select(TEXT_COVERAGE_SCHEMA.keys())
@@ -328,8 +331,27 @@ def feature_inputs(
         audit=fd.statement_files(
             sources.auditor_reports, sources.filing_index, fd.AUDIT_INPUT_SCHEMA
         ),
+        size=fd.statement_files(
+            size_classes(sources, config), sources.filing_index, fd.SIZE_INPUT_SCHEMA
+        ),
     )
     return inputs, panel.excluded
+
+
+def size_classes(sources: FeatureSources, config: FeatureConfig) -> pl.DataFrame:
+    """`entity_size_class_history` recomputed from the sources (plan 0020 decision 9), never read
+    from its stored copy, which can be older than the facts; empty for a set without the class.
+    From sources cut at a date, it is the history as an observer could compute it then, which is
+    what the leakage check compares against."""
+    if config.size_thresholds is None or config.size_class_inputs is None:
+        return pl.DataFrame(schema=SIZE_CLASS_SCHEMA)
+    return entity_size_class_history(
+        sources.canonical,
+        sources.disclosures,
+        sources.legal_events,
+        config.size_thresholds,
+        config.size_class_inputs,
+    )
 
 
 def build_feature_store(

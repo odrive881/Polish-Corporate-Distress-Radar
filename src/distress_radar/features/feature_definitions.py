@@ -28,6 +28,11 @@ speaking on the day its filing is deleted. A text value is null unless the notes
 its signal (`text_coverage`): notes that were scanned, never sent to the model or not wholly
 answered say nothing, which is not "no warning" (invariant 4). A count of periods takes each
 period's latest filing whose notes were read.
+
+**The size class (plan 0020 decision 9)** speaks the same way: each fiscal year's class is a row of
+`entity_size_class_history`, recomputed from the sources at assembly, a new row whenever a filing
+changes it, dated by that filing. The latest year known speaks; while it is `undetermined`, the
+feature is null, not an older year's class.
 """
 
 # polars's and duckdb's signatures reference types pyright cannot resolve; scoped to this module.
@@ -60,6 +65,7 @@ from distress_radar.features.config import (
     FilingFeature,
     GrowthFeature,
     RatioFeature,
+    SizeClassFeature,
     TextFlagFeature,
     TextYearsFeature,
     TripwireFeature,
@@ -68,6 +74,7 @@ from distress_radar.features.config import (
 )
 from distress_radar.features.panel import TOTAL_ASSETS
 from distress_radar.features.statutory import add_months
+from distress_radar.parsing.size_class import CLASSES
 
 GRID_SCHEMA: dict[str, pl.DataType | type[pl.DataType]] = {
     "krs": pl.String,
@@ -143,6 +150,14 @@ AUDIT_INPUT_SCHEMA: dict[str, pl.DataType | type[pl.DataType]] = {
     "auditor_changed": pl.Boolean,
 }
 
+# One row per (fiscal year, date its class changed) of `entity_size_class_history`.
+SIZE_INPUT_SCHEMA: dict[str, pl.DataType | type[pl.DataType]] = {
+    **_FILE_COLUMNS,
+    "size_class": pl.String,
+}
+# A class's rank, the feature's value: micro 0 to large 3.
+SIZE_RANK = {c: i for i, c in enumerate(CLASSES)}
+
 
 def _empty_disclosures() -> pl.DataFrame:
     return pl.DataFrame(schema=DISCLOSURE_INPUT_SCHEMA)
@@ -156,6 +171,10 @@ def _empty_text() -> pl.DataFrame:
     return pl.DataFrame(schema=TEXT_INPUT_SCHEMA)
 
 
+def _empty_size() -> pl.DataFrame:
+    return pl.DataFrame(schema=SIZE_INPUT_SCHEMA)
+
+
 @dataclass(frozen=True)
 class FeatureInputs:
     panel: pl.DataFrame  # features.panel.PANEL_SCHEMA
@@ -165,6 +184,7 @@ class FeatureInputs:
     disclosures: pl.DataFrame = field(default_factory=_empty_disclosures)  # DISCLOSURE_INPUT_SCHEMA
     text: pl.DataFrame = field(default_factory=_empty_text)  # TEXT_INPUT_SCHEMA
     audit: pl.DataFrame = field(default_factory=_empty_audit)  # AUDIT_INPUT_SCHEMA
+    size: pl.DataFrame = field(default_factory=_empty_size)  # SIZE_INPUT_SCHEMA
 
 
 Row = tuple[str, date, str, float, date]
@@ -897,6 +917,35 @@ def audit(grid: pl.DataFrame, inputs: FeatureInputs, config: FeatureConfig) -> p
     return _frame(rows())
 
 
+def size(grid: pl.DataFrame, inputs: FeatureInputs, config: FeatureConfig) -> pl.DataFrame:
+    """The size class of the latest fiscal year known, as its rank, dated by the filing that set
+    it (plan 0020 decision 9). A later row for a year (a correction, a carry-over) replaces the
+    earlier from its own date; null while the latest year is `undetermined`."""
+    features = [f for f in _features(config, "size") if isinstance(f, SizeClassFeature)]
+    if not features:
+        return _frame(())
+    # krs -> row -> its class
+    years: dict[str, dict[_File, str]] = {}
+    for row in inputs.size.iter_rows(named=True):
+        years.setdefault(row["krs"], {})[_file(row)] = row["size_class"]
+
+    def rows() -> Iterator[Row]:
+        for krs, days in _grid_by_entity(grid).items():
+            by_year = years.get(krs, {})
+            for day in days:
+                periods = _latest_by_period(by_year, day)
+                if not periods:
+                    continue
+                latest = periods[max(periods)]
+                rank = SIZE_RANK.get(by_year[latest])
+                if rank is None:
+                    continue  # undetermined
+                for f in features:
+                    yield (krs, day, f.name, float(rank), latest.known_from)
+
+    return _frame(rows())
+
+
 FAMILIES: dict[Family, Callable[[pl.DataFrame, FeatureInputs, FeatureConfig], pl.DataFrame]] = {
     "financial": financial,
     "construction": construction,
@@ -907,6 +956,7 @@ FAMILIES: dict[Family, Callable[[pl.DataFrame, FeatureInputs, FeatureConfig], pl
     "disclosure": disclosure,
     "text": text,
     "audit": audit,
+    "size": size,
 }
 
 

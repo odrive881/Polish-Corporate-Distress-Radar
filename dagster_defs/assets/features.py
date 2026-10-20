@@ -76,8 +76,10 @@ def feature_store(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
     (written with the canonical facts), `text_coverage` and `auditor_reports` (both written by the
     `text` job); Postgres `filing_index`, `parsed_documents`, `entity_master` and
     `legal_source_fetches`; `config/features/<FEATURE_SET_VERSION>.yaml` with its line-item
-    map, `config/statutory/` (tripwires, filing deadlines, taxonomy); the grid's start from
-    `config/labels/<LABEL_VERSION>.yaml`.
+    map, `config/statutory/` (tripwires, filing deadlines, taxonomy; for a set with the size
+    class, the size thresholds and `config/mappings/size_class_inputs_v<n>.yaml`, by which the
+    class is recomputed from the facts above, never read from `entity_size_class_history`); the
+    grid's start from `config/labels/<LABEL_VERSION>.yaml`.
     Outputs: Parquet under `WAREHOUSE_DIR/feature_store/`, one file per `as_of_year`, rebuilt
     whole and replaced atomically (ADR 0008), validated by the feature-set contract; equal
     inputs write equal bytes.

@@ -537,3 +537,54 @@ def test_no_value_is_known_after_its_row(config: FeatureConfig) -> None:
     assert set(frame.get_column("feature").unique()) <= {
         f.name for f in config.feature_set.features
     }
+
+
+# --- the size class (plan 0020 decision 9) -------------------------------------------------------
+
+
+def _size_rows() -> pl.DataFrame:
+    """One entity's class history: 2021 micro; 2022 small, then undetermined after a correction;
+    a 2023 row whose filing is deleted later."""
+    k = "0000000001"
+    rows = [
+        (k, "r21", "zip:r21.xml", date(2021, 12, 31), date(2022, 3, 1), None, "micro"),
+        (k, "r22", "zip:r22.xml", date(2022, 12, 31), date(2023, 3, 1), None, "small"),
+        (k, "r22c", "zip:r22c.xml", date(2022, 12, 31), date(2023, 6, 1), None, "undetermined"),
+        (k, "r23", "zip:r23.xml", date(2023, 12, 31), date(2024, 3, 1), date(2024, 5, 2), "medium"),
+    ]
+    return pl.DataFrame(rows, schema=fd.SIZE_INPUT_SCHEMA, orient="row")
+
+
+@pytest.mark.parametrize(
+    ("day", "rank", "known"),
+    [
+        (date(2022, 2, 28), None, None),  # nothing filed yet
+        (date(2022, 3, 31), 0.0, date(2022, 3, 1)),
+        (date(2023, 3, 31), 1.0, date(2023, 3, 1)),  # the latest year speaks
+        (date(2023, 6, 30), None, None),  # its correction leaves it undetermined: null, not 2021
+        (date(2024, 3, 31), 2.0, date(2024, 3, 1)),
+        (date(2024, 5, 31), None, None),  # r23 deleted: 2022 speaks again, still undetermined
+    ],
+)
+def test_the_size_class_is_the_latest_years_rank(
+    day: date, rank: float | None, known: date | None
+) -> None:
+    v7 = load_feature_set("feature_set_v7")
+    grid = pl.DataFrame([("0000000001", day)], schema=fd.GRID_SCHEMA, orient="row")
+    inputs = fd.FeatureInputs(
+        panel=pl.DataFrame(schema=PANEL_SCHEMA),
+        filings=pl.DataFrame(schema=fd.STATEMENT_FILINGS_SCHEMA),
+        restatements=pl.DataFrame(schema=RESTATEMENT_SCHEMA),
+        legal_events=pl.DataFrame(schema=LEGAL_EVENTS_SCHEMA),
+        size=_size_rows(),
+    )
+    out = fd.size(grid, inputs, v7)
+    if rank is None:
+        assert out.is_empty()
+    else:
+        assert out.select("value", "known_from").row(0) == (rank, known)
+
+
+def test_a_set_without_the_size_class_reads_nothing_for_it() -> None:
+    v6 = load_feature_set("feature_set_v6")
+    assert v6.size_thresholds is None and v6.size_class_inputs is None
