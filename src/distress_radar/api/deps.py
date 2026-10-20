@@ -33,6 +33,7 @@ def served_out(served: Served) -> list[ServedOut]:
             model_name=v.name,
             model_version=v.version,
             model_alias=v.alias,
+            model_status=v.status,
             model=v.model,
             mlflow_run_id=v.run_id,
             training_eve=v.training_eve,

@@ -40,6 +40,7 @@ from distress_radar.models.serving import (
     INPUTS_INCOMPLETE,
     TOP_DRIVERS,
     NoServedModelError,
+    ServedVersion,
     load_scorer,
     load_served,
     resolve,
@@ -255,3 +256,21 @@ def test_the_backtest_writes_its_predictions_locally_in_a_fixed_order(
     stored = read_dataset(tmp_path / "a", PREDICTIONS)
     assert stored.height == result.predictions.height
     assert set(stored.get_column("backtest").to_list()) == {result.config.backtest}
+
+
+@pytest.mark.parametrize(
+    ("alias", "tags", "status"),
+    [
+        ("incumbent", {}, "incumbent"),
+        ("incumbent", {"champion_basis": "weighted"}, "incumbent"),
+        ("champion", {}, "provisional champion"),  # registered before the tag: unweighted
+        ("champion", {"champion_basis": "unweighted"}, "provisional champion"),
+        ("champion", {"champion_basis": "weighted"}, "champion"),
+    ],
+)
+def test_a_served_version_says_whether_it_is_a_provisional_champion(
+    alias: str, tags: dict[str, str], status: str
+) -> None:
+    served = ServedVersion("distress_radar_12m", "7", alias, "f" * 32, "lightgbm", 12, 2025, tags)
+    assert served.status == status
+    assert served.provisional == (status == "provisional champion")

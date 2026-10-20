@@ -22,7 +22,7 @@ plan 0014's decision 7 (2026-10-18) visible wherever a champion is shown.
 and step G runs the draw once the owner has exported one. Step B goes first because the Rejestr.io trial has a
 deadline, and the frame must be exported before it ends (`docs/data_inventory.md`).
 
-## Status: active (2026-10-18): written on the owner's request (items 1–3 of "what can be built in the meantime"); owner decisions 0–9 accepted as recommended (2026-10-18); 2026-10-19: list v3's random group drawn by the owner's script and checked (ADR 0014, § "List v3's random group"), decision 10 accepted by the owner (2026-10-19); steps B–D built (2026-10-19); 2026-10-20: the distress group redrawn, the draw spec written (step G); 2026-10-20: `universe_draw` run (800 rows, 793 companies) and ADR 0014's addendum accepted; open: `entity_master` on the drawn lists, the weighted backtest (step G), the docs sweep (step H), steps E–F; 2026-10-20: the trial ends about 2026-11-02, `ind=F` is the primary PKD and scripted access is allowed (owner)
+## Status: active (2026-10-18): written on the owner's request (items 1–3 of "what can be built in the meantime"); owner decisions 0–9 accepted as recommended (2026-10-18); 2026-10-19: list v3's random group drawn by the owner's script and checked (ADR 0014, § "List v3's random group"), decision 10 accepted by the owner (2026-10-19); steps B–D built (2026-10-19); 2026-10-20: the distress group redrawn, the draw spec written (step G); 2026-10-20: `universe_draw` run (800 rows, 793 companies) and ADR 0014's addendum accepted; steps E–F built (2026-10-20); open: `entity_master` on the drawn lists, the weighted backtest (step G), the docs sweep (step H); 2026-10-20: the trial ends about 2026-11-02, `ind=F` is the primary PKD and scripted access is allowed (owner)
 
 ### Outstanding (2026-10-19): the owner's
 
@@ -301,6 +301,35 @@ frames and logs only. As written above, with these differences:
   `methodology.py` (and so the report and the public site) states the basis beside "promoted".
 - The champion rule itself, its floor and its margin are unchanged (plan 0015 decision 7).
 
+**Built (2026-10-20), steps E and F.** As written above, with these differences:
+
+- **The weighted rule** (`champion.py`): `ChampionConfig.weighted`, refused by `BacktestConfig` without a
+  `weights` section. The backtest hands the rule its scored rows joined to each entity's weight and stratum;
+  `pair` carries both, and `compare` weights both Brier scores, the paired difference and both AUCs. The paired
+  bootstrap now draws through `evaluation.resample_entities` (one stratum unweighted, the draw's strata
+  weighted); with one stratum it draws exactly as before (`test_the_unweighted_interval_is_the_plain_entity_bootstrap`
+  pins it against the old loop). The strata come from `evaluation.entity_strata`, shared with the cells'
+  bootstrap. The floor still counts `events()`, unweighted.
+- **Supersession** (`registry.py`), as decision 8, read as: a weighted promotion sets `champion` on the weighted
+  run's own version whichever model it is ("stays" and "moves" both land on the newly registered version, now
+  tagged final); a weighted verdict with no promotion removes `champion`. *One rule this plan did not state,
+  added:* an unweighted promotion never displaces a final champion, so a later lists-only run cannot undo a
+  weighted verdict. Every registered version is tagged `champion_basis` and `provisional`; `champion.json`
+  carries both.
+- **One place to read it:** `ServedVersion.basis`, `.provisional` and `.status` (`champion`, `provisional
+  champion` or `incumbent`). A version registered before the tag existed reads as unweighted, which every one
+  so far was. The API's `meta.served[]` gains `model_status`; the explorer's "Served models" table a `status`
+  column; the methodology figure's verdict reads "promoted, provisional (unweighted)" or "promoted, final
+  (weighted)".
+- **The report:** an unweighted promotion adds "Provisional: promoted on an unweighted run over purposive lists
+  (plan 0014 decision 7); a weighted run decides."; a weighted one "Final: …"; a weighted run that promotes
+  nothing says an earlier champion is withdrawn; a weighted rule's text names the stratified, weighted
+  bootstrap. An unweighted verdict that promotes nothing prints exactly as before, which is every backtest so far.
+- **Checked:** `make check`; new tests in `test_champion.py`, `test_registry_generation3.py`,
+  `test_report_generation3.py`, `test_serving.py`, `test_splits.py`, `test_methodology.py` and `test_api.py`.
+  Not run on real data: no backtest config sets `weighted` yet; the first is the weighted `backtest_v<n>` once
+  list v3's downloads are in.
+
 ### G. The real draw (waits on the owner's export)
 
 *2026-10-19:* group A of list v3 is drawn (ADR 0014, § "List v3's random group"); under decision 10 (accepted), step G
@@ -349,7 +378,7 @@ the owner. `entity_master` is not run yet.
 - [x] Owner decisions 0–9 accepted (2026-10-18, as recommended).
 - [x] Decision 10 (a systematic draw done outside the pipeline) accepted (2026-10-19).
 - [ ] Step A's answers recorded (export format, how B was chosen, the trial's end date).
-- [ ] Steps B–F built, with their tests in `make check`.
+- [x] Steps B–F built, with their tests in `make check` (B–D 2026-10-19, E–F 2026-10-20).
 - [x] Step G: the real draw run on the owner's logs, its counts recorded here and in ADR 0014 (2026-10-20);
   its weighted backtest waits on the downloads.
 - [ ] Docs swept (step H).

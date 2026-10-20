@@ -24,6 +24,13 @@ promotion sets it, and a backtest that promotes nothing leaves an earlier one wh
 version is the model the `main` run fitted for its latest fold allowed to speak for the pool, so it
 was trained on the labels settled on that test year's eve; its files are logged under `model/` in
 that MLflow run, beside the champion rule's comparisons (`champion.json`).
+
+Provisional and final (plan 0019 step F, decision 8): every version registered carries the tags
+`champion_basis` (`unweighted` or `weighted`) and `provisional` (`true` for an unweighted
+verdict). A weighted verdict supersedes: a promotion sets `champion` on its own version (the same
+model's, or another's), and no promotion removes `champion`, so `incumbent` serves. An unweighted
+promotion never displaces a final champion (one registered from a weighted verdict). `incumbent`
+is set by every backtest and never removed.
 """
 
 # polars's and mlflow's signatures reference types pyright cannot resolve; scoped to this module.
@@ -55,6 +62,8 @@ EXPERIMENT = "phase6_backtest"
 MAX_PARAMS = 100  # MLflow's limit per `log_batch`
 INCUMBENT_ALIAS = "incumbent"
 CHAMPION_ALIAS = "champion"
+BASIS_TAG = "champion_basis"
+PROVISIONAL_TAG = "provisional"
 _COMMIT = re.compile(r"^[0-9a-f]{40}$")
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 
@@ -349,6 +358,8 @@ def _comparisons(verdict: ChampionVerdict) -> str:
     body = {
         "incumbent": verdict.incumbent,
         "promoted": verdict.promoted,
+        "basis": verdict.basis,
+        "provisional": verdict.provisional,
         "verdicts": verdict.verdicts,
         "comparisons": [c.__dict__ for c in verdict.comparisons],
     }
@@ -364,7 +375,8 @@ def register_models(
 ) -> list[Registration]:
     """Per horizon, a version of the incumbent (alias `incumbent`) and, on a promotion, of the
     champion (alias `champion`). Nothing for a config with no champion rule, nor for a model with
-    no fold allowed to speak for the pool."""
+    no fold allowed to speak for the pool. A weighted verdict that promotes nothing removes the
+    horizon's `champion`; an unweighted promotion leaves a final one in place (decision 8)."""
     verdict = result.champion
     if verdict is None:
         return []
@@ -378,7 +390,10 @@ def register_models(
     out: list[Registration] = []
     for horizon in result.config.horizons:
         name = registered_name(horizon)
+        final = _final_champion(client, name)
         for model, alias in roles:
+            if alias == CHAMPION_ALIAS and verdict.provisional and final:
+                continue  # a provisional verdict never displaces a final champion
             found = result.latest.get((horizon, model))
             if found is None:
                 continue
@@ -406,10 +421,31 @@ def register_models(
                     "test_year": str(test_year),
                     "verdict": verdict.verdicts.get(model, "incumbent"),
                     "seed_output": "true",  # machinery, not evidence (plan 0015)
+                    BASIS_TAG: verdict.basis,
+                    PROVISIONAL_TAG: str(verdict.provisional).lower(),
                 },
             )
             client.set_registered_model_alias(name, alias, str(version.version))
             out.append(
                 Registration(name, str(version.version), model, horizon, test_year, alias, run_id)
             )
+        if not verdict.provisional and verdict.promoted is None and _has_champion(client, name):
+            client.delete_registered_model_alias(name, CHAMPION_ALIAS)
     return out
+
+
+def _aliases(client: MlflowClient, name: str) -> dict[str, str]:
+    found = client.search_registered_models(filter_string=f"name = '{name}'")
+    return dict(found[0].aliases) if found else {}
+
+
+def _has_champion(client: MlflowClient, name: str) -> bool:
+    return CHAMPION_ALIAS in _aliases(client, name)
+
+
+def _final_champion(client: MlflowClient, name: str) -> bool:
+    """Whether the registered model's `champion` came from a weighted verdict."""
+    version = _aliases(client, name).get(CHAMPION_ALIAS)
+    if version is None:
+        return False
+    return client.get_model_version(name, str(version)).tags.get(BASIS_TAG) == "weighted"

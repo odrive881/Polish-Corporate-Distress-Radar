@@ -176,6 +176,16 @@ def resample_entities(strata: list[list[str]], rng: np.random.Generator) -> list
     ]
 
 
+def entity_strata(predictions: pl.DataFrame) -> list[list[str]]:
+    """The entities to resample, by `draw_stratum` (in stratum order) when the rows carry one, else
+    all in one stratum: the plain entity bootstrap."""
+    entities = sorted(set(predictions.get_column("krs").to_list()))
+    if STRATUM not in predictions.columns:
+        return [entities]
+    stratum_of = dict(predictions.select("krs", STRATUM).unique().iter_rows())  # one per entity
+    return [[e for e in entities if stratum_of[e] == s] for s in sorted(set(stratum_of.values()))]
+
+
 def bootstrap_intervals(
     predictions: pl.DataFrame, config: BootstrapConfig
 ) -> dict[str, tuple[float, float] | None]:
@@ -186,17 +196,8 @@ def bootstrap_intervals(
     y, p = _arrays(predictions)
     w = _weights(predictions)
     krs = predictions.get_column("krs").to_list()
-    entities = sorted(set(krs))
-    rows_of = {e: np.flatnonzero(np.array(krs) == e) for e in entities}
-    if STRATUM in predictions.columns:
-        stratum_of = dict(
-            predictions.select("krs", STRATUM).unique().iter_rows()  # one stratum per entity
-        )
-        strata = [
-            [e for e in entities if stratum_of[e] == s] for s in sorted(set(stratum_of.values()))
-        ]
-    else:
-        strata = [entities]
+    rows_of = {e: np.flatnonzero(np.array(krs) == e) for e in sorted(set(krs))}
+    strata = entity_strata(predictions)
     rng = np.random.default_rng(config.seed)
     draws: dict[str, list[float]] = {name: [] for name in METRICS}
     for _ in range(config.replicates):

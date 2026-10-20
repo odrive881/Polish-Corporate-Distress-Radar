@@ -257,6 +257,12 @@ def _survival(result: BacktestResult) -> list[str]:
     ]
 
 
+def _paired_bootstrap(weighted: bool) -> str:
+    if weighted:
+        return "weighted entity-bootstrap (entities resampled within each draw stratum)"
+    return "entity-bootstrap"
+
+
 def _champion(result: BacktestResult) -> list[str]:
     """The champion rule's comparisons and verdict."""
     verdict = result.champion
@@ -266,8 +272,19 @@ def _champion(result: BacktestResult) -> list[str]:
     level = round(result.config.bootstrap.level * 100)
     if verdict.promoted is not None:
         outcome = f"**`{verdict.promoted}` is promoted over `{verdict.incumbent}`.**"
+        if verdict.provisional:
+            outcome += (
+                " Provisional: promoted on an unweighted run over purposive lists (plan 0014 "
+                "decision 7); a weighted run decides."
+            )
+        else:
+            outcome += " Final: promoted on a weighted run over a draw (plan 0019 decision 8)."
     else:
         outcome = f"**Nothing is promoted: `{verdict.incumbent}` stays the champion.**"
+        if not verdict.provisional:
+            outcome += (
+                " A weighted run, so an earlier champion is withdrawn (plan 0019 decision 8)."
+            )
     lines = [
         "",
         "## Champion rule",
@@ -275,7 +292,8 @@ def _champion(result: BacktestResult) -> list[str]:
         (
             f"A challenger replaces `{verdict.incumbent}` only if, at each horizon and in each of "
             f"{', '.join(f'`{r}`' for r in rule.runs)}, its pooled Brier score is lower with the "
-            f"{level}% paired entity-bootstrap interval of the difference wholly below zero, its "
+            f"{level}% paired {_paired_bootstrap(rule.weighted)} interval of the difference wholly "
+            "below zero, its "
             f"AUC is at most {rule.auc_margin} lower, and the paired rows hold at least "
             f"{rule.min_promotion_events} distinct events. Paired rows: the test rows both models "
             f"scored, in the folds where both trained on {result.config.min_events}+ events."

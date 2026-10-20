@@ -19,6 +19,7 @@ st.dataframe(
             {
                 "horizon (months)": horizon,
                 "model": f"{v.name} v{v.version} @{v.alias}",
+                "status": v.status,
                 "kind": v.model,
                 "training eve": v.training_eve,
                 "backtest": v.tags.get("backtest"),

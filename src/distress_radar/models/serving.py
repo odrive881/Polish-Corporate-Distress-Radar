@@ -5,6 +5,10 @@ version under the alias `champion`, else under `incumbent`; neither is an error,
 version serves as registered: the model the backtest evaluated, never a refit. Its fold year is
 part of every score's metadata: it was trained on the labels settled on that year's eve.
 
+**Provisional or final** (plan 0019 step F, decision 8): a version's basis is its
+`champion_basis` tag; a version registered before the tag existed came from an unweighted verdict.
+A champion is final only from a weighted one; `status` says which, in one place for every reader.
+
 **A scorer per kind**, rebuilt from the version's `model/` files (`model.json`, and the booster's
 text or the forest's pickle), so that a loaded version reproduces the probabilities its fold
 printed:
@@ -52,7 +56,12 @@ from distress_radar.features.contracts import KNOWN_FROM_SUFFIX
 from distress_radar.models.classical import Array, RankTransform
 from distress_radar.models.explain import shap_values
 from distress_radar.models.gbm import PlattMap, feature_matrix
-from distress_radar.models.registry import CHAMPION_ALIAS, INCUMBENT_ALIAS, registered_name
+from distress_radar.models.registry import (
+    BASIS_TAG,
+    CHAMPION_ALIAS,
+    INCUMBENT_ALIAS,
+    registered_name,
+)
 from distress_radar.models.survival import forest_survival, hazard_survival
 
 SERVING_ALIASES = (CHAMPION_ALIAS, INCUMBENT_ALIAS)  # in order of preference
@@ -88,6 +97,23 @@ class ServedVersion:
     @property
     def training_eve(self) -> date:
         return date(self.test_year - 1, 12, 31)
+
+    @property
+    def basis(self) -> str:
+        """The champion rule's basis for the backtest that registered it."""
+        return self.tags.get(BASIS_TAG, "unweighted")
+
+    @property
+    def provisional(self) -> bool:
+        """A champion promoted on an unweighted run; an incumbent is neither."""
+        return self.alias == CHAMPION_ALIAS and self.basis != "weighted"
+
+    @property
+    def status(self) -> str:
+        """`champion`, `provisional champion` or `incumbent`."""
+        if self.alias != CHAMPION_ALIAS:
+            return self.alias
+        return "provisional champion" if self.provisional else "champion"
 
 
 def resolve(client: MlflowClient, horizon: int) -> ServedVersion:

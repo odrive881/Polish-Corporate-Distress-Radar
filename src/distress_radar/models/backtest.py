@@ -15,7 +15,8 @@ unweighted.
 
 With `lists` (the universe lists each entity came from), every event count is also given per list,
 since each list is purposive. With a `champion` section, the rule of `champion.py` judges generation
-3 against the regression on the pooled rows.
+3 against the regression on the pooled rows; with its `weighted` flag (plan 0019 step E), on the
+rows' weights and draw strata, so its verdict is final rather than provisional.
 
 The result holds each model's fit summary and scored rows per fold, the metrics per test year and
 pooled, the reliability tables, and the fold reports. The scored rows, which name companies, are
@@ -457,7 +458,9 @@ def run_backtest(
     predictions = pl.concat(scored)
     verdict = (
         decide(
-            predictions,
+            weighted(predictions.drop(WEIGHT, strict=False))
+            if config.champion.weighted
+            else predictions,
             cell_frame.filter(
                 (pl.col("test_year") != POOLED)
                 & pl.col("fitted")

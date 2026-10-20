@@ -4,6 +4,7 @@ as the backtest report prints them, every include of the report backed by a figu
 from __future__ import annotations
 
 import re
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -99,3 +100,13 @@ def test_the_figures_are_replaced_whole(tmp_path: Path) -> None:
 def test_no_figure_names_a_company(figures: dict[str, str]) -> None:
     text = "\n".join(figures.values())
     assert not re.search(r"\b\d{10}\b", text)
+
+
+def test_the_served_figure_says_whether_a_promotion_is_provisional_or_final() -> None:
+    provisional = m.served_figure(_served(alias="champion"))
+    assert "| promoted, provisional (unweighted) |" in provisional
+    final = {
+        h: replace(v, tags={**v.tags, "champion_basis": "weighted"})
+        for h, v in _served(alias="champion").items()
+    }
+    assert "| promoted, final (weighted) |" in m.served_figure(final)

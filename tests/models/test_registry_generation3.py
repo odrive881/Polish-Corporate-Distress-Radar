@@ -23,8 +23,11 @@ from distress_radar.models.backtest import BacktestResult, run_backtest
 from distress_radar.models.baselines import load_classical_model
 from distress_radar.models.gbm import CALIBRATED, feature_matrix
 from distress_radar.models.registry import (
+    BASIS_TAG,
     CHAMPION_ALIAS,
     INCUMBENT_ALIAS,
+    PROVISIONAL_TAG,
+    Registration,
     RunIdentifiers,
     identifiers,
     log_backtest,
@@ -246,3 +249,61 @@ def test_every_challenger_has_a_registrable_model(result: BacktestResult) -> Non
             assert set(files) - {"model.json"} == (
                 {"model.pkl"} if model == FOREST else {"model.txt"}
             )
+
+
+# --- provisional and final (plan 0019 step F, decision 8) ------------------------------------------
+
+
+def _verdict(result: BacktestResult, promoted: str | None, basis: str) -> BacktestResult:
+    assert result.champion is not None
+    return replace(result, champion=replace(result.champion, promoted=promoted, basis=basis))
+
+
+def _register(result: BacktestResult, tmp_path: Path, uri: str, tag: str) -> list[Registration]:
+    ids, run_ids = _log(result, tmp_path, uri)
+    return register_models(result, ids, run_ids, uri, tmp_path / tag)
+
+
+def _alias_version(client: MlflowClient, horizon: int, alias: str) -> str | None:
+    found = client.search_registered_models(filter_string=f"name = '{registered_name(horizon)}'")
+    version = dict(found[0].aliases).get(alias) if found else None
+    return None if version is None else str(version)
+
+
+def test_every_version_carries_its_basis(result: BacktestResult, tmp_path: Path) -> None:
+    uri = f"sqlite:///{tmp_path / 'mlflow.db'}"
+    client = MlflowClient(tracking_uri=uri)
+    for tag, basis, provisional in (("u", "unweighted", "true"), ("w", "weighted", "false")):
+        for r in _register(_verdict(result, CALIBRATED, basis), tmp_path, uri, tag):
+            tags = client.get_model_version(r.name, r.version).tags
+            assert (tags[BASIS_TAG], tags[PROVISIONAL_TAG]) == (basis, provisional)
+
+
+def test_a_weighted_verdict_supersedes_a_provisional_champion(
+    result: BacktestResult, tmp_path: Path
+) -> None:
+    uri = f"sqlite:///{tmp_path / 'mlflow.db'}"
+    client = MlflowClient(tracking_uri=uri)
+    _register(_verdict(result, CALIBRATED, "unweighted"), tmp_path, uri, "provisional")
+    # The same model promoted on a weighted run: the alias moves to the weighted run's version.
+    final = _register(_verdict(result, CALIBRATED, "weighted"), tmp_path, uri, "final")
+    for r in (r for r in final if r.alias == CHAMPION_ALIAS):
+        assert _alias_version(client, r.horizon_months, CHAMPION_ALIAS) == r.version
+    # A weighted run that promotes nothing removes it; the incumbent stays, and serves.
+    nothing = _register(_verdict(result, None, "weighted"), tmp_path, uri, "nothing")
+    for r in nothing:
+        assert _alias_version(client, r.horizon_months, CHAMPION_ALIAS) is None
+        assert _alias_version(client, r.horizon_months, INCUMBENT_ALIAS) == r.version
+
+
+def test_a_provisional_promotion_never_displaces_a_final_champion(
+    result: BacktestResult, tmp_path: Path
+) -> None:
+    uri = f"sqlite:///{tmp_path / 'mlflow.db'}"
+    client = MlflowClient(tracking_uri=uri)
+    final = _register(_verdict(result, CALIBRATED, "weighted"), tmp_path, uri, "final")
+    champions = {r.horizon_months: r.version for r in final if r.alias == CHAMPION_ALIAS}
+    later = _register(_verdict(result, CALIBRATED, "unweighted"), tmp_path, uri, "later")
+    assert all(r.alias == INCUMBENT_ALIAS for r in later)
+    for horizon, version in champions.items():
+        assert _alias_version(client, horizon, CHAMPION_ALIAS) == version

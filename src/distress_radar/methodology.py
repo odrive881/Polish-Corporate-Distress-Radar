@@ -186,6 +186,13 @@ def reliability_figure(tables: Mapping[str, pl.DataFrame], horizon: int, run: st
     return _table(["model", "probability", "rows", "companies", "mean predicted", "observed"], rows)
 
 
+def _verdict(v: ServedVersion) -> str:
+    """Promoted or not, and on what basis (plan 0019 decision 8)."""
+    if v.alias != "champion":
+        return "nothing promoted"
+    return "promoted, provisional (unweighted)" if v.provisional else "promoted, final (weighted)"
+
+
 def served_figure(served: Mapping[int, ServedVersion]) -> str:
     """The champion rule's verdict: what serves each horizon, and whether anything was promoted."""
     rows = [
@@ -194,7 +201,7 @@ def served_figure(served: Mapping[int, ServedVersion]) -> str:
             v.model.replace("_", " "),
             f"{v.name} v{v.version}",
             v.alias,
-            "promoted" if v.alias == "champion" else "nothing promoted",
+            _verdict(v),
             str(v.training_eve),
         ]
         for horizon, v in sorted(served.items())

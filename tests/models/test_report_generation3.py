@@ -6,6 +6,7 @@ the report's new sections."""
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import date
 
 import polars as pl
@@ -133,3 +134,31 @@ def test_the_report_is_reproducible(result: BacktestResult) -> None:
     again = _run(_config())
     assert render_report(result, "0" * 40) == render_report(again, "0" * 40)
     assert result.champion == again.champion
+
+
+@pytest.mark.parametrize(
+    ("promoted", "basis", "sentence"),
+    [
+        (
+            "lightgbm",
+            "unweighted",
+            "Provisional: promoted on an unweighted run over purposive lists",
+        ),
+        ("lightgbm", "weighted", "Final: promoted on a weighted run over a draw"),
+        (None, "weighted", "A weighted run, so an earlier champion is withdrawn"),
+    ],
+)
+def test_the_report_says_whether_a_verdict_is_provisional_or_final(
+    result: BacktestResult, promoted: str | None, basis: str, sentence: str
+) -> None:
+    assert result.champion is not None
+    verdict = replace(result.champion, promoted=promoted, basis=basis)  # type: ignore[arg-type]
+    assert sentence in render_report(replace(result, champion=verdict), "0" * 40)
+
+
+def test_an_unweighted_verdict_that_promotes_nothing_reads_as_before(
+    result: BacktestResult,
+) -> None:
+    text = render_report(result, "0" * 40)
+    assert "Provisional" not in text and "Final:" not in text and "withdrawn" not in text
+    assert "paired entity-bootstrap interval of the difference wholly below zero" in text

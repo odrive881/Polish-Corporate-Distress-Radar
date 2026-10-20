@@ -17,6 +17,13 @@ model's result; its raw score is a diagnostic) and the two survival models.
 
 Promotion here is a verdict; setting the MLflow alias `champion` on the registered model is the
 registry's (step G), and only on a verdict that promotes.
+
+Weighted (plan 0019 steps E and F, decisions 6–8): with `weighted`, the paired rows carry their
+entity's `draw_weight` and `draw_stratum`; both Brier scores, their difference and both AUCs are
+weighted, and the paired bootstrap resamples entities within each stratum, each keeping its size.
+The event floor still counts distinct events, unweighted: a weight adds no evidence. A verdict
+records its `basis`, and one reached unweighted is **provisional**: every list it can read so far
+is purposive, so only a weighted run's verdict is final.
 """
 
 # polars's signatures reference types pyright cannot resolve; scoped to this module.
@@ -25,19 +32,21 @@ registry's (step G), and only on a verdict that promotes.
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from typing import Literal
 
 import numpy as np
 import numpy.typing as npt
 import polars as pl
 
-from distress_radar.models.dataset import TARGET
-from distress_radar.models.evaluation import auc, brier
+from distress_radar.models.dataset import TARGET, WEIGHT
+from distress_radar.models.evaluation import STRATUM, auc, brier, entity_strata, resample_entities
 from distress_radar.models.splits import BootstrapConfig, ChampionConfig, events
 
 CHALLENGERS = ("lightgbm", "survival_lightgbm", "survival_forest")
 ROW_KEYS = ["run", "horizon_months", "test_year", "krs", "as_of_date"]
 FOLD_KEYS = ["run", "horizon_months", "model", "test_year"]
 Array = npt.NDArray[np.float64]
+Basis = Literal["unweighted", "weighted"]
 
 
 @dataclass(frozen=True)
@@ -67,27 +76,41 @@ class ChampionVerdict:
     promoted: str | None  # the challenger promoted, or None
     verdicts: dict[str, str]  # per challenger: "passes", "fails: …" or "not evaluable: …"
     comparisons: list[Comparison]
+    basis: Basis = "unweighted"
 
     @property
     def champion(self) -> str:
         return self.promoted or self.incumbent
 
+    @property
+    def provisional(self) -> bool:
+        """Reached unweighted, over purposive lists: a weighted run decides (decision 8)."""
+        return self.basis == "unweighted"
+
 
 def paired_brier_interval(
-    y: Array, challenger: Array, incumbent: Array, krs: list[str], config: BootstrapConfig
+    y: Array,
+    challenger: Array,
+    incumbent: Array,
+    krs: list[str],
+    config: BootstrapConfig,
+    weight: Array | None = None,
+    strata: list[list[str]] | None = None,
 ) -> tuple[float, float]:
     """The percentile interval of the Brier difference over entity resamples, both models scored on
-    each draw's rows."""
-    entities = sorted(set(krs))
+    each draw's rows. With `weight`, the difference is weighted; with `strata`, entities are
+    resampled within each (decision 6). Without either, the plain entity bootstrap."""
     keys = np.array(krs)
-    rows_of: list[npt.NDArray[np.intp]] = [np.flatnonzero(keys == e) for e in entities]
+    rows_of = {e: np.flatnonzero(keys == e) for e in sorted(set(krs))}
     loss = (challenger - y) ** 2 - (incumbent - y) ** 2
+    groups = strata if strata is not None else [sorted(rows_of)]
     rng = np.random.default_rng(config.seed)
     draws = np.empty(config.replicates)
     for i in range(config.replicates):
-        picked = rng.integers(0, len(entities), size=len(entities))
-        rows = np.concatenate([rows_of[int(j)] for j in picked])
-        draws[i] = loss[rows].mean()
+        rows = np.concatenate([rows_of[e] for e in resample_entities(groups, rng)])
+        draws[i] = (
+            loss[rows].mean() if weight is None else np.average(loss[rows], weights=weight[rows])
+        )
     tail = (1 - config.level) / 2
     low, high = np.quantile(draws, [tail, 1 - tail])
     return float(low), float(high)
@@ -102,8 +125,9 @@ def compare(
     bootstrap: BootstrapConfig,
 ) -> Comparison:
     """`paired`: one row per scored test row, with `TARGET`, the label columns `events` reads,
-    `challenger` and `incumbent` probabilities."""
-    found = events(paired).height
+    `challenger` and `incumbent` probabilities, and, for a weighted rule, `draw_weight` and
+    `draw_stratum`."""
+    found = events(paired).height  # distinct events, unweighted (decision 7)
     base = Comparison(challenger, horizon, run, paired.height, found, evaluable=False)
     if found < config.min_promotion_events:
         return replace(
@@ -114,9 +138,19 @@ def compare(
     p_c = paired.get_column("challenger").to_numpy().astype(np.float64)
     p_i = paired.get_column("incumbent").to_numpy().astype(np.float64)
     labels = y.astype(np.bool_)
-    b_c, b_i = brier(labels, p_c), brier(labels, p_i)
-    low, high = paired_brier_interval(y, p_c, p_i, paired.get_column("krs").to_list(), bootstrap)
-    a_c, a_i = auc(labels, p_c), auc(labels, p_i)
+    w: Array | None = None
+    strata: list[list[str]] | None = None
+    if config.weighted:
+        missing = [c for c in (WEIGHT, STRATUM) if c not in paired.columns]
+        if missing:
+            raise ValueError(f"a weighted champion rule needs the paired rows' {missing}")
+        w = paired.get_column(WEIGHT).to_numpy().astype(np.float64)
+        strata = entity_strata(paired)
+    b_c, b_i = brier(labels, p_c, w), brier(labels, p_i, w)
+    low, high = paired_brier_interval(
+        y, p_c, p_i, paired.get_column("krs").to_list(), bootstrap, w, strata
+    )
+    a_c, a_i = auc(labels, p_c, w), auc(labels, p_i, w)
     reasons: list[str] = []
     if not high < 0:
         reasons.append("the Brier difference's interval reaches zero")
@@ -147,7 +181,8 @@ def pair(
     horizon: int,
     run: str,
 ) -> pl.DataFrame:
-    """The rows both models scored in the folds where both may speak for a pool."""
+    """The rows both models scored in the folds where both may speak for a pool, with their weight
+    and stratum when the predictions carry them."""
     folds = (
         speaking.filter(
             (pl.col("run") == run)
@@ -163,8 +198,9 @@ def pair(
         (pl.col("run") == run) & (pl.col("horizon_months") == horizon)
     ).join(folds, on="test_year")
     labels = ["outcome_class", "event_date", "event_known_from", "trigger_event_type", TARGET]
+    drawn = [c for c in (WEIGHT, STRATUM) if c in predictions.columns]
     mine = scoped.filter(pl.col("model") == challenger).select(
-        *ROW_KEYS, *labels, pl.col("probability").alias("challenger")
+        *ROW_KEYS, *labels, *drawn, pl.col("probability").alias("challenger")
     )
     theirs = scoped.filter(pl.col("model") == incumbent).select(
         *ROW_KEYS, pl.col("probability").alias("incumbent")
@@ -218,4 +254,5 @@ def decide(
             ]
             passing.append((float(np.mean(main)) if main else float("inf"), challenger))
     promoted = min(passing)[1] if passing else None
-    return ChampionVerdict(config.incumbent, promoted, verdicts, comparisons)
+    basis: Basis = "weighted" if config.weighted else "unweighted"
+    return ChampionVerdict(config.incumbent, promoted, verdicts, comparisons, basis)

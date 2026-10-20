@@ -190,6 +190,9 @@ class ChampionConfig(BaseModel):
     auc_margin: float = Field(ge=0, lt=1)
     runs: tuple[Literal["main", "no_regime"], ...] = Field(min_length=1)
     min_promotion_events: int = Field(ge=1)
+    # Plan 0019 step E: weighted Brier scores, AUCs and stratified paired bootstrap; the floor
+    # stays unweighted (decision 7). Allowed only in a backtest with `weights`.
+    weighted: bool = False
 
 
 class WeightsConfig(BaseModel):
@@ -237,6 +240,8 @@ class BacktestConfig(BaseModel):
     def _weighted(self) -> BacktestConfig:
         if self.weights is not None and self.population is None:
             raise ValueError("a weighted backtest needs a population rule: drawn and complete")
+        if self.champion is not None and self.champion.weighted and self.weights is None:
+            raise ValueError("a weighted champion rule needs a `weights` section")
         return self
 
     @model_validator(mode="after")

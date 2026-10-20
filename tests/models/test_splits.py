@@ -300,3 +300,10 @@ def test_backtest_v5_refuses_what_its_decisions_rule_out(
 ) -> None:
     with pytest.raises(ValueError, match=match):
         _v5_with(tmp_path, path, value)
+
+
+def test_a_weighted_champion_rule_needs_weights(tmp_path: Path) -> None:
+    """Plan 0019 step E: a weighted rule reads the rows' weights, so a config without them is
+    refused rather than judged unweighted under a weighted name."""
+    with pytest.raises(ValueError, match="weighted champion rule needs a `weights` section"):
+        _v5_with(tmp_path, ("champion", "weighted"), True)

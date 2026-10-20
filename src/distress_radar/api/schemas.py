@@ -36,6 +36,7 @@ class ServedOut(_Frozen):
     model_name: str
     model_version: str
     model_alias: str
+    model_status: str  # `champion`, `provisional champion` or `incumbent` (plan 0019 step F)
     model: str
     mlflow_run_id: str
     training_eve: date

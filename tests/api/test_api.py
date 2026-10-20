@@ -110,6 +110,7 @@ def test_meta_states_the_served_versions_and_the_disclaimer() -> None:
     assert [s["horizon_months"] for s in served] == [12, 24]
     assert served[0]["model_version"] == "4" and served[0]["training_eve"] == "2024-12-31"
     assert served[0]["label_set_hash"] == "c" * 64 and served[0]["code_commit"] == "1" * 40
+    assert served[0]["model_status"] == "incumbent"  # or (provisional) champion, plan 0019
 
 
 def test_an_app_with_nothing_served_is_refused() -> None:
