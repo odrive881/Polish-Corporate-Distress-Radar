@@ -22,7 +22,7 @@ plan 0014's decision 7 (2026-10-18) visible wherever a champion is shown.
 and step G runs the draw once the owner has exported one. Step B goes first because the Rejestr.io trial has a
 deadline, and the frame must be exported before it ends (`docs/data_inventory.md`).
 
-## Status: active (2026-10-18): written on the owner's request (items 1–3 of "what can be built in the meantime"); owner decisions 0–9 accepted as recommended (2026-10-18); 2026-10-19: list v3's random group drawn by the owner's script and checked (ADR 0014, § "List v3's random group"), decision 10 accepted by the owner (2026-10-19); steps B–D built (2026-10-19); 2026-10-20: the distress group redrawn, the draw spec written (step G); 2026-10-20: `universe_draw` run (800 rows, 793 companies) and ADR 0014's addendum accepted; steps E–F built (2026-10-20); open: `entity_master` on the drawn lists, the weighted backtest (step G), the docs sweep (step H); 2026-10-20: the trial ends about 2026-11-02, `ind=F` is the primary PKD and scripted access is allowed (owner)
+## Status: active (2026-10-18): written on the owner's request (items 1–3 of "what can be built in the meantime"); owner decisions 0–9 accepted as recommended (2026-10-18); 2026-10-19: list v3's random group drawn by the owner's script and checked (ADR 0014, § "List v3's random group"), decision 10 accepted by the owner (2026-10-19); steps B–D built (2026-10-19); 2026-10-20: the distress group redrawn, the draw spec written (step G); 2026-10-20: `universe_draw` run (800 rows, 793 companies) and ADR 0014's addendum accepted; steps E–F built and `entity_master` run on the draw (790 resolved, 10 quarantined, 2026-10-20); open: list v3's downloads, the weighted backtest (step G), the docs sweep (step H); 2026-10-20: the trial ends about 2026-11-02, `ind=F` is the primary PKD and scripted access is allowed (owner)
 
 ### Outstanding (2026-10-19): the owner's
 
@@ -339,7 +339,11 @@ writes its `systematic` spec from the log and waits only on B's redraw.
 `config/segments/construction_sme_v1_draw_v1.yaml`: A and both B runs, checked against the real logs locally
 (800 rows, 793 companies, none quarantined). *2026-10-20:* `universe_draw` run (run `384de5ba`): the same 800 rows
 and 793 companies, none quarantined (counts in ADR 0014, § "List v3's distress group"); the addendum accepted by
-the owner. `entity_master` is not run yet.
+the owner. *2026-10-20:* `entity_master` run (run `0cc862e5`): 592 of the random group's 600 and 198 of the
+distress group's 200 resolved, 10 quarantined at A2 as `pkd_section_mismatch` (the registers' primary PKD is
+outside section F, though Rejestr.io's `ind=F` matched them; they stay in `universe_draws` with their π and are
+outside the segment, so a weighted result leaves them out as out-of-domain); 1,497 entities in `entity_master`.
+The PDF trigger notebook, re-run after it, is unchanged (no list v3 filing is downloaded yet).
 
 - Write the spec from the owner's numbers (ADR 0014, § "What the weights need": the five numbers), commit it,
   run `universe_draw` and then `entity_master`, and record the counts here and in ADR 0014's addendum. The
