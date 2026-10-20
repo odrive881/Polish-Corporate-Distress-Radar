@@ -4,7 +4,17 @@
 
 **Order:** after plan 0005 (whose vocabulary it needs), and only when a trigger below fires. It was expected to start in Phase 4, when MSiG would force a PDF text layer; MSiG turned out to serve text (ADR 0011), so it did not. Plan 0007 no longer waits for it.
 
-## Status: deferred (2026-09-21); Phase 4 trigger did not fire (2026-09-23); triggers 1 and 2 measured over list v1 (2026-10-16): trigger 1 fires for one entity, trigger 2 does not; staying deferred is the owner's to confirm; re-measured after list v2's distress group (2026-10-17, provisional until its legal sources are fetched)
+## Status: deferred (2026-09-21); re-measured 2026-10-20 against `backtest_v9`: trigger 1 one live entity, trigger 2 one distressed entity of 108 with a pre-event gap; Phase 4 trigger did not fire (2026-09-23); triggers 1 and 2 measured over list v1 (2026-10-16): trigger 1 fires for one entity, trigger 2 does not; staying deferred is the owner's to confirm; re-measured after list v2's distress group (2026-10-17, provisional until its legal sources are fetched)
+
+**Update, 2026-10-20: re-measured with the distress group's legal sources fetched (label v3), against
+`backtest_v9`.** The files are unchanged: 64 PDF statement files of 30 entities (seed 1 entity, 1 file; list v1
+23 entities, 48 files; list v2's distress group 7 entities, 16 files; one entity is in two lists). 37 files
+recoverable from the next filing (24 entities), 22 unrecoverable with a later statement (9), 5 the entity's latest
+(2). **Trigger 1:** still one live entity, 0000777764. **Trigger 2, settled:** of the 11 entities with an
+unrecoverable PDF, 3 have a distress event, out of 108 distressed entities in the population. 0000314826's five
+copies of one 2018 statement predate its 2024 event and so are missing inputs; 0000488626's two and 0000859396's two
+became known only after each first event, so they could never have fed a feature before it. One distressed entity
+in 108 loses a pre-event year: the positive class is not biased by it. Staying deferred is the owner's to confirm.
 
 **Update, 2026-10-17: re-measured after list v2's distress group was imported (plan 0014, Progress), provisional.**
 Against `backtest_v8` (the notebook's `BACKTEST`; v7's population has moved): **64 files of 30 entities**, 37

@@ -48,7 +48,7 @@ def _():
     from distress_radar.models.splits import load_backtest_config
     from distress_radar.settings import Settings
 
-    BACKTEST = "backtest_v8"
+    BACKTEST = "backtest_v9"
     settings = Settings()
     _latest_run = """
         WITH lr AS (

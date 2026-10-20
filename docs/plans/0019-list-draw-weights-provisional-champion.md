@@ -22,7 +22,7 @@ plan 0014's decision 7 (2026-10-18) visible wherever a champion is shown.
 and step G runs the draw once the owner has exported one. Step B goes first because the Rejestr.io trial has a
 deadline, and the frame must be exported before it ends (`docs/data_inventory.md`).
 
-## Status: active (2026-10-18): written on the owner's request (items 1–3 of "what can be built in the meantime"); owner decisions 0–9 accepted as recommended (2026-10-18); 2026-10-19: list v3's random group drawn by the owner's script and checked (ADR 0014, § "List v3's random group"), decision 10 accepted by the owner (2026-10-19); steps B–D built (2026-10-19); 2026-10-20: the distress group redrawn, the draw spec written (step G); open: running `universe_draw` and `entity_master` on the spec, the weighted backtest (step G), the docs sweep (step H), `ind=F`'s meaning, scripted access, the trial's end date
+## Status: active (2026-10-18): written on the owner's request (items 1–3 of "what can be built in the meantime"); owner decisions 0–9 accepted as recommended (2026-10-18); 2026-10-19: list v3's random group drawn by the owner's script and checked (ADR 0014, § "List v3's random group"), decision 10 accepted by the owner (2026-10-19); steps B–D built (2026-10-19); 2026-10-20: the distress group redrawn, the draw spec written (step G); open: running `universe_draw` and `entity_master` on the spec, the weighted backtest (step G), the docs sweep (step H), steps E–F; 2026-10-20: the trial ends about 2026-11-02, `ind=F` is the primary PKD and scripted access is allowed (owner)
 
 ### Outstanding (2026-10-19): the owner's
 
@@ -35,13 +35,14 @@ Step A's three questions, as they stand after list v3's random group (ADR 0014, 
 2. ~~**How group B's rows were chosen.**~~ *Overtaken:* list v2's B is not kept (decision 1's alternative). B is
    redrawn by the same script, same filters plus `W upadłości`, then `W likwidacji`, each logged with N_Dc, step
    and start.
-3. **When the Rejestr.io trial ends.** Still open: B's redraw, and the frame export if wanted, must happen before.
+3. ~~**When the Rejestr.io trial ends.**~~ *Owner, 2026-10-20:* 13 days left, so about 2026-11-02. B is
+   redrawn; the frame export, if wanted, must happen before then.
 
 And two new ones, from the log:
 
-4. **Whether Rejestr.io's `ind=F` is the primary PKD,** and which PKD version.
-5. **Whether Rejestr.io's terms allow the script** (618 requests for group A). Those confirmed on 2026-10-07
-   were for use by hand.
+4. ~~**Whether Rejestr.io's `ind=F` is the primary PKD**~~ *Owner, 2026-10-20:* yes, and pre-2004 codes are
+   mapped to it too. The PKD version is not stated (ADR 0014, § "List v3's random group").
+5. ~~**Whether Rejestr.io's terms allow the script**~~ *Owner, 2026-10-20:* yes, that is what Rejestr.io is for.
 
 Decision 10 is accepted (2026-10-19), so step B can be built for both designs now.
 

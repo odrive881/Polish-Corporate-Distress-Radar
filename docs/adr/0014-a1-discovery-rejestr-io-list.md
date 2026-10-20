@@ -318,10 +318,12 @@ group shares 6 companies with list v2's A, 3 with list v2's B, none with the sup
    and once for `W likwidacji`, each with its exact N_Dc, step, random start and log. List v2's B cannot be
    weighted (its filters and how its rows were chosen are unrecorded). From A's flags, N_D is of the order of
    2,300, of which about 400 bankrupt, so 130 bankrupt companies would be about a third of all of them.
-2. **Whether `ind=F` is the primary PKD,** and which PKD version. If it matches any listed PKD, F is wider than §
-   "The frame"'s segment; still a valid frame, recorded as such.
-3. **Scripted access to Rejestr.io** (618 requests, pauses of 0.9–1.8 s). The terms confirmed on 2026-10-07 were
-   for use by hand. Whether they allow the script is the owner's to confirm, as RDF's rate was (ADR 0007).
+2. ~~**Whether `ind=F` is the primary PKD**~~ *Answered by the owner, 2026-10-20:* it is the primary PKD
+   (przeważający), and Rejestr.io maps companies registered under the pre-2004 classification to section F as
+   well, so older registrations are in the frame. Which PKD version the filter reads (2007 or 2025, the 41.10
+   question of § "The frame") was not stated.
+3. ~~**Scripted access to Rejestr.io**~~ *Confirmed by the owner, 2026-10-20:* scripted searching is what
+   Rejestr.io is for, so its terms allow the script.
 4. **A full frame export** (KRS, registration date, status, deregistered flag; no names), about 600 requests at 100
    a page, would let pipeline code check the log against F and extend the draw later. Recommended while the
    trial lasts; without it, the log is the record.
@@ -370,5 +372,6 @@ i · step⌋ in its slice's year, no warning, no shifted pick, the CSV and the l
 With A: 800 rows, 793 companies, 7 in both groups (A's 4 bankrupt companies and 3 of its 19 in liquidation), none
 quarantined. 86 of B are list v2's B, so their downloads are reused.
 
-**Still open:** items 2–4 of § "List v3's random group" (`ind=F`'s meaning, scripted access, a frame export),
-running `universe_draw`, and the owner's acceptance of the addendum.
+**Still open:** item 4 of § "List v3's random group" (a frame export; the trial has 13 days left on 2026-10-20,
+so it ends about 2026-11-02), the PKD version behind `ind=F`, running `universe_draw`, and the owner's acceptance
+of the addendum.
