@@ -9,7 +9,9 @@
   *2026-10-19:* list v3's random group is drawn by the owner's script, systematically from a recorded frame of
   59,547, and checked (§ "List v3's random group"); its distress group is to be redrawn the same way, so the
   addendum stays proposed. *2026-10-20:* the distress group is redrawn by the owner's distress script (17:21 the
-  same day), checked, and its draw spec written (§ "List v3's distress group"); the addendum goes to the owner.
+  same day), checked, and its draw spec written (§ "List v3's distress group"); the addendum goes to the owner. *2026-10-20:*
+  `universe_draw` run on the spec (800 rows, 793 companies); **the addendum is accepted by the owner**, as
+  list v3 carries it out (systematic variant, independent runs).
 - **Date:** 2026-10-06
 - **Follows up:** 0013 (A1 was left open; ADR 0013's scripted downloads need a list of KRS numbers)
 
@@ -92,9 +94,11 @@ KRS numbers, A2 resolved 592; 16 are outside section F (`pkd_section_mismatch`),
   or restructuring (4) event, by the first; first events before 2019: 3, 2019–2020: 4, 2024–2026: 12, 1 undated.
   20 of 592 is the list's rate by construction, not the segment's.
 
-## Addendum, 2026-10-07: the sampling rule for list v2 (proposed)
+## Addendum, 2026-10-07: the sampling rule for list v2 (accepted 2026-10-20)
 
-- **Status:** proposed (2026-10-07). The design is the owner's: a larger group drawn at random and a smaller
+- **Status:** accepted by the owner (2026-10-20), as carried out by list v3 (§ "List v3's random group" and
+  § "List v3's distress group": the systematic variant, two independent runs, π by the formula there). Proposed
+  2026-10-07. The design is the owner's: a larger group drawn at random and a smaller
   group of companies in distress, for a v1 that will run on under about 1,000 companies at first. The frame's
   counts, the group sizes and the seed are blanks (`…`) until the owner has run the filters; the draw happens only
   once they are filled in and this addendum is accepted.
@@ -373,5 +377,8 @@ With A: 800 rows, 793 companies, 7 in both groups (A's 4 bankrupt companies and 
 quarantined. 86 of B are list v2's B, so their downloads are reused.
 
 **Still open:** item 4 of § "List v3's random group" (a frame export; the trial has 13 days left on 2026-10-20,
-so it ends about 2026-11-02), the PKD version behind `ind=F`, running `universe_draw`, and the owner's acceptance
-of the addendum.
+so it ends about 2026-11-02), the PKD version behind `ind=F`. ~~Running `universe_draw`, the owner's acceptance of the addendum~~ *Done,
+2026-10-20:* `universe_draw` (run `384de5ba`) stored 800 `universe_draws` rows, 793 companies: group A 600
+(`rejestr_io_v3_random`; 577 with no distress status, 19 in liquidation, 4 bankrupt; π from 600/59,547 = 0.0101
+up to 0.626 for a company also in B), group B 200 (`rejestr_io_v3_distress`; 130 bankrupt, 70 in liquidation; π
+0.045–0.639), none quarantined, as the local check predicted; the addendum accepted the same day.

@@ -22,7 +22,7 @@ plan 0014's decision 7 (2026-10-18) visible wherever a champion is shown.
 and step G runs the draw once the owner has exported one. Step B goes first because the Rejestr.io trial has a
 deadline, and the frame must be exported before it ends (`docs/data_inventory.md`).
 
-## Status: active (2026-10-18): written on the owner's request (items 1–3 of "what can be built in the meantime"); owner decisions 0–9 accepted as recommended (2026-10-18); 2026-10-19: list v3's random group drawn by the owner's script and checked (ADR 0014, § "List v3's random group"), decision 10 accepted by the owner (2026-10-19); steps B–D built (2026-10-19); 2026-10-20: the distress group redrawn, the draw spec written (step G); open: running `universe_draw` and `entity_master` on the spec, the weighted backtest (step G), the docs sweep (step H), steps E–F; 2026-10-20: the trial ends about 2026-11-02, `ind=F` is the primary PKD and scripted access is allowed (owner)
+## Status: active (2026-10-18): written on the owner's request (items 1–3 of "what can be built in the meantime"); owner decisions 0–9 accepted as recommended (2026-10-18); 2026-10-19: list v3's random group drawn by the owner's script and checked (ADR 0014, § "List v3's random group"), decision 10 accepted by the owner (2026-10-19); steps B–D built (2026-10-19); 2026-10-20: the distress group redrawn, the draw spec written (step G); 2026-10-20: `universe_draw` run (800 rows, 793 companies) and ADR 0014's addendum accepted; open: `entity_master` on the drawn lists, the weighted backtest (step G), the docs sweep (step H), steps E–F; 2026-10-20: the trial ends about 2026-11-02, `ind=F` is the primary PKD and scripted access is allowed (owner)
 
 ### Outstanding (2026-10-19): the owner's
 
@@ -308,7 +308,9 @@ writes its `systematic` spec from the log and waits only on B's redraw.
 
 *2026-10-20:* B is redrawn (ADR 0014, § "List v3's distress group") and the spec is written,
 `config/segments/construction_sme_v1_draw_v1.yaml`: A and both B runs, checked against the real logs locally
-(800 rows, 793 companies, none quarantined). `universe_draw` and `entity_master` are not run yet.
+(800 rows, 793 companies, none quarantined). *2026-10-20:* `universe_draw` run (run `384de5ba`): the same 800 rows
+and 793 companies, none quarantined (counts in ADR 0014, § "List v3's distress group"); the addendum accepted by
+the owner. `entity_master` is not run yet.
 
 - Write the spec from the owner's numbers (ADR 0014, § "What the weights need": the five numbers), commit it,
   run `universe_draw` and then `entity_master`, and record the counts here and in ADR 0014's addendum. The
@@ -348,7 +350,8 @@ writes its `systematic` spec from the log and waits only on B's redraw.
 - [x] Decision 10 (a systematic draw done outside the pipeline) accepted (2026-10-19).
 - [ ] Step A's answers recorded (export format, how B was chosen, the trial's end date).
 - [ ] Steps B–F built, with their tests in `make check`.
-- [ ] Step G: the real draw run on the owner's frame, its counts recorded here and in ADR 0014.
+- [x] Step G: the real draw run on the owner's logs, its counts recorded here and in ADR 0014 (2026-10-20);
+  its weighted backtest waits on the downloads.
 - [ ] Docs swept (step H).
 
 ## Risks
