@@ -19,8 +19,8 @@ version: 1
 frame:
   source: rejestr_io
   taken_on: 2026-10-19
-  # As the logs' raw filter JSON prints them, unset ones left out. Whether `ind: F` reads the
-  # predominant PKD, and which PKD version, is not yet known (ADR 0014, open item 2).
+  # As the logs' raw filter JSON prints them, unset ones left out. `ind: F` reads the predominant
+  # PKD, with pre-2004 codes mapped to it (owner, 2026-10-20); the PKD version is not stated.
   filters:
     lf: szoo
     ind: F
