@@ -16,7 +16,7 @@
 **Order:** after plan 0015 (complete, 2026-10-12). It does not wait for list v2 or a champion: it serves what the
 registry holds and says so, and the public site's population-level pages wait for list v2 (decision 0).
 
-## Status: active (2026-10-16): owner decisions 0–13 accepted; every item of § "Buildable now" built and the docs swept (items 1–9); open: rendering the report, which waits on the Quarto CLI in WSL, and the owner's items below
+## Status: active (2026-10-16): owner decisions 0–13 accepted; every item of § "Buildable now" built and the docs swept (items 1–9); 2026-10-21: the report rendered (Quarto 1.5.57 in WSL, `make report` on `backtest_v9`'s publish database); open: the owner's items below
 
 ### Where this stands (2026-10-16): pick up here
 
@@ -43,8 +43,10 @@ hashes to the backtest's pin, which is what a new delivery imported since the ba
 
 **Open for the owner:**
 
-1. Install the Quarto CLI inside WSL, then `make report` (it refuses a Windows one), which closes the last
-   definition-of-done item.
+1. ~~Install the Quarto CLI inside WSL, then `make report`.~~ Done 2026-10-21: Quarto 1.5.57 (the release
+   tarball, checksum verified, under `~/opt`, linked from `~/.local/bin`), `make report` rendered
+   `report/_output/methodology.html` (self-contained, 1.1 MB) with no warnings. Quarto writes
+   `report/.gitignore` (`/.quarto/`, its cache) on render; it is committed so the tree stays clean.
 2. Read the built site and the report; deploying either is a separate decision (decision 10), and the
    repository is public.
 3. Whether to move the default `BACKTEST_VERSION` to the latest backtest (every run since v5 sets it by hand).
@@ -106,7 +108,7 @@ holds a 10-digit number. Departure from step G as written: the figures are gener
 computed in executable Quarto cells, so the report needs no Jupyter kernel (no new dependency), and `make
 report` regenerates them before every render, so it still rebuilds from live data.
 
-Not rendered: the Quarto CLI is not installed in WSL (decision 10), and `make report` refuses a Windows one.
+Rendered 2026-10-21 (Quarto 1.5.57 in WSL; `make report` refuses a Windows one, decision 10).
 Tested (`tests/test_methodology.py`, 10 tests): a metric printed exactly as the backtest report prints it
 (interval, no interval, undefined, not evaluable), a suppressed cell, every include backed by a figure and every
 figure included, the figures read from a synthetic publish database, the verdict's backtest checked, the
@@ -586,8 +588,8 @@ DIRECTORY_STRUCTURE; `docs/data_inventory.md` (Node.js and Quarto as prerequisit
 - [x] The served versions resolve from the registry and reproduce their backtest scores (`tests/models/test_serving.py`).
 - [x] `scores_history` filled for the modelled population at the latest month-end, every row traceable to its
       MLflow run; the out-of-time history stored locally (2026-10-16, on `backtest_v8`).
-- [ ] The API, the explorer and the report run locally; every score shown with its metadata and the disclaimer.
-      (API and explorer: done 2026-10-16. The report waits on the Quarto CLI in WSL.)
+- [x] The API, the explorer and the report run locally; every score shown with its metadata and the disclaimer.
+      (API and explorer: done 2026-10-16. The report: rendered 2026-10-21.)
 - [x] `publish.duckdb` built behind the threshold; the Evidence site builds from it alone; nothing deployed
       (2026-10-16, on `backtest_v8`).
 - [x] `make check` and `make test-integration` green; docs from step H updated (2026-10-16).
