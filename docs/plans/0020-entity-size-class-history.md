@@ -114,6 +114,18 @@ from 2012-01-31 to 2026-08-31 found no difference.
    meanwhile: grade them down, quarantine them, or leave them. Until then their figures stay in the canonical
    facts and `feature_store` as filed.
 
+   *Counted, 2026-10-21* (`notebooks/exploration/unit_error_census.py`, read-only; total assets, 2,832
+   filings of 503 entities, 23 on a thousands schema). The strongest signal is one period reported twice: of
+   2,194 pairs of a filing's current year and a later filing's prior year, 2,107 agree within 2.3% and 4 are
+   about 1,000 apart, in 2 entities, every shared line scaled (98–100%). Within one filing, 12 totals are
+   about 1,000 from their own prior year, but none with most lines scaled (20–67%): a first year's growth from
+   start-up capital, not a unit. Whose own year sits about 1,000 from the entity's other years: **4 filings of
+   3 entities**: `0000310926` FY2021 and FY2022 (as found), `0000602022` FY2020 (a micro filing on the
+   thousands schema, already quarantined) and `0000790991` FY2025 (micro wariant 2, graded `warn`; 67% of its
+   lines 1,000 from its own prior-year column, to read before calling it an error). All three are in
+   `backtest_v9`'s population and in `feature_store`. So a check would flag two or three entities' filings in
+   503, and the section-1 comparison alone finds the two certain ones without false alarms here.
+
 ## Why
 
 §4.4 and §5 specify the dataset, and plan 0010 deferred it (decision 4, 2026-09-24) because average employment has
