@@ -17,6 +17,7 @@ import pytest
 import yaml
 from tests.models.frames import TIMING, features, labels, month_ends
 
+from distress_radar.acquisition.sampling import spec_sha256
 from distress_radar.models.dataset import ModellingDataset, modelling_dataset
 from distress_radar.models.splits import (
     fold_report,
@@ -307,3 +308,27 @@ def test_a_weighted_champion_rule_needs_weights(tmp_path: Path) -> None:
     refused rather than judged unweighted under a weighted name."""
     with pytest.raises(ValueError, match="weighted champion rule needs a `weights` section"):
         _v5_with(tmp_path, ("champion", "weighted"), True)
+
+
+def test_backtest_v10_is_v9_weighted_over_list_v3s_draw() -> None:
+    """Plan 0019 step G, recorded before any run: v9's models, folds and rule, with only the draw,
+    the weighted rule, feature_set_v7 and the two pins differing; the pinned spec is the one in
+    `config/segments/` that `universe_draw` stored the draw under."""
+    v9 = load_backtest_config("backtest_v9")
+    v10 = load_backtest_config("backtest_v10")
+    assert v10.weights is not None and v10.weights.bootstrap == "stratified"
+    assert (v10.weights.random, v10.weights.distress) == (
+        "rejestr_io_v3_random",
+        "rejestr_io_v3_distress",
+    )
+    spec = CONFIG_DIR / "segments" / "construction_sme_v1_draw_v1.yaml"
+    assert v10.weights.draw_spec_sha256 == spec_sha256(spec)
+    assert v10.champion is not None and v10.champion.weighted
+    assert v10.feature_set_version == "feature_set_v7"
+    differs = {"backtest", "feature_set_version", "label_set_hash", "population", "weights"}
+    assert v10.model_dump(exclude=differs | {"champion"}) == v9.model_dump(
+        exclude=differs | {"champion"}
+    )
+    assert v10.champion.model_copy(update={"weighted": False}) == v9.champion
+    assert v10.population is not None and v9.population is not None
+    assert v10.population.complete_by_capture == v9.population.complete_by_capture
