@@ -41,7 +41,7 @@ test-integration` green, and the doc sweep (J).
 - **DQ:** `make transform-plan` applied the changed `quarantine` model (breaking, full refresh, 6 audits
   passed). Then `parsed_documents_current`, `quarantine`, `dq_mart` and `dq_mart_coverage`: all 20 audits
   passed, `quarantine_one_parsing_stage_per_file` among them, now over real tolerated files.
-- **`backtest_v7` (decision 3)**, recorded and committed before the run (`b760127`): v6 with only its version
+- **`backtest_v7` (decision 3)**, recorded and committed before the run (`5867afa`): v6 with only its version
   changed, since the population still hashes to v6's pin (300 entities) and the label set did not move.
   Run from that commit. Same population, 18 entities ever in distress, 20 events per horizon. The
   complete-case models score one more test event per horizon (regression at 12 months: 9, was 8), and the
@@ -95,7 +95,7 @@ before the `dq` run.
   `test_required_items_resolve_in_a_golden_statement`. The other five twins still skip it by name, as the plan
   asked for one twin. The placeholder-`KodPKD` case is built in `test_xsd_tolerances.py` from a committed
   fixture: a golden file must validate, and that one cannot.
-- **Personal data found in a committed fixture (commit `47fe645`).** `micro_2025_w2_2025.xml` (plan 0005
+- **Personal data found in a committed fixture (commit `1c8a731`).** `micro_2025_w2_2025.xml` (plan 0005
   step E) named the company's management board president in a note. The builder's first output copied it,
   which is how it was found. Redacted to `[osoba]` (the golden output is unchanged: notes are not mapped).
   `test_no_fixture_contains_personal_data` now refuses a name followed by a dash and a board or officer

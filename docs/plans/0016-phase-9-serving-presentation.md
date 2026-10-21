@@ -145,8 +145,8 @@ and the backtest (pooled metrics with intervals and event counts per horizon, an
 tables). No company, sector, region or predicted rate. `make site` builds under `site/build/`; it refuses a
 Windows `npm`. `site/package-lock.json` comes from its first build (2026-10-16, below).
 
-*Re-run on `backtest_v8` (2026-10-16, at `e106c7b`):* `publish.duckdb` written at threshold 10, nothing
-identifying in it; provenance names `backtest_v8` (commit `19ca71f`), label set `fd867aa8…` and population
+*Re-run on `backtest_v8` (2026-10-16, at `2249d27`):* `publish.duckdb` written at threshold 10, nothing
+identifying in it; provenance names `backtest_v8` (commit `070861d`), label set `fd867aa8…` and population
 `dbdaa172…`; pipeline coverage for list v1: 609 listed, 592 identified, 518 searched on RDF, 385 with statements
 stored and parsed, 591 labelled, 353 modelled (the seed: 17 at every stage).
 
@@ -231,7 +231,7 @@ nothing is published, and the `publish` asset refuses to run until then.
 ### Progress (2026-10-16): scoring re-run on list v1's third import
 
 After plan 0014's third import and `backtest_v8` (plan 0014, § "Progress"), the `scoring` job, run from a clean
-tree at `5c5315f` with `BACKTEST_VERSION=backtest_v8`, wrote to local Postgres at 2026-09-30. Per horizon, the
+tree at `2b616e5` with `BACKTEST_VERSION=backtest_v8`, wrote to local Postgres at 2026-09-30. Per horizon, the
 served version is v5 of `distress_radar_12m` and `_24m` (registered by `backtest_v8`), the regression,
 `incumbent`, label set `fd867aa8…`; the population hash is `backtest_v8`'s pin (`dbdaa172…`, 370 entities).
 Version 4's rows stay beside them; every read is limited to the served versions.
@@ -250,7 +250,7 @@ showed, grown with the new entities.
 
 ### Progress (2026-10-16): the first real scoring run (buildable item 3)
 
-The `scoring` job, run from a clean tree at `811ce1f` with `BACKTEST_VERSION=backtest_v7` set for the run (the
+The `scoring` job, run from a clean tree at `e3bf84e` with `BACKTEST_VERSION=backtest_v7` set for the run (the
 default stays `backtest_v5`; the variable is the owner's to change), wrote to local Postgres at 2026-09-30.
 Per horizon, the served version is v4 of `distress_radar_12m` and `_24m`, the regression, `incumbent`, training
 eve 2024-12-31, label set `821d4ab3…`; the population hash is `backtest_v7`'s pin (`8f1d5cd3…`, 300 entities).

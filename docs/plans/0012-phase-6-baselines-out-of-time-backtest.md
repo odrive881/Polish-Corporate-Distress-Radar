@@ -61,7 +61,7 @@ survival, SHAP) build on the harness this plan makes.
   - **For step D: these counts are the fold's, not a model's.** The training events before 2019
     have no financial features, so a complete-case model sees fewer. `min_events` is applied again
     to the rows each model actually fits and scores.
-- **Owner decision 5 filled in (2026-09-27, commit `ecc61bc`, before any model code):** equity/assets,
+- **Owner decision 5 filled in (2026-09-27, commit `b20cc40`, before any model code):** equity/assets,
   working capital/assets, ROA, asset turnover; L2, C = 1.0, no class weighting. On the seed no fold
   clears `min_events` with complete cases, under any ratio set tried; the regression is fitted and
   logged, its metrics print n/a.
@@ -90,12 +90,12 @@ survival, SHAP) build on the harness this plan makes.
   code commit also the standard `mlflow.source.git.commit` tag. Untracked files count as dirty too:
   code not in the commit is code the commit does not identify. Dagster's temporary home
   (`.tmp_dagster_home_*/`) is now gitignored, so a job run does not dirty the tree.
-  - **Seed run logged** at `58f47a4`: 12 runs (3 models, 2 horizons, 2 runs), all finished, snapshot
+  - **Seed run logged** at `d00e03d`: 12 runs (3 models, 2 horizons, 2 runs), all finished, snapshot
     `bd6d10d5…`; only the pooled 12-month regression carries metric values.
 - **Step G (2026-09-27):** `dagster_defs/assets/models.py`, the `backtest` asset in its own `backtest`
   job; `BACKTEST_VERSION` setting. The asset reads the frozen label set pinned in the config, not
   the latest `outcome_labels`; its dependency on `outcome_labels` is lineage only.
-  - **Job run twice at `e0a51c0`:** both succeeded (84 cells, 1 scored, 12 MLflow runs each), the
+  - **Job run twice at `ab684de`:** both succeeded (84 cells, 1 scored, 12 MLflow runs each), the
     report bytes identical, the tree clean after each run. (0 scored after the 2026-09-29 correction.)
 - **Step H (2026-09-27), close-out:** the living docs describe Phase 6 as built (README status and
   how to run the backtest, AGENT_SPEC stage I and §9.2, TECHNICAL_ARCHITECTURE, DIRECTORY_STRUCTURE,
@@ -135,7 +135,7 @@ survival, SHAP) build on the harness this plan makes.
 
     Which folds clear `min_events` is unchanged. For the models, it is not: the regression's 2023
     fold now trains on 2 complete-case events, so the pooled 12-month regression falls below 3 and
-    **no cell of 84 is scored**. Job run twice after the fix (`6e219c4`): 84 cells, 0 scored, 12 MLflow
+    **no cell of 84 is scored**. Job run twice after the fix (`6f357f3`): 84 cells, 0 scored, 12 MLflow
     runs each, the report bytes identical, the tree clean.
 
 ## Why

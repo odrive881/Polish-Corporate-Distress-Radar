@@ -372,7 +372,7 @@ register number, natural-person firm's address and identifier, and file name mas
   163 pages remain, and the auditor reports' 102.
 - **First model run (2026-10-06): `make eval` on the 77 labelled pages.** The owner confirmed the provider's terms
   (decision 2) and set a key: identity-linked (`sk-ant-usr…`), so the client sends `ANTHROPIC_WORKSPACE_ID` as the
-  `anthropic-workspace-id` header (commit `e92a880`). One batch (`msgbatch_013uEAsQahgF25ESNWPTjyV7`): 66
+  `anthropic-workspace-id` header (commit `effa6a3`). One batch (`msgbatch_013uEAsQahgF25ESNWPTjyV7`): 66
   requests sent, 66 answered, none discarded; the responses are stored and replay without a call.
   - **Scores, end to end** (labelled present / found by the model / precision / recall):
     `going_concern_uncertainty` 7 / 9 / 0.78 / 1.00; `loss_coverage_resolution` 2 / 2 / 1.00 / 1.00;
@@ -602,7 +602,7 @@ register number, natural-person firm's address and identifier, and file name mas
     `features` twice, 2,929 rows and 62 features, `leakage` passed both times, the same bytes.
     `modified_opinion` is known on 843 rows of 12 entities (true on 53), `auditor_changed` on 374 rows of 7
     (true on 35); `emphasis_of_matter` on 105 rows of 3, all false: reports where the prefilter selected no
-    page, read as absent; the rest waits on the model. `backtest_v3` twice from the clean tree (commit `d168010`),
+    page, read as absent; the rest waits on the model. `backtest_v3` twice from the clean tree (commit `4037f5d`),
     the same report bytes; it differs from `backtest_v2`'s only in its header (version, commit, feature-set hash):
     the regression's inputs and rows are v2's, and no cell of 84 is scored, as before.
   - **For the owner** (approved as built, 2026-10-06): a report speaks until a later one is filed, however old: an entity that stops being
@@ -620,7 +620,7 @@ register number, natural-person firm's address and identifier, and file name mas
   - **On the seed:** `features` twice, 2,929 rows and 63 features, `leakage` passed both times, the same bytes.
     The age is known on 915 rows of 12 entities: median 1.5 years, up to 7.9; on 326 rows the latest report is
     over two years old, so the stale values v5 alone would have shown are common, not an edge case.
-    `backtest_v4` twice from the clean tree (commit `7154c02`), the same report bytes, differing from v3's only in
+    `backtest_v4` twice from the clean tree (commit `9cc4e7b`), the same report bytes, differing from v3's only in
     its header: no cell of 84 is scored.
 - **Step J (2026-10-06), docs.** Most of it was kept current by the doc sweeps after each step (DIRECTORY_STRUCTURE's
   modules, `config/extraction/` and the gate in `ci.yml`; `docs/data_inventory.md` §2.4 and the credentials table;
@@ -630,7 +630,7 @@ register number, natural-person firm's address and identifier, and file name mas
     has no API for RDF yet; documents are downloaded by the owner's Power Automate Desktop script through the
     public UI, at most 3 a minute, with a listing of each document's "Data dodania" as `known_from`, the route
     decision 0(c) took for the seed's auditor reports.
-- **The golden set at 127 pages (2026-10-12, owner; commit `5c0ec41`).** 44 more pages labelled: 40 of the
+- **The golden set at 127 pages (2026-10-12, owner; commit `c7dc926`).** 44 more pages labelled: 40 of the
   auditor reports' queue (`golden_sample_v2`) and 4 of the notes' queue; six masker false positives recorded as
   reviewed in `masking_cleared.json`. `make eval` re-scored all nine signals with no new call (95 model responses
   replayed from the store), and the owner accepted each result. End to end:
@@ -690,7 +690,7 @@ register number, natural-person firm's address and identifier, and file name mas
     the rule run on **every** page: the same opinion as `rules_v3` in 44 (40 unqualified, 3 qualified, 1
     disclaimer), on another page in 14, which is the point: v3 stopped at a heading. *Corrected below:* the job
     reads only the pages the prefilter selects, and through `prefilter_v2` it is 43 of 44 (this entry and
-    commit `2557cec` said 44 of 44). One report is a sole practitioner's ("Moim zdaniem, sprawozdanie
+    commit `dbadca0` said 44 of 44). One report is a sole practitioner's ("Moim zdaniem, sprawozdanie
     finansowe :"), found by this check and added to the patterns before anything was accepted.
   - **Accepted (owner) and the default:** `rules_v4`'s result accepted on the 148-page set; `extractor_v5` is
     the default (`settings.py`, `.env.example`), AGENT_SPEC §6G2, the glossary, `data_inventory.md` and the

@@ -175,7 +175,7 @@ this plan does not need). It does not wait for list v2 (ADR 0014 addendum, propo
     the cutoff, is for plan 0016.
   - **Wiring:** `BACKTEST_VERSION` defaults to `backtest_v5`; the asset's metadata lists the
     champion and the registered versions.
-  - **On the real inputs** (commit 77256f1, 5 minutes): 294 cells, 103 scored; 42 MLflow runs (7
+  - **On the real inputs** (commit 154695a, 5 minutes): 294 cells, 103 scored; 42 MLflow runs (7
     models, 2 horizons, 3 runs); no child run, since no fold reaches the tuning gate;
     `distress_radar_12m` and `distress_radar_24m` version 1, the regression from the 2025 fold,
     alias `incumbent`; no `champion` alias, since nothing was promoted.
@@ -195,7 +195,7 @@ this plan does not need). It does not wait for list v2 (ADR 0014 addendum, propo
   - **The guard:** `parsing/restatements.py` builds the dataset for its asset, and `feature_store` rebuilds
     it in memory and refuses a stored copy that differs, before any work (it passes on the rebuilt one and
     refuses the 2026-10-06 copy).
-  - **Re-run** on the corrected store (commit d6112a8): 294 cells, 103 scored, 42 MLflow runs,
+  - **Re-run** on the corrected store (commit a3e71a3): 294 cells, 103 scored, 42 MLflow runs,
     `distress_radar_12m` and `_24m` version 2 at `incumbent`. The regression and the classical models are
     unchanged (they read no restatement feature); generation 3 moves within its intervals (pooled
     `lightgbm`, `main`: Brier 0.017, AUC 0.636 → 0.645; `no_regime` 0.290 → 0.324). The champion rule:

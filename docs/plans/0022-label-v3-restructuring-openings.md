@@ -136,7 +136,7 @@ move:
 66 rows fewer in all: months now excluded as in a proceeding. The served models (trained on v2) are unchanged;
 from tonight scoring's risk set comes from v3 (decision 6). The GR count of decision 5 is 2 of 141.
 
-## Retraining (2026-10-19, run `8de34f05`, commit `756661d`)
+## Retraining (2026-10-19, run `8de34f05`, commit `7ab17a0`)
 
 `config/models/backtest_v9.yaml` is `backtest_v8` with two pins changed, committed before the run: the label
 set `afeba985…` and the population on that day's stores, 458 entities (seed 17, list v1 353, list v2's distress

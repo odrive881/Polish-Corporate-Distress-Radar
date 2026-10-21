@@ -37,7 +37,7 @@ re-run, record a new `backtest_v<n>` before running it. Record each round's coun
   (plan 0018, § "First night"). Everything below is still on the 609.
 - **Labels:** `outcome_labels_v2`, label set `fd867aa80a4d…` (111,088 rows), frozen 2026-10-16.
 - **Features:** `feature_set_v6`, rebuilt 2026-10-16; `leakage` passed.
-- **Backtest:** `backtest_v8` (`config/models/backtest_v8.yaml`, commit `19ca71f`): v7 with only the label set
+- **Backtest:** `backtest_v8` (`config/models/backtest_v8.yaml`, commit `070861d`): v7 with only the label set
   and the population pinned anew. Population 370 entities (seed 17, list v1 353), 20 ever in distress, 22
   events per horizon. The champion rule promotes nothing (at most 10 paired events; it needs 50), so
   `logistic_regression` stays the served incumbent (no version holds `champion`). The default `BACKTEST_VERSION` has been `backtest_v8` since plan 0018 decision 9
@@ -281,7 +281,7 @@ the next list representative.
     6 entities with fewer than three filed years not imported; 10 ZIPs held (1 of 2 tabs listed).
     Refused: 4 empty rows and 1 search with no time (as in list v1's deliveries), and 0000249502's 2021 ZIP,
     whose notes attach an encrypted PDF that cannot be redacted. The `personal_data` scan finds nothing.
-  - **Redaction version 4 (commit `3866dbc`):** three statements (0000572005 2021, 0000794805 and 0000927322
+  - **Redaction version 4 (commit `3380df3`):** three statements (0000572005 2021, 0000794805 and 0000927322
     2023) are co-signed XAdES files whose `ds:Object` holds the base64 statement with no `Encoding`; version 3
     dropped them as detached signatures and stored one empty ZIP for all three, which parsing refused as one
     file under three entities. After the fix their rows were detached from the empty object (deleted, its
