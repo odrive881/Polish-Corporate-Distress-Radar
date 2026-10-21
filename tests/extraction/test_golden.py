@@ -607,3 +607,52 @@ def test_elsewhere_reads_the_other_queues_and_the_committed_pages(
     )
     ids = label_queue.elsewhere(settings, "golden_sample_v3", golden_dir)
     assert ids == {queue[0].page_id, "committed"}
+
+
+# --- what a sample is drawn from -------------------------------------------------------------------
+
+
+def test_v1_and_v2_are_pinned_to_the_seed_and_v3_reads_the_whole_store() -> None:
+    """v1 and v2 were drawn when the store held the seed alone: a rebuild over a larger store must
+    not add every later list's pages to them (2026-10-21)."""
+    for version in ("golden_sample_v1", "golden_sample_v2"):
+        assert golden.load_golden_sample(version).discovery_sources == ("manual_seed",)
+    assert golden.load_golden_sample("golden_sample_v3").discovery_sources is None
+
+
+class _Rows:
+    def __init__(self, rows: list[tuple[object, ...]]) -> None:
+        self._rows = rows
+
+    def fetchall(self) -> list[tuple[object, ...]]:
+        return self._rows
+
+
+class _Conn:
+    def __init__(self, rows: list[tuple[object, ...]]) -> None:
+        self.rows = rows
+
+    def execute(self, _sql: str, _params: object = None) -> _Rows:
+        return _Rows(self.rows)
+
+
+class _Store:
+    def __init__(self) -> None:
+        self.fetched: list[str] = []
+
+    def get(self, key: str) -> bytes:
+        self.fetched.append(key)
+        return b"neither a ZIP, an XML nor a PDF"
+
+
+def test_the_notes_reader_skips_other_lists_and_counts_an_unreadable_download() -> None:
+    conn = _Conn(
+        [("a" * 64, "sf.xml", "key-seed", "0000000001"), ("b" * 64, "sf.xml", "key-v1", "2")]
+    )
+    store = _Store()
+    stats = QueueStats()
+    pages = list(
+        label_queue._notes_pages(conn, store, stats, frozenset({"0000000001"}))  # pyright: ignore[reportPrivateUsage, reportArgumentType]
+    )
+    assert pages == [] and store.fetched == ["key-seed"]
+    assert stats.attachment_errors == {"unknown_container": 1}

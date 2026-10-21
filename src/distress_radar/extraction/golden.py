@@ -112,6 +112,10 @@ class GoldenSample(_Frozen):
     rejected_sample_size: int | None = Field(default=None, ge=0)  # the notes' design
     report_sample: ReportSample | None = None  # the reports' design
     targeted: TargetedSample | None = None  # the notes, targeted at named signals
+    # The lists the documents are drawn from (`universe_candidates.discovery_source`); unset, every
+    # stored entity. v1 and v2 were drawn when the store held the seed alone, so they name it: a
+    # rebuild over a larger store must not redraw them.
+    discovery_sources: tuple[str, ...] | None = Field(default=None, min_length=1)
 
     @model_validator(mode="after")
     def _one_design_per_kind(self) -> GoldenSample:

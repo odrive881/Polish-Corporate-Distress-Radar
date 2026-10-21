@@ -13,3 +13,6 @@
 golden_sample_version: golden_sample_v1
 prefilter_version: prefilter_v1
 rejected_sample_size: 50
+# Drawn when the store held the seed alone (2026-10-01); named here on 2026-10-21 so a rebuild over
+# a larger store keeps the same pages instead of adding every later list's (the rows are unchanged).
+discovery_sources: [manual_seed]

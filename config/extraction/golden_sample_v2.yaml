@@ -23,3 +23,6 @@ document_kind: auditor_report
 report_sample:
   rules_version: rules_v2
   random_reports: 16
+# Drawn when the store held the seed's reports alone (2026-10-05); named here on 2026-10-21 so a
+# rebuild over a larger store keeps the same 20 reports instead of redrawing them.
+discovery_sources: [manual_seed]

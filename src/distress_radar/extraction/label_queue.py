@@ -46,15 +46,35 @@ def queue_path(settings: Settings, version: str) -> Path:
     return settings.labelling_dir / f"{version}.jsonl"
 
 
+def drawn_from(conn: psycopg.Connection, sample: golden.GoldenSample) -> frozenset[str] | None:
+    """The KRS numbers of the lists `sample` is drawn from, or None when it names none."""
+    if sample.discovery_sources is None:
+        return None
+    rows = conn.execute(
+        "SELECT DISTINCT trim(krs) FROM universe_candidates WHERE discovery_source = ANY(%s)",
+        (list(sample.discovery_sources),),
+    ).fetchall()
+    return frozenset(str(r[0]) for r in rows)
+
+
 def _notes_pages(
-    conn: psycopg.Connection, store: ObjectStore, stats: golden.QueueStats
+    conn: psycopg.Connection,
+    store: ObjectStore,
+    stats: golden.QueueStats,
+    entities: frozenset[str] | None = None,
 ) -> Iterator[golden.TextPage]:
     statements = conn.execute(
-        "SELECT DISTINCT p.sha256, p.source_member, r.object_key FROM parsed_documents p"
+        "SELECT DISTINCT p.sha256, p.source_member, r.object_key, trim(p.krs) FROM parsed_documents p"
         " JOIN raw_documents r ON r.sha256 = p.sha256 ORDER BY 1, 2"
     ).fetchall()
-    for sha256, source_member, object_key in statements:
-        members = {m.source_member: m for m in unwrap(store.get(object_key))}
+    for sha256, source_member, object_key, krs in statements:
+        if entities is not None and krs not in entities:
+            continue
+        try:
+            members = {m.source_member: m for m in unwrap(store.get(object_key))}
+        except ContainerError as exc:
+            stats.attachment_errors[exc.reason_code] += 1
+            continue
         member = members.get(source_member)
         if member is None or not member.data.lstrip().startswith(b"<"):
             continue
@@ -62,12 +82,17 @@ def _notes_pages(
 
 
 def _text_source_pages(
-    conn: psycopg.Connection, store: ObjectStore, stats: golden.QueueStats
+    conn: psycopg.Connection,
+    store: ObjectStore,
+    stats: golden.QueueStats,
+    entities: frozenset[str] | None = None,
 ) -> Iterator[golden.TextPage]:
     """The notes' pages of every statement the text stage reads (`manifest.text_sources`), so a
     targeted sample measures the extractor on its own population; a download that cannot be
     unwrapped is counted, as the reports' reader does."""
     for source in manifest.text_sources(conn):
+        if entities is not None and source.krs not in entities:
+            continue
         try:
             members = {m.source_member: m for m in unwrap(store.get(source.object_key))}
         except ContainerError as exc:
@@ -81,11 +106,16 @@ def _text_source_pages(
 
 
 def _report_pages(
-    conn: psycopg.Connection, store: ObjectStore, stats: golden.QueueStats
+    conn: psycopg.Connection,
+    store: ObjectStore,
+    stats: golden.QueueStats,
+    entities: frozenset[str] | None = None,
 ) -> Iterator[list[golden.TextPage]]:
     """Each stored auditor report the text stage reads (dated: decision 6), as its pages."""
     for report in manifest.report_sources(conn, auditor_codes(load_document_types())):
         if report.submission_date is None:
+            continue
+        if entities is not None and report.krs not in entities:
             continue
         try:
             pdfs = [m for m in unwrap(store.get(report.object_key)) if m.kind == "pdf"]
@@ -109,9 +139,10 @@ def build(settings: Settings, version: str) -> golden.QueueStats:
     stats = golden.QueueStats()
     mask_nlp, lemma_nlp = masking.load_model(), preprocessing.load_model()
     with psycopg.connect(settings.postgres_conninfo) as conn:
+        entities = drawn_from(conn, sample)
         if sample.report_sample is not None:
             fresh = golden.build_report_queue(
-                _report_pages(conn, store, stats),
+                _report_pages(conn, store, stats, entities),
                 prefilter,
                 rules.load_rules(sample.report_sample.rules_version),
                 sample,
@@ -121,7 +152,7 @@ def build(settings: Settings, version: str) -> golden.QueueStats:
             )
         elif sample.targeted is not None:
             fresh = golden.build_targeted_queue(
-                _text_source_pages(conn, store, stats),
+                _text_source_pages(conn, store, stats, entities),
                 prefilter,
                 sample,
                 mask_nlp,
@@ -131,7 +162,12 @@ def build(settings: Settings, version: str) -> golden.QueueStats:
             )
         else:
             fresh = golden.build_queue(
-                _notes_pages(conn, store, stats), prefilter, sample, mask_nlp, lemma_nlp, stats
+                _notes_pages(conn, store, stats, entities),
+                prefilter,
+                sample,
+                mask_nlp,
+                lemma_nlp,
+                stats,
             )
     path = queue_path(settings, version)
     existing = golden.load_queue(path.read_bytes()) if path.exists() else []

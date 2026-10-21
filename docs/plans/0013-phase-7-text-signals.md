@@ -135,6 +135,13 @@ register number, natural-person firm's address and identifier, and file name mas
 
 ### Progress
 
+- **`make label-queue` made safe over a larger store (2026-10-21).** v1 and v2 were drawn when the store held
+  the seed alone, and their readers read every stored statement and report. On today's store a rebuild would
+  have crashed on a download whose ePUAP attachment is neither XML nor PDF, or, past it, added every later
+  list's selected pages to v1 and redrawn v2's 20 reports (which `merge` refuses, orphaning labels). A
+  sample now names the lists it is drawn from (`discovery_sources`), v1 and v2 name `manual_seed`, and
+  every reader counts an unreadable download instead of stopping. Both queues rebuilt byte-identical to
+  their copies before (v1 240 pages, 87 labelled; v2 102 of 102).
 - **The auditor reports' queue complete: golden set 189 pages, all nine accepted (2026-10-15).** The owner
   labelled the queue's last 23 pages (`golden_sample_v2`, 102 of 102). Reviewed against the guide before
   acceptance. Nine `opinion_type` labels contradicted it and were corrected at the owner's direction: six
