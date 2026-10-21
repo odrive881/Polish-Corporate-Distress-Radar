@@ -206,6 +206,10 @@ class WeightsConfig(BaseModel):
     random: str  # the random group's list version, e.g. `rejestr_io_v3_random`
     distress: str | None = None  # the distress group's, once drawn
     bootstrap: Literal["stratified"]
+    # 2026-10-21: whether each group's weights are scaled for the drawn entities the population
+    # leaves out (not searched, not on RDF, no statement), so a group partly acquired is not
+    # under-represented. `none` (the default) weights by 1/π alone.
+    nonresponse: Literal["none", "by_group"] = "none"
 
 
 # Generation 3's sections (plan 0015): a config names all of them or none (before backtest_v5).

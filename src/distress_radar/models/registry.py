@@ -310,7 +310,10 @@ def log_backtest(
             **model_params(config, model),
             # A weighted backtest's draw (plan 0019 step D), beside the four identifiers.
             **(
-                {"draw_spec_sha256": config.weights.draw_spec_sha256}
+                {
+                    "draw_spec_sha256": config.weights.draw_spec_sha256,
+                    "weights_nonresponse": config.weights.nonresponse,
+                }
                 if config.weights is not None
                 else {}
             ),

@@ -384,7 +384,17 @@ The PDF trigger notebook, re-run after it, is unchanged (no list v3 filing is do
   statement, held back), and it is unlikely to be the same across distressed and healthy companies. So before
   the pins are filled, if the notebook's section 3 shows unequal shares, the owner decides whether to adjust
   each stratum's weights for its share (a non-response adjustment: a new `weights` field, built and tested,
-  not a silent change) or to run as drawn and say so in the report. Nothing is built for it yet.
+  not a silent change) or to run as drawn and say so in the report. *Built 2026-10-21, off by default:*
+  `weights.nonresponse: by_group` (`models/weights.py`, `nonresponse_adjusted`). Each group's weights, A
+  and B per status, are scaled by its classified drawn entities' weight over its included entities'
+  weight, so the included carry the whole group's weight. "Classified" means the labelled drawn entities
+  the population rule judged, so the 10 outside section F, never labelled, are not counted as
+  non-response. The groups are not the bootstrap strata: A's registration-year strata hold about 27
+  companies each, too few to scale one by one. A group with nothing included is refused, never
+  dropped. The factors print in the report's opening and go to MLflow as `weights_nonresponse`. The
+  bootstrap strata are unchanged. `backtest_v10` leaves it unset (`none`). The readiness notebook's
+  section 3 prints the factors it would apply; on 2026-10-21 it cannot run, since no liquidation-group
+  company is in the population yet.
 
 ### H. Docs sweep and close-out
 

@@ -94,6 +94,17 @@ def _caveat(result: BacktestResult, horizon: int) -> str:
     )
 
 
+def _adjustment(result: BacktestResult) -> str:
+    """The non-response adjustment's factors, when the weights carry one."""
+    if result.weights is None or not result.weights.adjustment:
+        return ""
+    factors = ", ".join(f"{g} ×{f:.3f}" for g, f in result.weights.adjustment)
+    return (
+        " Each group's weights are scaled for its drawn entities the population leaves out "
+        f"(non-response, by group): {factors}."
+    )
+
+
 def _opening(result: BacktestResult) -> str:
     config = result.config
     k = config.min_events
@@ -112,6 +123,7 @@ def _opening(result: BacktestResult) -> str:
             f"the rows unweighted. A cell with fewer than {k} distinct training or test events "
             f"prints n/a. Intervals are {level}% percentile intervals over "
             f"{config.bootstrap.replicates} resamples of entities within each draw stratum."
+            + _adjustment(result)
         )
     if result.lists:
         who = (

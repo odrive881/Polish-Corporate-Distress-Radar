@@ -14,7 +14,9 @@ they are and says how far off that is, and what the pins would be today:
    draw, so a stratum only partly in the population is under-represented by exactly its share.
    Equal shares make that harmless (a constant factor); unequal ones bias every weighted figure,
    and adjusting for it is the owner's decision before the run (see the config's header). The
-   random group's registration-year strata are printed too: they are its bootstrap strata.
+   factors `weights.nonresponse: by_group` would apply today are printed, over the labelled
+   entities as the `backtest` job counts them. The random group's registration-year strata are
+   printed too: they are its bootstrap strata.
 4. **Distress among the included:** entities ever in distress in the latest label set, per
    stratum, and the weighted share. Rough: a share of entities over the label set's whole span,
    not a rate per window.
@@ -48,14 +50,14 @@ def _():
     from distress_radar.acquisition.sampling import spec_sha256
     from distress_radar.models.dataset import WEIGHT, load_label_set, modelling_dataset
     from distress_radar.models.evaluation import STRATUM
-    from distress_radar.models.population import entities_hash, read_population
+    from distress_radar.models.population import Population, entities_hash, read_population
     from distress_radar.models.splits import (
         events,
         label_timing,
         load_backtest_config,
         purged_folds,
     )
-    from distress_radar.models.weights import read_draw_weights
+    from distress_radar.models.weights import nonresponse_adjusted, read_draw_weights
     from distress_radar.parsing.canonical_schema import CONFIG_DIR
     from distress_radar.settings import Settings
     from distress_radar.warehouse import read_dataset
@@ -110,6 +112,12 @@ def _():
         pl.col("krs").map_elements(_status, return_dtype=pl.String).alias("status"),
     )
     included = drawn.filter(pl.col("status") == "included")
+    # The population as the `backtest` job would classify it: the labelled drawn entities only.
+    population = Population(
+        included=frozenset(included["krs"].to_list()),
+        excluded={k: r for k, r in acquisition.excluded.items() if k in labelled},
+        drawn=True,
+    )
     print(
         f"{BACKTEST}: draw {config.weights.draw_spec_sha256[:12]}…, {drawn.height} companies; "
         f"latest label set {str(latest[0])[:12]}… ({latest[1]}, frozen "
@@ -131,11 +139,14 @@ def _():
         labels,
         latest,
         modelling_dataset,
+        nonresponse_adjusted,
         pl,
+        population,
         purged_folds,
         replace,
         spec_sha256,
         stored_sets,
+        weights,
     )
 
 
@@ -162,7 +173,7 @@ def _(drawn, pl):
 
 
 @app.cell
-def _(STRATUM, WEIGHT, drawn, pl):
+def _(STRATUM, WEIGHT, drawn, nonresponse_adjusted, pl, population, weights):
     print("\n3. The included share, by count and by weight")
 
     def _shares(frame: pl.DataFrame, key: str) -> pl.DataFrame:
@@ -190,6 +201,15 @@ def _(STRATUM, WEIGHT, drawn, pl):
             f"   the groups' shares differ by {_spread:.1%}: plain 1/π weights would misstate the "
             "groups' balance (the config's header: the owner's decision before the run)"
         )
+    # What `weights.nonresponse: by_group` would scale each group by today (labelled entities only).
+    try:
+        _factors = nonresponse_adjusted(weights, population).adjustment
+        print(
+            "   `nonresponse: by_group` would scale: "
+            + ", ".join(f"{g} ×{f:.3f}" for g, f in _factors)
+        )
+    except ValueError as _exc:
+        print(f"   `nonresponse: by_group` could not run today: {_exc}")
     _years = _shares(drawn.filter(pl.col(STRATUM).str.starts_with("A:")), STRATUM)
     print(
         "   random group by registration year (bootstrap strata), included/drawn: "

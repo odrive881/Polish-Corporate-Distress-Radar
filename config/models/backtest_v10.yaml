@@ -28,8 +28,10 @@
 # (not yet searched, not on RDF, no statement), its included companies still carry the full
 # draw's weight, so that stratum is under-represented in every weighted figure. Section 3 of the
 # notebook prints each stratum's included share; if the shares differ, whether to adjust the
-# weights for it (a non-response adjustment per stratum) is the owner's decision before the run,
-# and a new field here, not a silent change.
+# weights for it is the owner's decision before the run. The adjustment is built (2026-10-21):
+# `weights.nonresponse: by_group` scales each group (A, and B per status) by its classified
+# drawn weight over its included weight, and the notebook prints the factors it would apply.
+# Unset here, so `none`: 1/π alone.
 #
 # Loaded by `distress_radar.models.splits.load_backtest_config`. The file name is the version:
 # change a value after seeing results, and it is a new file, never an edit.

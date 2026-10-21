@@ -43,7 +43,12 @@ from distress_radar.models.splits import (
     load_backtest_config,
     split,
 )
-from distress_radar.models.weights import DRAWS_SCHEMA, DrawWeights, draw_weights
+from distress_radar.models.weights import (
+    DRAWS_SCHEMA,
+    DrawWeights,
+    draw_weights,
+    nonresponse_adjusted,
+)
 
 SPEC = "ab" * 32
 BOOT = BootstrapConfig(replicates=100, seed=7, level=0.95)
@@ -327,3 +332,87 @@ def test_a_weighted_config_needs_a_population_rule():
         load_backtest_config("backtest_v1").model_validate(
             {**load_backtest_config("backtest_v1").model_dump(by_alias=True), "weights": WEIGHTS}
         )
+
+
+# --- the non-response adjustment (2026-10-21) -------------------------------------------------------
+
+
+def _drawn(rows: list[tuple[str, float, str]]) -> DrawWeights:
+    frame = pl.DataFrame(
+        {
+            "krs": [k for k, _, _ in rows],
+            WEIGHT: [w for _, w, _ in rows],
+            STRATUM: [s for _, _, s in rows],
+            "random_group": [s.startswith("A") for _, _, s in rows],
+        }
+    )
+    return DrawWeights(frame, SPEC)
+
+
+def test_each_group_carries_its_classified_weight_after_adjustment():
+    weights = _drawn(
+        [
+            ("1", 100.0, "A:2015"),
+            ("2", 100.0, "A:2016"),  # not searched: a non-response
+            ("3", 100.0, "A:2016"),  # outside the segment, never labelled: not one
+            ("4", 2.0, "B:w_upadlosci"),
+            ("5", 2.0, "B:w_upadlosci"),
+        ]
+    )
+    population = Population(
+        included=frozenset({"1", "4", "5"}),
+        excluded={"2": "rdf_not_searched", "9": "not_in_draw"},
+        drawn=True,
+    )
+    adjusted = nonresponse_adjusted(weights, population)
+    assert adjusted.adjustment == (("A", 2.0), ("B:w_upadlosci", 1.0))
+    assert dict(adjusted.frame.select("krs", WEIGHT).iter_rows()) == {
+        "1": 200.0,
+        "2": 200.0,
+        "3": 200.0,
+        "4": 2.0,
+        "5": 2.0,
+    }
+    # the strata the bootstrap resamples within are unchanged
+    assert (
+        adjusted.frame.get_column(STRATUM).to_list() == weights.frame.get_column(STRATUM).to_list()
+    )
+
+
+def test_a_group_with_nothing_included_cannot_be_adjusted():
+    weights = _drawn([("1", 10.0, "A:2015"), ("4", 2.0, "B:w_likwidacji")])
+    population = Population(
+        included=frozenset({"1"}), excluded={"4": "rdf_not_searched"}, drawn=True
+    )
+    with pytest.raises(ValueError, match="B:w_likwidacji"):
+        nonresponse_adjusted(weights, population)
+
+
+def test_the_adjustment_is_off_unless_the_config_names_it():
+    assert WEIGHTS.nonresponse == "none"
+    assert load_backtest_config("backtest_v10").weights.nonresponse == "none"  # type: ignore[union-attr]
+
+
+def test_a_backtest_with_the_adjustment_says_so_and_scales_a_partly_acquired_group():
+    features, labels = panel(30, seed=3)
+    weights = _uniform_weights(labels, odd=4.0)
+    members = sorted(weights.members)
+    left_out = next(k for k in members if int(k) % 2 == 0)  # a random-group entity, not acquired
+    included = frozenset(members) - {left_out}
+    rule = PopulationConfig(
+        rule="acquisition_complete", complete_by_capture=(), entities_hash=entities_hash(included)
+    )
+    population = Population(included=included, excluded={left_out: "rdf_not_searched"}, drawn=True)
+    config = _weighted_config(rule)
+    config = config.model_copy(
+        update={"weights": config.weights.model_copy(update={"nonresponse": "by_group"})}  # type: ignore[union-attr]
+    )
+    feature_set = load_feature_set("feature_set_v3").feature_set
+    models = [load_classical_model("altman_z2_2000", feature_set)]
+    result = run_backtest(features, labels, config, TIMING, models, population, None, weights)
+    assert result.weights is not None
+    factors = dict(result.weights.adjustment)
+    evens = sum(1 for k in members if int(k) % 2 == 0)
+    assert factors["A"] == pytest.approx(evens / (evens - 1))
+    assert factors["B:w_upadlosci"] == pytest.approx(1.0)
+    assert "non-response, by group" in render_report(result, "0" * 40)

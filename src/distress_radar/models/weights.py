@@ -11,6 +11,12 @@ its list versions; each entity drawn under them gets the weight 1/π and a boots
 A company in both groups has one π (the probability of being drawn at all) and is resampled with
 B. The weights are read from the draw alone, never from a label, so changing every label changes
 no weight.
+
+With `nonresponse: by_group` (2026-10-21), each group's weights (A, and B per status) are then
+scaled by the weight of its drawn entities the population rule classified over the weight of
+those it included, so the included carry the whole group's weight. The rule reads acquisition
+records, never an outcome, so the factors read no label either. A drawn entity the rule never
+classified (outside the segment, so never labelled) is not a non-response and is left out of both.
 """
 
 # polars's signatures reference types pyright cannot resolve; scoped to this module.
@@ -26,6 +32,7 @@ from psycopg import Connection
 
 from distress_radar.models.dataset import WEIGHT
 from distress_radar.models.evaluation import STRATUM
+from distress_radar.models.population import DRAW_REASON, Population
 from distress_radar.models.splits import WeightsConfig
 
 DRAWS_SCHEMA: dict[str, pl.DataType | type[pl.DataType]] = {
@@ -52,6 +59,8 @@ class DrawWeights:
 
     frame: pl.DataFrame  # WEIGHTS_SCHEMA, sorted by krs
     draw_spec_sha256: str
+    # (group, factor) per group when adjusted for non-response, in group order; empty otherwise.
+    adjustment: tuple[tuple[str, float], ...] = ()
 
     @property
     def members(self) -> frozenset[str]:
@@ -121,3 +130,43 @@ def read_draw_weights(conn: Connection, config: WeightsConfig) -> DrawWeights:
     if draws.is_empty():
         raise ValueError(f"universe_draws holds no rows for draw spec {config.draw_spec_sha256}")
     return draw_weights(draws, config)
+
+
+def group(stratum: str) -> str:
+    """A bootstrap stratum's group: `A` for the random group's, `B:<status>` as it is."""
+    return "A" if stratum.startswith("A") else stratum
+
+
+def nonresponse_adjusted(weights: DrawWeights, population: Population) -> DrawWeights:
+    """`weights` with each group's weights scaled by its classified drawn entities' weight over
+    its included entities' weight. Refused when a group has classified entities and none included:
+    its weight would vanish from every figure."""
+    classified = population.included | {
+        krs for krs, reason in population.excluded.items() if reason != DRAW_REASON
+    }
+    frame = weights.frame.with_columns(
+        pl.col(STRATUM).map_elements(group, return_dtype=pl.String).alias("_group")
+    )
+    totals = (
+        frame.filter(pl.col("krs").is_in(sorted(classified)))
+        .group_by("_group")
+        .agg(
+            pl.col(WEIGHT).sum().alias("classified"),
+            pl.col(WEIGHT)
+            .filter(pl.col("krs").is_in(sorted(population.included)))
+            .sum()
+            .alias("included"),
+        )
+        .sort("_group")
+    )
+    empty = totals.filter(pl.col("included") == 0).get_column("_group").to_list()
+    if empty:
+        raise ValueError(f"no entity of {empty} is in the population: it cannot be adjusted for")
+    factors = {str(g): float(c / i) for g, c, i in totals.iter_rows()}
+    adjusted = frame.with_columns(
+        (
+            pl.col(WEIGHT)
+            * pl.col("_group").replace_strict(factors, default=1.0, return_dtype=pl.Float64)
+        ).alias(WEIGHT)
+    ).drop("_group")
+    return DrawWeights(adjusted, weights.draw_spec_sha256, tuple(sorted(factors.items())))

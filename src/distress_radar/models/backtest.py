@@ -65,7 +65,7 @@ from distress_radar.models.survival import (
     fold_predictions,
     survival_records,
 )
-from distress_radar.models.weights import DrawWeights
+from distress_radar.models.weights import DrawWeights, nonresponse_adjusted
 from distress_radar.warehouse import write_dataset
 
 RUNS = ("main", "no_regime", "entity_disjoint")
@@ -234,6 +234,8 @@ def run_backtest(
             raise ValueError("a weighted backtest's population is a draw's")
         if not population.included <= weights.members:
             raise ValueError("the population holds entities the draw did not draw")
+        if config.weights.nonresponse == "by_group":
+            weights = nonresponse_adjusted(weights, population)
     excluded_distress = 0
     if config.population is not None and population is not None:
         if population.entities_hash != config.population.entities_hash:
