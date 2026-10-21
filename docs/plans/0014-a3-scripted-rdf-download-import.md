@@ -147,10 +147,13 @@ population, the distress group included. What follows from it:
   verdict (plan 0015 step G), and README, this plan and plan 0016 call the served model a provisional champion
   and name the backtest it came from. No public page or report presents its Brier score or calibration as
   the segment's (ADR 0014 addendum, "Use").
-- Once list v2's frame is recorded and the weights can be computed (the numbers needed, and what would break
-  them: ADR 0014, § "What the weights need"; the draw, the weights and "provisional" in code: plan 0019, decisions accepted 2026-10-18), the rule is re-run weighted as a new
-  backtest version. If the weighted verdict differs, the weighted one stands.
-- Nothing changes in code: the rule, its floor and its margin stay as plan 0015 decision 7 set them.
+- Once the weights can be computed (the numbers needed, and what would break them: ADR 0014, § "What the
+  weights need"; the draw, the weights and "provisional" in code: plan 0019), the rule is re-run weighted as a
+  new backtest version. If the weighted verdict differs, the weighted one stands. *2026-10-21:* list v2 was
+  never weighted; list v3's draw is (plan 0019 step G), and its weighted run is `backtest_v10`, recorded with
+  its two pins unset until list v3's downloads are in.
+- The rule, its floor and its margin stay as plan 0015 decision 7 set them. Plan 0019 steps E–F added only its
+  weighted form and the provisional or final basis.
 
 **Lessons from the 2026-10-13 and 2026-10-16 rounds:**
 

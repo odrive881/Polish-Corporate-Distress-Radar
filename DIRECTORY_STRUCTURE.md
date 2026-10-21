@@ -123,6 +123,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │   ├── feature_set_v4.yaml        # v3 + the statement's disclosures and the notes' signals (plan 0013)
 │   │   ├── feature_set_v5.yaml        # v4 + the auditor reports: opinion, auditor change, emphasis (plan 0013)
 │   │   ├── feature_set_v6.yaml        # v5 + the latest auditor report's age (plan 0013)
+│   │   ├── feature_set_v7.yaml        # v6 + the statutory size class, `size_class` (plan 0020 decision 9)
 │   │   ├── line_items_v1.yaml         # ratio inputs → chart code, per form and income-statement variant
 │   │   ├── line_items_v2.yaml         # v1 + the result on sales
 │   │   └── line_items_v3.yaml         # v2 + the 2025 calculation-variant revenue line
@@ -137,6 +138,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │   ├── backtest_v7.yaml           # v6 on the statements plan 0017 made readable
 │   │   ├── backtest_v8.yaml           # v7 on the 2026-10-16 label set and population (plan 0014)
 │   │   ├── backtest_v9.yaml           # v8 on label v3 and the 2026-10-19 population (plan 0022)
+│   │   ├── backtest_v10.yaml          # v9 weighted over list v3's draw, on feature_set_v7; pins unset (plan 0019 step G)
 │   │   └── poznan_2004.yaml           # the Poznań model, Hamrol, Czajka, Piechocki (2004)
 │   ├── labels/
 │   │   ├── outcome_labels_v1.yaml     # label parameters; the file name is the label_version

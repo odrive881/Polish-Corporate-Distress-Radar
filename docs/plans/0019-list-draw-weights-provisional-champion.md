@@ -22,7 +22,7 @@ plan 0014's decision 7 (2026-10-18) visible wherever a champion is shown.
 and step G runs the draw once the owner has exported one. Step B goes first because the Rejestr.io trial has a
 deadline, and the frame must be exported before it ends (`docs/data_inventory.md`).
 
-## Status: active (2026-10-18): written on the owner's request (items 1–3 of "what can be built in the meantime"); owner decisions 0–9 accepted as recommended (2026-10-18); 2026-10-19: list v3's random group drawn by the owner's script and checked (ADR 0014, § "List v3's random group"), decision 10 accepted by the owner (2026-10-19); steps B–D built (2026-10-19); 2026-10-20: the distress group redrawn, the draw spec written (step G); 2026-10-20: `universe_draw` run (800 rows, 793 companies) and ADR 0014's addendum accepted; steps E–F built and `entity_master` run on the draw (790 resolved, 10 quarantined, 2026-10-20); open: list v3's downloads, the weighted backtest (step G), the docs sweep (step H); 2026-10-20: the trial ends about 2026-11-02, `ind=F` is the primary PKD and scripted access is allowed (owner)
+## Status: active (2026-10-18): written on the owner's request (items 1–3 of "what can be built in the meantime"); owner decisions 0–9 accepted as recommended (2026-10-18); 2026-10-19: list v3's random group drawn by the owner's script and checked (ADR 0014, § "List v3's random group"), decision 10 accepted by the owner (2026-10-19); steps B–D built (2026-10-19); 2026-10-20: the distress group redrawn, the draw spec written (step G); 2026-10-20: `universe_draw` run (800 rows, 793 companies) and ADR 0014's addendum accepted; steps E–F built and `entity_master` run on the draw (790 resolved, 10 quarantined, 2026-10-20); 2026-10-21: `backtest_v10` recorded with its pins unset, the readiness notebook written, the docs swept (step H); open: list v3's downloads, then `backtest_v10`'s pins and run (step G); 2026-10-20: the trial ends about 2026-11-02, `ind=F` is the primary PKD and scripted access is allowed (owner)
 
 ### Outstanding (2026-10-19): the owner's
 
@@ -351,7 +351,49 @@ The PDF trigger notebook, re-run after it, is unchanged (no list v3 filing is do
 - Hand the new queue to the owner's script (step C). The first weighted backtest is a new `backtest_v<n>`
   once the draw's downloads are in. It stays a decision.
 
+*2026-10-21 (owner's request): the weighted backtest, recorded ahead of its pins.*
+
+- **`config/models/backtest_v10.yaml`:** `backtest_v9` with only these differing: `weights` (this spec's hash,
+  `rejestr_io_v3_random` and `rejestr_io_v3_distress`, `bootstrap: stratified`), `champion.weighted: true`,
+  `feature_set_v7` (plan 0020 decision 9; the regression's five inputs are unchanged, so only LightGBM and the
+  survival models can read the size class), and the two pins, left as zero hashes. No label set or population
+  hashes to zeros, so the `backtest` job refuses the file until both are filled. Filling them before the first
+  run records the version; after it, any change is a new file. `test_backtest_v10_is_v9_weighted_over_list_v3s_draw`
+  holds the rest to v9 and the spec hash to the spec file.
+  *Flag if unwanted:* v7 changes the feature set in the same version as the weights, so v9 against v10 mixes
+  both. The weighted run's own `unweighted` block (step D) is the like-for-like comparison of the weighting;
+  the feature set's effect alone would need a v9 rerun on v7.
+- **`notebooks/exploration/weighted_backtest_readiness.py`** (read-only, counts and KRS numbers only): the
+  draw per group, each drawn company's acquisition status, the included share per stratum by count and by
+  weight, distress among the included, the champion floor estimated as in `distress_events_outlook.py`, and
+  the two pins as they would be today, with what is still missing. First run, 2026-10-21:
+
+  | Group | Drawn | Included | Not searched | Other reasons |
+  |---|---|---|---|---|
+  | A (random) | 593 | 5 | 580 | 8 not in `entity_master` |
+  | B, w upadłości | 130 | 47 | 68 | 15 (8 held back, 3 no statement, 2 not found, 2 incomplete) |
+  | B, w likwidacji | 70 | 0 | 68 | 2 not in `entity_master` |
+
+  The 7 companies drawn into both groups count under B. Floor estimate over the 52: 19 events at each horizon
+  in `main`, 12 and 5 in `no_regime`, so short of 50. Not ready: 716 drawn companies not searched, 691 not
+  in the latest label set, and `feature_store` still on v6.
+- **Found while writing it: a weight is 1/π of the whole draw, so a stratum only partly in the population is
+  under-represented by its share.** Equal shares only scale every weight by the same factor, which changes no
+  metric. Unequal shares bias every weighted figure toward the better-covered strata (on 2026-10-21, 36% of
+  B-bankrupt's weight against 1% of A's). Some shortfall will stay after the downloads (not on RDF, no
+  statement, held back), and it is unlikely to be the same across distressed and healthy companies. So before
+  the pins are filled, if the notebook's section 3 shows unequal shares, the owner decides whether to adjust
+  each stratum's weights for its share (a non-response adjustment: a new `weights` field, built and tested,
+  not a silent change) or to run as drawn and say so in the report. Nothing is built for it yet.
+
 ### H. Docs sweep and close-out
+
+**Done (2026-10-21).** Most of the list was written with steps B–G (`DIRECTORY_STRUCTURE.md`, AGENT_SPEC §5,
+`docs/data_inventory.md`, the README's draw commands and its "provisional" status line). This sweep added
+`backtest_v10` and the readiness notebook to README and `DIRECTORY_STRUCTURE.md`. It also fixed passages that
+had gone stale: plan 0014 decision 7 (still "list v2's frame", and "nothing changes in code"), plan 0020's
+open item (the v7 backtest, now `backtest_v10`), and the data inventory's terms question (answered
+2026-10-20). Then `make docs-check`.
 
 - `DIRECTORY_STRUCTURE.md`: `acquisition/sampling.py`, the draw spec, the new tests. AGENT_SPEC §5:
   `universe_draws`. `docs/data_inventory.md`: the frame file's row. README: the draw's commands, and the
@@ -381,11 +423,13 @@ The PDF trigger notebook, re-run after it, is unchanged (no list v3 filing is do
 
 - [x] Owner decisions 0–9 accepted (2026-10-18, as recommended).
 - [x] Decision 10 (a systematic draw done outside the pipeline) accepted (2026-10-19).
-- [ ] Step A's answers recorded (export format, how B was chosen, the trial's end date).
+- [x] Step A's answers recorded: the export format and how B was chosen overtaken by the scripted draws, the
+  trial's end date about 2026-11-02 (§ "Outstanding", 2026-10-20).
 - [x] Steps B–F built, with their tests in `make check` (B–D 2026-10-19, E–F 2026-10-20).
 - [x] Step G: the real draw run on the owner's logs, its counts recorded here and in ADR 0014 (2026-10-20);
-  its weighted backtest waits on the downloads.
-- [ ] Docs swept (step H).
+  its weighted backtest recorded as `backtest_v10` with its pins unset (2026-10-21); filling them and running
+  it waits on the downloads.
+- [x] Docs swept (step H, 2026-10-21).
 
 ## Risks
 
