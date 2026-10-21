@@ -24,6 +24,11 @@ current-year total sits near 1,000 from the median of the entity's other years.
 4. **What a flagged filing reaches:** its quality grade, and whether its entity is in the latest
    backtest's population and in `feature_store`.
 
+*Read with plan 0023 (2026-10-21):* "own year off from its other years" is not decisive on its own. The
+majority of years can be the wrong side, and a company can genuinely grow a thousandfold (`0000790991`
+FY2025). The share capital settles it, and the pipeline's check now uses it. Three files are corrected in
+`config/mappings/unit_corrections_v1.yaml`, so a re-run counts the store as corrected.
+
 **Counts, KRS numbers, years and structure versions only.** No amount is printed. Read-only:
 `WAREHOUSE_DIR`, and Postgres for the population. Needs `make dev-up`.
 

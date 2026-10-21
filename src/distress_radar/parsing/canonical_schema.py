@@ -8,8 +8,11 @@
 - `config/mappings/structure_catalog.yaml`: versions recognised but not mapped.
 - `config/mappings/xsd_tolerances_v<n>.yaml`: XSD violations C1 tolerates, the highest
   version in use (plan 0017 step E).
+- `config/mappings/unit_corrections_v<n>.yaml`: statement files whose declared unit the
+  owner has reviewed as wrong, and the thresholds of the check that flags new suspects, the
+  highest version in use (plan 0023).
 
-`load_mapping_config()` loads all five and checks the references between them,
+`load_mapping_config()` loads all six and checks the references between them,
 so a bad edit fails at load time rather than as missing facts.
 """
 
@@ -331,6 +334,63 @@ class XsdTolerances(_Frozen):
         return tuple(t for t in self.tolerances if t.applies_to(structure_version))
 
 
+# --- unit corrections (plan 0023) -------------------------------------------------------------------
+
+
+class UnitCheck(_Frozen):
+    """When one balance sheet, reported twice (a filing's current year and a later filing's prior
+    year), looks off by the factor 1,000: at least `min_shared_lines` non-zero lines both carry,
+    and at least `min_share_scaled` of them within `tolerance_log10` of 10^±3."""
+
+    tolerance_log10: float = Field(gt=0, lt=1)
+    min_share_scaled: float = Field(gt=0, le=1)
+    min_shared_lines: int = Field(ge=1)
+
+
+class UnitCorrection(_Frozen):
+    """One statement file whose declared unit is wrong, as reviewed: its amounts are mapped
+    with `actual_multiplier` instead of the structure's `declared_multiplier`."""
+
+    id: str = Field(pattern=r"^[a-z0-9_]+$")
+    source_document_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+    source_member: str = Field(min_length=1)
+    structure_version: str
+    declared_multiplier: Literal[1, 1000]
+    actual_multiplier: Literal[1, 1000]
+    evidence: str = Field(min_length=1)
+    reviewed_by: str = Field(min_length=1)
+    reviewed_on: date
+
+    @model_validator(mode="after")
+    def _a_change(self) -> UnitCorrection:
+        if self.declared_multiplier == self.actual_multiplier:
+            raise ValueError(f"{self.id}: the actual multiplier is the declared one")
+        return self
+
+
+class UnitCorrections(_Frozen):
+    version: str = Field(pattern=r"^unit_corrections_v\d+$")
+    check: UnitCheck
+    corrections: tuple[UnitCorrection, ...]
+
+    @model_validator(mode="after")
+    def _unique(self) -> UnitCorrections:
+        ids = [c.id for c in self.corrections]
+        files = [(c.source_document_hash, c.source_member) for c in self.corrections]
+        if len(set(ids)) != len(ids) or len(set(files)) != len(files):
+            raise ValueError(f"{self.version}: a correction id or file is listed twice")
+        return self
+
+    def for_file(self, sha256: str, source_member: str) -> UnitCorrection | None:
+        for correction in self.corrections:
+            if (correction.source_document_hash, correction.source_member) == (
+                sha256,
+                source_member,
+            ):
+                return correction
+        return None
+
+
 def read_paths(spec: StructureSpec) -> tuple[tuple[str, ...], ...]:
     """What C reads below a spec's statement root, outside the introduction: the header and
     every statement element it binds. `xsd_tolerances.check_introduction` adds the items."""
@@ -352,6 +412,7 @@ class MappingConfig(_Frozen):
     specs: dict[str, StructureSpec]
     catalog: StructureCatalog
     tolerances: XsdTolerances
+    unit_corrections: UnitCorrections
     # structure_version -> SHA-256 over the files that shape its output
     spec_hashes: dict[str, str]
 
@@ -385,6 +446,17 @@ class MappingConfig(_Frozen):
             unknown_versions = set(tol.structure_versions or ()) - set(self.specs)
             if unknown_versions:
                 raise ValueError(f"tolerance {tol.id}: unknown versions {sorted(unknown_versions)}")
+        for correction in self.unit_corrections.corrections:
+            spec = self.specs.get(correction.structure_version)
+            if spec is None:
+                raise ValueError(
+                    f"unit correction {correction.id}: unknown version {correction.structure_version}"
+                )
+            if correction.declared_multiplier not in spec.unit.values():
+                raise ValueError(
+                    f"unit correction {correction.id}: {spec.structure_version} declares no "
+                    f"multiplier {correction.declared_multiplier}"
+                )
         for spec in self.specs.values():
             for tol in self.tolerances.for_spec(spec.structure_version):
                 for pattern in tol.patterns:
@@ -395,6 +467,22 @@ class MappingConfig(_Frozen):
                                 f"{'/'.join(read)}, which {spec.structure_version} reads"
                             )
         return self
+
+    def file_spec_hash(self, structure_version: str, sha256: str, source_member: str) -> str:
+        """A file's spec hash: its version's, and for a corrected file that hash with its
+        correction, so the corrected file gets a parse record and run id of its own."""
+        base = self.spec_hashes[structure_version]
+        correction = self.unit_corrections.for_file(sha256, source_member)
+        if correction is None:
+            return base
+        digest = hashlib.sha256(base.encode())
+        digest.update(
+            json.dumps(
+                [self.unit_corrections.version, correction.model_dump(mode="json")],
+                sort_keys=True,
+            ).encode()
+        )
+        return digest.hexdigest()
 
     def spec_for(self, key: tuple[str, str, str, str]) -> StructureSpec | None:
         for spec in self.specs.values():
@@ -410,21 +498,26 @@ def _yaml(path: Path) -> object:
     return yaml.safe_load(path.read_text(encoding="utf-8"))
 
 
-def _tolerances_path(mappings: Path) -> Path:
-    """The highest-numbered `xsd_tolerances_v<n>.yaml`: earlier versions stay as the record."""
+def _latest(mappings: Path, stem: str) -> Path:
+    """The highest-numbered `<stem>_v<n>.yaml`: earlier versions stay as the record."""
     found = {
         int(m.group(1)): p
-        for p in mappings.glob("xsd_tolerances_v*.yaml")
-        if (m := re.fullmatch(r"xsd_tolerances_v(\d+)\.yaml", p.name))
+        for p in mappings.glob(f"{stem}_v*.yaml")
+        if (m := re.fullmatch(rf"{stem}_v(\d+)\.yaml", p.name))
     }
     if not found:
-        raise ValueError(f"{mappings}: no xsd_tolerances_v<n>.yaml")
+        raise ValueError(f"{mappings}: no {stem}_v<n>.yaml")
     return found[max(found)]
+
+
+def _tolerances_path(mappings: Path) -> Path:
+    return _latest(mappings, "xsd_tolerances")
 
 
 def load_mapping_config(config_dir: Path = CONFIG_DIR) -> MappingConfig:
     mappings = config_dir / "mappings"
     tolerances = XsdTolerances.model_validate(_yaml(_tolerances_path(mappings)))
+    unit_corrections = UnitCorrections.model_validate(_yaml(_latest(mappings, "unit_corrections")))
     chart_path = mappings / "canonical_chart.yaml"
     chart = CanonicalChart.model_validate(_yaml(chart_path))
     body_paths = {p.stem: p for p in sorted((mappings / "structures" / "bodies").glob("*.yaml"))}
@@ -462,5 +555,6 @@ def load_mapping_config(config_dir: Path = CONFIG_DIR) -> MappingConfig:
         specs=specs,
         catalog=catalog,
         tolerances=tolerances,
+        unit_corrections=unit_corrections,
         spec_hashes=hashes,
     )

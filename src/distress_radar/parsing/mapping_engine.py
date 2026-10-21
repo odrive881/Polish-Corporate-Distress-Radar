@@ -6,7 +6,8 @@ this engine only follows it:
 1. find the statement root and read the header (unit, reporting period);
 2. for each statement present, walk the body's element paths in the spec's
    item namespace and read each amount column (`KwotaA`, `KwotaB`, `KwotaB1`);
-3. convert amounts straight from text to `Decimal`, times the unit multiplier.
+3. convert amounts straight from text to `Decimal`, times the unit multiplier: the one the
+   header declares, or a reviewed correction's (`unit_corrections_v<n>.yaml`, plan 0023).
 
 A missing optional element yields no fact, never a zero (invariant 4). Anything
 that makes the document's numbers untrustworthy raises `MappingError`, which
@@ -36,6 +37,7 @@ from distress_radar.parsing.canonical_schema import (
     StatementName,
     StatementType,
     StructureSpec,
+    UnitCorrection,
     Variant,
 )
 from distress_radar.parsing.containers import Element
@@ -129,7 +131,12 @@ def _amount(text: str | None, multiplier: int, where: str) -> Decimal:
     return value.quantize(CENT)
 
 
-def parse_statement(root: Element, spec: StructureSpec, config: MappingConfig) -> ParsedStatement:
+def parse_statement(
+    root: Element,
+    spec: StructureSpec,
+    config: MappingConfig,
+    correction: UnitCorrection | None = None,
+) -> ParsedStatement:
     ns = spec.namespaces
     amount_ns = ns[spec.amount_namespace]
     chart = config.chart.by_code()
@@ -148,6 +155,20 @@ def parse_statement(root: Element, spec: StructureSpec, config: MappingConfig) -
             "unit_unrecognised", f"KodSprawozdania {kod!r} is not one of {sorted(spec.unit)}"
         )
     multiplier = spec.unit[kod]
+    if correction is not None:
+        if correction.structure_version != spec.structure_version:
+            raise MappingError(
+                "unit_correction_mismatch",
+                f"{correction.id} names {correction.structure_version}, "
+                f"the file is {spec.structure_version}",
+            )
+        if multiplier != correction.declared_multiplier:
+            raise MappingError(
+                "unit_correction_mismatch",
+                f"{correction.id} was reviewed against multiplier "
+                f"{correction.declared_multiplier}; the header declares {multiplier}",
+            )
+        multiplier = correction.actual_multiplier
     period_start = _date(
         _one(_elements(top, spec.header.period_start, ns), "OkresOd", "header_malformed"), "OkresOd"
     )

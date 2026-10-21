@@ -203,3 +203,22 @@ What it settled:
 
 The re-parse (plan 0017 step G) made 142 of the 143 files readable, 78 entities, and left every earlier file's
 canonical values unchanged. 19 specs are mapped; 5 versions are catalogued.
+
+## Fourth addendum, 2026-10-21 — a filer can contradict the structure's unit (plan 0023)
+
+The structure fixes the unit (§4.2): a `…WTysiacach` file is multiplied by 1,000, whatever the filer typed.
+Three files in the store were złoty typed into a thousands form, so every amount came out 1,000 times too
+large. Every identity still held, so nothing caught them. Two consequences for how structures are read:
+
+1. **A per-file correction is allowed, only by review.** `config/mappings/unit_corrections_v<n>.yaml` lists a
+   file by its document hash and member, with the multiplier it declares, the one it actually uses, the
+   evidence, the reviewer and the date. C maps it with the actual multiplier. This is the one place a file is
+   named in the mapping config: the XSD tolerances never name a file (third addendum, trap (c)), because a
+   tolerance is about filers' software, while a unit error is one filer's typing in one file. The file gets a
+   spec hash, parse record and run id of its own, is graded at best `warn`, and is logged `unit_corrected`. A
+   stale entry, one whose file no longer declares the reviewed unit or structure, is refused at C2, never
+   applied.
+2. **Detection is a check, never a correction.** `parsing/unit_plausibility.py` compares each balance sheet
+   reported twice (a filing's current year, a later filing's prior-year column), and uses the share capital
+   to tell which side is off. It flags (`unit_suspected`, graded `warn`) and leaves the figures as filed until
+   the owner lists the file.

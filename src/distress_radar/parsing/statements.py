@@ -191,7 +191,10 @@ def map_file(
     if outcome.status != "valid" or outcome.spec is None or outcome.filing is None:
         raise ValueError(f"{outcome.source_member} is not a valid statement file")
     filing = outcome.filing
-    parsed = parse_statement(etree.fromstring(outcome.data, safe_parser()), outcome.spec, config)
+    correction = config.unit_corrections.for_file(source.sha256, outcome.source_member)
+    parsed = parse_statement(
+        etree.fromstring(outcome.data, safe_parser()), outcome.spec, config, correction
+    )
     if (parsed.period_start, parsed.period_end) != (filing.period_start, filing.period_end):
         raise MappingError(
             "period_mismatch",

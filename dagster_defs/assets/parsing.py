@@ -25,7 +25,12 @@ from distress_radar.acquisition import manifest as acquisition_manifest
 from distress_radar.acquisition.document_retrieval import load_document_types
 from distress_radar.acquisition.models import QuarantineRecord, QuarantineStage
 from distress_radar.acquisition.raw_store import raw_key
-from distress_radar.parsing import manifest, statement_introduction, xsd_tolerances
+from distress_radar.parsing import (
+    manifest,
+    statement_introduction,
+    unit_plausibility,
+    xsd_tolerances,
+)
 from distress_radar.parsing.accounting_identities import (
     filed_bodies,
     grade,
@@ -126,7 +131,9 @@ def _record(
         manifest.ParsedDocumentRow(
             sha256=sha256,
             source_member=outcome.source_member,
-            spec_hash=config.spec_hashes[spec.structure_version] if spec else "",
+            spec_hash=config.file_spec_hash(spec.structure_version, sha256, outcome.source_member)
+            if spec
+            else "",
             krs=krs,
             document_ref=outcome.filing.document_ref if outcome.filing else None,
             member_kind=outcome.member_kind,
@@ -252,6 +259,25 @@ def financial_statements_canonical(context: dg.AssetExecutionContext) -> dg.Mate
                     )
                     capped.add((source.sha256, outcome.source_member))
                     reasons["C1:xsd_tolerated"] += 1
+                correction = config.unit_corrections.for_file(source.sha256, outcome.source_member)
+                if correction is not None:
+                    # Recorded, not quarantining (plan 0023): the file is mapped in the unit the
+                    # owner reviewed, and its grade is capped like a tolerated file's.
+                    _quarantine(
+                        conn,
+                        "C2",
+                        source.krs,
+                        outcome.filing.document_ref if outcome.filing else None,
+                        outcome.source_member,
+                        "unit_corrected",
+                        f"{config.unit_corrections.version}: {correction.id}, multiplier "
+                        f"{correction.declared_multiplier} -> {correction.actual_multiplier}",
+                        source.sha256,
+                        run_id,
+                        now,
+                    )
+                    capped.add((source.sha256, outcome.source_member))
+                    reasons["C2:unit_corrected"] += 1
                 try:
                     mapped = map_file(outcome, source, config, first_run)
                     disclosed = map_disclosures(outcome, source, introduction, first_run)
@@ -294,6 +320,24 @@ def financial_statements_canonical(context: dg.AssetExecutionContext) -> dg.Mate
         fallbacks = unresolved_bodies(facts, config)
         if not fallbacks.is_empty():
             context.log.warning(f"{fallbacks.height} statements checked against a fallback body")
+        # Plan 0023: a file whose balance sheet, reported twice, is about 1,000 off is flagged
+        # for the owner's review, capped at `warn`, never corrected here.
+        suspected = unit_plausibility.suspects(facts, config.unit_corrections.check)
+        for row in suspected.iter_rows(named=True):
+            _quarantine(
+                conn,
+                "E2",
+                row["krs"],
+                row["document_ref"],
+                row["source_member"],
+                "unit_suspected",
+                row["detail"],
+                row["source_document_hash"],
+                run_id,
+                now,
+            )
+            capped.add((row["source_document_hash"], row["source_member"]))
+            reasons["E2:unit_suspected"] += 1
         graded = FINANCIAL_STATEMENTS_CANONICAL.validate(
             grade(facts, results, frozenset(capped)).sort(SORT_KEY)
         )
@@ -303,7 +347,9 @@ def financial_statements_canonical(context: dg.AssetExecutionContext) -> dg.Mate
                 conn,
                 row["source_document_hash"],
                 row["source_member"],
-                config.spec_hashes[row["structure_version"]],
+                config.file_spec_hash(
+                    row["structure_version"], row["source_document_hash"], row["source_member"]
+                ),
                 row["filed_bodies"],
             )
         failing = (

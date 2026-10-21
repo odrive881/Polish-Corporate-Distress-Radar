@@ -92,7 +92,7 @@ Polish statements come in variants that are **not** losslessly interchangeable:
 
 Statements declare amounts in złoty or thousands of złoty. Normalise everything to złoty at parse time. A missing unit conversion silently corrupts the warehouse — assert the declared unit is present and recognised, and quarantine the document if not.
 
-In the Ministry of Finance XML structures the unit is not a separate field: it is part of the structure itself (`JednostkaInnaWZlotych` vs `…WTysiacach`, with the `KodSprawozdania` header saying which). Each structure spec maps that header value to a multiplier (plan 0004).
+In the Ministry of Finance XML structures the unit is not a separate field: it is part of the structure itself (`JednostkaInnaWZlotych` vs `…WTysiacach`, with the `KodSprawozdania` header saying which). Each structure spec maps that header value to a multiplier (plan 0004). A filer can contradict it (złoty typed into a thousands form) without breaking any identity: a file the owner has reviewed as wrong is mapped with its actual multiplier from `config/mappings/unit_corrections_v<n>.yaml`, graded at best `warn` and logged `unit_corrected`; the check in `parsing/unit_plausibility.py` flags new suspects (`unit_suspected`) and never corrects (plan 0023, ADR 0005 fourth addendum).
 
 ### 4.3 Accounting identity checks
 

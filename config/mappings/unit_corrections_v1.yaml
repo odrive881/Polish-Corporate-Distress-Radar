@@ -1,0 +1,64 @@
+# Unit corrections v1 (plan 0023, owner 2026-10-21; AGENT_SPEC §4.2, PROJECT_OVERVIEW stage 5).
+# Loaded and checked by `distress_radar.parsing.canonical_schema.load_mapping_config`.
+#
+# The unit of a Ministry of Finance statement is fixed by its structure (`…WTysiacach` multiplies
+# every amount by 1,000). A filer who types złoty into a thousands form makes every amount 1,000
+# times too large, and every identity still holds. Each entry below is one statement file found
+# so and reviewed by the owner: C maps it with `actual_multiplier` instead of the structure's,
+# gives it a spec hash of its own (so a parse record and run id of its own), caps its grade at
+# `warn`, and logs `unit_corrected` (stage C2) in `quarantine_events`. Its facts keep their source
+# document hash and element paths. Nothing is guessed: a file is listed only with evidence.
+#
+# `check` is the automatic part, which never corrects: `parsing/unit_plausibility.py` flags a
+# file whose balance sheet, reported twice, is about 1,000 off, graded `warn` and logged
+# `unit_suspected` (E2), for the owner to review and, if confirmed, list here. Engineering
+# thresholds, not statute.
+#
+# The file name is the version: a new correction is a new file, never an edit, and earlier
+# versions stay as the record.
+
+version: unit_corrections_v1
+
+check:
+  tolerance_log10: 0.5     # a factor between about 316 and 3,162
+  min_share_scaled: 0.8    # of the lines both columns carry
+  min_shared_lines: 5
+
+corrections:
+  # Evidence for all three (plan 0023, § "Findings"): the same balance sheet, reported again in
+  # the next złoty filing's prior-year column, is 1,000 times smaller on 98-100% of its lines;
+  # and the share capital, flat in every other year, is 1,000 times larger in exactly these.
+  - id: krs_0000310926_fy2021
+    source_document_hash: 979fa3990f475135da93580a849bec743116de247def589f7bb228c049c7b96f
+    source_member: "zip:id-5496039.xml"
+    structure_version: small-2018-v1-2-tys
+    declared_multiplier: 1000
+    actual_multiplier: 1
+    evidence: >-
+      Share capital 50,000,000 against 50,000 in FY2018-2020 and FY2023-2025; FY2020's figures
+      and FY2022's prior-year column agree with this file only at x1000 / x1 respectively.
+    reviewed_by: owner
+    reviewed_on: 2026-10-21
+  - id: krs_0000310926_fy2022
+    source_document_hash: d5b265077f7e0140195129b1e19eaf46ab63f3e32b4fc15d46be3b153c3967d4
+    source_member: "zip:id-7324065.xml"
+    structure_version: small-2018-v1-2-tys
+    declared_multiplier: 1000
+    actual_multiplier: 1
+    evidence: >-
+      Share capital 50,000,000 against 50,000 in every złoty year; the FY2023 filing's prior-year
+      column is this balance sheet 1,000 times smaller on 100% of the lines.
+    reviewed_by: owner
+    reviewed_on: 2026-10-21
+  - id: krs_0000602022_fy2020
+    source_document_hash: fd462d9d7843680ab86a511a54d3be3dda6b403e3cc2e5c32fefe687429e483b
+    source_member: "zip:id-4556812.xml"
+    structure_version: micro-2018-v1-0-tys
+    declared_multiplier: 1000
+    actual_multiplier: 1
+    evidence: >-
+      Share capital 5,500,000 against 5,500 in FY2018-2019 and FY2021-2024; FY2019's figures and
+      the FY2021 filing's prior-year column are this balance sheet 1,000 times smaller on 100% of
+      the lines.
+    reviewed_by: owner
+    reviewed_on: 2026-10-21
