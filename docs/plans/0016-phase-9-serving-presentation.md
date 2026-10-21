@@ -22,7 +22,7 @@ registry holds and says so, and the public site's population-level pages wait fo
 
 *Since 2026-10-19:* `backtest_v9` (plan 0022, label v3, 458 entities) registered version 6 of both models, the
 regression, `incumbent`, and the default `BACKTEST_VERSION` is v9, so scheduled scoring serves version 6 from the
-night of 2026-10-20. The public site still reads `backtest_v8`'s `publish.duckdb` until `publish` is re-run.
+night of 2026-10-20. *2026-10-21:* `publish` re-run on `backtest_v9` (run `768b29b0`, threshold 10: 42 metric rows, 206 reliability rows, 463 DQ checks, 35 coverage rows), `make site` built, and the report's figures regenerated (served: version 6 of both, `incumbent`, nothing promoted); the report is still not rendered (no Quarto CLI in WSL). Its provenance names the backtest's code commit as MLflow logged it, before the 2026-10-21 history rewrite (README).
 
 **Built and run, on `backtest_v8`** (370-entity population; served: the regression, v5 of `distress_radar_12m`
 and `_24m`, alias `incumbent`, training eve 2024-12-31; nothing promoted):
