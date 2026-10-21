@@ -430,6 +430,13 @@ def test_each_design_takes_only_its_own_kind_of_document(
         )
     with pytest.raises(ValidationError, match="each only by its own"):
         GoldenSample(golden_sample_version="x", prefilter_version="prefilter_v1")
+    with pytest.raises(ValidationError, match="each only by its own"):
+        GoldenSample(
+            golden_sample_version="x",
+            prefilter_version="prefilter_v1",
+            rejected_sample_size=5,
+            targeted=golden.TargetedSample(signals=("litigation",), rejected_rate=0.5),
+        )
     with pytest.raises(ValueError, match="not a sample of the notes"):
         golden.build_queue(
             [],
@@ -466,8 +473,16 @@ def test_a_report_page_is_exported_with_its_kind(mask_nlp: Any, lemma_nlp: Any) 
     )
 
 
-def test_the_committed_samples_are_the_notes_and_the_reports() -> None:
-    assert label_queue.versions() == ["golden_sample_v1", "golden_sample_v2"]
+def test_the_committed_samples_are_the_notes_the_reports_and_the_targeted_notes() -> None:
+    assert label_queue.versions() == ["golden_sample_v1", "golden_sample_v2", "golden_sample_v3"]
+    v3 = golden.load_golden_sample("golden_sample_v3")
+    assert (v3.document_kind, v3.prefilter_version, v3.targeted) == (
+        "statement_notes",
+        "prefilter_v3",
+        golden.TargetedSample(
+            signals=("covenant_breach", "key_customer_loss"), rejected_rate=0.002
+        ),
+    )
     v2 = golden.load_golden_sample("golden_sample_v2")
     assert (v2.document_kind, v2.prefilter_version, v2.report_sample) == (
         "auditor_report",
@@ -493,3 +508,102 @@ def test_an_export_never_drops_a_page_already_exported(
         f.write(json.dumps({"page_id": "labelled-elsewhere"}) + "\n")
     with pytest.raises(ValueError, match="in no labelled local queue"):
         label_queue.export(settings, out)
+
+
+# --- the targeted notes sample (golden_sample_v3's design) ----------------------------------------
+
+COVENANT = "Bank wypowiedział umowę kredytową."
+CUSTOMER = "Spółka utraciła głównego odbiorcę."
+TARGETED = GoldenSample(
+    golden_sample_version="golden_sample_g",
+    prefilter_version="prefilter_v3",
+    targeted=golden.TargetedSample(
+        signals=("covenant_breach", "key_customer_loss"), rejected_rate=0.5
+    ),
+)
+
+
+def _targeted_pages(figures: int) -> list[TextPage]:
+    texts = [COVENANT, CUSTOMER, LITIGATION, *(f"{FIGURES} Pozycja {n}." for n in range(figures))]
+    return [TextPage("f" * 64, "sf-1.xml", 1, n, text) for n, text in enumerate(texts, start=1)]
+
+
+def _targeted(
+    pages: list[TextPage], mask_nlp: Any, lemma_nlp: Any, stats: QueueStats, **kwargs: Any
+) -> list[QueuePage]:
+    return golden.build_targeted_queue(
+        pages,
+        preprocessing.load_prefilter("prefilter_v3"),
+        TARGETED,
+        mask_nlp,
+        lemma_nlp,
+        stats,
+        **kwargs,
+    )
+
+
+def test_the_targeted_sample_takes_the_target_pages_and_a_share_of_the_rejected(
+    mask_nlp: Any, lemma_nlp: Any
+) -> None:
+    stats = QueueStats()
+    queue = _targeted(_targeted_pages(12), mask_nlp, lemma_nlp, stats)
+    assert queue == _targeted(_targeted_pages(12), mask_nlp, lemma_nlp, QueueStats())
+    by_page = {row.page: row for row in queue}
+    # both target pages; litigation's page is selected for another signal only, so not drawn
+    assert {1, 2} <= set(by_page) and 3 not in by_page
+    assert by_page[1].sample == by_page[2].sample == "selected"
+    assert "covenant_breach" in by_page[1].candidates
+    assert "key_customer_loss" in by_page[2].candidates
+    drawn = [row for row in queue if row.sample == "rejected"]
+    assert (stats.selected, stats.rejected_pool, stats.rejected_sampled) == (2, 12, len(drawn))
+    assert 0 < len(drawn) < 12
+    assert [r.page_id for r in queue] == sorted(r.page_id for r in queue)
+
+
+def test_a_later_delivery_adds_to_the_targeted_draw_without_moving_it(
+    mask_nlp: Any, lemma_nlp: Any
+) -> None:
+    before = _targeted(_targeted_pages(12), mask_nlp, lemma_nlp, QueueStats())
+    after = _targeted(_targeted_pages(30), mask_nlp, lemma_nlp, QueueStats())
+    assert {r.page_id for r in before} <= {r.page_id for r in after}
+
+
+def test_the_targeted_sample_leaves_out_pages_queued_or_labelled_elsewhere(
+    mask_nlp: Any, lemma_nlp: Any
+) -> None:
+    full = _targeted(_targeted_pages(12), mask_nlp, lemma_nlp, QueueStats())
+    covenant = next(r for r in full if r.page == 1)
+    stats = QueueStats()
+    queue = _targeted(
+        _targeted_pages(12), mask_nlp, lemma_nlp, stats, exclude=frozenset({covenant.page_id})
+    )
+    assert covenant.page_id not in {r.page_id for r in queue}
+    assert (stats.excluded, len(queue)) == (1, len(full) - 1)
+
+
+def test_a_targeted_queue_needs_a_targeted_sample(mask_nlp: Any, lemma_nlp: Any) -> None:
+    with pytest.raises(ValueError, match="not a targeted sample of the notes"):
+        golden.build_targeted_queue(
+            [],
+            preprocessing.load_prefilter("prefilter_v1"),
+            SAMPLE,
+            mask_nlp,
+            lemma_nlp,
+            QueueStats(),
+        )
+
+
+def test_elsewhere_reads_the_other_queues_and_the_committed_pages(
+    tmp_path: Path, queue: list[QueuePage]
+) -> None:
+    settings = Settings(labelling_dir=tmp_path / "queues")
+    (tmp_path / "queues").mkdir()
+    label_queue.queue_path(settings, "golden_sample_v1").write_bytes(golden.dump_queue(queue[:1]))
+    label_queue.queue_path(settings, "golden_sample_v3").write_bytes(golden.dump_queue(queue[1:2]))
+    golden_dir = tmp_path / "golden"
+    golden_dir.mkdir()
+    (golden_dir / golden.PAGES_FILE).write_text(
+        json.dumps({"page_id": "committed"}) + "\n", encoding="utf-8"
+    )
+    ids = label_queue.elsewhere(settings, "golden_sample_v3", golden_dir)
+    assert ids == {queue[0].page_id, "committed"}

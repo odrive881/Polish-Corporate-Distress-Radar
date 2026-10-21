@@ -8,7 +8,12 @@ stores and writes the files.
     signal, and a fixed random sample of pages it selects for none;
   - the auditor reports (v2, plan 0013 decision 0c): every text page of a sample of whole
     reports, those `rules_version` reads as a modified opinion and a fixed random draw of the
-    rest, so the prefilter is measured on every page of a report and the rare opinions are in.
+    rest, so the prefilter is measured on every page of a report and the rare opinions are in;
+  - the notes, targeted (v3, 2026-10-21): every page `prefilter_version` selects for one of a few
+    named signals, the ones with too few labelled positives, and a fixed random share of the pages
+    it selects for none. The share is drawn by a threshold on each page's hash, so a later delivery
+    adds pages to it without moving any already drawn. Pages already in another queue or in the
+    committed golden set are left out, so no page is exported twice.
   The owner labels every page for every `signal_type`. A queue is local and never committed:
   until the owner has read a page, the masker's misses are still in it.
 - **Hand masking.** A name the masker missed is replaced by the owner with its token, and counted:
@@ -92,22 +97,34 @@ class ReportSample(_Frozen):
     random_reports: int = Field(ge=0)
 
 
+class TargetedSample(_Frozen):
+    """The notes, targeted: every page the prefilter selects for one of `signals`, and the pages it
+    selects for none whose hash with the version falls below `rejected_rate`."""
+
+    signals: tuple[SignalType, ...] = Field(min_length=1)
+    rejected_rate: float = Field(gt=0, le=1)
+
+
 class GoldenSample(_Frozen):
     golden_sample_version: str
     prefilter_version: str
     document_kind: DocumentKind = "statement_notes"
     rejected_sample_size: int | None = Field(default=None, ge=0)  # the notes' design
     report_sample: ReportSample | None = None  # the reports' design
+    targeted: TargetedSample | None = None  # the notes, targeted at named signals
 
     @model_validator(mode="after")
     def _one_design_per_kind(self) -> GoldenSample:
         notes = self.document_kind == "statement_notes"
-        if notes != (self.rejected_sample_size is not None) or notes == (
-            self.report_sample is not None
+        notes_designs = (self.rejected_sample_size is not None) + (self.targeted is not None)
+        if (
+            (notes and notes_designs != 1)
+            or (not notes and notes_designs)
+            or notes == (self.report_sample is not None)
         ):
             raise ValueError(
-                "the notes are sampled by `rejected_sample_size`, auditor reports by "
-                "`report_sample`, and each only by its own"
+                "the notes are sampled by `rejected_sample_size` or `targeted`, auditor reports "
+                "by `report_sample`, and each only by its own"
             )
         return self
 
@@ -207,6 +224,7 @@ class QueueStats:
     reports: int = 0  # auditor reports with a text page
     reports_modified: int = 0  # read as a modified opinion by the sample's rules
     reports_sampled: int = 0
+    excluded: int = 0  # target or drawn pages already in another queue or the golden set
     attachment_errors: Counter[str] = field(default_factory=Counter[str])
     not_idempotent: int = 0  # pages the masker changes again: they fail the masking check
 
@@ -370,6 +388,49 @@ def build_queue(
     sampled = rejected[: sample.rejected_sample_size]
     stats.rejected_sampled = len(sampled)
     return sorted([*selected, *sampled], key=lambda row: row.page_id)
+
+
+def _drawn(version: str, pid: str, rate: float) -> bool:
+    """Whether a page falls in a share `rate` of its pool: a threshold on its hash with the
+    version, so the pages drawn stay drawn however many the pool gains."""
+    return int(_sample_key(version, pid)[:16], 16) < rate * 2**64
+
+
+def build_targeted_queue(
+    pages: Iterable[TextPage],
+    prefilter: Prefilter,
+    sample: GoldenSample,
+    mask_nlp: Any,
+    lemma_nlp: Any,
+    stats: QueueStats,
+    exclude: frozenset[str] = frozenset(),
+) -> list[QueuePage]:
+    """Every page of the notes the prefilter selects for one of the sample's signals, and its
+    fixed random share of the pages it selects for none, less the page ids in `exclude`
+    (already in another queue or the golden set), masked, sorted by page id."""
+    _check_prefilter(prefilter, sample)
+    design = sample.targeted
+    if design is None or sample.document_kind != "statement_notes":
+        raise ValueError(f"{sample.golden_sample_version} is not a targeted sample of the notes")
+    version = sample.golden_sample_version
+    queued: list[QueuePage] = []
+    for page in pages:
+        row, _sentences = _row(page, prefilter, sample, mask_nlp, lemma_nlp, stats)
+        targeted = any(signal in row.candidates for signal in design.signals)
+        if targeted:
+            stats.selected += 1
+        elif row.sample == "rejected":
+            stats.rejected_pool += 1
+            if not _drawn(version, row.page_id, design.rejected_rate):
+                continue
+            stats.rejected_sampled += 1
+        else:
+            continue  # selected for another signal only: not this sample's
+        if row.page_id in exclude:
+            stats.excluded += 1
+            continue
+        queued.append(row)
+    return sorted(queued, key=lambda row: row.page_id)
 
 
 def merge(existing: list[QueuePage], fresh: list[QueuePage]) -> list[QueuePage]:

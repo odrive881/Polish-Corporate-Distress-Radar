@@ -1,0 +1,26 @@
+# Golden sample v3 (2026-10-21): the notes, targeted at the two signals with no labelled positive
+# after 189 pages (plan 0013, "Open for the owner", item 1). Engineering config, not statute.
+# Loaded by `distress_radar.extraction.golden.load_golden_sample`.
+#
+# Every page of the notes the text stage reads (`manifest.text_sources`: XML statements with a
+# dated, non-deleted filing) that `prefilter_version` selects for
+# `covenant_breach` or `key_customer_loss`, over the whole store (the seed, list v1 and list v2's
+# distress group, as delivered), and a fixed random share of the pages it selects for no signal,
+# drawn by a threshold on each page's hash with the file name (`rejected_rate`), so a later
+# delivery adds pages to the draw without moving any already in it. Pages already in another
+# local queue or in the committed golden set are left out.
+#
+# What it measures: the target stratum is chosen by the prefilter the eval then scores, so it
+# measures the extractor's precision on these two signals and the prefilter's precision, not
+# its recall; recall comes only from the random share, as in v1. Every page is labelled for all
+# nine signals, as in v1 and v2, so its other labels join the golden set too.
+#
+# `prefilter_v3` is the extractor's (`extractor_v6`). A changed rate, signal list or prefilter
+# once a page is labelled is a new sample version.
+
+golden_sample_version: golden_sample_v3
+prefilter_version: prefilter_v3
+document_kind: statement_notes
+targeted:
+  signals: [covenant_breach, key_customer_loss]
+  rejected_rate: 0.002

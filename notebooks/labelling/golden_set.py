@@ -2,7 +2,8 @@
 
 Reads and writes a local queue `<LABELLING_DIR>/<version>.jsonl` that
 `python -m distress_radar.extraction.label_queue build` makes, one per golden sample: the notes
-(`golden_sample_v1`) or the auditor reports (`golden_sample_v2`), chosen at the top. For each page: read the masked
+(`golden_sample_v1`), the auditor reports (`golden_sample_v2`) or the notes targeted at the
+signals with no positive yet (`golden_sample_v3`), chosen at the top. For each page: read the masked
 text, mask by hand any name the masker missed (highlighted in red when the masker itself would
 still replace it), then label every signal_type as present or absent, with a verbatim evidence
 span for each present one. "All absent" saves a page with no signal in one click; it refuses

@@ -8,7 +8,8 @@ reads Postgres and MinIO and writes files. Counts only are printed, never text.
 
 `build` needs `make dev-up` and `make models`. For each sample version (`golden_sample_v*.yaml`),
 or the one named, it writes `<LABELLING_DIR>/<version>.jsonl`, local and gitignored, and keeps
-every row already there as it is: labels and hand masking survive a rebuild. `export` writes the
+every row already there as it is: labels and hand masking survive a rebuild. A targeted sample
+leaves out the pages already in another local queue or in the committed golden set. `export` writes the
 labelled pages of every local queue to `evals/text_signals/`, after the masking check, and refuses
 to drop a page already exported. A span the masker flags that the owner saved a label over without
 masking is recorded as reviewed (`golden.clear_reviewed`) and no longer blocks the export; `clear`
@@ -60,6 +61,25 @@ def _notes_pages(
         yield from golden.text_pages(sha256, source_member, member.data, stats)
 
 
+def _text_source_pages(
+    conn: psycopg.Connection, store: ObjectStore, stats: golden.QueueStats
+) -> Iterator[golden.TextPage]:
+    """The notes' pages of every statement the text stage reads (`manifest.text_sources`), so a
+    targeted sample measures the extractor on its own population; a download that cannot be
+    unwrapped is counted, as the reports' reader does."""
+    for source in manifest.text_sources(conn):
+        try:
+            members = {m.source_member: m for m in unwrap(store.get(source.object_key))}
+        except ContainerError as exc:
+            stats.attachment_errors[exc.reason_code] += 1
+            continue
+        member = members.get(source.source_member)
+        if member is None or not member.data.lstrip().startswith(b"<"):
+            stats.attachment_errors["member_not_xml"] += 1
+            continue
+        yield from golden.text_pages(source.sha256, source.source_member, member.data, stats)
+
+
 def _report_pages(
     conn: psycopg.Connection, store: ObjectStore, stats: golden.QueueStats
 ) -> Iterator[list[golden.TextPage]]:
@@ -99,6 +119,16 @@ def build(settings: Settings, version: str) -> golden.QueueStats:
                 lemma_nlp,
                 stats,
             )
+        elif sample.targeted is not None:
+            fresh = golden.build_targeted_queue(
+                _text_source_pages(conn, store, stats),
+                prefilter,
+                sample,
+                mask_nlp,
+                lemma_nlp,
+                stats,
+                elsewhere(settings, version),
+            )
         else:
             fresh = golden.build_queue(
                 _notes_pages(conn, store, stats), prefilter, sample, mask_nlp, lemma_nlp, stats
@@ -108,6 +138,26 @@ def build(settings: Settings, version: str) -> golden.QueueStats:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(golden.dump_queue(golden.merge(existing, fresh)))
     return stats
+
+
+def elsewhere(
+    settings: Settings, version: str, golden_dir: Path = golden.GOLDEN_DIR
+) -> frozenset[str]:
+    """The page ids in every other local queue and in the committed golden set."""
+    ids = {
+        row.page_id
+        for other in versions()
+        if other != version and (path := queue_path(settings, other)).exists()
+        for row in golden.load_queue(path.read_bytes())
+    }
+    committed = golden_dir / golden.PAGES_FILE
+    if committed.exists():
+        ids |= {
+            str(json.loads(line)["page_id"])
+            for line in committed.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        }
+    return frozenset(ids)
 
 
 def update_queue(path: Path, row: golden.QueuePage) -> list[golden.QueuePage]:
@@ -172,6 +222,8 @@ def main(argv: list[str] | None = None) -> int:
                 if stats.reports
                 else f"{stats.rejected_sampled} of {stats.rejected_pool} rejected sampled"
             )
+            if stats.excluded:
+                drawn += f"; {stats.excluded} left out, already queued or labelled elsewhere"
             print(
                 f"{version}: {stats.text_pages} text pages, {stats.selected} selected, {drawn}; "
                 f"attachment errors {dict(stats.attachment_errors) or 'none'}; "

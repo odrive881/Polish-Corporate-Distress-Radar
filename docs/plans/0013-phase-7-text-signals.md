@@ -38,6 +38,21 @@ register number, natural-person firm's address and identifier, and file name mas
      (2026-10-15);
    - then a new golden sample drawn from ADR 0014's list v2 (its random and distress groups, addendum of
      2026-10-07) once plan 0014 has imported it, instead of finishing the seed's notes queue.
+   - *Built 2026-10-21, toward both (owner's request): `golden_sample_v3`, the notes targeted at the two
+     signals with no positive.* Every notes page of the statements the text stage reads
+     (`manifest.text_sources`) that `prefilter_v3` selects for `covenant_breach` or `key_customer_loss`, and
+     a 0.2% share of the pages it selects for no signal, drawn by a threshold on each page's hash, so a
+     later delivery (list v3) adds pages without moving any already drawn. Pages in another local queue or
+     in the committed golden set are left out, so nothing is exported twice. Built over the store as it
+     stands: 13,149 text pages, 67 selected for a target signal (7 left out, already queued or labelled),
+     14 of 8,848 rejected drawn: **74 pages** of 72 documents and 32 entities (62 pages of list v1, 12 of
+     list v2's distress group; the seed's are in v1's queue), 56 selected for `key_customer_loss` and 12
+     for `covenant_breach`. One needs hand masking. *What it measures, flag if unwanted:* the target
+     stratum is chosen by the prefilter the eval scores, so it measures precision on these signals, not
+     recall; the 14 random pages are the recall check, as in v1. List v2's random group is superseded, so
+     the "random group" half of this item now means list v3's, once delivered: rebuild the queue then
+     (`uv run python -m distress_radar.extraction.label_queue build golden_sample_v3`, about 20 minutes).
+     Labelling as before, choosing `golden_sample_v3` at the top of the notebook.
 
    Today (189 pages) four signals have no positive, or one: `covenant_breach` and `key_customer_loss` none;
    `emphasis_of_matter` and `continued_existence_vote` one each. The others: `opinion_type` 20 (`rules_v4`,
