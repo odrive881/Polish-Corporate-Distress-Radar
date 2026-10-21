@@ -22,7 +22,7 @@ plan 0014's decision 7 (2026-10-18) visible wherever a champion is shown.
 and step G runs the draw once the owner has exported one. Step B goes first because the Rejestr.io trial has a
 deadline, and the frame must be exported before it ends (`docs/data_inventory.md`).
 
-## Status: active (2026-10-18): written on the owner's request (items 1–3 of "what can be built in the meantime"); owner decisions 0–9 accepted as recommended (2026-10-18); 2026-10-19: list v3's random group drawn by the owner's script and checked (ADR 0014, § "List v3's random group"), decision 10 accepted by the owner (2026-10-19); steps B–D built (2026-10-19); 2026-10-20: the distress group redrawn, the draw spec written (step G); 2026-10-20: `universe_draw` run (800 rows, 793 companies) and ADR 0014's addendum accepted; steps E–F built and `entity_master` run on the draw (790 resolved, 10 quarantined, 2026-10-20); 2026-10-21: `backtest_v10` recorded with its pins unset, the readiness notebook written, the docs swept (step H); open: list v3's downloads, then `backtest_v10`'s pins and run (step G); 2026-10-20: the trial ends about 2026-11-02, `ind=F` is the primary PKD and scripted access is allowed (owner)
+## Status: active (2026-10-18): written on the owner's request (items 1–3 of "what can be built in the meantime"); owner decisions 0–9 accepted as recommended (2026-10-18); 2026-10-19: list v3's random group drawn by the owner's script and checked (ADR 0014, § "List v3's random group"), decision 10 accepted by the owner (2026-10-19); steps B–D built (2026-10-19); 2026-10-20: the distress group redrawn, the draw spec written (step G); 2026-10-20: `universe_draw` run (800 rows, 793 companies) and ADR 0014's addendum accepted; steps E–F built and `entity_master` run on the draw (790 resolved, 10 quarantined, 2026-10-20); 2026-10-21: `backtest_v10` recorded with its pins unset, the readiness notebook written, the docs swept (step H); `weights.nonresponse: by_group` built, off by default, its factors printed by the readiness notebook (2026-10-21); open: list v3's downloads, then `backtest_v10`'s pins and run (step G); 2026-10-20: the trial ends about 2026-11-02, `ind=F` is the primary PKD and scripted access is allowed (owner)
 
 ### Outstanding (2026-10-19): the owner's
 
@@ -46,7 +46,7 @@ And two new ones, from the log:
 
 Decision 10 is accepted (2026-10-19), so step B can be built for both designs now.
 
-Steps B–D are built (2026-10-19, "Built" under each); steps E–F are not started.
+Steps B–D are built (2026-10-19, "Built" under each); steps E–F were built on 2026-10-20 (status above).
 
 ## Why
 

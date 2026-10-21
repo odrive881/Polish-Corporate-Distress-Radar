@@ -13,7 +13,7 @@ machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set 
 
 ## Status: active (2026-10-13): owner decisions 0–9 accepted; every step built, J's docs included; the model runs on the seed under `extractor_v6` (the default since 2026-10-13; v4 before) with the provider's terms confirmed; all nine signals accepted on the 166-page golden set (2026-10-15) and held by the gate in `make check`; the `text` and `features` jobs re-run under `extractor_v6` (2026-10-15, plan 0017 step H: 868 new requests, all answered); open: enough labelled positives per signal to close the plan (`covenant_breach` and `key_customer_loss` have none), and the owner's items below
 
-### Where this stands (2026-10-15)
+### Where this stands (2026-10-21)
 
 **Done since 2026-10-05** (each in the progress section): the provider's terms confirmed and the key set up
 (decision 2; the client sends `ANTHROPIC_WORKSPACE_ID`); the first model run, and its seven disputed results
@@ -26,7 +26,11 @@ settled against the guide, and all nine accepted on the 148 pages (2026-10-13, P
 auditor reports' queue was completed (102 of 102), 27 labels corrected to the guide over two rounds, every
 register number, natural-person firm's address and identifier, and file name masked by hand, the `text` and
 `features` jobs re-run under `extractor_v6` (plan 0017 step H), and all nine accepted on the 189 pages
-(Progress).
+(Progress). On 2026-10-21: `golden_sample_v3` built (item 1) and `prefilter_v4` built, not in use (item 4).
+The `text` job has not run since 2026-10-15: the owner chose (2026-10-21) to run it once after list v3's
+downloads are imported, since stored responses replay at no cost; a read-only count that day found 5,048
+requests, 3,224 replayed and 1,824 to send (about $8). A change to the prompt, model, schema or masking re-keys
+every request, so settle any such change before that run.
 
 **Open for the owner, in order:**
 
@@ -182,7 +186,8 @@ register number, natural-person firm's address and identifier, and file name mas
   pages). The other eight score exactly as on 148 pages: the new pages are all true negatives. All nine accepted
   by the owner. **Open:** 16 committed report pages carry key-auditor and audit-firm numbers and one filer file
   name, which the masker does not catch: masking them, and whether to rewrite the pushed history, is the
-  owner's decision.
+  owner's decision. *Masked by hand 2026-10-15; the pushed history rewritten and force-pushed 2026-10-21
+  (README); only GitHub's cached views remain, for GitHub to purge.*
 - **Step A (2026-09-29), the census** (`notebooks/exploration/text_census.py`, counts only, no text read out):
   - **Separately filed documents: 316 listed since 2017, none detailed or downloaded.** Approval resolutions
     (type 3) 115 in 15 entities; loss-coverage resolutions (4) 91 in 15; management reports (20) 58 in 12;

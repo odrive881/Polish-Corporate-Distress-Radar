@@ -22,7 +22,7 @@ registry holds and says so, and the public site's population-level pages wait fo
 
 *Since 2026-10-19:* `backtest_v9` (plan 0022, label v3, 458 entities) registered version 6 of both models, the
 regression, `incumbent`, and the default `BACKTEST_VERSION` is v9, so scheduled scoring serves version 6 from the
-night of 2026-10-20. *2026-10-21:* `publish` re-run on `backtest_v9` (run `768b29b0`, threshold 10: 42 metric rows, 206 reliability rows, 463 DQ checks, 35 coverage rows), `make site` built, and the report's figures regenerated (served: version 6 of both, `incumbent`, nothing promoted); the report is still not rendered (no Quarto CLI in WSL). Its provenance names the backtest's code commit as MLflow logged it, before the 2026-10-21 history rewrite (README).
+night of 2026-10-20. *2026-10-21:* `publish` re-run on `backtest_v9` (run `768b29b0`, threshold 10: 42 metric rows, 206 reliability rows, 463 DQ checks, 35 coverage rows), `make site` built, and the report's figures regenerated (served: version 6 of both, `incumbent`, nothing promoted); the report was rendered later that day (Quarto 1.5.57, item 1 below). Its provenance names the backtest's code commit as MLflow logged it, before the 2026-10-21 history rewrite (README).
 
 **Built and run, on `backtest_v8`** (370-entity population; served: the regression, v5 of `distress_radar_12m`
 and `_24m`, alias `incumbent`, training eve 2024-12-31; nothing promoted):
@@ -34,10 +34,10 @@ and `_24m`, alias `incumbent`, training eve 2024-12-31; nothing promoted):
 - **Publish and site** (`publish` job, `make site`): `publish.duckdb` on `backtest_v8`, the site built into
   `site/build/`; nothing deployed.
 - **Report** (`make report`): figures generated from the publish database; **not rendered**, because the
-  Quarto CLI is not in WSL.
+  Quarto CLI is not in WSL. *Rendered 2026-10-21 (item 1 below).*
 
-Every job here runs by hand from a clean tree, with `BACKTEST_VERSION` set (the default is still
-`backtest_v5`); `publish` also needs `DQ_MART_MIN_CELL_ENTITIES` (10). After any new backtest version: re-run
+Every job here runs by hand from a clean tree, with `BACKTEST_VERSION` set (the default was then
+`backtest_v5`; `backtest_v9` since 2026-10-19); `publish` also needs `DQ_MART_MIN_CELL_ENTITIES` (10). After any new backtest version: re-run
 `scoring`, then `publish`, then `make site` and `make report`. `publish` refuses a population that no longer
 hashes to the backtest's pin, which is what a new delivery imported since the backtest looks like.
 
@@ -382,8 +382,8 @@ each is committed on its own and recorded in Progress when done.
    computed under `src/` from the warehouse and stamped with their identifiers. Then `report/methodology.qmd`.
 9. ~~**Step H, the docs sweep.**~~ Done 2026-10-16 (Progress, below).
 
-**What waits on the machine, not on a decision:** rendering the report (`make report`): the Quarto CLI is not
-installed. (Node.js was installed in WSL on 2026-10-16, and the site is built.) Steps F and G are written and tested up to that point. Installing both inside WSL is the
+**What waits on the machine, not on a decision:** ~~rendering the report (`make report`): the Quarto CLI is not
+installed.~~ *Done 2026-10-21 (§ "Open for the owner", item 1).* (Node.js was installed in WSL on 2026-10-16, and the site is built.) Steps F and G are written and tested up to that point. Installing both inside WSL is the
 owner's to do, as a documented prerequisite (decision 10). Nothing is deployed (decision 10).
 
 **Not in this list:** plan 0014 item 4's remaining work, weights through the backtest's folds, cells and

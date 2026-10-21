@@ -503,7 +503,7 @@ Load models in-process from the MLflow registry. No BentoML, Seldon, or KServe: 
 
 **→ Pick: Evidence, deployed static to GitHub Pages or Cloudflare Pages.** This is high-leverage for the hiring goal: a recruiter or engineering manager sees a live, working dashboard without cloning the repo, installing anything, or you paying hosting costs. Pair it with `Altair` or `Plotly` for charts inside the Streamlit app.
 
-*As built (plan 0016):* the site reads one DuckDB database written by the `publish` job from fixed aggregate tables, small cells suppressed and identifiers refused; it is built locally (`make site`) and not deployed yet, which is the owner's decision. Sector and regional pages wait for a representative list (list v2's weighted draw).
+*As built (plan 0016):* the site reads one DuckDB database written by the `publish` job from fixed aggregate tables, small cells suppressed and identifiers refused; it is built locally (`make site`) and not deployed yet, which is the owner's decision. Sector and regional pages wait for a representative list (list v3's weighted draw, plan 0019).
 
 #### K3 — Methodology report
 

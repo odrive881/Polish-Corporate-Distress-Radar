@@ -16,7 +16,7 @@ monitoring), the `alerts` table (§5), and the scoring half of stage I (§6I as 
   appear in an error report), 0011 (pacing of the KRS API and MSiG), 0013 (RDF is the owner's script, never a
   pipeline fetch), 0014 (why a probability from these lists is not the segment's).
 
-**Order:** after plan 0016 (active only on rendering the report, which waits on the Quarto CLI). It does not wait
+**Order:** after plan 0016 (active only on rendering the report, which waited on the Quarto CLI until 2026-10-21). It does not wait
 for list v2 or a champion: what it schedules and alerts on is what the registry already serves.
 
 ## Status: complete (2026-10-19; active from 2026-10-17): owner decisions 0–9 accepted as recommended; step A checked (Evidently and `sentry-sdk` both usable, no ADR needed); steps B–H built (`make orchestrate`; the schedules, sensors and RDF queue, all stopped until the owner turns them on; the `alerts` table and its rules; alerts in the explorer and the API; the drift report; realised calibration; Sentry, off until the owner sets `SENTRY_DSN`); step I's sweep checked; `alert_rules_v2` (one-cycle look-back, owner, 2026-10-17). The owner set `DAGSTER_HOME` and turned every schedule and sensor on (2026-10-17, 21:40); the first unattended `registry_check_nightly` (2026-10-18 02:00) fired and failed: both ministry sources served a maintenance page all night (§ "First night"); maintenance pages now stop a run at once, and `registry_check_retry` re-runs such a night once both sources answer (owner, 2026-10-18; shipped stopped); the second night (2026-10-19) got through, the whole chain, its counts recorded (§ "Second night"); open: nothing of this plan's own
