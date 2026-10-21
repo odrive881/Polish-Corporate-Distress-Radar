@@ -113,6 +113,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │   ├── prefilter_v1.yaml          # lemma terms per signal_type; the file name is the prefilter_version
 │   │   ├── prefilter_v2.yaml          # v1 with every page naming an opinion selected for opinion_type
 │   │   ├── prefilter_v3.yaml          # v2 + the opinion sentence's own words ("zdaniem … sprawozdanie") for opinion_type
+│   │   ├── prefilter_v4.yaml          # v3 + a continuation resolution ("uchwała … dalszej działalności") for continued_existence_vote; not in use
 │   │   ├── rules_v1.yaml              # lemma rules for standard wording (opinion_type)
 │   │   ├── rules_v2.yaml              # opinion_type from the auditor's report's section headings (KSB 700/705)
 │   │   ├── rules_v3.yaml              # v2 + the audit firm's list number, for auditor change (never stored)

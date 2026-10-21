@@ -48,7 +48,9 @@ def test_the_signal_types_are_agent_spec_s_enum() -> None:
     assert tuple(re.findall(r"`([a-z_]+)`", line.split(":", 1)[1])) == SIGNAL_TYPES
 
 
-@pytest.mark.parametrize("version", ["prefilter_v1", "prefilter_v2", "prefilter_v3"])
+@pytest.mark.parametrize(
+    "version", ["prefilter_v1", "prefilter_v2", "prefilter_v3", "prefilter_v4"]
+)
 def test_every_example_is_matched_by_its_term_in_every_sentence(version: str, nlp: Any) -> None:
     prefilter = load_prefilter(version)
     missed = [
@@ -71,6 +73,21 @@ def test_prefilter_v3_adds_the_opinion_sentence_and_changes_nothing_else(nlp: An
     (sentence,) = analyse("Moim zdaniem, sprawozdanie finansowe przedstawia rzetelny obraz.", nlp)
     assert not any(term.matches(sentence) for term in v2.signals["opinion_type"])
     assert any(term.matches(sentence) for term in v3.signals["opinion_type"])
+
+
+def test_prefilter_v4_adds_the_continuation_resolution_and_changes_nothing_else(nlp: Any) -> None:
+    v3, v4 = load_prefilter("prefilter_v3"), load_prefilter("prefilter_v4")
+    for signal in SIGNAL_TYPES:
+        if signal != "continued_existence_vote":
+            assert v4.signals[signal] == v3.signals[signal]
+    assert v4.signals["continued_existence_vote"][:2] == v3.signals["continued_existence_vote"]
+    # the golden positive's wording (invented company), which v3 rejected
+    (resolution,) = analyse("Spółka podjęła uchwałę o prowadzeniu dalszej działalności.", nlp)
+    assert not any(t.matches(resolution) for t in v3.signals["continued_existence_vote"])
+    assert any(t.matches(resolution) for t in v4.signals["continued_existence_vote"])
+    # the going-concern basis alone is not a resolution
+    (basis,) = analyse("Sprawozdanie sporządzono przy założeniu kontynuacji działalności.", nlp)
+    assert not any(t.matches(basis) for t in v4.signals["continued_existence_vote"])
 
 
 def test_a_signal_without_terms_fails_at_load(tmp_path: Path) -> None:

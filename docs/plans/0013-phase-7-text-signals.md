@@ -73,6 +73,14 @@ register number, natural-person firm's address and identifier, and file name mas
      in a new version of `rdf_document_types.yaml`.
 4. **A new prefilter version for `continued_existence_vote`?** Its one golden positive (`2c4d7e30c1579a17`,
    "uchwała o prowadzeniu dalszej działalności") is not selected by `prefilter_v2`, so recall is 0.00 end to end.
+   *Built 2026-10-21, not in use:* `prefilter_v4`, v3 with two terms added to this signal only (a
+   resolution, `uchwała`, with `dalsz*` and `działalność`, or with continuing it), each needing `uchwała` so
+   the going-concern basis's boilerplate does not match. Measured offline
+   (`notebooks/exploration/prefilter_comparison.py`, no API call): on the 189 golden pages it selects the
+   positive (0 of 1 → 1 of 1) and no other page for the signal, every other signal identical; over the 416
+   pages of the local queues it adds 2 pages, the positive among them. Using it is the owner's: a new
+   extractor version naming `prefilter_v4`, a `text` re-run (the extra requests are this signal's few new
+   pages), and `make eval` and acceptance.
    A term for that wording is a new prefilter version, measured like any change.
 5. **The auditor's own going-concern paragraph as a feature?** Recommended: park it. On the seed it was absent on
    all 89 report pages read; revisit once the universe grows.
