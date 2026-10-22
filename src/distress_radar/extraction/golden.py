@@ -132,6 +132,9 @@ class StratifiedSample(_Frozen):
     answers: str  # the extractor version whose kept answers in `text_signals` decide the strata
     signals: tuple[SignalType, ...] = Field(min_length=1)
     rates: dict[Stratum, float]
+    # Decision 13: the share of pages labelled without the answers shown as proposals, drawn by
+    # hash, so the owner's agreement with the model is measured with and without them.
+    blind_rate: float = Field(default=0.2, gt=0, lt=1)
 
     @model_validator(mode="after")
     def _a_rate_per_stratum(self) -> StratifiedSample:
@@ -148,6 +151,9 @@ class GoldenSample(_Frozen):
     report_sample: ReportSample | None = None  # the reports' design
     targeted: TargetedSample | None = None  # the notes, targeted at named signals
     stratified: StratifiedSample | None = None  # either kind, from a draw (decision 12)
+    # Signals parked by decision 10: "absent" is set in advance on an unlabelled page, one click
+    # to change, never a model's answer.
+    parked: tuple[SignalType, ...] = ()
     # The lists the documents are drawn from (`universe_candidates.discovery_source`); unset, every
     # stored entity. v1 and v2 were drawn when the store held the seed alone, so they name it: a
     # rebuild over a larger store must not redraw them.
@@ -229,12 +235,17 @@ class QueuePage(_Frozen):
     # Its entity (a company's KRS number, never a person's): the cluster its interval resamples,
     # since an entity's pages are drawn together (decision 14).
     krs: str | None = None
+    # Decision 13: the answering extractor's kept answers on the page, by signal (a signal it was
+    # not asked is missing), and whether the page is labelled without them (`blind`). Local only:
+    # the export writes the owner's labels, and `proposed_by` when proposals were shown.
+    proposals: dict[SignalType, Label] = {}
+    blind: bool = False
 
     @model_validator(mode="after")
     def _labels_fit_the_page(self) -> QueuePage:
         if not (self.stratum is None) == (self.inclusion_probability is None) == (self.krs is None):
             raise ValueError(f"{self.page_id}: a stratum needs its inclusion probability and krs")
-        for signal, label in self.labels.items():
+        for signal, label in [*self.labels.items(), *self.proposals.items()]:
             if label.evidence is not None and label.evidence not in self.text:
                 raise ValueError(f"{self.page_id} {signal}: evidence is not a span of the page")
             if signal == "opinion_type" and label.present and label.value not in OPINION_VALUES:
@@ -281,6 +292,7 @@ class QueueStats:
     strata: Counter[str] = field(default_factory=Counter[str])  # a stratified sample's pools
     drawn: Counter[str] = field(default_factory=Counter[str])  # and what it drew from each
     carried: int = 0  # drawn pages already labelled elsewhere, their labels carried over
+    proposals_dropped: int = 0  # answers whose evidence is not on the masked page
     attachment_errors: Counter[str] = field(default_factory=Counter[str])
     not_idempotent: int = 0  # pages the masker changes again: they fail the masking check
 
@@ -497,6 +509,24 @@ class StratifiedFrame:
     answered_present: frozenset[str]  # page ids with a kept non-absent answer for the signals
     read: frozenset[tuple[str, str]]  # (document hash, member) the answering extractor read
     labelled_elsewhere: Mapping[str, QueuePage] = field(default_factory=dict[str, QueuePage])
+    # page id → the answering extractor's kept answer per signal (decision 13), every signal
+    proposals: Mapping[str, Mapping[SignalType, Label]] = field(
+        default_factory=dict[str, Mapping[SignalType, Label]]
+    )
+
+
+def proposal(signal: SignalType, value: str, evidence: str | None) -> Label | None:
+    """A kept answer in `text_signals` as a label: `absent`, `present`, or a value (the opinion,
+    the kind of event) with its evidence; None when it does not fit a label (no evidence)."""
+    if value == "absent":
+        return Label(present=False)
+    if not evidence:
+        return None
+    return Label(
+        present=True,
+        value=value if value != "present" and value in SIGNAL_VALUES.get(signal, ()) else None,
+        evidence=evidence,
+    )
 
 
 def stratum_of(
@@ -567,7 +597,13 @@ def build_stratified_queue(
                 }
             )
         else:
-            row = row.model_copy(update=drawn)
+            offered = frame.proposals.get(row.page_id, {})
+            kept = {  # evidence the masked page no longer holds is not offered
+                s: lb for s, lb in offered.items() if lb.evidence is None or lb.evidence in row.text
+            }
+            stats.proposals_dropped += len(offered) - len(kept)
+            blind = _drawn(f"{version}:blind", row.page_id, design.blind_rate)
+            row = row.model_copy(update={**drawn, "proposals": kept, "blind": blind})
         queued.append(row)
     if unread:
         raise ValueError(
@@ -649,8 +685,14 @@ def hand_mask(row: QueuePage, target: str, kind: str = "person") -> QueuePage:
     )
 
 
-def label(row: QueuePage, labels: dict[SignalType, Label], labelled_by: str) -> QueuePage:
-    """The page with every signal labelled; validated against the page."""
+def label(
+    row: QueuePage,
+    labels: dict[SignalType, Label],
+    labelled_by: str,
+    proposed_by: str | None = None,
+) -> QueuePage:
+    """The page with every signal labelled; validated against the page. `proposed_by` names the
+    extractor whose answers were shown as proposals (decision 13), None when none were."""
     if set(labels) != set(SIGNAL_TYPES):
         missing = [s for s in SIGNAL_TYPES if s not in labels]
         raise ValueError(f"every signal_type needs a label; missing {missing}")
@@ -661,8 +703,47 @@ def label(row: QueuePage, labels: dict[SignalType, Label], labelled_by: str) -> 
             **row.model_dump(),
             "labels": {s: labels[s].model_dump() for s in SIGNAL_TYPES},
             "labelled_by": labelled_by,
+            "proposed_by": proposed_by,
         }
     )
+
+
+def shows_proposals(row: QueuePage) -> bool:
+    """Whether the page is labelled with the model's answers shown (decision 13)."""
+    return bool(row.proposals) and not row.blind
+
+
+def prefill(row: QueuePage, parked: Iterable[SignalType] = ()) -> dict[SignalType, Label]:
+    """What the labelling form starts from: the saved labels, else the proposals when shown, and
+    "absent" for a parked signal with none. A signal with nothing is left out: the owner decides."""
+    if row.labels:
+        return dict(row.labels)
+    start: dict[SignalType, Label] = {s: Label(present=False) for s in parked}
+    if shows_proposals(row):
+        start.update(row.proposals)
+    return start
+
+
+def _agrees(label: Label, offered: Label) -> bool:
+    return label.present == offered.present and (
+        not label.present or offered.value is None or label.value == offered.value
+    )
+
+
+def proposal_agreement(rows: Iterable[QueuePage]) -> dict[str, tuple[int, int]]:
+    """(signals where the owner's label agrees with the model's answer, signals with an answer),
+    over the labelled pages that have answers: `shown` those labelled with them in view, `blind`
+    those labelled without. The two rates are what decision 13 compares: a much higher `shown`
+    rate means the proposals pull the labels toward the model."""
+    tally = {"shown": [0, 0], "blind": [0, 0]}
+    for row in rows:
+        if not row.complete or not row.proposals:
+            continue
+        arm = tally["blind" if row.blind else "shown"]
+        for signal, offered in row.proposals.items():
+            arm[0] += _agrees(row.labels[signal], offered)
+            arm[1] += 1
+    return {arm: (agreed, total) for arm, (agreed, total) in tally.items()}
 
 
 def span_key(kind: str, text: str) -> str:

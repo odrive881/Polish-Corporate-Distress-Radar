@@ -865,3 +865,107 @@ def _stratified_row() -> QueuePage:
         inclusion_probability=0.25,
         krs="0000000001",
     )
+
+
+# --- proposals and parked signals (plan 0013 decision 13) -----------------------------------------
+
+
+def test_a_kept_answer_becomes_a_proposal() -> None:
+    assert golden.proposal("litigation", "absent", None) == Label(present=False)
+    assert golden.proposal("litigation", "present", LITIGATION) == Label(
+        present=True, evidence=LITIGATION
+    )
+    assert golden.proposal("opinion_type", "qualified", "opinia z zastrzeżeniem") == Label(
+        present=True, value="qualified", evidence="opinia z zastrzeżeniem"
+    )
+    assert golden.proposal("litigation", "present", None) is None  # no evidence, no label
+
+
+def _proposed_frame(blind_rate: float) -> tuple[GoldenSample, golden.StratifiedFrame]:
+    sample = _stratified()
+    assert sample.stratified is not None
+    sample = sample.model_copy(
+        update={"stratified": sample.stratified.model_copy(update={"blind_rate": blind_rate})}
+    )
+    present = golden.page_id("1" * 64, "sf-1.xml", 1, 1)
+    proposals = {
+        present: {
+            "going_concern_uncertainty": Label(present=True, evidence=GOING_CONCERN),
+            "litigation": Label(present=True, evidence="not on this page"),
+        },
+        **{
+            golden.page_id("2" * 64, "sf-2.xml", 1, n): {
+                "going_concern_uncertainty": Label(present=False)
+            }
+            for n in range(1, 41)
+        },
+    }
+    return sample, _frame(proposals=proposals)
+
+
+def test_a_stratified_queue_offers_the_answers_on_the_page_and_blinds_a_fixed_share(
+    mask_nlp: Any, lemma_nlp: Any
+) -> None:
+    sample, frame = _proposed_frame(0.5)
+    stats = QueueStats()
+    queue = _build(sample, _drawn_pages(40), frame, (mask_nlp, lemma_nlp), stats)
+    first = next(r for r in queue if r.stratum == "answered_present")
+    # the litigation answer's evidence is not on the masked page: not offered, and counted
+    assert set(first.proposals) == {"going_concern_uncertainty"}
+    assert stats.proposals_dropped == 1
+    blind = [r.blind for r in queue]
+    assert any(blind) and not all(blind)
+    again = _build(sample, _drawn_pages(40), frame, (mask_nlp, lemma_nlp))
+    assert [r.blind for r in again] == blind  # by hash, not by chance
+
+
+def test_the_form_starts_from_labels_then_proposals_then_parked_absent() -> None:
+    row = _stratified_row().model_copy(
+        update={"proposals": {"litigation": Label(present=True, evidence=FIGURES)}}
+    )
+    parked: tuple[preprocessing.SignalType, ...] = ("covenant_breach", "key_customer_loss")
+    start = golden.prefill(row, parked)
+    assert start == {
+        "covenant_breach": Label(present=False),
+        "key_customer_loss": Label(present=False),
+        "litigation": Label(present=True, evidence=FIGURES),
+    }
+    assert golden.shows_proposals(row)
+    blind = row.model_copy(update={"blind": True})
+    assert not golden.shows_proposals(blind)
+    assert golden.prefill(blind, parked) == {s: Label(present=False) for s in parked}
+    saved = _labelled(row)
+    assert golden.prefill(saved, parked) == saved.labels  # a saved page shows what was saved
+
+
+def test_proposed_by_is_recorded_and_agreement_is_counted_by_arm(mask_nlp: Any) -> None:
+    offered = {
+        "litigation": Label(present=True, evidence=FIGURES),
+        "going_concern_uncertainty": Label(present=False),
+    }
+    shown = _stratified_row().model_copy(update={"proposals": offered})
+    blind = _stratified_row().model_copy(
+        update={"page_id": "y" * 16, "proposals": offered, "blind": True}
+    )
+    labels = _all_absent()
+    labels["litigation"] = Label(present=True, evidence=FIGURES)
+    shown_done = golden.label(shown, labels, "owner", "extractor_v7")
+    blind_done = golden.label(blind, _all_absent(), "owner")  # disagrees on litigation
+    assert (shown_done.proposed_by, blind_done.proposed_by) == ("extractor_v7", None)
+    assert golden.proposal_agreement([shown_done, blind_done, _stratified_row()]) == {
+        "shown": (2, 2),
+        "blind": (1, 2),
+    }
+    files = golden.export([shown_done], mask_nlp)
+    page = json.loads(files[golden.PAGES_FILE].decode().splitlines()[0])
+    assert page["proposed_by"] == "extractor_v7" and "proposals" not in page
+
+
+def test_a_proposal_s_evidence_must_be_on_the_page() -> None:
+    with pytest.raises(ValidationError, match="not a span of the page"):
+        QueuePage.model_validate(
+            {
+                **_stratified_row().model_dump(),
+                "proposals": {"litigation": {"present": True, "evidence": "elsewhere"}},
+            }
+        )

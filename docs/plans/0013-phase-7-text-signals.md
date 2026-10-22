@@ -11,7 +11,7 @@
 **Order:** after plan 0012 (complete). It does not wait for ADR 0013: like Phase 6, it builds and measures
 machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set this plan adds.
 
-## Status: active (2026-10-13): owner decisions 0–9 accepted; every step built, J's docs included; the model runs on the seed under `extractor_v6` (the default since 2026-10-13; v4 before) with the provider's terms confirmed; all nine signals accepted on the 166-page golden set (2026-10-15) and held by the gate in `make check`; the `text` and `features` jobs re-run under `extractor_v6` (2026-10-15, plan 0017 step H: 868 new requests, all answered); 2026-10-22: `extractor_v7` (`prefilter_v4`) the default; `golden_sample_v3` shelved and the two signals without positives parked; the plan closes on the feature signals, labelled in a stratified sample of list v3's draw (§ "Labelling after list v3", decisions 10–14; K1 and K2 built); open: K3–K4, and the owner's items below
+## Status: active (2026-10-13): owner decisions 0–9 accepted; every step built, J's docs included; the model runs on the seed under `extractor_v6` (the default since 2026-10-13; v4 before) with the provider's terms confirmed; all nine signals accepted on the 166-page golden set (2026-10-15) and held by the gate in `make check`; the `text` and `features` jobs re-run under `extractor_v6` (2026-10-15, plan 0017 step H: 868 new requests, all answered); 2026-10-22: `extractor_v7` (`prefilter_v4`) the default; `golden_sample_v3` shelved and the two signals without positives parked; the plan closes on the feature signals, labelled in a stratified sample of list v3's draw (§ "Labelling after list v3", decisions 10–14; K1–K3 built); open: K4, after list v3's import and `text` run, and the owner's items below
 
 ### Where this stands (2026-10-21)
 
@@ -175,7 +175,8 @@ Two findings change what is worth labelling:
   `golden.py`; `label_queue build` reading the draw and `text_signals`; the weighted counts in the harness
   (decision 14's first half); tests on synthetic pages.
 - **K2** (built 2026-10-22, § "Progress"): intervals (decision 14's second half).
-- **K3**: proposals and the one-click default in the labelling notebook (decision 13).
+- **K3** (built 2026-10-22, § "Progress"): proposals and the one-click default in the labelling notebook
+  (decision 13).
 - **K4** (after list v3's import and its `text` run): write `golden_sample_v4` and `v5` with their rates,
   build the queues, label, export, `make eval`; then decision 11's check.
 
@@ -218,6 +219,24 @@ Choices made while building it, flag any unwanted:
   within 0.2; decision 11's 20 positives a signal would bring the others to about that.
 - *The gate is unchanged* (tolerance 0, on counts). Reviewing it against the intervals waits until the
   stratified samples are labelled (decision 14).
+
+**K3, built (2026-10-22).** Decision 13:
+- *Proposals.* A stratified queue's row carries the answering extractor's kept answer per signal it was
+  asked (`proposals`, from `text_signals`: absent, present with its evidence, or a value). An answer whose
+  evidence is not on the masked page is not offered, and counted. The rows are local; the export writes
+  only the owner's labels.
+- *Blind share.* `blind_rate` in the sample (default 0.2) marks a fixed share of pages, by hash, to be
+  labelled without the proposals.
+- *The form.* `notebooks/labelling/golden_set.py` starts an unlabelled page from the proposals when shown,
+  says when a page is blind, and sets each parked signal (`parked` in the sample config; decision 10's two
+  for v4 and v5) to "absent". A saved page records `proposed_by` (the answering extractor) only when the
+  proposals were in view. The v1–v3 queues have no proposals and nothing parked, so they label as before.
+  Run headless over the v1 queue (`marimo export`): every cell runs, nothing written.
+- *Agreement.* `label_queue export` prints, over labelled pages with proposals, the signals where the label
+  agrees with the model's answer, shown and blind. *A choice made while building it, flag if unwanted:*
+  agreement is on presence, and on the value when the model gave one; evidence spans are not compared.
+  A shown rate well above the blind one means the proposals pull labels toward the model; then the
+  blind share is the one to trust, and the rate is raised in a new sample version.
 
 ### Decision 0(c): the auditor reports (2026-10-01)
 

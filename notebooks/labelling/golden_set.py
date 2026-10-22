@@ -10,6 +10,12 @@ span for each present one. "All absent" saves a page with no signal in one click
 while any signal is marked present. Definitions: `evals/text_signals/labelling_guide.md`. Candidate
 sentences the prefilter matched are highlighted in yellow; they are hints, not labels.
 
+On a stratified sample's page (plan 0013 decisions 12–13) the form starts from the model's stored
+answers, its proposals, unless the page is one of the fixed share labelled blind; read the page and
+correct them before saving. A signal the sample parks starts as "absent" on every unlabelled page.
+The page records `proposed_by` only when the proposals were shown, so `label_queue export` can
+compare agreement with the model on the pages shown its answers and the blind ones.
+
 Nothing here leaves the machine. `label_queue export` writes the labelled pages to `evals/`.
 
     uv run marimo edit notebooks/labelling/golden_set.py
@@ -60,13 +66,16 @@ def _():
 
 
 @app.cell
-def _(mo, sample_picker):
+def _(golden, mo, sample_picker):
     from pathlib import Path as _Path
 
     mo.output.replace(sample_picker)
     mo.stop(sample_picker.value is None, mo.md("No queue yet: run `make label-queue`."))
     path = _Path(sample_picker.value)
-    return (path,)
+    sample = golden.load_golden_sample(path.stem)
+    # whose answers a shown proposal is: the stratified sample's answering extractor
+    proposer = sample.stratified.answers if sample.stratified is not None else None
+    return path, proposer, sample
 
 
 @app.cell
@@ -114,6 +123,16 @@ def _(golden, html, mo, nlp, picker, rows):
             ),
             mo.callout(
                 mo.md(
+                    "The form starts from the model's answers: read the page and correct them."
+                    if golden.shows_proposals(row)
+                    else "Blind page: label it without the model's answers."
+                ),
+                kind="info",
+            )
+            if row.proposals and not row.labels
+            else mo.md(""),
+            mo.callout(
+                mo.md(
                     f"The masker would still replace {len(remaining)} span(s), in red. Mask a "
                     "real name before saving; whatever red you save over is recorded as a "
                     "reviewed false positive."
@@ -151,9 +170,11 @@ def _(golden, mask_button, mask_kind, mask_target, mo, path, row, set_rev, updat
 
 
 @app.cell
-def _(SIGNAL_TYPES, golden, mo, row):
+def _(SIGNAL_TYPES, golden, mo, row, sample):
+    start = golden.prefill(row, sample.parked)  # saved labels, else proposals and parked "absent"
+
     def _state(signal: str) -> str | None:
-        label = row.labels.get(signal)
+        label = start.get(signal)
         return None if label is None else ("present" if label.present else "absent")
 
     presence = mo.ui.dictionary(
@@ -162,7 +183,7 @@ def _(SIGNAL_TYPES, golden, mo, row):
     evidence = mo.ui.dictionary(
         {
             s: mo.ui.text_area(
-                value=(row.labels[s].evidence or "") if s in row.labels else "",
+                value=(start[s].evidence or "") if s in start else "",
                 placeholder="verbatim span of the page, when present",
                 full_width=True,
                 rows=2,
@@ -175,7 +196,7 @@ def _(SIGNAL_TYPES, golden, mo, row):
         {
             s: mo.ui.dropdown(
                 options=list(golden.SIGNAL_VALUES[s]),
-                value=row.labels[s].value if s in row.labels else None,
+                value=start[s].value if s in start else None,
                 label="value",
             )
             for s in SIGNAL_TYPES
@@ -216,6 +237,7 @@ def _(
     nlp,
     path,
     presence,
+    proposer,
     row,
     save_button,
     set_rev,
@@ -223,6 +245,8 @@ def _(
     values,
 ):
     mo.stop(not save_button.value and not absent_button.value)
+    # a page saved with the model's answers in view says so (decision 13)
+    _proposed_by = proposer if golden.shows_proposals(row) else None
     try:
         if absent_button.value:
             _present = [s for s in SIGNAL_TYPES if presence.value[s] == "present"]
@@ -231,7 +255,9 @@ def _(
             _all_absent = {s: golden.Label(present=False) for s in SIGNAL_TYPES}
             update_queue(
                 path,
-                golden.clear_reviewed(golden.label(row, _all_absent, labelled_by.value), nlp),
+                golden.clear_reviewed(
+                    golden.label(row, _all_absent, labelled_by.value, _proposed_by), nlp
+                ),
             )
             set_rev(lambda n: n + 1)
             mo.stop(True)
@@ -249,7 +275,8 @@ def _(
             for s in SIGNAL_TYPES
         }
         update_queue(
-            path, golden.clear_reviewed(golden.label(row, _labels, labelled_by.value), nlp)
+            path,
+            golden.clear_reviewed(golden.label(row, _labels, labelled_by.value, _proposed_by), nlp),
         )
         set_rev(lambda n: n + 1)
     except ValueError as _exc:

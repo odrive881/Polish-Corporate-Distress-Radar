@@ -237,9 +237,23 @@ def stratified_frame(
     ours = (pl.col("extractor_version") == design.answers) & (
         pl.col("document_kind") == sample.document_kind
     )
-    answered = read_dataset(settings.warehouse_dir, ts.DATASET).filter(
-        ours & pl.col("signal_type").is_in(list(design.signals)) & (pl.col("value") != "absent")
+    kept = read_dataset(settings.warehouse_dir, ts.DATASET).filter(ours)
+    answered = kept.filter(
+        pl.col("signal_type").is_in(list(design.signals)) & (pl.col("value") != "absent")
     )
+    proposals: dict[str, dict[preprocessing.SignalType, golden.Label]] = {}
+    for h, m, a, p, signal, value, evidence in kept.select(
+        "source_document_hash",
+        "source_member",
+        "attachment",
+        "page",
+        "signal_type",
+        "value",
+        "evidence_span",
+    ).iter_rows():
+        offered = golden.proposal(signal, value, evidence)
+        if offered is not None:
+            proposals.setdefault(golden.page_id(h, m, a, p), {})[signal] = offered
     covered = read_dataset(settings.warehouse_dir, ts.COVERAGE).filter(ours)
     others = [
         row
@@ -261,6 +275,7 @@ def stratified_frame(
             for h, m in covered.select("source_document_hash", "source_member").iter_rows()
         ),
         labelled_elsewhere={row.page_id: row for row in others},
+        proposals=proposals,
     )
 
 
@@ -344,6 +359,11 @@ def main(argv: list[str] | None = None) -> int:
                 "drawn by stratum "
                 + ", ".join(f"{k} {stats.drawn[k]} of {stats.strata[k]}" for k in golden.STRATA)
                 + (f"; {stats.carried} already labelled, carried over" if stats.carried else "")
+                + (
+                    f"; {stats.proposals_dropped} answer(s) not offered, evidence off the page"
+                    if stats.proposals_dropped
+                    else ""
+                )
                 if stats.strata
                 else f"{stats.reports_sampled} of {stats.reports} reports "
                 f"({stats.reports_modified} read as a modified opinion)"
@@ -382,9 +402,16 @@ def main(argv: list[str] | None = None) -> int:
         except ValueError as exc:
             print(f"not exported: {exc}", file=sys.stderr)
             return 1
-        replaced, missed = golden.masker_recall(_queued(settings))
+        queued = _queued(settings)
+        replaced, missed = golden.masker_recall(queued)
         print(f"exported to {golden.GOLDEN_DIR}: {counts}")
         print(f"persons masked by the masker {replaced}, by hand {missed}")
+        agreement = golden.proposal_agreement(queued)
+        if any(total for _agreed, total in agreement.values()):
+            print(
+                "agreement with the model's answers (decision 13): "
+                + ", ".join(f"{arm} {a} of {t}" for arm, (a, t) in agreement.items())
+            )
     return 0
 
 
