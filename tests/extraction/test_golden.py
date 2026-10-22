@@ -789,6 +789,7 @@ def test_a_drawn_page_labelled_elsewhere_carries_its_labels_over_and_is_exported
                 "golden_sample_version": "golden_sample_v1",
                 "stratum": None,
                 "inclusion_probability": None,
+                "krs": None,
             }
         ),
         going_concern_uncertainty=GOING_CONCERN,
