@@ -11,7 +11,7 @@
 **Order:** after plan 0012 (complete). It does not wait for ADR 0013: like Phase 6, it builds and measures
 machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set this plan adds.
 
-## Status: active (2026-10-13): owner decisions 0–9 accepted; every step built, J's docs included; the model runs on the seed under `extractor_v6` (the default since 2026-10-13; v4 before) with the provider's terms confirmed; all nine signals accepted on the 166-page golden set (2026-10-15) and held by the gate in `make check`; the `text` and `features` jobs re-run under `extractor_v6` (2026-10-15, plan 0017 step H: 868 new requests, all answered); open: enough labelled positives per signal to close the plan (`covenant_breach` and `key_customer_loss` have none), and the owner's items below
+## Status: active (2026-10-13): owner decisions 0–9 accepted; every step built, J's docs included; the model runs on the seed under `extractor_v6` (the default since 2026-10-13; v4 before) with the provider's terms confirmed; all nine signals accepted on the 166-page golden set (2026-10-15) and held by the gate in `make check`; the `text` and `features` jobs re-run under `extractor_v6` (2026-10-15, plan 0017 step H: 868 new requests, all answered); 2026-10-22: `extractor_v7` (`prefilter_v4`) the default; `golden_sample_v3` shelved and the two signals without positives parked; the plan closes on the feature signals, labelled in a stratified sample of list v3's draw (§ "Labelling after list v3", decisions 10–14; K1 built); open: K2–K4, and the owner's items below
 
 ### Where this stands (2026-10-21)
 
@@ -34,7 +34,7 @@ every request, so settle any such change before that run.
 
 **Open for the owner, in order:**
 
-1. **How this plan closes (recommended, not yet decided).** The definition of done asks for the golden set
+1. *Superseded 2026-10-22 by decision 11 (§ "Labelling after list v3").* **How this plan closes (recommended, not yet decided).** The definition of done asks for the golden set
    "labelled". Recommended: close once each signal has a handful of labelled positives, rather than after the
    whole seed queue (153 of the notes' 240 pages are still unlabelled, and the seed is a poor sample of the
    population). In that order:
@@ -102,6 +102,103 @@ every request, so settle any such change before that run.
   does not measure;
 - two golden evidence spans quote a heading (`26a67244b75fd805`; the start of `521be011091c25a2`'s), which the guide
   now discourages; evidence does not affect a score.
+
+### Labelling after list v3 (2026-10-22): the signals that feed features, a stratified sample of the draw
+
+Asked for by the owner (2026-10-22): what is worth labelling, from what data, and how to label less for more.
+Decisions 10–14 below are this section's own, taken while writing it (flag any to change).
+
+**What the store says (2026-10-22, read-only).** Over 9,667 text pages read under `extractor_v6` (the seed,
+list v1, and list v1's third import; list v2's distress group is not read yet):
+
+| Signal | Pages selected | Model: present | Golden positives | In `feature_set_v7` |
+|---|---|---|---|---|
+| `going_concern_uncertainty` | 1,142 | 91 (18 entities) | 9 | yes |
+| `loss_coverage_resolution` | 725 | 210 (86 entities) | 3 | yes |
+| `emphasis_of_matter` (reports) | 40 | 3 (2 entities) | 1 (P 0.33) | yes |
+| `opinion_type` (rule, reports) | 203 | 44 modified or not | 20 | yes (`modified_opinion`) |
+| `post_balance_sheet_event` | 1,077 | 79 | 4 | no |
+| `litigation` | 265 | 35 | 3 | no |
+| `continued_existence_vote` | 17 | 5 | 1 | no |
+| `key_customer_loss` | 46 | 1 | 0 | no |
+| `covenant_breach` | 12 | 0 | 0 | no |
+
+Two findings change what is worth labelling:
+- **The two signals with no positive feed no feature,** and are close to absent from this population: no model
+  answer in 12 selected pages for `covenant_breach`, one in 46 for `key_customer_loss`. `golden_sample_v3`, built
+  to find them, holds about one positive for either by the model's own answers (and 5 for going concern, 1 for
+  loss coverage).
+- **The signals that do feed features are measured on too little, and on the seed alone.**
+  `loss_coverage_resolution`, the commonest of them, has 3 labelled positives. All 189 golden pages are the 17
+  seed companies', whose accountants' wording repeats, so every score is optimistic for the population the
+  models train on. List v3 is the first data drawn by a recorded rule, so the first whose scores carry over.
+
+**Decisions:**
+
+10. **`golden_sample_v3` is shelved, not labelled.** Its file and local queue stay; its pages are left to the
+    frame of decision 12's samples like any other page. `covenant_breach` and `key_customer_loss` are parked:
+    still extracted (a few requests), still labelled on every page (one click, decision 13), but this plan no
+    longer waits on their positives. Revisit if list v3's answers show more than a handful.
+11. **How the plan closes** (replacing item 1's "a handful of positives per signal"): each signal that feeds a
+    feature in use (today `going_concern_uncertainty`, `loss_coverage_resolution`, `emphasis_of_matter`,
+    `opinion_type`) has at least 20 labelled positives in a stratified sample of list v3's draw, and its
+    weighted end-to-end precision and recall are recorded with their intervals (decision 14). The other five
+    are measured on whatever the samples bring.
+12. **A stratified sample from the draw** (`golden_sample_v4` the notes, `golden_sample_v5` the auditor reports,
+    once list v3's text is read). The frame is every text page, of the kind the sample names, of the entities
+    of one draw (`universe_draws`, pinned as a backtest pins it). Each page falls in one stratum, by what the
+    extractor in use already answered on it, from `text_signals` (no new request):
+    - `answered_present`: the extractor kept a non-absent answer on the page for one of the sample's signals;
+    - `answered_absent`: the prefilter selects the page for one of them, and no such answer was kept;
+    - `not_selected`: the prefilter selects it for none of them.
+    A page is drawn when its hash with the version falls below its stratum's rate (as v3's rejected share:
+    a later delivery adds pages without moving any drawn), so its probability of being in the sample is
+    π_page = π_entity × rate, exactly, and it carries the weight 1/π_page. Most positives come from
+    `answered_present`, cheaply; the other two strata measure what the extractor and the prefilter miss, and
+    the weights put each back in proportion. The strata read the model's answers, never a label, and the
+    weights make every estimate unbiased for the draw's segment: the stratification buys efficiency, not a
+    different target. The build refuses when a document in the frame has no `text_coverage` row under the
+    named extractor (the text job has not read it yet), so a stratum is never decided by a missing run.
+    Rates are set when the frame is known, to reach decision 11's 20 positives per signal at the fewest
+    pages; a rate changed after a page is labelled is a new sample version.
+13. **Labelling help** (built after decision 12): the model's stored answer shown as a proposal
+    (`proposed_by`, decision 5's field, never used so far), withheld on a fixed hashed share of pages so
+    agreement with and without it is measured; and "absent" as the one-click default for the parked signals.
+14. **Weighted scores and intervals.** The harness adds, beside today's counts, the weighted end-to-end
+    estimate over the pages that carry a weight (decision 12's samples only; the seed's samples are purposive
+    and carry none). Then an interval for every precision and recall, counted and weighted, so a result is
+    not accepted on noise; the gate (tolerance 0, on counts) is reviewed against the intervals once the
+    samples are labelled.
+
+**Steps:**
+- **K1** (built 2026-10-22, § "Progress"): decision 12's design, its queue builder and the page weights in
+  `golden.py`; `label_queue build` reading the draw and `text_signals`; the weighted counts in the harness
+  (decision 14's first half); tests on synthetic pages.
+- **K2**: intervals (decision 14's second half).
+- **K3**: proposals and the one-click default in the labelling notebook (decision 13).
+- **K4** (after list v3's import and its `text` run): write `golden_sample_v4` and `v5` with their rates,
+  build the queues, label, export, `make eval`; then decision 11's check.
+
+**K1, built (2026-10-22).** `golden.py`: the `stratified` design (`StratifiedSample`: the draw pinned as a
+backtest pins it, the answering extractor, the signals, a rate per stratum), `build_stratified_queue`, and
+two row fields, `stratum` and `inclusion_probability`, written to `pages.jsonl` only on drawn pages, so the
+seed's rows keep their bytes and no accepted result moves. `label_queue build` reads the draw's π from
+`universe_draws` (`models.weights.read_draw_weights`), the answering extractor's kept answers from
+`text_signals` and the documents it read from `text_coverage`. The harness's `weighted` scores (tp, fp, fn
+counted 1/π times, and the precision and recall they give), absent from a result with no weighted page.
+Choices made while building it, flag any unwanted:
+- *A drawn page already labelled* in another queue is not left out (that would make its π wrong): its
+  labelled row joins the sample with its labels and hand masking, and the export writes it once, as the
+  drawn row. Two queues labelling one page differently stop the export. Two seed entities are in list v3's
+  draw, so this happens.
+- *`answered_absent` includes a discarded answer* (no kept answer is stored per page): a discard is absent
+  end to end, as the harness scores it.
+- *An answered-present page the prefilter does not select* stops the build: the answers would not be the
+  prefilter's (a different masking, say).
+- *Nothing is skipped before masking*: every page of the frame is masked and analysed, so the pools per
+  stratum are exact counts (printed by `build`), at about v3's 20 minutes per 13,000 pages.
+- *The entity's π is read as 1/weight* from the draw's weights, which `read_draw_weights` checks are one per
+  entity.
 
 ### Decision 0(c): the auditor reports (2026-10-01)
 
@@ -1039,7 +1136,7 @@ text job and `make eval`; this plan's status.
       (2026-10-06: every signal on the seed under `extractor_v4`; `evidence_masked` passed; the masker's measured
       recall is 0.98, so "no name" rests on that check and the pre-commit scan, as ADR 0009 sets out).
 - [ ] Golden set labelled and committed; precision, recall and F1 per `signal_type` with counts; the gate in
-      `make check`.
+      `make check`. *2026-10-22:* "labelled" is decision 11's test (§ "Labelling after list v3").
 - [x] `feature_set_v4` leak-free and byte-reproducible; `backtest_v2` run twice, identical (2026-10-01; the
       notes' features fill in when the model signals run, by a rebuild, not a new version).
 - [x] `make check` and `make test-integration` green; docs from step J updated (2026-10-06).

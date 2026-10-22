@@ -10,6 +10,7 @@ from __future__ import annotations
 import base64
 import json
 import re
+from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
@@ -421,16 +422,16 @@ def test_the_report_sample_takes_every_modified_opinion_and_a_fixed_draw_of_whol
 def test_each_design_takes_only_its_own_kind_of_document(
     mask_nlp: Any, lemma_nlp: Any, prefilter: preprocessing.Prefilter
 ) -> None:
-    with pytest.raises(ValidationError, match="each only by its own"):
+    with pytest.raises(ValidationError, match="each by one only"):
         GoldenSample(
             golden_sample_version="x",
             prefilter_version="prefilter_v2",
             document_kind="auditor_report",
             rejected_sample_size=5,
         )
-    with pytest.raises(ValidationError, match="each only by its own"):
+    with pytest.raises(ValidationError, match="each by one only"):
         GoldenSample(golden_sample_version="x", prefilter_version="prefilter_v1")
-    with pytest.raises(ValidationError, match="each only by its own"):
+    with pytest.raises(ValidationError, match="each by one only"):
         GoldenSample(
             golden_sample_version="x",
             prefilter_version="prefilter_v1",
@@ -656,3 +657,204 @@ def test_the_notes_reader_skips_other_lists_and_counts_an_unreadable_download() 
     )
     assert pages == [] and store.fetched == ["key-seed"]
     assert stats.attachment_errors == {"unknown_container": 1}
+
+
+# --- the stratified sample (plan 0013 decision 12) ------------------------------------------------
+
+DRAW = golden.DrawPin(
+    draw_spec_sha256="a" * 64, random="rejestr_io_v3_random", distress="rejestr_io_v3_distress"
+)
+
+
+def _stratified(**rates: float) -> GoldenSample:
+    return GoldenSample(
+        golden_sample_version="golden_sample_s",
+        prefilter_version="prefilter_v1",
+        stratified=golden.StratifiedSample(
+            draw=DRAW,
+            answers="extractor_v1",
+            signals=("going_concern_uncertainty",),
+            rates={stratum: rates.get(stratum, 1.0) for stratum in golden.STRATA},
+        ),
+    )
+
+
+def _drawn_pages(figures: int) -> list[tuple[str, TextPage]]:
+    """Entity 1's two going-concern pages, entity 2's figures, and entity 3's, not in the draw."""
+    doc1, doc2, doc3 = "1" * 64, "2" * 64, "3" * 64
+    return [
+        ("0000000001", TextPage(doc1, "sf-1.xml", 1, 1, GOING_CONCERN)),
+        ("0000000001", TextPage(doc1, "sf-1.xml", 1, 2, f"{FIGURES} {GOING_CONCERN}")),
+        *(
+            ("0000000002", TextPage(doc2, "sf-2.xml", 1, n, f"{FIGURES} Pozycja {n}."))
+            for n in range(1, figures + 1)
+        ),
+        ("0000000003", TextPage(doc3, "sf-3.xml", 1, 1, GOING_CONCERN)),
+    ]
+
+
+def _frame(**kwargs: Any) -> golden.StratifiedFrame:
+    return golden.StratifiedFrame(
+        entity_pi={"0000000001": Fraction(1, 2), "0000000002": Fraction(1, 3)},
+        answered_present=kwargs.pop(
+            "answered_present", frozenset({golden.page_id("1" * 64, "sf-1.xml", 1, 1)})
+        ),
+        read=frozenset({("1" * 64, "sf-1.xml"), ("2" * 64, "sf-2.xml")}),
+        **kwargs,
+    )
+
+
+def _build(
+    sample: GoldenSample,
+    pages: list[tuple[str, TextPage]],
+    frame: golden.StratifiedFrame,
+    nlps: tuple[Any, Any],
+    stats: QueueStats | None = None,
+) -> list[QueuePage]:
+    return golden.build_stratified_queue(
+        pages,
+        preprocessing.load_prefilter("prefilter_v1"),
+        sample,
+        frame,
+        nlps[0],
+        nlps[1],
+        stats or QueueStats(),
+    )
+
+
+def test_a_stratified_sample_puts_each_drawn_entity_s_page_in_one_stratum(
+    mask_nlp: Any, lemma_nlp: Any
+) -> None:
+    stats = QueueStats()
+    queue = _build(_stratified(), _drawn_pages(3), _frame(), (mask_nlp, lemma_nlp), stats)
+    by_page = {(row.document_hash[0], row.page): row for row in queue}
+    assert set(by_page) == {("1", 1), ("1", 2), ("2", 1), ("2", 2), ("2", 3)}  # not entity 3's
+    assert by_page[("1", 1)].stratum == "answered_present"
+    assert by_page[("1", 2)].stratum == "answered_absent"  # selected, no answer kept present
+    assert {by_page[("2", n)].stratum for n in (1, 2, 3)} == {"not_selected"}
+    # π_page = π_entity × rate, exactly
+    assert by_page[("1", 1)].inclusion_probability == 0.5
+    assert by_page[("2", 1)].inclusion_probability == float(Fraction(1, 3))
+    assert stats.strata == {"answered_present": 1, "answered_absent": 1, "not_selected": 3}
+    assert stats.drawn == stats.strata
+
+
+def test_a_stratum_s_rate_draws_a_fixed_share_that_a_later_delivery_only_adds_to(
+    mask_nlp: Any, lemma_nlp: Any
+) -> None:
+    sample = _stratified(not_selected=0.5)
+    before = _build(sample, _drawn_pages(12), _frame(), (mask_nlp, lemma_nlp))
+    assert before == _build(sample, _drawn_pages(12), _frame(), (mask_nlp, lemma_nlp))
+    after = _build(sample, _drawn_pages(40), _frame(), (mask_nlp, lemma_nlp))
+    assert {r.page_id for r in before} <= {r.page_id for r in after}
+    drawn = [r for r in after if r.stratum == "not_selected"]
+    assert 0 < len(drawn) < 40
+    assert {r.inclusion_probability for r in drawn} == {float(Fraction(1, 3) * Fraction(1, 2))}
+
+
+def test_a_stratified_sample_refuses_a_document_the_text_job_has_not_read(
+    mask_nlp: Any, lemma_nlp: Any
+) -> None:
+    frame = golden.StratifiedFrame(
+        entity_pi={"0000000001": Fraction(1, 2), "0000000002": Fraction(1, 3)},
+        answered_present=frozenset(),
+        read=frozenset({("1" * 64, "sf-1.xml")}),
+    )
+    with pytest.raises(ValueError, match="1 document"):
+        _build(_stratified(), _drawn_pages(3), frame, (mask_nlp, lemma_nlp))
+
+
+def test_an_answer_the_prefilter_would_not_have_asked_for_is_refused(
+    mask_nlp: Any, lemma_nlp: Any
+) -> None:
+    figures = golden.page_id("2" * 64, "sf-2.xml", 1, 1)
+    with pytest.raises(ValueError, match="answers are not the prefilter's"):
+        _build(
+            _stratified(),
+            _drawn_pages(3),
+            _frame(answered_present=frozenset({figures})),
+            (mask_nlp, lemma_nlp),
+        )
+
+
+def test_a_drawn_page_labelled_elsewhere_carries_its_labels_over_and_is_exported_once(
+    mask_nlp: Any, lemma_nlp: Any
+) -> None:
+    plain = _build(_stratified(), _drawn_pages(3), _frame(), (mask_nlp, lemma_nlp))
+    first = next(r for r in plain if r.stratum == "answered_present")
+    elsewhere = _labelled(
+        first.model_copy(
+            update={
+                "golden_sample_version": "golden_sample_v1",
+                "stratum": None,
+                "inclusion_probability": None,
+            }
+        ),
+        going_concern_uncertainty=GOING_CONCERN,
+    )
+    stats = QueueStats()
+    queue = _build(
+        _stratified(),
+        _drawn_pages(3),
+        _frame(labelled_elsewhere={elsewhere.page_id: elsewhere}),
+        (mask_nlp, lemma_nlp),
+        stats,
+    )
+    carried = next(r for r in queue if r.page_id == first.page_id)
+    assert stats.carried == 1 and carried.complete
+    assert (carried.golden_sample_version, carried.inclusion_probability) == (
+        "golden_sample_s",
+        0.5,
+    )
+    files = golden.export([elsewhere, carried], mask_nlp)
+    pages = [json.loads(line) for line in files[golden.PAGES_FILE].decode().splitlines()]
+    assert len(pages) == 1
+    assert (pages[0]["stratum"], pages[0]["inclusion_probability"]) == ("answered_present", 0.5)
+    relabelled = _labelled(elsewhere)  # every signal absent: a different label
+    with pytest.raises(ValueError, match="labelled differently"):
+        golden.export([relabelled, carried], mask_nlp)
+
+
+def test_a_page_outside_a_stratified_sample_is_exported_without_its_fields(
+    queue: list[QueuePage], mask_nlp: Any
+) -> None:
+    files = golden.export([_labelled(queue[0])], mask_nlp)
+    page = json.loads(files[golden.PAGES_FILE].decode().splitlines()[0])
+    assert "stratum" not in page and "inclusion_probability" not in page
+
+
+def test_a_stratified_sample_needs_a_rate_per_stratum_and_no_list() -> None:
+    with pytest.raises(ValidationError, match="rates"):
+        golden.StratifiedSample(
+            draw=DRAW,
+            answers="extractor_v1",
+            signals=("going_concern_uncertainty",),
+            rates={"answered_present": 1.0},  # type: ignore[dict-item]
+        )
+    with pytest.raises(ValidationError, match="drawn from its draw"):
+        GoldenSample.model_validate(
+            {**_stratified().model_dump(), "discovery_sources": ["rejestr_io_v3_random"]}
+        )
+    with pytest.raises(ValidationError, match="each by one only"):
+        GoldenSample.model_validate({**_stratified().model_dump(), "rejected_sample_size": 5})
+    with pytest.raises(ValidationError, match="inclusion probability"):
+        QueuePage.model_validate({**_stratified_row().model_dump(), "inclusion_probability": None})
+
+
+def _stratified_row() -> QueuePage:
+    return QueuePage(
+        page_id="x" * 16,
+        document_hash="1" * 64,
+        source_member="sf-1.xml",
+        attachment=1,
+        page=1,
+        masking_version="1",
+        prefilter_version="prefilter_v1",
+        golden_sample_version="golden_sample_s",
+        sample="rejected",
+        candidates={},
+        text=FIGURES,
+        masked={},
+        stratum="not_selected",
+        inclusion_probability=0.25,
+    )

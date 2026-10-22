@@ -19,6 +19,12 @@ the golden set are a sample (`golden_sample_*.yaml`): of the notes, a random sam
 positive the prefilter misses there stands for several in the whole rejected pool; of the auditor
 reports, every rejected page of a sample of whole reports. Counts, not rates, are the honest reading.
 
+**Weighted** (plan 0013 decision 14, 2026-10-22): the pages of a stratified sample (decision 12) carry
+their probability of being drawn in `pages.jsonl`. Over those pages alone, each counted 1/π times, the
+end-to-end true positives, false positives and false negatives are estimates for the draw's segment,
+and so are the precision and recall they give. The seed's samples are purposive and carry no weight,
+so they are never in it; until a stratified page is labelled, a result has no weighted scores.
+
 **The gate** (`make check`, offline): once a signal has any result, the method in use must have a
 result for the current files, that result must re-score to its own stored scores, and its end-to-end
 precision and recall may not fall below those of the owner's last accepted result on the same golden
@@ -30,6 +36,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Mapping
 from datetime import date
 from pathlib import Path
 from typing import Literal
@@ -136,6 +143,17 @@ class Counts(_Frozen):
     f1: float | None
 
 
+class WeightedCounts(_Frozen):
+    """End-to-end counts over the weighted pages, each counted 1/π times (estimates)."""
+
+    pages: int  # weighted pages scored
+    tp: float
+    fp: float
+    fn: float
+    precision: float | None
+    recall: float | None
+
+
 class Scores(_Frozen):
     pages: int
     positives: int
@@ -145,6 +163,7 @@ class Scores(_Frozen):
     evidence_overlaps: int  # true positives whose evidence overlaps the labelled evidence
     extractor: Counts
     end_to_end: Counts
+    weighted: WeightedCounts | None = None  # decision 14; None when no page carries a weight
 
 
 class Acceptance(_Frozen):
@@ -262,6 +281,36 @@ def _counts(pairs: list[tuple[GoldenLabel, Example]]) -> Counts:
     return Counts(tp=tp, fp=fp, fn=fn, tn=tn, precision=precision, recall=recall, f1=f1)
 
 
+def _weighted(
+    pairs: list[tuple[GoldenLabel, Example]], weights: Mapping[str, float]
+) -> WeightedCounts | None:
+    """`_counts`'s end-to-end tally over the weighted pages, each counted `weights[page_id]` times."""
+    drawn = [(lb, ex) for lb, ex in pairs if lb.page_id in weights]
+    if not drawn:
+        return None
+    tp = fp = fn = 0.0
+    for label, ex in drawn:
+        w = weights[label.page_id]
+        predicted = ex.outcome == "present"
+        if label.present and predicted and _same_value(label, ex):
+            tp += w
+        elif label.present and predicted:
+            fp += w
+            fn += w
+        elif predicted:
+            fp += w
+        elif label.present:
+            fn += w
+    return WeightedCounts(
+        pages=len(drawn),
+        tp=round(tp, 4),
+        fp=round(fp, 4),
+        fn=round(fn, 4),
+        precision=round(tp / (tp + fp), 4) if tp + fp else None,
+        recall=round(tp / (tp + fn), 4) if tp + fn else None,
+    )
+
+
 def _overlaps(text: str, a: str | None, b: str | None) -> bool:
     if not a or not b:
         return False
@@ -274,8 +323,10 @@ def score(
     examples: tuple[Example, ...],
     texts: dict[str, str],
     rejected_sample: set[str],
+    weights: Mapping[str, float] | None = None,
 ) -> Scores:
-    """Scores of one signal's examples against its labels (same page ids, any order)."""
+    """Scores of one signal's examples against its labels (same page ids, any order); `weights`
+    (page id → 1/π, `page_weights`) adds the weighted end-to-end estimate."""
     by_page = {e.page_id: e for e in examples}
     if set(by_page) != {lb.page_id for lb in labels} or len(by_page) != len(examples):
         raise ValueError("the examples are not one per golden page")
@@ -302,6 +353,7 @@ def score(
         ),
         extractor=_counts([(lb, ex) for lb, ex in pairs if ex.selected]),
         end_to_end=_counts(pairs),
+        weighted=_weighted(pairs, weights or {}),
     )
 
 
@@ -313,6 +365,21 @@ def rejected_sample(golden_dir: Path = GOLDEN_DIR) -> set[str]:
         json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
     ]
     return {str(row["page_id"]) for row in rows if row["sample"] == "rejected"}
+
+
+def page_weights(golden_dir: Path = GOLDEN_DIR) -> dict[str, float]:
+    """Page id → 1/π for every golden page drawn by a stratified sample (decision 12)."""
+    path = golden_dir / PAGES_FILE
+    if not path.exists():
+        return {}
+    rows = [
+        json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
+    ]
+    return {
+        str(row["page_id"]): 1 / float(row["inclusion_probability"])
+        for row in rows
+        if row.get("inclusion_probability") is not None
+    }
 
 
 def unchanged(previous: EvalResult, current: EvalResult) -> bool:
@@ -329,10 +396,10 @@ def unchanged(previous: EvalResult, current: EvalResult) -> bool:
 
 
 def dump_result(result: EvalResult) -> bytes:
-    return (
-        json.dumps(result.model_dump(mode="json"), ensure_ascii=False, sort_keys=True, indent=1)
-        + "\n"
-    ).encode("utf-8")
+    data = result.model_dump(mode="json")
+    if data["scores"]["weighted"] is None:  # results without weighted pages keep their bytes
+        del data["scores"]["weighted"]
+    return (json.dumps(data, ensure_ascii=False, sort_keys=True, indent=1) + "\n").encode("utf-8")
 
 
 def load_result(path: Path) -> EvalResult:

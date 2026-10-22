@@ -13,7 +13,13 @@ stores and writes the files.
     named signals, the ones with too few labelled positives, and a fixed random share of the pages
     it selects for none. The share is drawn by a threshold on each page's hash, so a later delivery
     adds pages to it without moving any already drawn. Pages already in another queue or in the
-    committed golden set are left out, so no page is exported twice.
+    committed golden set are left out, so no page is exported twice;
+  - stratified (v4 on, plan 0013 decision 12, 2026-10-22): the text pages of one kind of document
+    of the entities of one draw, each in one stratum by what the extractor in use already answered
+    on it, and drawn by a threshold on its hash at its stratum's rate. A page's probability of being
+    in the sample is its entity's π times that rate, exactly, and its weight the inverse: the
+    estimates are the draw's segment's, the strata only make them cheaper. Nothing is left out: a
+    drawn page already labelled in another queue or the golden set carries its labels over.
   The owner labels every page for every `signal_type`. A queue is local and never committed:
   until the owner has read a page, the masker's misses are still in it.
 - **Hand masking.** A name the masker missed is replaced by the owner with its token, and counted:
@@ -33,8 +39,9 @@ import hashlib
 import json
 import re
 from collections import Counter
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import dataclass, field
+from fractions import Fraction
 from pathlib import Path
 from typing import Any, Literal, cast
 
@@ -83,6 +90,9 @@ HAND_TOKENS = {
 _TOKEN = re.compile("|".join(re.escape(t) for t in HAND_TOKENS.values()))
 
 Sample = Literal["selected", "rejected"]
+# A stratified sample's strata (decision 12), by the kept answers of the extractor the sample names.
+Stratum = Literal["answered_present", "answered_absent", "not_selected"]
+STRATA: tuple[Stratum, ...] = ("answered_present", "answered_absent", "not_selected")
 
 
 class _Frozen(BaseModel):
@@ -105,6 +115,31 @@ class TargetedSample(_Frozen):
     rejected_rate: float = Field(gt=0, le=1)
 
 
+class DrawPin(_Frozen):
+    """The draw a stratified sample is drawn from, pinned as a weighted backtest pins it
+    (`models.splits.WeightsConfig`): its entities and their π are its `universe_draws` rows."""
+
+    draw_spec_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    random: str
+    distress: str | None = None
+
+
+class StratifiedSample(_Frozen):
+    """Decision 12: every text page of the draw's entities, in one stratum by the kept answers
+    of extractor `answers` for `signals`, drawn at its stratum's rate."""
+
+    draw: DrawPin
+    answers: str  # the extractor version whose kept answers in `text_signals` decide the strata
+    signals: tuple[SignalType, ...] = Field(min_length=1)
+    rates: dict[Stratum, float]
+
+    @model_validator(mode="after")
+    def _a_rate_per_stratum(self) -> StratifiedSample:
+        if set(self.rates) != set(STRATA) or not all(0 < r <= 1 for r in self.rates.values()):
+            raise ValueError(f"`rates` needs each of {STRATA}, in (0, 1]")
+        return self
+
+
 class GoldenSample(_Frozen):
     golden_sample_version: str
     prefilter_version: str
@@ -112,6 +147,7 @@ class GoldenSample(_Frozen):
     rejected_sample_size: int | None = Field(default=None, ge=0)  # the notes' design
     report_sample: ReportSample | None = None  # the reports' design
     targeted: TargetedSample | None = None  # the notes, targeted at named signals
+    stratified: StratifiedSample | None = None  # either kind, from a draw (decision 12)
     # The lists the documents are drawn from (`universe_candidates.discovery_source`); unset, every
     # stored entity. v1 and v2 were drawn when the store held the seed alone, so they name it: a
     # rebuild over a larger store must not redraw them.
@@ -121,15 +157,19 @@ class GoldenSample(_Frozen):
     def _one_design_per_kind(self) -> GoldenSample:
         notes = self.document_kind == "statement_notes"
         notes_designs = (self.rejected_sample_size is not None) + (self.targeted is not None)
+        report_designs = self.report_sample is not None
+        stratified = self.stratified is not None
         if (
-            (notes and notes_designs != 1)
+            notes_designs + report_designs + stratified != 1
+            or (notes and report_designs)
             or (not notes and notes_designs)
-            or notes == (self.report_sample is not None)
         ):
             raise ValueError(
-                "the notes are sampled by `rejected_sample_size` or `targeted`, auditor reports "
-                "by `report_sample`, and each only by its own"
+                "the notes are sampled by `rejected_sample_size`, `targeted` or `stratified`, "
+                "auditor reports by `report_sample` or `stratified`, and each by one only"
             )
+        if stratified and self.discovery_sources is not None:
+            raise ValueError("a stratified sample is drawn from its draw, not `discovery_sources`")
         return self
 
 
@@ -182,9 +222,15 @@ class QueuePage(_Frozen):
     labels: dict[SignalType, Label] = {}
     labelled_by: str | None = None
     proposed_by: str | None = None  # a model id, when a model proposed the labels (decision 5)
+    # A stratified sample's (decision 12): the page's stratum, and its probability of being drawn,
+    # its entity's π times the stratum's rate. Both or neither.
+    stratum: Stratum | None = None
+    inclusion_probability: float | None = Field(default=None, gt=0, le=1)
 
     @model_validator(mode="after")
     def _labels_fit_the_page(self) -> QueuePage:
+        if (self.stratum is None) != (self.inclusion_probability is None):
+            raise ValueError(f"{self.page_id}: a stratum needs its inclusion probability")
         for signal, label in self.labels.items():
             if label.evidence is not None and label.evidence not in self.text:
                 raise ValueError(f"{self.page_id} {signal}: evidence is not a span of the page")
@@ -229,6 +275,9 @@ class QueueStats:
     reports_modified: int = 0  # read as a modified opinion by the sample's rules
     reports_sampled: int = 0
     excluded: int = 0  # target or drawn pages already in another queue or the golden set
+    strata: Counter[str] = field(default_factory=Counter[str])  # a stratified sample's pools
+    drawn: Counter[str] = field(default_factory=Counter[str])  # and what it drew from each
+    carried: int = 0  # drawn pages already labelled elsewhere, their labels carried over
     attachment_errors: Counter[str] = field(default_factory=Counter[str])
     not_idempotent: int = 0  # pages the masker changes again: they fail the masking check
 
@@ -437,6 +486,90 @@ def build_targeted_queue(
     return sorted(queued, key=lambda row: row.page_id)
 
 
+@dataclass(frozen=True)
+class StratifiedFrame:
+    """What a stratified sample reads beside the pages (decision 12), from the stores."""
+
+    entity_pi: Mapping[str, Fraction]  # krs → π, the draw's entities only
+    answered_present: frozenset[str]  # page ids with a kept non-absent answer for the signals
+    read: frozenset[tuple[str, str]]  # (document hash, member) the answering extractor read
+    labelled_elsewhere: Mapping[str, QueuePage] = field(default_factory=dict[str, QueuePage])
+
+
+def stratum_of(
+    row: QueuePage, signals: tuple[SignalType, ...], answered: frozenset[str]
+) -> Stratum:
+    """A page's stratum: answered present, selected for a signal and not answered present, or
+    selected for none of them."""
+    selected = any(signal in row.candidates for signal in signals)
+    if row.page_id in answered:
+        if not selected:
+            raise ValueError(
+                f"{row.page_id}: answered present, but the prefilter selects it for none of "
+                f"{signals}: the answers are not the prefilter's"
+            )
+        return "answered_present"
+    return "answered_absent" if selected else "not_selected"
+
+
+def build_stratified_queue(
+    pages: Iterable[tuple[str, TextPage]],
+    prefilter: Prefilter,
+    sample: GoldenSample,
+    frame: StratifiedFrame,
+    mask_nlp: Any,
+    lemma_nlp: Any,
+    stats: QueueStats,
+) -> list[QueuePage]:
+    """The pages (with their entity's KRS) of the draw's entities drawn at their stratum's rate,
+    each with its stratum and inclusion probability, masked, sorted by page id. Raises when a
+    page's document was not read by the answering extractor: its stratum would be a missing run's."""
+    _check_prefilter(prefilter, sample)
+    design = sample.stratified
+    if design is None:
+        raise ValueError(f"{sample.golden_sample_version} is not a stratified sample")
+    version = sample.golden_sample_version
+    unread: set[tuple[str, str]] = set()
+    queued: list[QueuePage] = []
+    for krs, page in pages:
+        pi = frame.entity_pi.get(krs)
+        if pi is None:
+            continue
+        if (page.document_hash, page.source_member) not in frame.read:
+            unread.add((page.document_hash, page.source_member))
+            continue
+        row, _sentences = _row(page, prefilter, sample, mask_nlp, lemma_nlp, stats)
+        stratum = stratum_of(row, design.signals, frame.answered_present)
+        stats.strata[stratum] += 1
+        rate = design.rates[stratum]
+        if not _drawn(version, row.page_id, rate):
+            continue
+        stats.drawn[stratum] += 1
+        drawn = {"stratum": stratum, "inclusion_probability": float(pi * Fraction(str(rate)))}
+        done = frame.labelled_elsewhere.get(row.page_id)
+        if done is not None:  # its labelled row, hand masking and all, joins this sample
+            stats.carried += 1
+            row = done.model_copy(
+                update={
+                    **drawn,
+                    "golden_sample_version": version,
+                    "prefilter_version": row.prefilter_version,
+                    "sample": row.sample,
+                    # this prefilter's signals; the offsets are the labelled text's, where it had them
+                    "candidates": {s: done.candidates.get(s, ()) for s in row.candidates},
+                }
+            )
+        else:
+            row = row.model_copy(update=drawn)
+        queued.append(row)
+    if unread:
+        raise ValueError(
+            f"{len(unread)} document(s) of the draw have no `text_coverage` row under "
+            f"{design.answers}: run the `text` job before drawing {version}"
+        )
+    return sorted(queued, key=lambda row: row.page_id)
+
+
 def merge(existing: list[QueuePage], fresh: list[QueuePage]) -> list[QueuePage]:
     """The fresh queue, keeping every existing row as it is (labels and hand masking). A labelled
     row the fresh queue does not have is an error, never dropped."""
@@ -570,7 +703,7 @@ def load_queue(data: bytes) -> list[QueuePage]:
 def export(rows: Iterable[QueuePage], nlp: Any) -> dict[str, bytes]:
     """`pages.jsonl` and one `<signal_type>.jsonl` per signal, from the labelled pages only.
     Raises when a page fails the masking check: it is fixed in the queue, never exported."""
-    done = sorted((row for row in rows if row.complete), key=lambda row: row.page_id)
+    done = _once(row for row in rows if row.complete)
     if not done:
         raise ValueError("no page is labelled yet: nothing to export")
     failures = {
@@ -600,8 +733,19 @@ def export(rows: Iterable[QueuePage], nlp: Any) -> dict[str, bytes]:
         "proposed_by",
         "text",
     ]
+    # A stratified sample's two fields are written only on its pages: the seed's rows keep their bytes.
+    drawn_keys = ["stratum", "inclusion_probability"]
     files = {
-        PAGES_FILE: "".join(_line({k: row.model_dump()[k] for k in page_keys}) for row in done)
+        PAGES_FILE: "".join(
+            _line(
+                {
+                    k: v
+                    for k, v in row.model_dump().items()
+                    if k in page_keys or (k in drawn_keys and v is not None)
+                }
+            )
+            for row in done
+        )
     }
     for signal in SIGNAL_TYPES:
         files[f"{signal}.jsonl"] = "".join(
@@ -622,9 +766,26 @@ def export(rows: Iterable[QueuePage], nlp: Any) -> dict[str, bytes]:
     return {name: text.encode("utf-8") for name, text in files.items()}
 
 
+def _once(rows: Iterable[QueuePage]) -> list[QueuePage]:
+    """One row per page, sorted by page id. A page labelled in two queues (a stratified sample
+    drew a page already labelled) must carry the same labels in both, and is written as the drawn
+    one, so it keeps its weight."""
+    by_page: dict[str, QueuePage] = {}
+    for row in rows:
+        other = by_page.get(row.page_id)
+        if other is None:
+            by_page[row.page_id] = row
+            continue
+        if other.labels != row.labels:
+            raise ValueError(f"{row.page_id} is labelled differently in two queues")
+        if other.inclusion_probability is None:
+            by_page[row.page_id] = row
+    return [by_page[pid] for pid in sorted(by_page)]
+
+
 def masker_recall(rows: Iterable[QueuePage]) -> tuple[int, int]:
     """(persons the masker replaced, persons the owner had to) over the labelled pages."""
-    done = [row for row in rows if row.complete]
+    done = _once(row for row in rows if row.complete)
     return (
         sum(row.masked.get("person", 0) for row in done),
         sum(row.hand_masked.get("person", 0) for row in done),

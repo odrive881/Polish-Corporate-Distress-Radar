@@ -140,6 +140,7 @@ def run(settings: Settings, sync: bool = False, golden_dir: Path = GOLDEN_DIR) -
             response_store.ensure_schema(conn)
             response_store.record(conn, store.new)
     rejected = h.rejected_sample(golden_dir)
+    weights = h.page_weights(golden_dir)
     for signal in runnable:
         labels = h.golden_labels(signal, golden_dir) or []
         examples = tuple(
@@ -155,7 +156,7 @@ def run(settings: Settings, sync: bool = False, golden_dir: Path = GOLDEN_DIR) -
             prefilter_version=extractor.config.prefilter_version,
             hashes=h.fingerprint(extractor, signal, golden_dir),
             examples=examples,
-            scores=h.score(labels, examples, texts, rejected),
+            scores=h.score(labels, examples, texts, rejected, weights),
         )
         path = h.result_path(signal, mid, golden_dir / "results")
         if path.exists():
@@ -169,6 +170,11 @@ def run(settings: Settings, sync: bool = False, golden_dir: Path = GOLDEN_DIR) -
             f"{mid}: {result.scores.positives} positives in {result.scores.pages} pages; "
             f"end to end P {e2e.precision} R {e2e.recall} F1 {e2e.f1}; "
             f"discarded {result.scores.discarded or 0}"
+            + (
+                f"; weighted ({w.pages} pages) P {w.precision} R {w.recall}"
+                if (w := result.scores.weighted)
+                else ""
+            )
             + ("" if result.accepted else "; not accepted")
         )
     summary = masker_summary(golden_dir)

@@ -9,7 +9,10 @@ reads Postgres and MinIO and writes files. Counts only are printed, never text.
 `build` needs `make dev-up` and `make models`. For each sample version (`golden_sample_v*.yaml`),
 or the one named, it writes `<LABELLING_DIR>/<version>.jsonl`, local and gitignored, and keeps
 every row already there as it is: labels and hand masking survive a rebuild. A targeted sample
-leaves out the pages already in another local queue or in the committed golden set. `export` writes the
+leaves out the pages already in another local queue or in the committed golden set. A stratified
+sample (plan 0013 decision 12) reads its draw from `universe_draws`, and the strata from the
+answering extractor's `text_signals` and `text_coverage` in `WAREHOUSE_DIR`: run the `text` job
+first. It leaves nothing out: a drawn page labelled in another queue carries its labels over. `export` writes the
 labelled pages of every local queue to `evals/text_signals/`, after the masking check, and refuses
 to drop a page already exported. A span the masker flags that the owner saved a label over without
 masking is recorded as reviewed (`golden.clear_reviewed`) and no longer blocks the export; `clear`
@@ -21,17 +24,25 @@ from __future__ import annotations
 import json
 import sys
 from collections.abc import Iterator
+from fractions import Fraction
 from pathlib import Path
 
+import polars as pl
 import psycopg
 
 from distress_radar.acquisition.document_retrieval import load_document_types
 from distress_radar.acquisition.raw_store import ObjectStore, S3ObjectStore
 from distress_radar.acquisition.report_import import auditor_codes
+from distress_radar.extraction import extractor as ex
 from distress_radar.extraction import golden, manifest, masking, preprocessing, rules
+from distress_radar.extraction import text_signals as ts
+from distress_radar.models.dataset import WEIGHT
+from distress_radar.models.splits import WeightsConfig
+from distress_radar.models.weights import read_draw_weights
 from distress_radar.parsing.canonical_schema import CONFIG_DIR
 from distress_radar.parsing.containers import ContainerError, unwrap
 from distress_radar.settings import Settings
+from distress_radar.warehouse import read_dataset
 
 DEFAULT_VERSION = "golden_sample_v1"
 
@@ -86,10 +97,10 @@ def _text_source_pages(
     store: ObjectStore,
     stats: golden.QueueStats,
     entities: frozenset[str] | None = None,
-) -> Iterator[golden.TextPage]:
-    """The notes' pages of every statement the text stage reads (`manifest.text_sources`), so a
-    targeted sample measures the extractor on its own population; a download that cannot be
-    unwrapped is counted, as the reports' reader does."""
+) -> Iterator[tuple[str, golden.TextPage]]:
+    """The notes' pages, with their entity's KRS, of every statement the text stage reads
+    (`manifest.text_sources`), so a sample measures the extractor on its own population; a
+    download that cannot be unwrapped is counted, as the reports' reader does."""
     for source in manifest.text_sources(conn):
         if entities is not None and source.krs not in entities:
             continue
@@ -102,7 +113,8 @@ def _text_source_pages(
         if member is None or not member.data.lstrip().startswith(b"<"):
             stats.attachment_errors["member_not_xml"] += 1
             continue
-        yield from golden.text_pages(source.sha256, source.source_member, member.data, stats)
+        for page in golden.text_pages(source.sha256, source.source_member, member.data, stats):
+            yield source.krs, page
 
 
 def _report_pages(
@@ -110,8 +122,9 @@ def _report_pages(
     store: ObjectStore,
     stats: golden.QueueStats,
     entities: frozenset[str] | None = None,
-) -> Iterator[list[golden.TextPage]]:
-    """Each stored auditor report the text stage reads (dated: decision 6), as its pages."""
+) -> Iterator[tuple[str, list[golden.TextPage]]]:
+    """Each stored auditor report the text stage reads (dated: decision 6), as its entity's KRS
+    and its pages."""
     for report in manifest.report_sources(conn, auditor_codes(load_document_types())):
         if report.submission_date is None:
             continue
@@ -124,7 +137,10 @@ def _report_pages(
         if len(pdfs) != 1:
             stats.attachment_errors["report_not_one_pdf"] += 1
             continue
-        yield golden.pdf_text_pages(report.sha256, pdfs[0].source_member, pdfs[0].data, stats)
+        yield (
+            report.krs,
+            golden.pdf_text_pages(report.sha256, pdfs[0].source_member, pdfs[0].data, stats),
+        )
 
 
 def build(settings: Settings, version: str) -> golden.QueueStats:
@@ -142,7 +158,7 @@ def build(settings: Settings, version: str) -> golden.QueueStats:
         entities = drawn_from(conn, sample)
         if sample.report_sample is not None:
             fresh = golden.build_report_queue(
-                _report_pages(conn, store, stats, entities),
+                (pages for _krs, pages in _report_pages(conn, store, stats, entities)),
                 prefilter,
                 rules.load_rules(sample.report_sample.rules_version),
                 sample,
@@ -152,13 +168,27 @@ def build(settings: Settings, version: str) -> golden.QueueStats:
             )
         elif sample.targeted is not None:
             fresh = golden.build_targeted_queue(
-                _text_source_pages(conn, store, stats, entities),
+                (page for _krs, page in _text_source_pages(conn, store, stats, entities)),
                 prefilter,
                 sample,
                 mask_nlp,
                 lemma_nlp,
                 stats,
                 elsewhere(settings, version),
+            )
+        elif sample.stratified is not None:
+            frame = stratified_frame(conn, settings, sample, version)
+            pages = (
+                _text_source_pages(conn, store, stats, frozenset(frame.entity_pi))
+                if sample.document_kind == "statement_notes"
+                else (
+                    (krs, page)
+                    for krs, report in _report_pages(conn, store, stats, frozenset(frame.entity_pi))
+                    for page in report
+                )
+            )
+            fresh = golden.build_stratified_queue(
+                pages, prefilter, sample, frame, mask_nlp, lemma_nlp, stats
             )
         else:
             fresh = golden.build_queue(
@@ -174,6 +204,64 @@ def build(settings: Settings, version: str) -> golden.QueueStats:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(golden.dump_queue(golden.merge(existing, fresh)))
     return stats
+
+
+def stratified_frame(
+    conn: psycopg.Connection, settings: Settings, sample: golden.GoldenSample, version: str
+) -> golden.StratifiedFrame:
+    """What a stratified sample reads beside the pages: its draw's π per entity, the pages the
+    answering extractor answered present for the sample's signals, the documents it read, and
+    the pages labelled in the other local queues."""
+    design = sample.stratified
+    if design is None:
+        raise ValueError(f"{version} is not a stratified sample")
+    answering = ex.load_extractor(design.answers)
+    if answering.config.prefilter_version != sample.prefilter_version:
+        raise ValueError(
+            f"{version} samples {sample.prefilter_version}, but {design.answers}'s answers are "
+            f"{answering.config.prefilter_version}'s"
+        )
+    draw = read_draw_weights(
+        conn,
+        WeightsConfig(
+            draw_spec_sha256=design.draw.draw_spec_sha256,
+            random=design.draw.random,
+            distress=design.draw.distress,
+            bootstrap="stratified",
+        ),
+    )
+    entity_pi = {
+        str(krs): 1 / Fraction(weight)
+        for krs, weight in draw.frame.select("krs", WEIGHT).iter_rows()
+    }
+    ours = (pl.col("extractor_version") == design.answers) & (
+        pl.col("document_kind") == sample.document_kind
+    )
+    answered = read_dataset(settings.warehouse_dir, ts.DATASET).filter(
+        ours & pl.col("signal_type").is_in(list(design.signals)) & (pl.col("value") != "absent")
+    )
+    covered = read_dataset(settings.warehouse_dir, ts.COVERAGE).filter(ours)
+    others = [
+        row
+        for other in versions()
+        if other != version and (path := queue_path(settings, other)).exists()
+        for row in golden.load_queue(path.read_bytes())
+        if row.complete
+    ]
+    return golden.StratifiedFrame(
+        entity_pi=entity_pi,
+        answered_present=frozenset(
+            golden.page_id(h, m, a, p)
+            for h, m, a, p in answered.select(
+                "source_document_hash", "source_member", "attachment", "page"
+            ).iter_rows()
+        ),
+        read=frozenset(
+            (str(h), str(m))
+            for h, m in covered.select("source_document_hash", "source_member").iter_rows()
+        ),
+        labelled_elsewhere={row.page_id: row for row in others},
+    )
 
 
 def elsewhere(
@@ -253,7 +341,11 @@ def main(argv: list[str] | None = None) -> int:
         for version in args[1:] or versions():
             stats = build(settings, version)
             drawn = (
-                f"{stats.reports_sampled} of {stats.reports} reports "
+                "drawn by stratum "
+                + ", ".join(f"{k} {stats.drawn[k]} of {stats.strata[k]}" for k in golden.STRATA)
+                + (f"; {stats.carried} already labelled, carried over" if stats.carried else "")
+                if stats.strata
+                else f"{stats.reports_sampled} of {stats.reports} reports "
                 f"({stats.reports_modified} read as a modified opinion)"
                 if stats.reports
                 else f"{stats.rejected_sampled} of {stats.rejected_pool} rejected sampled"

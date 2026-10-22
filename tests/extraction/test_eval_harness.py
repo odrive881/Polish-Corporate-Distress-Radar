@@ -172,6 +172,44 @@ def test_examples_must_be_one_per_golden_page() -> None:
         h.score([_label("p1", True, LITIGATION)], (), PAGES, set())
 
 
+def test_weighted_scores_count_each_drawn_page_by_its_inverse_probability(
+    extractor: ex.Extractor, tmp_path: Path
+) -> None:
+    # p1 and p2 drawn (decision 12): p1 a true positive at π 1/2, p2 a false positive at π 1/10;
+    # p4's positive is a seed page, purposive, and is left out of the weighted estimate
+    golden = _write_golden(tmp_path, {"litigation": LIT_LABELS})
+    pages = [json.loads(line) for line in (golden / "pages.jsonl").read_text("utf-8").splitlines()]
+    for page in pages:
+        if page["page_id"] in {"p1", "p2"}:
+            page["stratum"] = "answered_present"
+            page["inclusion_probability"] = 0.5 if page["page_id"] == "p1" else 0.1
+    (golden / "pages.jsonl").write_text("".join(json.dumps(p) + "\n" for p in pages), "utf-8")
+    weights = h.page_weights(golden)
+    assert weights == {"p1": 2.0, "p2": 10.0}
+    examples = (
+        h.example("p1", True, _extraction(True, LITIGATION)),
+        h.example("p2", True, _extraction(True, FIGURES)),
+        h.example("p3", False, None),
+        h.example("p4", False, None),
+    )
+    labels = h.golden_labels("litigation", golden) or []
+    scores = h.score(labels, examples, h.page_texts(golden), h.rejected_sample(golden), weights)
+    assert scores.weighted == h.WeightedCounts(
+        pages=2, tp=2.0, fp=10.0, fn=0.0, precision=round(2 / 12, 4), recall=1.0
+    )
+    assert (scores.end_to_end.tp, scores.end_to_end.fp, scores.end_to_end.fn) == (1, 1, 1)
+
+
+def test_a_result_without_weighted_pages_keeps_its_bytes(
+    extractor: ex.Extractor, tmp_path: Path
+) -> None:
+    golden = _write_golden(tmp_path, {"litigation": LIT_LABELS})
+    result = _result(extractor, golden, _examples(_extraction(True, LITIGATION)))
+    assert result.scores.weighted is None
+    assert b"weighted" not in h.dump_result(result)
+    assert h.load_result(_save(result, golden)) == result
+
+
 # --- the gate ------------------------------------------------------------------------------------
 
 
