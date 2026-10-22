@@ -166,12 +166,16 @@ def run(settings: Settings, sync: bool = False, golden_dir: Path = GOLDEN_DIR) -
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(h.dump_result(result))
         e2e = result.scores.end_to_end
+        ci = h.counted_intervals(e2e)
         status[signal] = (
             f"{mid}: {result.scores.positives} positives in {result.scores.pages} pages; "
-            f"end to end P {e2e.precision} R {e2e.recall} F1 {e2e.f1}; "
+            f"end to end P {e2e.precision} {_span(ci['precision'])} "
+            f"R {e2e.recall} {_span(ci['recall'])} F1 {e2e.f1}; "
             f"discarded {result.scores.discarded or 0}"
             + (
-                f"; weighted ({w.pages} pages) P {w.precision} R {w.recall}"
+                f"; weighted ({w.pages} pages, {w.clusters} entities) "
+                f"P {w.precision} {_span(w.precision_interval)} "
+                f"R {w.recall} {_span(w.recall_interval)}"
                 if (w := result.scores.weighted)
                 else ""
             )
@@ -186,6 +190,11 @@ def run(settings: Settings, sync: bool = False, golden_dir: Path = GOLDEN_DIR) -
     )
     status["calls"] = f"{stats.called} sent, {stats.replayed} replayed from the store"
     return status
+
+
+def _span(interval: h.Interval | None) -> str:
+    """A 95% interval as printed: `[low, high]`, or `[-]` when there is none."""
+    return f"[{interval.low}, {interval.high}]" if interval else "[-]"
 
 
 def accept(settings: Settings, signal: SignalType, by: str, golden_dir: Path = GOLDEN_DIR) -> Path:

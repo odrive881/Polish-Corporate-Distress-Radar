@@ -226,11 +226,14 @@ class QueuePage(_Frozen):
     # its entity's π times the stratum's rate. Both or neither.
     stratum: Stratum | None = None
     inclusion_probability: float | None = Field(default=None, gt=0, le=1)
+    # Its entity (a company's KRS number, never a person's): the cluster its interval resamples,
+    # since an entity's pages are drawn together (decision 14).
+    krs: str | None = None
 
     @model_validator(mode="after")
     def _labels_fit_the_page(self) -> QueuePage:
-        if (self.stratum is None) != (self.inclusion_probability is None):
-            raise ValueError(f"{self.page_id}: a stratum needs its inclusion probability")
+        if not (self.stratum is None) == (self.inclusion_probability is None) == (self.krs is None):
+            raise ValueError(f"{self.page_id}: a stratum needs its inclusion probability and krs")
         for signal, label in self.labels.items():
             if label.evidence is not None and label.evidence not in self.text:
                 raise ValueError(f"{self.page_id} {signal}: evidence is not a span of the page")
@@ -545,7 +548,11 @@ def build_stratified_queue(
         if not _drawn(version, row.page_id, rate):
             continue
         stats.drawn[stratum] += 1
-        drawn = {"stratum": stratum, "inclusion_probability": float(pi * Fraction(str(rate)))}
+        drawn = {
+            "stratum": stratum,
+            "inclusion_probability": float(pi * Fraction(str(rate))),
+            "krs": krs,
+        }
         done = frame.labelled_elsewhere.get(row.page_id)
         if done is not None:  # its labelled row, hand masking and all, joins this sample
             stats.carried += 1
@@ -733,8 +740,8 @@ def export(rows: Iterable[QueuePage], nlp: Any) -> dict[str, bytes]:
         "proposed_by",
         "text",
     ]
-    # A stratified sample's two fields are written only on its pages: the seed's rows keep their bytes.
-    drawn_keys = ["stratum", "inclusion_probability"]
+    # A stratified sample's three fields are written only on its pages: the seed's rows keep their bytes.
+    drawn_keys = ["stratum", "inclusion_probability", "krs"]
     files = {
         PAGES_FILE: "".join(
             _line(

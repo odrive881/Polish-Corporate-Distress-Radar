@@ -734,6 +734,7 @@ def test_a_stratified_sample_puts_each_drawn_entity_s_page_in_one_stratum(
     assert {by_page[("2", n)].stratum for n in (1, 2, 3)} == {"not_selected"}
     # π_page = π_entity × rate, exactly
     assert by_page[("1", 1)].inclusion_probability == 0.5
+    assert {row.krs for row in queue} == {"0000000001", "0000000002"}
     assert by_page[("2", 1)].inclusion_probability == float(Fraction(1, 3))
     assert stats.strata == {"answered_present": 1, "answered_absent": 1, "not_selected": 3}
     assert stats.drawn == stats.strata
@@ -809,7 +810,11 @@ def test_a_drawn_page_labelled_elsewhere_carries_its_labels_over_and_is_exported
     files = golden.export([elsewhere, carried], mask_nlp)
     pages = [json.loads(line) for line in files[golden.PAGES_FILE].decode().splitlines()]
     assert len(pages) == 1
-    assert (pages[0]["stratum"], pages[0]["inclusion_probability"]) == ("answered_present", 0.5)
+    assert (pages[0]["stratum"], pages[0]["inclusion_probability"], pages[0]["krs"]) == (
+        "answered_present",
+        0.5,
+        "0000000001",
+    )
     relabelled = _labelled(elsewhere)  # every signal absent: a different label
     with pytest.raises(ValueError, match="labelled differently"):
         golden.export([relabelled, carried], mask_nlp)
@@ -820,7 +825,7 @@ def test_a_page_outside_a_stratified_sample_is_exported_without_its_fields(
 ) -> None:
     files = golden.export([_labelled(queue[0])], mask_nlp)
     page = json.loads(files[golden.PAGES_FILE].decode().splitlines()[0])
-    assert "stratum" not in page and "inclusion_probability" not in page
+    assert not {"stratum", "inclusion_probability", "krs"} & set(page)
 
 
 def test_a_stratified_sample_needs_a_rate_per_stratum_and_no_list() -> None:
@@ -857,4 +862,5 @@ def _stratified_row() -> QueuePage:
         masked={},
         stratum="not_selected",
         inclusion_probability=0.25,
+        krs="0000000001",
     )

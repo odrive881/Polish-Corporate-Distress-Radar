@@ -11,7 +11,7 @@
 **Order:** after plan 0012 (complete). It does not wait for ADR 0013: like Phase 6, it builds and measures
 machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set this plan adds.
 
-## Status: active (2026-10-13): owner decisions 0–9 accepted; every step built, J's docs included; the model runs on the seed under `extractor_v6` (the default since 2026-10-13; v4 before) with the provider's terms confirmed; all nine signals accepted on the 166-page golden set (2026-10-15) and held by the gate in `make check`; the `text` and `features` jobs re-run under `extractor_v6` (2026-10-15, plan 0017 step H: 868 new requests, all answered); 2026-10-22: `extractor_v7` (`prefilter_v4`) the default; `golden_sample_v3` shelved and the two signals without positives parked; the plan closes on the feature signals, labelled in a stratified sample of list v3's draw (§ "Labelling after list v3", decisions 10–14; K1 built); open: K2–K4, and the owner's items below
+## Status: active (2026-10-13): owner decisions 0–9 accepted; every step built, J's docs included; the model runs on the seed under `extractor_v6` (the default since 2026-10-13; v4 before) with the provider's terms confirmed; all nine signals accepted on the 166-page golden set (2026-10-15) and held by the gate in `make check`; the `text` and `features` jobs re-run under `extractor_v6` (2026-10-15, plan 0017 step H: 868 new requests, all answered); 2026-10-22: `extractor_v7` (`prefilter_v4`) the default; `golden_sample_v3` shelved and the two signals without positives parked; the plan closes on the feature signals, labelled in a stratified sample of list v3's draw (§ "Labelling after list v3", decisions 10–14; K1 and K2 built); open: K3–K4, and the owner's items below
 
 ### Where this stands (2026-10-21)
 
@@ -174,7 +174,7 @@ Two findings change what is worth labelling:
 - **K1** (built 2026-10-22, § "Progress"): decision 12's design, its queue builder and the page weights in
   `golden.py`; `label_queue build` reading the draw and `text_signals`; the weighted counts in the harness
   (decision 14's first half); tests on synthetic pages.
-- **K2**: intervals (decision 14's second half).
+- **K2** (built 2026-10-22, § "Progress"): intervals (decision 14's second half).
 - **K3**: proposals and the one-click default in the labelling notebook (decision 13).
 - **K4** (after list v3's import and its `text` run): write `golden_sample_v4` and `v5` with their rates,
   build the queues, label, export, `make eval`; then decision 11's check.
@@ -199,6 +199,25 @@ Choices made while building it, flag any unwanted:
   stratum are exact counts (printed by `build`), at about v3's 20 minutes per 13,000 pages.
 - *The entity's π is read as 1/weight* from the draw's weights, which `read_draw_weights` checks are one per
   entity.
+
+**K2, built (2026-10-22).** 95% intervals, in `eval_harness.py`, printed by `make eval` beside each score:
+- *Counted:* Wilson's interval of each end-to-end precision and recall (`counted_intervals`), computed from
+  the stored counts and never stored, so no result file moved and every acceptance held.
+- *Weighted:* stored in `weighted` (`precision_interval`, `recall_interval`, and the number of entities).
+  The ratio's variance is linearised with each entity a cluster (a drawn page now carries its `krs`, a
+  company's number, in `pages.jsonl`), between clusters with replacement, ignoring the first stage's strata
+  (both widen it). The variance gives an effective sample size, no more than the denominator's pages, and
+  the interval is Wilson's at that size (Korn and Graubard), so it stays in [0, 1]. *Departure from the
+  first draft, flag if unwanted:* a plain ± 1.96 standard errors collapsed to a point whenever every drawn
+  page agreed ([1.0, 1.0] from one entity's positive); with no variance, the size is now the clusters'
+  design effect by Kish's formula. It needs two entities in the denominator.
+- *What the counted intervals say today* (`make eval`, 0 requests sent): `going_concern_uncertainty` P 0.90
+  [0.60, 0.98], R 1.0 [0.70, 1.0]; `opinion_type` P and R 1.0 [0.84, 1.0]; `loss_coverage_resolution` and
+  `litigation` 1.0 [0.44, 1.0]; `post_balance_sheet_event` 1.0 [0.51, 1.0]; `emphasis_of_matter` P 0.33
+  [0.06, 0.79]; `continued_existence_vote` 1.0 [0.21, 1.0]. Only the auditor's opinion is measured to
+  within 0.2; decision 11's 20 positives a signal would bring the others to about that.
+- *The gate is unchanged* (tolerance 0, on counts). Reviewing it against the intervals waits until the
+  stratified samples are labelled (decision 14).
 
 ### Decision 0(c): the auditor reports (2026-10-01)
 

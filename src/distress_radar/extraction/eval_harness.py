@@ -25,6 +25,15 @@ end-to-end true positives, false positives and false negatives are estimates for
 and so are the precision and recall they give. The seed's samples are purposive and carry no weight,
 so they are never in it; until a stratified page is labelled, a result has no weighted scores.
 
+**Intervals** (decision 14, K2): 95%, so a result is read with its uncertainty, not accepted on noise.
+- Counted: the Wilson score interval of each precision and recall (`counted_intervals`), computed from the
+  stored counts, never stored, so no accepted result moves.
+- Weighted: the ratio's variance linearised (Taylor), with each entity a cluster, since an entity's
+  pages are drawn together; between clusters, sampling with replacement is assumed and the first stage's
+  strata are ignored, both of which widen it. The variance gives an effective sample size, and the
+  interval is Wilson's at that size (Korn and Graubard), so it does not collapse to a point when every
+  drawn page agrees. It needs two entities in the denominator, and with few it is a guide.
+
 **The gate** (`make check`, offline): once a signal has any result, the method in use must have a
 result for the current files, that result must re-score to its own stored scores, and its end-to-end
 precision and recall may not fall below those of the owner's last accepted result on the same golden
@@ -36,7 +45,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
+from collections import defaultdict
 from collections.abc import Mapping
+from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 from typing import Literal
@@ -143,15 +155,23 @@ class Counts(_Frozen):
     f1: float | None
 
 
+class Interval(_Frozen):
+    low: float
+    high: float
+
+
 class WeightedCounts(_Frozen):
     """End-to-end counts over the weighted pages, each counted 1/π times (estimates)."""
 
     pages: int  # weighted pages scored
+    clusters: int  # their entities
     tp: float
     fp: float
     fn: float
     precision: float | None
     recall: float | None
+    precision_interval: Interval | None  # None below two clusters
+    recall_interval: Interval | None
 
 
 class Scores(_Frozen):
@@ -281,33 +301,99 @@ def _counts(pairs: list[tuple[GoldenLabel, Example]]) -> Counts:
     return Counts(tp=tp, fp=fp, fn=fn, tn=tn, precision=precision, recall=recall, f1=f1)
 
 
+Z95 = 1.959963984540054  # the standard normal's 97.5% quantile
+
+
+def wilson(successes: int, trials: int, z: float = Z95) -> Interval | None:
+    """The Wilson score interval of a proportion; None with no trials."""
+    if trials == 0:
+        return None
+    return _wilson(successes / trials, trials, z)
+
+
+def _wilson(p: float, trials: float, z: float) -> Interval:
+    """The Wilson interval of proportion `p` over `trials`, which may be an effective size."""
+    centre = (p + z * z / (2 * trials)) / (1 + z * z / trials)
+    half = (
+        z * math.sqrt(p * (1 - p) / trials + z * z / (4 * trials * trials)) / (1 + z * z / trials)
+    )
+    return Interval(low=round(max(0.0, centre - half), 4), high=round(min(1.0, centre + half), 4))
+
+
+def counted_intervals(counts: Counts) -> dict[str, Interval | None]:
+    """Wilson intervals of a result's counted precision and recall."""
+    return {
+        "precision": wilson(counts.tp, counts.tp + counts.fp),
+        "recall": wilson(counts.tp, counts.tp + counts.fn),
+    }
+
+
+@dataclass(frozen=True)
+class DrawnPage:
+    """A stratified sample's page: its weight, 1/π, and its entity, the cluster."""
+
+    weight: float
+    cluster: str
+
+
+def ratio_interval(rows: list[tuple[str, float, float, float]], z: float = Z95) -> Interval | None:
+    """The interval of R = Σ w·y / Σ w·x over (cluster, w, y, x) rows (y ≤ x, both 0 or 1).
+
+    The variance is linearised: each cluster's residual Σ w·(y − R·x) / Σ w·x, their variance
+    between clusters (with replacement). It sets an effective size, R·(1 − R) / variance, no more
+    than the pages in the denominator, and the interval is Wilson's at that size, so it stays in
+    [0, 1] and does not collapse at 0 or 1 (Korn and Graubard's approach). When the variance is 0
+    (R at 0 or 1, every cluster alike), the size is the clusters' design effect instead, by
+    Kish's formula over each cluster's Σ w·x. None below two clusters in the denominator."""
+    mass: defaultdict[str, float] = defaultdict(float)
+    for cluster, w, _y, x in rows:
+        mass[cluster] += w * x
+    total = sum(mass.values())
+    clusters = [c for c, m in mass.items() if m > 0]
+    if len(clusters) < 2:
+        return None
+    ratio = sum(w * y for _c, w, y, _x in rows) / total
+    residual: defaultdict[str, float] = defaultdict(float)
+    for cluster, w, y, x in rows:
+        residual[cluster] += w * (y - ratio * x) / total
+    n = len(mass)
+    mean = sum(residual.values()) / n
+    variance = n / (n - 1) * sum((r - mean) ** 2 for r in residual.values())
+    pages = sum(1 for *_c, x in rows if x)
+    kish = total**2 / sum(m * m for m in mass.values())
+    size = min(ratio * (1 - ratio) / variance, pages) if variance > 1e-15 else kish
+    return _wilson(ratio, max(size, 1.0), z)
+
+
 def _weighted(
-    pairs: list[tuple[GoldenLabel, Example]], weights: Mapping[str, float]
+    pairs: list[tuple[GoldenLabel, Example]], drawn_pages: Mapping[str, DrawnPage]
 ) -> WeightedCounts | None:
-    """`_counts`'s end-to-end tally over the weighted pages, each counted `weights[page_id]` times."""
-    drawn = [(lb, ex) for lb, ex in pairs if lb.page_id in weights]
+    """`_counts`'s end-to-end tally over the drawn pages, each counted its weight's times, with
+    the linearised intervals of its precision and recall."""
+    drawn = [(lb, ex, drawn_pages[lb.page_id]) for lb, ex in pairs if lb.page_id in drawn_pages]
     if not drawn:
         return None
-    tp = fp = fn = 0.0
-    for label, ex in drawn:
-        w = weights[label.page_id]
+    # per page: (cluster, weight, true positive, predicted present, labelled present)
+    tally: list[tuple[str, float, float, float, float]] = []
+    for label, ex, page in drawn:
         predicted = ex.outcome == "present"
-        if label.present and predicted and _same_value(label, ex):
-            tp += w
-        elif label.present and predicted:
-            fp += w
-            fn += w
-        elif predicted:
-            fp += w
-        elif label.present:
-            fn += w
+        hit = label.present and predicted and _same_value(label, ex)
+        tally.append(
+            (page.cluster, page.weight, float(hit), float(predicted), float(label.present))
+        )
+    tp = sum(w * t for _c, w, t, _p, _l in tally)
+    predicted_w = sum(w * p for _c, w, _t, p, _l in tally)
+    labelled_w = sum(w * lab for _c, w, _t, _p, lab in tally)
     return WeightedCounts(
         pages=len(drawn),
+        clusters=len({c for c, *_ in tally}),
         tp=round(tp, 4),
-        fp=round(fp, 4),
-        fn=round(fn, 4),
-        precision=round(tp / (tp + fp), 4) if tp + fp else None,
-        recall=round(tp / (tp + fn), 4) if tp + fn else None,
+        fp=round(predicted_w - tp, 4),
+        fn=round(labelled_w - tp, 4),
+        precision=round(tp / predicted_w, 4) if predicted_w else None,
+        recall=round(tp / labelled_w, 4) if labelled_w else None,
+        precision_interval=ratio_interval([(c, w, t, p) for c, w, t, p, _l in tally]),
+        recall_interval=ratio_interval([(c, w, t, lab) for c, w, t, _p, lab in tally]),
     )
 
 
@@ -323,10 +409,10 @@ def score(
     examples: tuple[Example, ...],
     texts: dict[str, str],
     rejected_sample: set[str],
-    weights: Mapping[str, float] | None = None,
+    weights: Mapping[str, DrawnPage] | None = None,
 ) -> Scores:
     """Scores of one signal's examples against its labels (same page ids, any order); `weights`
-    (page id → 1/π, `page_weights`) adds the weighted end-to-end estimate."""
+    (`page_weights`: the drawn pages' weights and clusters) adds the weighted end-to-end estimate."""
     by_page = {e.page_id: e for e in examples}
     if set(by_page) != {lb.page_id for lb in labels} or len(by_page) != len(examples):
         raise ValueError("the examples are not one per golden page")
@@ -367,8 +453,8 @@ def rejected_sample(golden_dir: Path = GOLDEN_DIR) -> set[str]:
     return {str(row["page_id"]) for row in rows if row["sample"] == "rejected"}
 
 
-def page_weights(golden_dir: Path = GOLDEN_DIR) -> dict[str, float]:
-    """Page id → 1/π for every golden page drawn by a stratified sample (decision 12)."""
+def page_weights(golden_dir: Path = GOLDEN_DIR) -> dict[str, DrawnPage]:
+    """Page id → its weight (1/π) and entity, for every golden page a stratified sample drew."""
     path = golden_dir / PAGES_FILE
     if not path.exists():
         return {}
@@ -376,7 +462,7 @@ def page_weights(golden_dir: Path = GOLDEN_DIR) -> dict[str, float]:
         json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
     ]
     return {
-        str(row["page_id"]): 1 / float(row["inclusion_probability"])
+        str(row["page_id"]): DrawnPage(1 / float(row["inclusion_probability"]), str(row["krs"]))
         for row in rows
         if row.get("inclusion_probability") is not None
     }

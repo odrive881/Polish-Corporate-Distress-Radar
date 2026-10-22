@@ -4,6 +4,7 @@ temporary directory; the last test runs the gate over the committed files, as `m
 from __future__ import annotations
 
 import json
+import math
 from datetime import date
 from pathlib import Path
 
@@ -183,9 +184,13 @@ def test_weighted_scores_count_each_drawn_page_by_its_inverse_probability(
         if page["page_id"] in {"p1", "p2"}:
             page["stratum"] = "answered_present"
             page["inclusion_probability"] = 0.5 if page["page_id"] == "p1" else 0.1
+            page["krs"] = "0000000001" if page["page_id"] == "p1" else "0000000002"
     (golden / "pages.jsonl").write_text("".join(json.dumps(p) + "\n" for p in pages), "utf-8")
     weights = h.page_weights(golden)
-    assert weights == {"p1": 2.0, "p2": 10.0}
+    assert weights == {
+        "p1": h.DrawnPage(2.0, "0000000001"),
+        "p2": h.DrawnPage(10.0, "0000000002"),
+    }
     examples = (
         h.example("p1", True, _extraction(True, LITIGATION)),
         h.example("p2", True, _extraction(True, FIGURES)),
@@ -194,9 +199,18 @@ def test_weighted_scores_count_each_drawn_page_by_its_inverse_probability(
     )
     labels = h.golden_labels("litigation", golden) or []
     scores = h.score(labels, examples, h.page_texts(golden), h.rejected_sample(golden), weights)
-    assert scores.weighted == h.WeightedCounts(
-        pages=2, tp=2.0, fp=10.0, fn=0.0, precision=round(2 / 12, 4), recall=1.0
+    weighted = scores.weighted
+    assert weighted is not None
+    assert (weighted.pages, weighted.clusters, weighted.tp, weighted.fp, weighted.fn) == (
+        2,
+        2,
+        2.0,
+        10.0,
+        0.0,
     )
+    assert (weighted.precision, weighted.recall) == (round(2 / 12, 4), 1.0)
+    # precision's denominator holds both entities; recall's, only the one with the positive
+    assert weighted.precision_interval is not None and weighted.recall_interval is None
     assert (scores.end_to_end.tp, scores.end_to_end.fp, scores.end_to_end.fn) == (1, 1, 1)
 
 
@@ -208,6 +222,59 @@ def test_a_result_without_weighted_pages_keeps_its_bytes(
     assert result.scores.weighted is None
     assert b"weighted" not in h.dump_result(result)
     assert h.load_result(_save(result, golden)) == result
+
+
+def test_the_wilson_interval_matches_its_formula_and_stays_in_bounds() -> None:
+    assert h.wilson(0, 0) is None
+    one = h.wilson(1, 1)
+    assert one is not None and one.high == 1.0 and abs(one.low - 0.2065) < 1e-4
+    half = h.wilson(10, 20)
+    assert half is not None and abs(half.low - 0.2993) < 1e-4 and abs(half.high - 0.7007) < 1e-4
+    nothing = h.wilson(0, 5)
+    assert nothing is not None and nothing.low == 0.0 and nothing.high < 0.5
+
+
+def test_counted_intervals_come_from_the_stored_counts() -> None:
+    counts = h.Counts(tp=3, fp=1, fn=0, tn=10, precision=0.75, recall=1.0, f1=0.8571)
+    ci = h.counted_intervals(counts)
+    assert ci["precision"] == h.wilson(3, 4) and ci["recall"] == h.wilson(3, 3)
+    empty = h.Counts(tp=0, fp=0, fn=0, tn=4, precision=None, recall=None, f1=None)
+    assert h.counted_intervals(empty) == {"precision": None, "recall": None}
+
+
+def test_the_ratio_interval_is_wilson_s_at_the_clustered_effective_size() -> None:
+    # entity a: 2 predicted pages at weight 1, one right; entity b: 1 predicted at weight 2, right
+    rows = [("a", 1.0, 1.0, 1.0), ("a", 1.0, 0.0, 1.0), ("b", 2.0, 1.0, 1.0)]
+    ratio = 3 / 4
+    residuals = [(1 - ratio + 0 - ratio) / 4, 2 * (1 - ratio) / 4]
+    mean = sum(residuals) / 2
+    variance = 2 * sum((r - mean) ** 2 for r in residuals)
+    size = min(ratio * (1 - ratio) / variance, 3)
+    z = h.Z95
+    centre = (ratio + z * z / (2 * size)) / (1 + z * z / size)
+    half = (
+        z * math.sqrt(ratio * (1 - ratio) / size + z * z / (4 * size * size)) / (1 + z * z / size)
+    )
+    assert h.ratio_interval(rows) == h.Interval(
+        low=round(max(0.0, centre - half), 4), high=round(min(1.0, centre + half), 4)
+    )
+
+
+def test_the_ratio_interval_does_not_collapse_when_every_page_agrees() -> None:
+    # five entities, every predicted page right: R = 1 with no variance between entities
+    rows = [(c, 1.0, 1.0, 1.0) for c in "abcde"]
+    interval = h.ratio_interval(rows)
+    assert interval == h.wilson(5, 5)  # equal weights: the design effect is 1, five trials
+    lopsided = h.ratio_interval([("a", 10.0, 1.0, 1.0), *[(c, 1.0, 1.0, 1.0) for c in "bcde"]])
+    assert lopsided is not None and interval is not None
+    assert lopsided.low < interval.low  # one heavy entity: fewer effective trials, wider
+
+
+def test_the_ratio_interval_needs_two_entities_in_its_denominator() -> None:
+    assert h.ratio_interval([("a", 1.0, 1.0, 1.0)]) is None
+    # b has pages but none in the denominator (nothing predicted there)
+    assert h.ratio_interval([("a", 1.0, 1.0, 1.0), ("b", 1.0, 0.0, 0.0)]) is None
+    assert h.ratio_interval([("a", 1.0, 0.0, 0.0), ("b", 1.0, 0.0, 0.0)]) is None
 
 
 # --- the gate ------------------------------------------------------------------------------------
@@ -313,7 +380,8 @@ def test_make_eval_scores_a_rule_offline_and_skips_model_signals(tmp_path: Path)
     settings = Settings(extraction_api_confirmed=False, extractor_version="extractor_v1")
     status = eval_run.run(settings, golden_dir=golden)
     assert status["litigation"].startswith("skipped")
-    assert "P 1.0 R 1.0" in status["opinion_type"] and "0 sent" in status["calls"]
+    assert "P 1.0 [0.2065, 1.0] R 1.0 [0.2065, 1.0]" in status["opinion_type"]
+    assert "0 sent" in status["calls"]
     path = h.result_path("opinion_type", "rules_v1__rule", golden / "results")
     first = path.read_bytes()
     eval_run.accept(settings, "opinion_type", "owner", golden)
