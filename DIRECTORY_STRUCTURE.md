@@ -107,14 +107,15 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │   ├── extractor_v3.yaml          # v2 with rules_v3
 │   │   ├── extractor_v4.yaml          # v3 with post_balance_sheet_event_v2: dated and valued (decision 9)
 │   │   ├── extractor_v5.yaml          # v4 with rules_v4
-│   │   ├── extractor_v6.yaml          # v5 with prefilter_v3 (the default, EXTRACTOR_VERSION)
+│   │   ├── extractor_v6.yaml          # v5 with prefilter_v3
+│   │   ├── extractor_v7.yaml          # v6 with prefilter_v4 (the default, EXTRACTOR_VERSION)
 │   │   ├── golden_sample_v1.yaml      # which pages go to the labeller: all selected, a fixed rejected sample
 │   │   ├── golden_sample_v2.yaml      # the auditor reports' pages: whole reports, every modified opinion and a fixed draw
 │   │   ├── golden_sample_v3.yaml      # the notes targeted at covenant_breach and key_customer_loss, and a hashed share of rejected pages
 │   │   ├── prefilter_v1.yaml          # lemma terms per signal_type; the file name is the prefilter_version
 │   │   ├── prefilter_v2.yaml          # v1 with every page naming an opinion selected for opinion_type
 │   │   ├── prefilter_v3.yaml          # v2 + the opinion sentence's own words ("zdaniem … sprawozdanie") for opinion_type
-│   │   ├── prefilter_v4.yaml          # v3 + a continuation resolution ("uchwała … dalszej działalności") for continued_existence_vote; not in use
+│   │   ├── prefilter_v4.yaml          # v3 + a continuation resolution ("uchwała … dalszej działalności") for continued_existence_vote (extractor_v7)
 │   │   ├── rules_v1.yaml              # lemma rules for standard wording (opinion_type)
 │   │   ├── rules_v2.yaml              # opinion_type from the auditor's report's section headings (KSB 700/705)
 │   │   ├── rules_v3.yaml              # v2 + the audit firm's list number, for auditor change (never stored)

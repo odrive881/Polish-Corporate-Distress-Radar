@@ -1,7 +1,7 @@
 {
  "accepted": {
   "by": "owner",
-  "on": "2026-10-15"
+  "on": "2026-10-22"
  },
  "examples": [
   {
@@ -528,11 +528,11 @@
   },
   {
    "discard_reason": null,
-   "evidence": null,
-   "outcome": "not_selected",
+   "evidence": "Spółka podjęła uchwałę o prowadzeniu dalszej działalności i jest w trakcie opracowywania zamierzeń gospodarczych",
+   "outcome": "present",
    "page_id": "2c4d7e30c1579a17",
-   "response_key": null,
-   "selected": false,
+   "response_key": "702ee4bb6f06e2447ab75a1a8102a99be8e10ed55cbf689e2c99d1195b4d124a",
+   "selected": true,
    "value": null
   },
   {
@@ -1706,44 +1706,44 @@
    "value": null
   }
  ],
- "extractor_version": "extractor_v6",
+ "extractor_version": "extractor_v7",
  "hashes": {
   "effort": "c082456a7766e23a18db084cd34b6ff510baef506548b897cc80e9b7d3e121c8",
   "golden": "ddfdfdd3feb827298094b2df8aa450f79ab8657ebd89f10cfc5717a3635474b7",
   "model": "005912bee6ee4543cec4404b5a02b9bcb11a6f1dcc134b6693c7ccde5fdd2f69",
   "pages": "6bb4d4ce1f3197b87d9b34bbc9c69fc87ad20b48bcc7d564fec14dfe426b29cb",
-  "prefilter": "5c34e01d2f3d157d46c505c7f823dfb433aff38d639682a3607e92fa3cdbd537",
+  "prefilter": "1dd33c99f84093fc38d174c565cbdb8595c3aea9b0a78a5f5cc6525ce9255cc8",
   "prompt": "6129c9469cc501f68facde2bbb730954bb0a8115c9f6b9c84a604ee9f9146f22",
   "schema": "e27451486a2e74945b3941cb1c9d8f726eda8a94f53493adbc9bf1abc73e04d3"
  },
  "method": "llm",
  "method_id": "continued_existence_vote_v1__claude-opus-5-5",
- "prefilter_version": "prefilter_v3",
+ "prefilter_version": "prefilter_v4",
  "scores": {
   "discarded": {},
   "end_to_end": {
-   "f1": null,
-   "fn": 1,
-   "fp": 0,
-   "precision": null,
-   "recall": 0.0,
-   "tn": 188,
-   "tp": 0
-  },
-  "evidence_overlaps": 0,
-  "extractor": {
-   "f1": null,
+   "f1": 1.0,
    "fn": 0,
    "fp": 0,
-   "precision": null,
-   "recall": null,
+   "precision": 1.0,
+   "recall": 1.0,
+   "tn": 188,
+   "tp": 1
+  },
+  "evidence_overlaps": 1,
+  "extractor": {
+   "f1": 1.0,
+   "fn": 0,
+   "fp": 0,
+   "precision": 1.0,
+   "recall": 1.0,
    "tn": 0,
-   "tp": 0
+   "tp": 1
   },
   "pages": 189,
   "positives": 1,
   "prefilter_missed_in_rejected_sample": 0,
-  "prefilter_selected_positives": 0
+  "prefilter_selected_positives": 1
  },
  "signal_type": "continued_existence_vote"
 }

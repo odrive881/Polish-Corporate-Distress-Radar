@@ -755,3 +755,19 @@ def test_extractor_v6_changes_only_the_prefilter_and_keeps_v5_s_requests() -> No
             assert ex.request_params(v5, signal, "x", end) == ex.request_params(
                 v6, signal, "x", end
             )
+
+
+def test_extractor_v7_changes_only_the_prefilter_and_keeps_v6_s_requests() -> None:
+    v6, v7 = ex.load_extractor("extractor_v6"), ex.load_extractor("extractor_v7")
+    assert (v6.config.prefilter_version, v7.config.prefilter_version) == (
+        "prefilter_v3",
+        "prefilter_v4",
+    )
+    assert v7.rules == v6.rules
+    end = date(2023, 12, 31)
+    for signal, method in v7.config.signals.items():
+        assert method == v6.config.signals[signal]
+        if method.method == "llm":
+            assert ex.request_params(v6, signal, "x", end) == ex.request_params(
+                v7, signal, "x", end
+            )

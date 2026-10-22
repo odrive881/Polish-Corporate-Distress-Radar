@@ -1,7 +1,7 @@
 {
  "accepted": {
   "by": "owner",
-  "on": "2026-10-15"
+  "on": "2026-10-22"
  },
  "examples": [
   {
@@ -1706,19 +1706,19 @@
    "value": null
   }
  ],
- "extractor_version": "extractor_v6",
+ "extractor_version": "extractor_v7",
  "hashes": {
   "effort": "c082456a7766e23a18db084cd34b6ff510baef506548b897cc80e9b7d3e121c8",
   "golden": "587586696a572c1593efafd01e00ec3e3f860a490a25bda5f615936769ad3f72",
   "model": "005912bee6ee4543cec4404b5a02b9bcb11a6f1dcc134b6693c7ccde5fdd2f69",
   "pages": "6bb4d4ce1f3197b87d9b34bbc9c69fc87ad20b48bcc7d564fec14dfe426b29cb",
-  "prefilter": "5c34e01d2f3d157d46c505c7f823dfb433aff38d639682a3607e92fa3cdbd537",
+  "prefilter": "1dd33c99f84093fc38d174c565cbdb8595c3aea9b0a78a5f5cc6525ce9255cc8",
   "prompt": "eebc474a225a1303703b843e6c9821fa3f9a488d7ada515dd07403152ba46922",
   "schema": "e27451486a2e74945b3941cb1c9d8f726eda8a94f53493adbc9bf1abc73e04d3"
  },
  "method": "llm",
  "method_id": "key_customer_loss_v1__claude-opus-5-5",
- "prefilter_version": "prefilter_v3",
+ "prefilter_version": "prefilter_v4",
  "scores": {
   "discarded": {},
   "end_to_end": {

@@ -1,7 +1,7 @@
 {
  "accepted": {
   "by": "owner",
-  "on": "2026-10-15"
+  "on": "2026-10-22"
  },
  "examples": [
   {
@@ -1706,19 +1706,19 @@
    "value": null
   }
  ],
- "extractor_version": "extractor_v6",
+ "extractor_version": "extractor_v7",
  "hashes": {
   "effort": "c082456a7766e23a18db084cd34b6ff510baef506548b897cc80e9b7d3e121c8",
   "golden": "b235d9942726ddf2bb28de3269cd4e7ddffe08f88e1ff5fae42e4a7b8ba7a227",
   "model": "005912bee6ee4543cec4404b5a02b9bcb11a6f1dcc134b6693c7ccde5fdd2f69",
   "pages": "6bb4d4ce1f3197b87d9b34bbc9c69fc87ad20b48bcc7d564fec14dfe426b29cb",
-  "prefilter": "5c34e01d2f3d157d46c505c7f823dfb433aff38d639682a3607e92fa3cdbd537",
+  "prefilter": "1dd33c99f84093fc38d174c565cbdb8595c3aea9b0a78a5f5cc6525ce9255cc8",
   "prompt": "6edc2feb9308a2cfdec38cb1ded9c46f71221272ae34aa3877011f85e8524b7c",
   "schema": "e27451486a2e74945b3941cb1c9d8f726eda8a94f53493adbc9bf1abc73e04d3"
  },
  "method": "llm",
  "method_id": "covenant_breach_v1__claude-opus-5-5",
- "prefilter_version": "prefilter_v3",
+ "prefilter_version": "prefilter_v4",
  "scores": {
   "discarded": {},
   "end_to_end": {

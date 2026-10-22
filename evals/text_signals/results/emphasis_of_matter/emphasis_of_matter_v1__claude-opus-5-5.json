@@ -1,7 +1,7 @@
 {
  "accepted": {
   "by": "owner",
-  "on": "2026-10-15"
+  "on": "2026-10-22"
  },
  "examples": [
   {
@@ -1706,19 +1706,19 @@
    "value": null
   }
  ],
- "extractor_version": "extractor_v6",
+ "extractor_version": "extractor_v7",
  "hashes": {
   "effort": "c082456a7766e23a18db084cd34b6ff510baef506548b897cc80e9b7d3e121c8",
   "golden": "107ca8c4b5f6775cfb0fe240a31d5c50928d54eb9b94ae5af0026b3254d04dc5",
   "model": "005912bee6ee4543cec4404b5a02b9bcb11a6f1dcc134b6693c7ccde5fdd2f69",
   "pages": "6bb4d4ce1f3197b87d9b34bbc9c69fc87ad20b48bcc7d564fec14dfe426b29cb",
-  "prefilter": "5c34e01d2f3d157d46c505c7f823dfb433aff38d639682a3607e92fa3cdbd537",
+  "prefilter": "1dd33c99f84093fc38d174c565cbdb8595c3aea9b0a78a5f5cc6525ce9255cc8",
   "prompt": "989beae73e399b338ffdfec3f1126a830cd69db7d580b1e341f7a9a85545d42c",
   "schema": "e27451486a2e74945b3941cb1c9d8f726eda8a94f53493adbc9bf1abc73e04d3"
  },
  "method": "llm",
  "method_id": "emphasis_of_matter_v1__claude-opus-5-5",
- "prefilter_version": "prefilter_v3",
+ "prefilter_version": "prefilter_v4",
  "scores": {
   "discarded": {},
   "end_to_end": {

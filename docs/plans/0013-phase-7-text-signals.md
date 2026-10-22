@@ -75,7 +75,11 @@ every request, so settle any such change before that run.
    - 0000507997's "2019" file is a statement XML, not a report: to check on RDF;
    - the five pre-2018 reports wait on RDF's name for document type 2, to add as `canonical: auditor_report`
      in a new version of `rdf_document_types.yaml`.
-4. **A new prefilter version for `continued_existence_vote`?** Its one golden positive (`2c4d7e30c1579a17`,
+4. ~~**A new prefilter version for `continued_existence_vote`?**~~ *Adopted by the owner, 2026-10-22:*
+   `extractor_v7` (v6 with `prefilter_v4`) is the default. `make eval`: 1 request sent, 137 replayed;
+   `continued_existence_vote` 1 of 1 (P 1.0 R 1.0), the other eight's examples and scores unchanged (only
+   the prefilter's hash moved); all nine accepted by the owner. The `text` run after list v3 uses it.
+   *The record:* Its one golden positive (`2c4d7e30c1579a17`,
    "uchwała o prowadzeniu dalszej działalności") is not selected by `prefilter_v2`, so recall is 0.00 end to end.
    *Built 2026-10-21, not in use:* `prefilter_v4`, v3 with two terms added to this signal only (a
    resolution, `uchwała`, with `dalsz*` and `działalność`, or with continuing it), each needing `uchwała` so
@@ -89,7 +93,9 @@ every request, so settle any such change before that run.
 5. **The auditor's own going-concern paragraph as a feature?** Recommended: park it. On the seed it was absent on
    all 89 report pages read; revisit once the universe grows.
 6. **The model (not urgent):** `claude-opus-5-5` stays unless a cheaper model is compared on the golden set first
-   (decision 2).
+   (decision 2). *Owner, 2026-10-22:* stay on Opus for now; compare `claude-haiku-5-5` (and `effort: low`) once
+   every signal has labelled positives, since today's golden set cannot show a cheaper model is no worse on
+   the signals with none or one.
 
 **Known, not a decision:**
 - the masker over-masks (it turned "SARS" in "SARS-CoV-2" into `[osoba]`), which the guide accepts and the harness
