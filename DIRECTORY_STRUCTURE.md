@@ -111,7 +111,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │   ├── extractor_v7.yaml          # v6 with prefilter_v4 (the default, EXTRACTOR_VERSION)
 │   │   ├── golden_sample_v1.yaml      # which pages go to the labeller: all selected, a fixed rejected sample
 │   │   ├── golden_sample_v2.yaml      # the auditor reports' pages: whole reports, every modified opinion and a fixed draw
-│   │   ├── golden_sample_v3.yaml      # the notes targeted at covenant_breach and key_customer_loss, and a hashed share of rejected pages
+│   │   ├── golden_sample_v3.yaml      # the notes targeted at covenant_breach and key_customer_loss, and a hashed share of rejected pages (shelved)
 │   │   ├── prefilter_v1.yaml          # lemma terms per signal_type; the file name is the prefilter_version
 │   │   ├── prefilter_v2.yaml          # v1 with every page naming an opinion selected for opinion_type
 │   │   ├── prefilter_v3.yaml          # v2 + the opinion sentence's own words ("zdaniem … sprawozdanie") for opinion_type
