@@ -99,6 +99,21 @@ def test_eval_files_get_the_masking_check_and_nothing_else_loads_the_model() -> 
     assert scan({"clean.xml": CLEAN}, {"clean.xml": CLEAN}.__getitem__, _no_model) == {}
 
 
+def test_eval_files_get_the_hand_masking_check_even_without_the_model() -> None:
+    files = {"evals/text_signals/pages.jsonl": b'{"text": "Wpisany pod numerem 12345."}\n'}
+
+    def _missing() -> object:
+        raise FileNotFoundError("pl_core_news_lg 3.8.0 is not at .cache/models: run `make models`")
+
+    found = scan(files, files.__getitem__, _missing)["evals/text_signals/pages.jsonl"]
+    assert found[0] == "line 1: holds ['register_number'], masked only by hand"
+    assert found[1].startswith("masking check cannot run")
+    assert not any("12345" in f for f in found)
+    assert scan(files, files.__getitem__, lambda: _Masker()) == {
+        "evals/text_signals/pages.jsonl": found[:1]
+    }
+
+
 def test_an_eval_file_without_the_model_is_refused() -> None:
     files = {"evals/text_signals/pages.jsonl": b'{"text": "x"}\n'}
 

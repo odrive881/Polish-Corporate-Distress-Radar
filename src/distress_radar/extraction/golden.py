@@ -31,6 +31,9 @@ stores and writes the files.
 - **The masking check** re-runs the masker over every text field of an eval file: anything it
   would still replace is a finding. The export refuses a page that fails it; the pre-commit scan
   and `make check` run it over `evals/`.
+- **The hand-masking check** looks for what only the owner masks (`HAND_PATTERNS`: a register
+  number, a bank account, a file name) in the same fields, by the wordings the golden set has
+  shown. It needs no model, so the pre-commit scan runs it on every eval file it stages.
 """
 
 from __future__ import annotations
@@ -88,6 +91,21 @@ HAND_TOKENS = {
     "file_name": "[plik]",
 }
 _TOKEN = re.compile("|".join(re.escape(t) for t in HAND_TOKENS.values()))
+# What the hand-masking check finds, by `HAND_TOKENS` kind: the wordings an auditor's report
+# printed beside a number in the golden set on 2026-10-15, every one masked by hand then.
+# A register number has at most 5 digits, so a company's 10-digit KRS number after the same words
+# does not match, nor does a resolution of the national council (`Krajowej Rady ... nr 3430`).
+# A Polish account number (NRB) is 26 digits printed in groups; an audited company's NIP is
+# legitimate on these pages and is not looked for. Run over text with its whitespace collapsed.
+HAND_PATTERNS: dict[str, re.Pattern[str]] = {
+    "register_number": re.compile(
+        r"(?i)(pod (numerem|nr\.?)|nr\.? ewid\w*|numer\w* ewid\w*|w rejestrze:?|nr firmy\w*|"
+        r"Izbie Biegłych Rewidentów|w rej\.( KRBR)?|Rejestr PIBR nr|sprawozdań finansowych nr|"
+        r"\[osoba\],? \(?nr)\s*-?\s*\d{2,5}(?!\d)"
+    ),
+    "bank_account": re.compile(r"(?<!\d)\d{2}(?:\s?\d{4}){6}(?!\d)"),
+    "file_name": re.compile(r"[\w\-]+\.(xml|xades|pdf|docx?|xlsx?)\b", re.IGNORECASE),
+}
 
 Sample = Literal["selected", "rejected"]
 # A stratified sample's strata (decision 12), by the kept answers of the extractor the sample names.
@@ -936,17 +954,43 @@ def masking_findings(
     the text. A `.jsonl` file is read line by line, anything else as one JSON document. Spans the
     owner reviewed and left (`masking_cleared.json`, by the line's `page_id`) are not findings."""
     cleared = load_cleared() if cleared is None else cleared
-    try:
-        text = data.decode("utf-8")
-        docs = (
-            [json.loads(line) for line in text.splitlines() if line.strip()]
-            if name.endswith(".jsonl")
-            else [json.loads(text)]
-        )
-    except (UnicodeDecodeError, json.JSONDecodeError):
-        return ["unreadable: not UTF-8 JSON, so its text cannot be checked"]
+    docs = _eval_docs(name, data)
+    if docs is None:
+        return [UNREADABLE]
     return [
         f"line {n}: would mask {kinds}"
         for n, doc in enumerate(docs, start=1)
         if (kinds := _unmasked(_texts(doc), nlp, cleared.get(_page_id_of(doc), frozenset())))
     ]
+
+
+UNREADABLE = "unreadable: not UTF-8 JSON, so its text cannot be checked"
+
+
+def _eval_docs(name: str, data: bytes) -> list[object] | None:
+    """An eval file's documents: a `.jsonl` file's lines, anything else one JSON document; None
+    when it is not UTF-8 JSON."""
+    try:
+        text = data.decode("utf-8")
+        return (
+            [json.loads(line) for line in text.splitlines() if line.strip()]
+            if name.endswith(".jsonl")
+            else [json.loads(text)]
+        )
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return None
+
+
+def hand_mask_findings(name: str, data: bytes) -> list[str]:
+    """What `HAND_PATTERNS` finds in an eval file's text fields, by line and kind; never the
+    text."""
+    docs = _eval_docs(name, data)
+    if docs is None:
+        return [UNREADABLE]
+    found: list[str] = []
+    for n, doc in enumerate(docs, start=1):
+        texts = [" ".join(t.split()) for t in _texts(doc)]
+        kinds = sorted(k for k, p in HAND_PATTERNS.items() if any(p.search(t) for t in texts))
+        if kinds:
+            found.append(f"line {n}: holds {kinds}, masked only by hand")
+    return found

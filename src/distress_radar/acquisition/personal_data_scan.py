@@ -6,8 +6,10 @@ the documents as filed) outright, and runs `redaction.personal_data_markers` ove
 signatures, PESEL markers, file names that are not tokens, attachment names, PDF metadata. Eval
 files (`evals/**/*.jsonl`, `*.json`) hold masked document text instead, and get the masking check
 (`extraction.golden.masking_findings`: whatever the masker would still replace, ADR 0009 third
-addendum); without the Polish model the check cannot run, and that is a finding too. It prints the
-path and the kind of each finding, never the content.
+addendum); without the Polish model the check cannot run, and that is a finding too. They also get
+the hand-masking check (`golden.hand_mask_findings`: a register number, a bank account or a file
+name, which only the owner masks; 2026-10-23), which needs no model. It prints the path and the
+kind of each finding, never the content.
 
 The same scan runs over the committed fixtures in `make check` and over the raw store as a
 blocking asset check; this one stops a leak before it reaches the public history, where removing
@@ -64,7 +66,7 @@ def scan(
 ) -> dict[str, list[str]]:
     """Findings by path: `.har` files, eval files the masker would still change, and data files
     with personal-data markers. The masker is loaded only when an eval file is scanned."""
-    from distress_radar.extraction.golden import masking_findings
+    from distress_radar.extraction.golden import hand_mask_findings, masking_findings
 
     found: dict[str, list[str]] = {}
     masker: list[Any] = []
@@ -73,14 +75,16 @@ def scan(
         if suffix in REFUSED_SUFFIXES:
             found[path] = ["a browser recording holds the documents as filed; never commit one"]
         elif PurePosixPath(path).as_posix().startswith(EVAL_DIR) and suffix in EVAL_SUFFIXES:
+            data = read(path)
+            findings = hand_mask_findings(path, data)
             try:
                 masker = masker or [load_masker()]
             except (FileNotFoundError, RuntimeError) as exc:
-                found[path] = [f"masking check cannot run ({exc})"]
-                continue
-            findings = masking_findings(path, read(path), masker[0])
+                findings.append(f"masking check cannot run ({exc})")
+            else:
+                findings.extend(masking_findings(path, data, masker[0]))
             if findings:
-                found[path] = findings
+                found[path] = list(dict.fromkeys(findings))
         elif suffix in DATA_SUFFIXES:
             markers = personal_data_markers(read(path))
             if markers:

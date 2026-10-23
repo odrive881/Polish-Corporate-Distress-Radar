@@ -238,6 +238,15 @@ Choices made while building it, flag any unwanted:
   A shown rate well above the blind one means the proposals pull labels toward the model; then the
   blind share is the one to trust, and the rate is raised in a new sample version.
 
+**The hand-masking check in the pre-commit scan (2026-10-23, owner's request).** The wordings that held the
+golden set free of register numbers, bank accounts and file names were a test in `make check` only, so a page
+holding one could be committed and pushed before the test ran: how the 16 pages of 2026-10-15 reached the
+public history. They are now `golden.HAND_PATTERNS`, and `golden.hand_mask_findings` runs them over every
+staged eval file's text fields in the pre-commit scan (no model needed, so it runs even when the masking check
+cannot) and over every committed eval file in `make check`. A register number is now at most 5 digits not
+followed by a sixth, so a company's KRS number after "pod numerem" does not match: the notes of list v3's
+companies print it often. The labelling notebook still masks by hand; the export does not run the check.
+
 ### Decision 0(c): the auditor reports (2026-10-01)
 
 - **Captured by the owner** with Power Automate Desktop, at a human pace, without HAR files (PAD does not

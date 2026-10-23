@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import base64
 import json
-import re
 from fractions import Fraction
 from pathlib import Path
 from typing import Any
@@ -232,29 +231,41 @@ def test_hand_masking_has_kinds_the_masker_does_not_find(queue: list[QueuePage])
         golden.hand_mask(row, "Biegły", "nickname")
 
 
-# Register numbers and file names an auditor's report prints beside names the masker finds: the
-# wordings found in the golden set on 2026-10-15, every one masked by hand then. The committed pages
-# must hold none of them (resolution numbers of the national council, `Krajowej Rady ... nr 3430`,
-# are not a register number and do not match).
-_REGISTER_NUMBER = re.compile(
-    r"(?i)(pod (numerem|nr\.?)|nr\.? ewid\w*|numer\w* ewid\w*|w rejestrze:?|nr firmy\w*|"
-    r"Izbie Biegłych Rewidentów|w rej\.( KRBR)?|Rejestr PIBR nr|sprawozdań finansowych nr|"
-    r"\[osoba\],? \(?nr)\s*-?\s*\d{2,5}"
+def test_no_committed_eval_file_holds_a_register_number_a_bank_account_or_a_file_name() -> None:
+    """The hand-masking check over every committed eval file (2026-10-15; the pre-commit scan's
+    since 2026-10-23)."""
+    for path in sorted(golden.GOLDEN_DIR.rglob("*.json*")):
+        assert golden.hand_mask_findings(path.name, path.read_bytes()) == [], path
+
+
+@pytest.mark.parametrize(
+    ("text", "kind"),
+    [
+        ("Biegły rewident wpisany pod numerem 12345.", "register_number"),
+        ("[osoba] (nr 9876), kluczowy biegły rewident", "register_number"),
+        ("firma audytorska wpisana na listę\npod nr\n 3546", "register_number"),
+        ("rachunek 12 3456 7890 1234 5678 9012 3456", "bank_account"),
+        ("Załącznik: SF_2023.xml", "file_name"),
+    ],
 )
-# A Polish account number (NRB: 26 digits, printed in groups); a natural-person firm's letterhead
-# carried one. An audited company's NIP is legitimate on these pages, so NIPs are not guarded here.
-_BANK_ACCOUNT = re.compile(r"(?<!\d)\d{2}(?:\s?\d{4}){6}(?!\d)")
-_FILE_NAME = re.compile(r"[\w\-]+\.(xml|xades|pdf|docx?|xlsx?)\b", re.IGNORECASE)
+def test_the_hand_masking_check_finds_each_kind_and_never_prints_the_text(
+    text: str, kind: str
+) -> None:
+    data = json.dumps({"page_id": "p", "text": text}).encode()
+    [finding] = golden.hand_mask_findings("pages.jsonl", data)
+    assert finding == f"line 1: holds {[kind]}, masked only by hand"
 
 
-def test_no_committed_page_holds_a_register_number_or_a_file_name() -> None:
-    """Nor a bank account number (2026-10-15)."""
-    for line in (golden.GOLDEN_DIR / "pages.jsonl").read_text(encoding="utf-8").splitlines():
-        page = json.loads(line)
-        text = " ".join(page["text"].split())
-        assert not _REGISTER_NUMBER.search(text), page["page_id"]
-        assert not _FILE_NAME.search(text), page["page_id"]
-        assert not _BANK_ACCOUNT.search(text), page["page_id"]
+def test_the_hand_masking_check_passes_tokens_krs_numbers_resolutions_and_non_text_fields() -> None:
+    lines = [
+        {"page_id": "p1", "text": "Biegły rewident nr [nr], [adres]. [plik]"},
+        {"page_id": "p2", "text": "Spółka wpisana do rejestru pod numerem 0000123456."},
+        {"page_id": "p3", "text": "uchwała Krajowej Rady Biegłych Rewidentów nr 3430/52a/2019"},
+        {"page_id": "p4", "document_hash": "a.xml", "text": "brak"},
+    ]
+    data = "\n".join(json.dumps(line) for line in lines).encode()
+    assert golden.hand_mask_findings("pages.jsonl", data) == []
+    assert golden.hand_mask_findings("x.json", b"\xff") == [golden.UNREADABLE]
 
 
 # --- export and the masking check -----------------------------------------------------------------

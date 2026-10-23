@@ -184,7 +184,7 @@ uv run marimo edit notebooks/labelling/golden_set.py   # mask what the masker mi
 make label-export   # every queue's labelled pages to evals/text_signals/; refused if the masker would still change one, or a page already there would be dropped
 ```
 
-The pre-commit hook re-runs the masker over every eval file staged under `evals/`, so it needs `make models` too.
+The pre-commit hook re-runs the masker over every eval file staged under `evals/`, so it needs `make models` too, and looks there for what only the owner masks: a register number, a bank account or a file name (`golden.HAND_PATTERNS`, 2026-10-23). A finding means masking that page in its queue and exporting again.
 
 Once pages are labelled, the extractors are scored on them:
 
