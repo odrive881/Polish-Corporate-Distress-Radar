@@ -588,3 +588,87 @@ def test_the_size_class_is_the_latest_years_rank(
 def test_a_set_without_the_size_class_reads_nothing_for_it() -> None:
     v6 = load_feature_set("feature_set_v6")
     assert v6.size_thresholds is None and v6.size_class_inputs is None
+
+
+# --- feature set v8: the Art. 233 tripwire read from equity (plan 0023, 2026-10-23) ---------------
+
+
+@pytest.fixture(scope="module")
+def v8() -> FeatureConfig:
+    return load_feature_set("feature_set_v8")
+
+
+def _art233(config: FeatureConfig, values: dict[str, str]) -> float | None:
+    panel = _panel(_version(config, Y2021, FILED, values))
+    got = _values(fd.tripwire(_grid(date(2022, 7, 31)), _inputs(panel), config), date(2022, 7, 31))
+    return got["art233_triggered"][0] if "art233_triggered" in got else None
+
+
+# A filer who booked the accumulated losses as share capital: equity -900 = capital -1,000 + the
+# year's profit 100, prior years' result 0 (the shape of 0000270680's 2022).
+MISFILED = {
+    **FULL_2021,
+    "equity": "-900",
+    "share_capital": "-1000",
+    "supplementary_capital": "0",
+    "reserve_capital": "0",
+    "retained_result": "0",
+    "net_result_balance_sheet": "100",
+}
+
+
+def test_v8_triggers_art_233_on_negative_equity_whatever_line_holds_the_losses(
+    config: FeatureConfig, v8: FeatureConfig
+) -> None:
+    # v1 is right here only by accident: half a negative capital is a negative threshold.
+    assert _art233(config, MISFILED) == 1.0
+    assert _art233(v8, MISFILED) == 1.0
+    # A breakdown line not filed: v1 is null, v8 reads the negative equity.
+    unfiled = {k: v for k, v in MISFILED.items() if k != "retained_result"}
+    assert _art233(config, unfiled) is None
+    assert _art233(v8, unfiled) == 1.0
+    # Write-offs from net profit are filed negative; with nothing to offset them, equity alone
+    # cannot tell, and the comparison decides (here null: the capital is negative).
+    assert _art233(v8, {**MISFILED, "profit_write_offs": "-50"}) is None
+    assert _art233(v8, {**MISFILED, "profit_write_offs": "-50", "revaluation_reserve": "50"}) == 1.0
+
+
+def test_v8_nulls_art_233_on_a_negative_capital_when_equity_is_not_negative(
+    v8: FeatureConfig,
+) -> None:
+    assert _art233(v8, {**MISFILED, "equity": "10", "net_result_balance_sheet": "1010"}) is None
+    assert _art233(v8, {**FULL_2021, "reserve_capital": "-5"}) is None
+
+
+def test_v8_reads_a_well_filed_statement_as_v1_did(
+    config: FeatureConfig, v8: FeatureConfig
+) -> None:
+    for net in ("-25", "-25.01"):
+        values = {**FULL_2021, "net_result_balance_sheet": net}
+        assert _art233(v8, values) == _art233(config, values)
+
+
+def test_v8_triggers_art_233_for_a_micro_filer_with_negative_equity(
+    config: FeatureConfig, v8: FeatureConfig
+) -> None:
+    negative = {**MICRO_2021, "equity": "-1"}
+    assert _art233(config, negative) is None
+    assert _art233(v8, negative) == 1.0
+    assert _art233(v8, MICRO_2021) is None
+
+
+def test_v8_nulls_retained_earnings_on_a_negative_share_capital(v8: FeatureConfig) -> None:
+    v7 = load_feature_set("feature_set_v7")
+
+    def retained(config: FeatureConfig, values: dict[str, str]) -> float | None:
+        panel = _panel(_version(config, Y2021, FILED, values))
+        got = _values(
+            fd.financial(_grid(date(2022, 7, 31)), _inputs(panel), config), date(2022, 7, 31)
+        )
+        return (
+            got["retained_earnings_to_assets"][0] if "retained_earnings_to_assets" in got else None
+        )
+
+    assert retained(v7, MISFILED) == pytest.approx(0.1)
+    assert retained(v8, MISFILED) is None
+    assert retained(v8, FULL_2021) == pytest.approx(retained(v7, FULL_2021))

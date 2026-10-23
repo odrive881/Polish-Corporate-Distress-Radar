@@ -354,6 +354,8 @@ def _sum(terms: Mapping[str, int], values: Mapping[str, Decimal | None]) -> Deci
 def _ratio(f: RatioFeature, v: _Version, snap: _Snapshot, sensitive: bool) -> float | None:
     if sensitive and not snap.in_band(v):
         return None
+    if any((x := v.values.get(name)) is not None and x < 0 for name in f.null_when_negative):
+        return None
     numerator = _sum(f.numerator, v.values)
     denominator = _sum(f.denominator, v.values)
     if numerator is None or denominator is None or denominator == 0:
@@ -406,11 +408,19 @@ def _financial_value(
 
 
 def _tripwire(f: TripwireFeature, v: _Version, config: FeatureConfig) -> tuple[float, date] | None:
-    """KSH loss test (AGENT_SPEC §4.5), exact: triggered only when the loss is strictly greater."""
+    """KSH loss test (AGENT_SPEC §4.5), exact: triggered only when the loss is strictly greater.
+    A version 2 rule is triggered first by a negative equity, and null on a negative capital."""
     rule = config.tripwires.resolve(f.rule, config.feature_set.legal_form, v.period_end)
     if rule is None:
         return None
-    if any(v.values.get(name) is None for name in rule.inputs()):
+    if (eq := rule.negative_equity) is not None:
+        equity = v.values.get(eq.equity)
+        offsets = sum((Fraction(v.values.get(name) or 0) for name in eq.offsets), Fraction(0))
+        if equity is not None and equity < 0 and offsets >= 0:
+            return 1.0, v.known_from
+    if any(v.values.get(name) is None for name in rule.required()):
+        return None
+    if any((v.values[name] or 0) < 0 for name in rule.non_negative):
         return None
     result = sum((Fraction(v.values[name] or 0) for name in rule.losses), Fraction(0))
     loss = -result if result < 0 else Fraction(0)

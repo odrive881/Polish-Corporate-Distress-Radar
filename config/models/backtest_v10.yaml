@@ -8,9 +8,11 @@
 # What differs from v9, and nothing else:
 # - `weights`: the draw spec `construction_sme_v1_draw_v1.yaml` (its SHA-256), both groups;
 # - `champion.weighted: true`;
-# - `feature_set_version: feature_set_v7`, the size class added (plan 0020 decision 9, owner
-#   2026-10-20); the regression's five inputs are unchanged, so only LightGBM and the survival
-#   models can read it;
+# - `feature_set_version: feature_set_v8`: v7's size class (plan 0020 decision 9, owner
+#   2026-10-20), which only LightGBM and the survival models can read, and v8's Art. 233 tripwire
+#   read from equity, with `retained_earnings_to_assets` null on a negative share capital (plan
+#   0023, § "The Art. 233 tripwire", owner 2026-10-23; recorded here before any run, so it is the
+#   version, not a change). The regression's five inputs are unchanged;
 # - the two pins, `label_set_hash` and `population.entities_hash`, which are NOT SET YET.
 #
 # PINS NOT SET. The zero hashes below are placeholders: the `backtest` job refuses this file until
@@ -20,7 +22,7 @@
 #      `rdf_not_searched`), the import is done and parsed;
 #   2. the nightly registry check has fetched their legal sources and a label set over them is
 #      frozen;
-#   3. `feature_store` is rebuilt with FEATURE_SET_VERSION=feature_set_v7.
+#   3. `feature_store` is rebuilt with FEATURE_SET_VERSION=feature_set_v8.
 # Filling a placeholder before the first run is recording the version, not changing it; once it has
 # run, any change is a new file.
 #
@@ -37,7 +39,7 @@
 # change a value after seeing results, and it is a new file, never an edit.
 
 backtest: backtest_v10
-feature_set_version: feature_set_v7
+feature_set_version: feature_set_v8
 # PIN NOT SET: the label set frozen over the draw's legal sources (see above).
 label_set_hash: "0000000000000000000000000000000000000000000000000000000000000000"
 horizons: [12, 24]

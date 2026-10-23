@@ -12,7 +12,7 @@ mistakes (values off by a factor of 1,000)"). It closes plan 0020's outstanding 
   corrections file names documents by hash and the pipeline's own member tokens, never a filer's file
   name).
 
-## Status: complete (2026-10-21): owner decision taken (correct through a reviewed list, flag the rest); steps A–D built and run; 2026-10-23: the sign check built (§ "The sign check"), not yet run on the store; open: the Art. 233 tripwire on a misfiled share capital (owner)
+## Status: complete (2026-10-21): owner decision taken (correct through a reviewed list, flag the rest); steps A–D built and run; 2026-10-23: the sign check built and run (§ "The sign check"); the Art. 233 tripwire read from equity, `feature_set_v8` (§ "The Art. 233 tripwire"), which `backtest_v10` names
 
 ## Findings (2026-10-21)
 
@@ -126,17 +126,47 @@ Asked for by the owner after plan 0013's K1-K3, as the cheap check to have befor
   `parsing/sign_plausibility.py` flags a file with any other balance-sheet line below zero, in any column:
   logged `sign_suspected` (E2), capped at `warn`, never corrected, left out of the current `quarantine` set
   (as `unit_suspected` is). `MappingConfig` refuses a listed code that is not a balance-sheet code.
-- **On the store (dry run, 2026-10-23):** 179 of 2,848 files, 70 entities. 117 of them graded `pass` now,
-  26 `warn`, 36 `quarantined`. For 83 the one finding is the share capital. The asset applies it on the
-  next `financial_statements_canonical` run; features read no `warn`, so nothing downstream moves but the
-  grades and `dq_mart`.
+- **On the store (2026-10-23):** 179 of 2,848 files, 70 entities; for 83 the one finding is the share
+  capital. Run the same day (`financial_statements_canonical`, then `parsed_documents_current`,
+  `quarantine`, `dq_mart`, `dq_mart_coverage`): 179 `sign_suspected` rows; grades 1,928 `pass`, 513
+  `warn`, 407 `quarantined` (unchanged). Features read no `warn`, so nothing else moves.
 - **What the negative share capitals are (finding).** Not flipped signs. In 82 of the 90 current-year
   cases the equity lines still sum to the total, with the prior years' result (`A.V`) at zero or null:
   the filer has put the accumulated losses into the share capital line (`0000270680`: each year's share
-  capital is the year before's total equity). That misfiling reaches a feature: the Art. 233 tripwire
-  (`ksh_tripwires.yaml`) reads the losses as `A.V` + `A.VI` and the threshold as half the share capital,
-  so with `A.V` at zero and the capital negative, a loss year triggers it (rightly, by accident: the
-  equity is negative) and a profit year does not (wrongly: 0000270680's 2022 and 2023, 0000271948's
-  2022–2025). *For the owner:* whether the tripwire should read a negative share capital as not filed
-  (null) or count a negative total equity as triggered, which is a new tripwire version and feature set.
+  capital is the year before's total equity). That misfiling reaches two features (§ "The Art. 233
+  tripwire", below). *Corrected 2026-10-23:* this paragraph first said the tripwire read a profit year as
+  not triggered; it does not. Half a negative capital is a negative threshold, so version 1 reads every
+  such filing as triggered, which is right by accident, since all of them have negative equity.
+
+## The Art. 233 tripwire (2026-10-23): `ksh_tripwires_v2`, `feature_set_v8`
+
+Asked for by the owner after the sign check's finding: read the tripwire from equity when equity is
+negative, and leave it null when a capital is negative and equity is not.
+
+- **The rule.** Equity is the capitals the threshold names (share, supplementary, reserve) plus the
+  revaluation reserve, the write-offs from net profit and the accumulated result. The law keeps the
+  three capitals at or above zero (share capital at least 5,000 zł, KSH art. 154). So when equity is
+  below zero and the revaluation reserve and write-offs sum to zero or more, the accumulated loss exceeds
+  the capitals in full, let alone the threshold: triggered, whichever line the filer booked the loss on.
+  With equity at or above zero, a capital filed below zero leaves the split unknown: null (invariant 4).
+  An offset the statement does not carry counts as zero, since the equity total it sums to holds none.
+- **Versions.** `config/statutory/ksh_tripwires_v2.yaml` (`negative_equity`, `non_negative`), named by a
+  feature set's new `ksh_tripwires` key; a set without it reads and hashes `ksh_tripwires.yaml` as
+  before, so v1–v7's hashes are unchanged (tested). `line_items_v4` is v3 plus `revaluation_reserve`
+  (A.III) and `profit_write_offs` (A.VII). `feature_set_v8` is v7 with `ksh_tripwires_v2`,
+  `line_items_v4`, and `retained_earnings_to_assets` null when the share capital is negative (the ratio's
+  new `null_when_negative`): its numerator, A.V + A.VI, misses the losses booked on the capital line.
+- **What it changes (measured on the store, current-year filings not quarantined, 2,438):** for the
+  negative-capital filings with the full breakdown, nothing: version 1 already read them as triggered (by
+  the negative threshold). 241 filings go from null to triggered: negative equity with a breakdown line
+  not filed (micro forms, which carry none, or `A.V` left out); 30 of them have a negative capital. One
+  goes from triggered to null. So the tripwire gains coverage where `negative_equity` already says the
+  same, and is right for the right reason; the substantive fix is `retained_earnings_to_assets`, which
+  read these filings' accumulated losses as zero.
+- **`backtest_v10`** names `feature_set_v8`: recorded before any run, so it is its version, not a change.
+  `feature_store` is rebuilt with `FEATURE_SET_VERSION=feature_set_v8` before it runs. The default
+  (`feature_set_v6`, for the scheduled scoring) is unchanged.
+- **Not done:** the KRS extract's registered share capital as the split's source, which would also give a
+  null-capital filing its tripwire and its retained earnings. Worth it only if list v3 brings negative
+  capitals with non-negative equity (none in the store).
 

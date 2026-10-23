@@ -133,3 +133,21 @@ def test_rejects_overlapping_extensions() -> None:
     raw["extensions"][0]["statute"] = "nope"
     with pytest.raises(ValidationError, match="unknown statute"):
         FilingDeadlines.model_validate(raw)
+
+
+def test_tripwires_v2_names_its_non_negative_capitals_inside_the_threshold() -> None:
+    raw = copy.deepcopy(_raw("ksh_tripwires_v2.yaml"))
+    v2 = KshTripwires.model_validate(raw)
+    rule = v2.rule("art_233")
+    assert rule is not None and rule.negative_equity is not None
+    assert rule.required() == {
+        "retained_result",
+        "net_result_balance_sheet",
+        "supplementary_capital",
+        "reserve_capital",
+        "share_capital",
+    }
+    assert rule.inputs() - rule.required() == {"equity", "revaluation_reserve", "profit_write_offs"}
+    raw["rules"][0]["non_negative"] = ["equity"]
+    with pytest.raises(ValidationError, match="outside the threshold"):
+        KshTripwires.model_validate(raw)

@@ -366,6 +366,54 @@ def test_v7_is_v6_with_the_size_class() -> None:
     assert v7.size_thresholds is not None
 
 
+def test_v8_is_v7_with_the_tripwires_v2_and_retained_earnings_nulled() -> None:
+    """Plan 0023, § "The Art. 233 tripwire" (owner, 2026-10-23): the same features in the same
+    order; only `retained_earnings_to_assets` differs, by its null rule, over `line_items_v4`."""
+    v7 = load_feature_set("feature_set_v7")
+    v8 = load_feature_set("feature_set_v8")
+    assert (v7.tripwires.version, v8.tripwires.version) == (1, 2)
+    assert v8.feature_set.ksh_tripwires == "ksh_tripwires_v2"
+    assert v7.feature_set.ksh_tripwires is None
+    changed = {
+        a.name
+        for a, b in zip(v7.feature_set.features, v8.feature_set.features, strict=True)
+        if a != b
+    }
+    assert changed == {"retained_earnings_to_assets"}
+    assert set(v8.line_items.inputs) - set(v7.line_items.inputs) == {
+        "revaluation_reserve",
+        "profit_write_offs",
+    }
+    assert {k: v for k, v in v8.line_items.inputs.items() if k in v7.line_items.inputs} == (
+        v7.line_items.inputs
+    )
+
+
+def test_each_set_hashes_only_the_tripwires_it_reads(tmp_path: Path) -> None:
+    config = tmp_path / "config"
+    shutil.copytree(CONFIG_DIR, config)
+    sets = ("feature_set_v7", "feature_set_v8")
+    before = {v: load_feature_set(v, config).feature_set_hash for v in sets}
+    for name, moved in (
+        ("ksh_tripwires.yaml", "feature_set_v7"),
+        ("ksh_tripwires_v2.yaml", "feature_set_v8"),
+    ):
+        path = config / "statutory" / name
+        path.write_text(path.read_text("utf-8") + "\n# edited\n", "utf-8")
+        after = {v: load_feature_set(v, config).feature_set_hash for v in sets}
+        assert {v for v in sets if after[v] != before[v]} == {moved}
+        before = after
+
+
+def test_a_tripwires_file_must_carry_its_own_version(tmp_path: Path) -> None:
+    config = tmp_path / "config"
+    shutil.copytree(CONFIG_DIR, config)
+    path = config / "statutory" / "ksh_tripwires_v2.yaml"
+    path.write_text(path.read_text("utf-8").replace("version: 2", "version: 3", 1), "utf-8")
+    with pytest.raises(ValueError, match="must match the file name"):
+        load_feature_set("feature_set_v8", config)
+
+
 def test_the_size_thresholds_are_in_v7s_hash_only(tmp_path: Path) -> None:
     config = tmp_path / "config"
     shutil.copytree(CONFIG_DIR, config)

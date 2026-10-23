@@ -420,6 +420,7 @@ def _month_ends(first: date, last: date) -> list[date]:
         "feature_set_v5",
         "feature_set_v6",
         "feature_set_v7",
+        "feature_set_v8",
     ],
 )
 def config(request: pytest.FixtureRequest) -> FeatureConfig:

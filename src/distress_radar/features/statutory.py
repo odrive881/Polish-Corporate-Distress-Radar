@@ -1,7 +1,8 @@
 """Typed views of the statutory configs the features read (plan 0010 step B; invariant 7).
 
 - `config/statutory/ksh_tripwires.yaml`: the KSH loss tripwires (AGENT_SPEC §4.5), resolved by
-  legal form on a statement's balance-sheet date;
+  legal form on a statement's balance-sheet date; `ksh_tripwires_v<n>.yaml` for later versions, which
+  a feature set names (`ksh_tripwires`), so the sets before it read and hash the first file as before;
 - `config/statutory/filing_deadlines.yaml`: when an annual statement is due at the register,
   computed from its balance-sheet date, with the COVID-era extensions.
 
@@ -59,6 +60,19 @@ def _unique_ids(statutes: tuple[Statute, ...]) -> dict[str, Statute]:
 # --- ksh_tripwires.yaml --------------------------------------------------------------------------
 
 
+class NegativeEquity(_Frozen):
+    """Read the rule from total equity when it is below zero (version 2, 2026-10-23).
+
+    Equity is the capitals the threshold names, which the law keeps at or above zero, plus the
+    accumulated result and `offsets` (the revaluation reserve, the write-offs from net profit). So
+    when equity is below zero and the offsets sum to zero or more, the loss exceeds the capitals in
+    full, whichever line the filer put it on: triggered. An offset the statement does not carry
+    counts as zero, since the equity total it sums to holds no amount for it."""
+
+    equity: str
+    offsets: tuple[str, ...] = ()
+
+
 class TripwireRule(_Frozen):
     rule: str
     legal_forms: tuple[LegalForm, ...] = Field(min_length=1)
@@ -69,18 +83,35 @@ class TripwireRule(_Frozen):
     losses: tuple[str, ...] = Field(min_length=1)
     # input → coefficient, written as a fraction ("1/2") so the comparison is exact
     threshold: dict[str, Annotated[str, Field(pattern=r"^\d+(/\d+)?$")]] = Field(min_length=1)
+    # Version 2: read from equity when it is below zero, and null when a threshold capital is: a
+    # negative capital is misfiled (most often the accumulated losses booked as share capital,
+    # `sign_check_v1`), so the split of equity between capital and loss is not known.
+    negative_equity: NegativeEquity | None = None
+    non_negative: tuple[str, ...] = ()
 
     @model_validator(mode="after")
     def _positive(self) -> TripwireRule:
         zero = [k for k, v in self.coefficients().items() if v == 0]
         if zero:
             raise ValueError(f"{self.rule}: threshold coefficients must be positive: {zero}")
+        if not set(self.non_negative) <= set(self.threshold):
+            raise ValueError(f"{self.rule}: `non_negative` names inputs outside the threshold")
         return self
 
     def coefficients(self) -> dict[str, Fraction]:
         return {k: Fraction(v) for k, v in self.threshold.items()}
 
     def inputs(self) -> set[str]:
+        """Every input the rule reads."""
+        equity = self.negative_equity
+        return (
+            set(self.losses)
+            | set(self.threshold)
+            | ({equity.equity, *equity.offsets} if equity else set())
+        )
+
+    def required(self) -> set[str]:
+        """The inputs without which the comparison is null."""
         return set(self.losses) | set(self.threshold)
 
 
@@ -132,9 +163,18 @@ class KshTripwires(_Frozen):
         return r if start <= on <= end else None
 
 
-def load_ksh_tripwires(config_dir: Path = CONFIG_DIR) -> KshTripwires:
-    path = config_dir / "statutory" / "ksh_tripwires.yaml"
-    return KshTripwires.model_validate(yaml.safe_load(path.read_text(encoding="utf-8")))
+def tripwires_file(version: str | None) -> str:
+    """The file of a tripwire version: `ksh_tripwires.yaml` for the first, which feature sets
+    before v8 read without naming it."""
+    return "ksh_tripwires.yaml" if version is None else f"{version}.yaml"
+
+
+def load_ksh_tripwires(config_dir: Path = CONFIG_DIR, version: str | None = None) -> KshTripwires:
+    path = config_dir / "statutory" / tripwires_file(version)
+    tripwires = KshTripwires.model_validate(yaml.safe_load(path.read_text(encoding="utf-8")))
+    if version is not None and version != f"ksh_tripwires_v{tripwires.version}":
+        raise ValueError(f"{path}: `version: {tripwires.version}` must match the file name")
+    return tripwires
 
 
 # --- filing_deadlines.yaml -----------------------------------------------------------------------

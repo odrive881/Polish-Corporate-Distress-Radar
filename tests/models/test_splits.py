@@ -312,7 +312,7 @@ def test_a_weighted_champion_rule_needs_weights(tmp_path: Path) -> None:
 
 def test_backtest_v10_is_v9_weighted_over_list_v3s_draw() -> None:
     """Plan 0019 step G, recorded before any run: v9's models, folds and rule, with only the draw,
-    the weighted rule, feature_set_v7 and the two pins differing; the pinned spec is the one in
+    the weighted rule, feature_set_v8 and the two pins differing; the pinned spec is the one in
     `config/segments/` that `universe_draw` stored the draw under."""
     v9 = load_backtest_config("backtest_v9")
     v10 = load_backtest_config("backtest_v10")
@@ -324,7 +324,7 @@ def test_backtest_v10_is_v9_weighted_over_list_v3s_draw() -> None:
     spec = CONFIG_DIR / "segments" / "construction_sme_v1_draw_v1.yaml"
     assert v10.weights.draw_spec_sha256 == spec_sha256(spec)
     assert v10.champion is not None and v10.champion.weighted
-    assert v10.feature_set_version == "feature_set_v7"
+    assert v10.feature_set_version == "feature_set_v8"
     differs = {"backtest", "feature_set_version", "label_set_hash", "population", "weights"}
     assert v10.model_dump(exclude=differs | {"champion"}) == v9.model_dump(
         exclude=differs | {"champion"}

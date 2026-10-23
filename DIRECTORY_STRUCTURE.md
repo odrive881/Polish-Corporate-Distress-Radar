@@ -129,9 +129,11 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │   ├── feature_set_v5.yaml        # v4 + the auditor reports: opinion, auditor change, emphasis (plan 0013)
 │   │   ├── feature_set_v6.yaml        # v5 + the latest auditor report's age (plan 0013)
 │   │   ├── feature_set_v7.yaml        # v6 + the statutory size class, `size_class` (plan 0020 decision 9)
+│   │   ├── feature_set_v8.yaml        # v7 with the Art. 233 tripwire read from equity, ksh_tripwires_v2 (plan 0023)
 │   │   ├── line_items_v1.yaml         # ratio inputs → chart code, per form and income-statement variant
 │   │   ├── line_items_v2.yaml         # v1 + the result on sales
-│   │   └── line_items_v3.yaml         # v2 + the 2025 calculation-variant revenue line
+│   │   ├── line_items_v3.yaml         # v2 + the 2025 calculation-variant revenue line
+│   │   └── line_items_v4.yaml         # v3 + the revaluation reserve and the write-offs from net profit
 │   ├── models/                        # classical models' published coefficients, cited (plan 0012)
 │   │   ├── altman_z2_2000.yaml        # Altman Z'', from Altman (2000)
 │   │   ├── backtest_v1.yaml           # inputs pinned by hash, horizons, test years, minimum events
@@ -143,7 +145,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │   ├── backtest_v7.yaml           # v6 on the statements plan 0017 made readable
 │   │   ├── backtest_v8.yaml           # v7 on the 2026-10-16 label set and population (plan 0014)
 │   │   ├── backtest_v9.yaml           # v8 on label v3 and the 2026-10-19 population (plan 0022)
-│   │   ├── backtest_v10.yaml          # v9 weighted over list v3's draw, on feature_set_v7; pins unset (plan 0019 step G)
+│   │   ├── backtest_v10.yaml          # v9 weighted over list v3's draw, on feature_set_v8; pins unset (plan 0019 step G)
 │   │   └── poznan_2004.yaml           # the Poznań model, Hamrol, Czajka, Piechocki (2004)
 │   ├── labels/
 │   │   ├── outcome_labels_v1.yaml     # label parameters; the file name is the label_version
@@ -151,7 +153,8 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │   └── outcome_labels_v3.yaml     # v2 over taxonomy v2 and notice kinds v2, which it names (plan 0022)
 │   └── statutory/
 │       ├── size_thresholds.yaml       # UoR size-class thresholds per regime, dated, each value cited (plan 0020)
-│       ├── ksh_tripwires.yaml         # Art. 233 / Art. 397 ratios, dated
+│       ├── ksh_tripwires.yaml         # Art. 233 / Art. 397 ratios, dated (version 1: feature sets v1–v7)
+│       ├── ksh_tripwires_v2.yaml      # version 2: a negative equity triggers, a negative capital nulls
 │       ├── filing_deadlines.yaml      # UoR approval + filing deadlines, COVID-era extensions, dated
 │       └── procedure_taxonomy.yaml    # source event → event type → §4.6 class, dated by statute
 │

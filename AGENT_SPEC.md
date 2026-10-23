@@ -127,7 +127,7 @@ From the Commercial Companies Code (KSH), computed as boolean features:
 - **Art. 397 (S.A.):** same structure, threshold is one third of share capital. Implement for future scope even though v1 is sp. z o.o. only.
 - **Negative equity:** total equity < 0.
 
-Ratios live in `config/statutory/ksh_tripwires.yaml`.
+Ratios live in `config/statutory/ksh_tripwires.yaml`; `ksh_tripwires_v2.yaml` (feature_set_v8 on) also reads a negative total equity as triggered, since the capitals in the threshold are never negative by law, and is null when a capital is filed negative and equity is not (plan 0023).
 
 ### 4.6 Outcome taxonomy
 

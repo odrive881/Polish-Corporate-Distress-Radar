@@ -33,6 +33,7 @@ from distress_radar.features.statutory import (
     LegalForm,
     load_filing_deadlines,
     load_ksh_tripwires,
+    tripwires_file,
 )
 from distress_radar.parsing.canonical_schema import CONFIG_DIR, MappingConfig, load_mapping_config
 from distress_radar.parsing.legal_taxonomy import (
@@ -191,9 +192,12 @@ class RatioFeature(_Feature):
     denominator: dict[str, Literal[1, -1]] = Field(min_length=1)
     denominator_rule: Literal["nonzero", "positive"] = "nonzero"
     scale: int = Field(default=1, ge=1)
+    # Inputs whose being below zero makes the ratio null (v8 on): a line the law keeps at or above
+    # zero, filed negative, says the lines around it are misfiled too.
+    null_when_negative: tuple[str, ...] = ()
 
     def inputs(self) -> set[str]:
-        return set(self.numerator) | set(self.denominator)
+        return set(self.numerator) | set(self.denominator) | set(self.null_when_negative)
 
 
 class GrowthFeature(_Feature):
@@ -415,6 +419,8 @@ class FeatureSet(_Frozen):
     include_quarantined_statements: bool  # required: the owner's switch is always explicit
     period_length_days: PeriodBand  # plan 0010 owner decision 7
     lag_tolerance_days: int = Field(ge=0, le=183)
+    # The KSH tripwires' version (v8 on); unset, the first file, as every set before v8 read it.
+    ksh_tripwires: str | None = Field(default=None, pattern=r"^ksh_tripwires_v\d+$")
     features: tuple[Feature, ...] = Field(min_length=1)
 
     @model_validator(mode="after")
@@ -505,8 +511,9 @@ class FeatureConfig(_Frozen):
     size_class_inputs: SizeClassInputs | None = None
 
 
-# The files that shape a build's output besides the feature set and its line-item map.
-_STATUTORY_FILES = ("ksh_tripwires.yaml", "filing_deadlines.yaml", "procedure_taxonomy.yaml")
+# The files that shape a build's output besides the feature set and its line-item map; the
+# tripwires' file is the one the set names (`tripwires_file`).
+_STATUTORY_FILES = ("filing_deadlines.yaml", "procedure_taxonomy.yaml")
 
 
 def feature_set_hash(feature_set: FeatureSet, config_dir: Path = CONFIG_DIR) -> str:
@@ -516,6 +523,7 @@ def feature_set_hash(feature_set: FeatureSet, config_dir: Path = CONFIG_DIR) -> 
     paths = [
         config_dir / "features" / f"{feature_set.feature_set_version}.yaml",
         config_dir / "features" / f"{feature_set.line_items}.yaml",
+        config_dir / "statutory" / tripwires_file(feature_set.ksh_tripwires),
         *(config_dir / "statutory" / name for name in _STATUTORY_FILES),
     ]
     for version in feature_set.size_class_inputs():
@@ -543,7 +551,7 @@ def load_feature_set(version: str, config_dir: Path = CONFIG_DIR) -> FeatureConf
     line_items = load_line_items(feature_set.line_items, config_dir)
     mapping = load_mapping_config(config_dir)
     line_items.check_against(mapping)
-    tripwires = load_ksh_tripwires(config_dir)
+    tripwires = load_ksh_tripwires(config_dir, feature_set.ksh_tripwires)
     taxonomy = load_procedure_taxonomy(config_dir)
     introduction = load_introduction_config(config_dir=config_dir)
     feature_set.check_against(line_items, tripwires, taxonomy, introduction)
