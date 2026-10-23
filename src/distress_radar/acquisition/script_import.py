@@ -31,6 +31,10 @@ member per document, and the page shows no file names to pair them by (decision 
 paired by their header's prepared date (`PAIR_BY_PREPARED_DATE`); a group the rule cannot pair is
 stored unpaired (`unmatched-<n>`), which parsing quarantines, and a HAR capture completes it.
 
+A correction RDF lists as a row of its own (one tab, flagged a correction; 2026-10-23, plan 0014
+item 3) corrects the one indexed original of its entity, type and period submitted no later
+(`_filed_original`); with none or several, it is refused.
+
 Nothing is dropped silently: every row, ZIP or entity that cannot be used is in the report. Only
 rows with nothing recorded are written, so importing the same inbox twice adds nothing.
 """
@@ -252,7 +256,8 @@ def _correction(row: Mapping[str, str]) -> bool:
     """The listed flag; with none shown (RDF shows none on older filings), the ids decide.
 
     An expanded row's own tab is the original and every other tab a correction, so the ids alone
-    give the flag; a flag that is shown must agree with them (`_tab`).
+    give the flag; a flag that is shown must agree with them (`_tab`), except on a correction
+    listed as a row of its own, which has one tab.
     """
     flag = _flag(_value(row["is_correction"]), "is_correction")
     if flag is None:
@@ -359,7 +364,8 @@ def _tab(line: int, row: Mapping[str, str]) -> ListedTab:
         raise _RowError(f"prepared {listed.prepared_date} after submitted {listed.submission_date}")
     if listed.deleted_on is not None and listed.deleted_on < listed.submission_date:
         raise _RowError(f"deleted {listed.deleted_on} before submitted {listed.submission_date}")
-    if listed.is_correction == (listed.document_id == listed.row_document_id):
+    own = listed.document_id == listed.row_document_id
+    if listed.is_correction == own and not (own and listed.tabs == 1):
         raise _RowError(
             "is_correction disagrees with the ids: the expanded row's own tab is the original"
         )
@@ -794,11 +800,28 @@ def _candidates(conn: Connection, listed: ListedTab, code: str) -> list[_Row]:
     ]
 
 
+def _filed_original(conn: Connection, listed: ListedTab, code: str | None) -> str | None:
+    """A correction listed as a row of its own: the `document_ref` of the original it corrects,
+    the one indexed original of its entity, type and period submitted no later than it; None
+    when there is not exactly one."""
+    if code is None:
+        return None
+    rows = conn.execute(
+        """
+        SELECT document_ref FROM filing_index
+        WHERE krs = %s AND rdf_type_code = %s AND period_end = %s
+          AND correction_of IS NULL AND is_correction IS NOT TRUE AND submission_date <= %s
+        """,
+        (listed.krs, code, listed.period_end, listed.submission_date),
+    ).fetchall()
+    return str(rows[0][0]) if len(rows) == 1 else None
+
+
 def _index(
     conn: Connection,
     listed: ListedTab,
     code: str | None,
-    refs: Mapping[str, str],
+    correction_of: str | None,
     listing: RawFetchRecord,
     ingestion_run_id: str,
     report: ScriptImportReport,
@@ -843,7 +866,7 @@ def _index(
                 "start": listed.period_start,
                 "end": listed.period_end,
                 "deleted": listed.deleted_on,
-                "correction_of": refs.get(listed.row_document_id) if listed.is_correction else None,
+                "correction_of": correction_of,
                 "document_id": listed.document_id,
                 "at": listed.captured_at,
                 "run": ingestion_run_id,
@@ -892,8 +915,10 @@ def _group_refs(
     conn: Connection, krs: str, group: list[ListedTab], refs: Mapping[str, str]
 ) -> None:
     """A listed original's `correction_refs`: its tabs' rows in tab order (the download bundle)."""
+    original = next((t for t in group if not t.is_correction), None)
+    if original is None:  # a correction listed as a row of its own
+        return
     ordered = [refs[t.document_id] for t in sorted(group, key=lambda t: t.tab)]
-    original = next(t for t in group if not t.is_correction)
     conn.execute(
         """
         UPDATE filing_index SET correction_refs = %s
@@ -1115,16 +1140,33 @@ def import_listing(
 
     refs: dict[str, str] = {}
     if documents_record is not None:
-        for (krs, _), group in sorted(groups.items()):
+        # Corrections listed as rows of their own last, once every original is indexed.
+        for (krs, _), group in sorted(
+            groups.items(), key=lambda g: (all(t.is_correction for t in g[1]), g[0])
+        ):
             for listed in sorted(group, key=lambda t: (t.is_correction, t.tab)):
                 code = document_types.code_for(listed.type_name, listed.period_end)
+                correction_of = refs.get(listed.row_document_id) if listed.is_correction else None
+                if listed.is_correction and listed.document_id == listed.row_document_id:
+                    correction_of = _filed_original(conn, listed, code)
+                    if (
+                        correction_of is None
+                        and _existing(conn, listed.krs, listed.document_id) is None
+                    ):
+                        report.problems.append(
+                            f"{DOCUMENTS_FILE} line {listed.line}: {krs} correction "
+                            f"{listed.document_id}, listed as a row of its own: no single "
+                            f"original of its type and period ending {listed.period_end} "
+                            f"submitted by {listed.submission_date}; not used"
+                        )
+                        continue
                 if code is None:
                     report.unknown_types.append(
                         f"{krs} {listed.document_id}: {listed.type_name!r}, period ending "
                         f"{listed.period_end}: no code; indexed without one"
                     )
                 refs[listed.document_id] = _index(
-                    conn, listed, code, refs, documents_record, ingestion_run_id, report
+                    conn, listed, code, correction_of, documents_record, ingestion_run_id, report
                 )
             if all(t.document_id in refs for t in group):
                 _group_refs(conn, krs, group, refs)

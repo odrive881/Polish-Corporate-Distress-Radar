@@ -211,7 +211,7 @@ def test_a_bad_header_refuses_the_whole_file(header: tuple[str, ...]):
         ({"submission_date": "2026-05-20", "prepared_date": "2026-05-28"}, "prepared"),
         ({"submission_date": "2025-12-31"}, "outside"),  # not after the period end
         ({"submission_date": "2026-10-08"}, "outside"),  # after it was read
-        ({"is_correction": "Tak"}, "is_correction"),  # its own row's tab
+        ({"is_correction": "Tak", "tab": "1 / 2"}, "is_correction"),  # its own row's tab
         ({"status": "AKTYWNY"}, "status"),
         ({"is_ifrs": "yes"}, "Tak or Nie"),
         ({"tab": "3 / 2"}, "tab"),
@@ -259,6 +259,12 @@ def test_a_correction_without_its_original_is_refused():
     current, problems = current_documents(tabs)
     assert set(current) == {STATEMENT_ID}
     assert len(problems) == 1 and CORRECTION_ID in problems[0]
+
+
+def test_a_correction_listed_as_a_row_of_its_own_is_read_as_one():
+    tabs, problems = read_documents(_documents(_tab(document_id=OTHER_ID, is_correction="Tak")))
+    assert problems == []
+    assert [(t.is_correction, t.row_document_id, t.tabs) for t in tabs] == [(True, OTHER_ID, 1)]
 
 
 def test_searches_are_read_with_their_flags():
@@ -690,6 +696,54 @@ def test_a_correction_group_is_stored_unpaired_unless_the_rule_pairs_it(
     assert names == [f"id-{STATEMENT_ID}.xml", f"id-{CORRECTION_ID}.xml"]
     assert rows[f"id-{STATEMENT_ID}"][8] == f"id-{STATEMENT_ID}.xml"
     assert rows[f"id-{CORRECTION_ID}"][8] == f"id-{CORRECTION_ID}.xml"
+
+
+@pytest.mark.integration
+def test_a_correction_listed_as_a_row_of_its_own_corrects_the_one_original_filed_before_it(
+    conn: psycopg.Connection, tmp_path: Path
+):
+    standalone = "48972241001"  # its row sorts before the original's
+    orphan = "48972241002"
+    documents = _documents(
+        _tab(),
+        _tab(
+            document_id=standalone,
+            is_correction="Tak",
+            prepared_date="2026-07-01",
+            submission_date="2026-07-02",
+        ),
+        _tab(  # no original of its period
+            document_id=orphan,
+            is_correction="Tak",
+            period_start="2024-01-01",
+            period_end="2024-12-31",
+            prepared_date="2025-06-30",
+            submission_date="2025-07-02",
+        ),
+    )
+    zips = {
+        f"{KRS}/{ref}.zip": _zip(**{"sf.xml": _statement()})
+        for ref in (STATEMENT_ID, standalone, orphan)
+    }
+    inbox = _inbox(tmp_path, documents, _entities(_search()), zips)
+    store = InMemoryObjectStore()
+
+    report = _import(conn, inbox, store, "run-1")
+
+    assert (report.indexed, report.downloads) == (2, 2)
+    assert len(report.problems) == 1
+    assert orphan in report.problems[0] and "row of its own" in report.problems[0]
+    rows = _rows(conn)
+    correction = rows[f"id-{standalone}"]
+    assert correction[4] == f"id-{STATEMENT_ID}"  # correction_of
+    assert correction[5] is None  # no bundle of its own
+    assert correction[7] is not None and correction[7] != rows[f"id-{STATEMENT_ID}"][7]
+    assert rows[f"id-{STATEMENT_ID}"][5] == [f"id-{STATEMENT_ID}"]
+    assert f"id-{orphan}" not in rows
+
+    again = _import(conn, inbox, store, "run-2")
+    assert (again.indexed, again.completed, again.downloads) == (0, 0, 0)
+    assert _rows(conn) == rows
 
 
 @pytest.mark.integration

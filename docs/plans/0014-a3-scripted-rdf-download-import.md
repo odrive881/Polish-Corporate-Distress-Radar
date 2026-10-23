@@ -53,9 +53,11 @@ re-run, record a new `backtest_v<n>` before running it. Record each round's coun
 2. **72 list v1 companies have no search** (`rdf_not_searched`; 179 before the 2026-10-16 round), most
    searched only during an outage (2026-10-08, or 2026-10-13 evening). Re-searching them adds list v1's
    missing events; the distress group's 88 (item 5) are likely to add more (§ "Events" below).
-3. **A correction listed as a row of its own** (3 entities, 4 rows, refused): the importer assumes an expanded
-   row's own tab is the original. Decide whether such a row is read as a correction (a change to
-   `script_import.py`'s `_tab` rule, then a re-import).
+3. ~~**A correction listed as a row of its own**~~ decided (owner, 2026-10-23): read as a correction. A row
+   of one tab flagged a correction now corrects the one indexed original of its entity, type and period
+   submitted no later (`script_import._filed_original`); with none or several it is still refused. The 4 rows
+   (0000734057's two 2024 corrections, 0000975124's 2024, 0000710747's 2018) are taken in by re-importing the
+   2026-10-16 folder, whose listing holds them.
 4. **Personal data in a statement's notes** (one entity, 6 ZIPs refused): the filer names shareholders with
    their PESEL numbers in free text, which no redaction version removes. A decision for ADR 0009: leave the
    entity out, or redact free text.
