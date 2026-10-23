@@ -56,8 +56,11 @@ re-run, record a new `backtest_v<n>` before running it. Record each round's coun
 3. ~~**A correction listed as a row of its own**~~ decided (owner, 2026-10-23): read as a correction. A row
    of one tab flagged a correction now corrects the one indexed original of its entity, type and period
    submitted no later (`script_import._filed_original`); with none or several it is still refused. The 4 rows
-   (0000734057's two 2024 corrections, 0000975124's 2024, 0000710747's 2018) are taken in by re-importing the
-   2026-10-16 folder, whose listing holds them.
+   (0000734057's two 2024 corrections, 0000975124's 2024, 0000710747's 2018) were taken in by re-importing the
+   2026-10-16 folder the same day: 4 rows indexed, each pointing to its original, and 4 ZIPs stored; nothing
+   else added. The run failed only on the 5 refusals it had before (4 empty rows, 1 search with no time), and
+   `redaction_migration` finds 0 objects with personal data. 0000500757 was skipped as left out (9 listed
+   documents). Parsing them waits for list v3's rebuild.
 4. ~~**Personal data in a statement's notes**~~ decided (owner, 2026-10-23): the entity (0000500757) is left
    out. It is listed in `config/segments/left_out_entities_v1.yaml`: `rdf_script_import` imports none of its
    listed documents and reports it (`left_out`) instead of refusing its 6 ZIPs and failing, and the modelling
