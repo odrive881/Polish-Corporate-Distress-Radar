@@ -51,6 +51,7 @@ def _classify(
     searches: pl.DataFrame,
     filings: pl.DataFrame,
     sources: pl.DataFrame,
+    left_out: tuple[str, ...] = (),
 ) -> Population:
     return classify(
         entities,
@@ -59,6 +60,7 @@ def _classify(
         sources,
         complete_by_capture=["manual_seed"],
         download_codes=[STATEMENT],
+        left_out=left_out,
     )
 
 
@@ -70,6 +72,7 @@ def test_each_entity_gets_the_first_reason_that_applies() -> None:
             ("partial", 1, True, False),
             ("young", 1, True, True),
             ("held", 1, True, True),
+            ("owner", 1, True, True),
         ]
     )
     filings = _filings(
@@ -79,14 +82,23 @@ def test_each_entity_gets_the_first_reason_that_applies() -> None:
             ("partial", STATEMENT, True),
             ("held", STATEMENT, True),
             ("held", STATEMENT, False),
+            ("owner", STATEMENT, True),
+            ("owner", STATEMENT, False),  # held back too: the owner's decision comes first
         ]
     )
-    sources = _sources([(k, "rejestr_io_v1") for k in ("ok", "gone", "partial", "young", "held")])
+    sources = _sources(
+        [(k, "rejestr_io_v1") for k in ("ok", "gone", "partial", "young", "held", "owner")]
+    )
     population = _classify(
-        ["ok", "unsearched", "gone", "partial", "young", "held"], searches, filings, sources
+        ["ok", "unsearched", "gone", "partial", "young", "held", "owner"],
+        searches,
+        filings,
+        sources,
+        left_out=("owner",),
     )
     assert population.included == {"ok"}
     assert population.excluded == {
+        "owner": "left_out",
         "unsearched": "rdf_not_searched",
         "gone": "rdf_not_found",
         "partial": "rdf_search_incomplete",
@@ -94,6 +106,7 @@ def test_each_entity_gets_the_first_reason_that_applies() -> None:
         "held": "statements_held_back",
     }
     assert population.reasons() == {
+        "left_out": 1,
         "rdf_not_searched": 1,
         "rdf_not_found": 1,
         "rdf_search_incomplete": 1,

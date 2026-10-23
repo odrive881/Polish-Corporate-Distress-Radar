@@ -43,7 +43,12 @@ from distress_radar.acquisition.sampling import (
     spec_sha256,
 )
 from distress_radar.acquisition.script_import import import_listing
-from distress_radar.acquisition.universe_discovery import load_krs_list, load_seed, load_segment
+from distress_radar.acquisition.universe_discovery import (
+    load_krs_list,
+    load_left_out,
+    load_seed,
+    load_segment,
+)
 from distress_radar.features.statutory import load_filing_deadlines
 from distress_radar.models.splits import load_backtest_config
 from distress_radar.settings import Settings
@@ -707,6 +712,7 @@ def rdf_script_import(
     `documents.csv` (one row per tab of an expanded row), `entities.csv` (one row per search),
     the optional `outages.csv` and the ZIPs as RDF delivered them (plan 0014, decision 2);
     `config/segments/<segment>.yaml` (`min_history_years`);
+    `config/segments/left_out_entities_v<n>.yaml` (entities the owner left out, never imported);
     `entity_master`; `config/mappings/rdf_document_types.yaml` (type codes from names and
     periods, decision 5); stored details and dates lists (the `rdf_document_id` backfill).
     Outputs: both listings stored raw; `filing_index` rows created or completed from the
@@ -715,7 +721,8 @@ def rdf_script_import(
     MinIO (sidecar `fetch_tier: pad_script`), its rows' `sha256`. Only rows with nothing
     recorded are written, so re-materializing adds nothing. Refusals are counted in the
     metadata and listed in the log: entities not in `entity_master`, unknown type names, rows
-    with no ZIP, ZIPs with no row, incomplete listings, entities with too few filed years,
+    with no ZIP, ZIPs with no row, incomplete listings, entities with too few filed years or
+    left out,
     groups with tabs missing (their ZIP held back), searches dropped in an outage, runs of
     not-found searches held as suspected outages (`SUSPECTED_OUTAGE_RUN`), unreadable rows or
     ZIPs (these fail the asset after the rest is done).
@@ -739,6 +746,7 @@ def rdf_script_import(
             document_types=load_document_types(),
             resolved=set(manifest.resolved_entities(conn)),
             min_history_years=segment.min_history_years,
+            left_out=load_left_out().krs,
         )
         counts = manifest.table_counts(conn)
         personal_data = _personal_data_check(conn, store)
@@ -750,6 +758,7 @@ def rdf_script_import(
         "zips_without_row": report.zips_without_row,
         "incomplete_entities": report.incomplete_entities,
         "too_few_years": report.too_few_years,
+        "left_out": report.left_out,
         "incomplete_groups": report.incomplete_groups,
         "disagreements": report.disagreements,
         "suspected_outages": report.suspected_outages,

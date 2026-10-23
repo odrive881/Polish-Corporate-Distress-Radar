@@ -115,6 +115,14 @@ SCHEMA_DDL: tuple[LiteralString, ...] = (
         CHECK (probability_low <= probability_high)
     )
     """,
+    # `left_out` (plan 0014, 2026-10-23), added after the table first shipped.
+    """
+    ALTER TABLE scoring_exclusions
+        DROP CONSTRAINT IF EXISTS scoring_exclusions_reason_check,
+        ADD CONSTRAINT scoring_exclusions_reason_check CHECK (reason IN (
+            'left_out', 'rdf_not_searched', 'rdf_not_found', 'rdf_search_incomplete',
+            'no_statement_imported', 'statements_held_back', 'not_at_risk'))
+    """,
     """
     CREATE TABLE IF NOT EXISTS watchlists (
         name      text NOT NULL CHECK (name <> ''),

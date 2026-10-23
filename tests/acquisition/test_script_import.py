@@ -747,6 +747,32 @@ def test_a_correction_listed_as_a_row_of_its_own_corrects_the_one_original_filed
 
 
 @pytest.mark.integration
+def test_an_entity_left_out_has_nothing_imported(conn: psycopg.Connection, tmp_path: Path):
+    inbox = _inbox(
+        tmp_path,
+        _documents(_tab(), _tab(document_id=REPORT_ID, type_name=REPORT_NAME)),
+        _entities(_search()),
+        {f"{KRS}/{STATEMENT_ID}.zip": _zip(**{"sf.xml": _statement()})},
+    )
+    report = import_listing(
+        inbox,
+        conn=conn,
+        store=InMemoryObjectStore(),
+        ingestion_run_id="run-1",
+        document_types=load_document_types(),
+        resolved=set(manifest.resolved_entities(conn)),
+        left_out={KRS},
+    )
+    assert report.problems == [] and report.incomplete_entities == []
+    assert (report.indexed, report.downloads) == (0, 0)
+    assert report.left_out == [
+        f"{KRS}: left out by the owner's decision; 2 listed documents not imported"
+    ]
+    assert report.zips_without_row == []  # named by a row left out, not unlisted
+    assert _rows(conn) == {}
+
+
+@pytest.mark.integration
 def test_an_incomplete_listing_and_a_later_deletion_are_recorded(
     conn: psycopg.Connection, tmp_path: Path
 ):

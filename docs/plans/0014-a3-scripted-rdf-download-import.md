@@ -58,9 +58,11 @@ re-run, record a new `backtest_v<n>` before running it. Record each round's coun
    submitted no later (`script_import._filed_original`); with none or several it is still refused. The 4 rows
    (0000734057's two 2024 corrections, 0000975124's 2024, 0000710747's 2018) are taken in by re-importing the
    2026-10-16 folder, whose listing holds them.
-4. **Personal data in a statement's notes** (one entity, 6 ZIPs refused): the filer names shareholders with
-   their PESEL numbers in free text, which no redaction version removes. A decision for ADR 0009: leave the
-   entity out, or redact free text.
+4. ~~**Personal data in a statement's notes**~~ decided (owner, 2026-10-23): the entity (0000500757) is left
+   out. It is listed in `config/segments/left_out_entities_v1.yaml`: `rdf_script_import` imports none of its
+   listed documents and reports it (`left_out`) instead of refusing its 6 ZIPs and failing, and the modelling
+   population excludes it as `left_out` rather than `statements_held_back`. Its 2018–2020 statements, which
+   passed the scan, stay stored (ADR 0009, free-text note).
 5. **List v2** (ADR 0014 addendum): its two files are received (2026-10-13). The distress group's first delivery
    is imported and parsed (2026-10-17, Progress): 199 of its 200 companies resolved into `entity_master` (806
    entities in all), 503 entities with canonical facts. 88 of them were searched only inside the 2026-10-16

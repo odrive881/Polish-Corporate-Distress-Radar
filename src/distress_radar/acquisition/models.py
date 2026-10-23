@@ -50,6 +50,40 @@ class SegmentSpec(_Frozen):
     min_history_years: int = Field(ge=1)
 
 
+class LeftOutEntity(_Frozen):
+    """One entity the owner left out, and why (`config/segments/left_out_entities_v<n>.yaml`)."""
+
+    krs: str
+    reason: Literal["personal_data_in_free_text"]
+    decided: date
+
+    @field_validator("krs")
+    @classmethod
+    def _krs_format(cls, value: str) -> str:
+        if not is_krs(value):
+            raise ValueError(f"KRS must be {KRS_LENGTH} digits, zero-padded: {value!r}")
+        return value
+
+
+class LeftOutEntities(_Frozen):
+    """The entities left out of the universe by the owner's decision (plan 0014, 2026-10-23)."""
+
+    version: str = Field(pattern=r"^left_out_entities_v\d+$")
+    entities: tuple[LeftOutEntity, ...]
+
+    @field_validator("entities")
+    @classmethod
+    def _once_each(cls, value: tuple[LeftOutEntity, ...]) -> tuple[LeftOutEntity, ...]:
+        krs = [e.krs for e in value]
+        if len(set(krs)) != len(krs):
+            raise ValueError("an entity is listed twice")
+        return value
+
+    @property
+    def krs(self) -> frozenset[str]:
+        return frozenset(e.krs for e in self.entities)
+
+
 class SeedEntry(_Frozen):
     """One hand-picked seed row. `regon`/`nip` are optional hints checked against BIR1."""
 

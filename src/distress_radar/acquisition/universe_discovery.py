@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import csv
 import io
+import re
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -26,6 +27,7 @@ from pydantic import ValidationError
 
 from distress_radar.acquisition.models import (
     KRS_LENGTH,
+    LeftOutEntities,
     QuarantineRecord,
     SeedEntry,
     SegmentSpec,
@@ -34,6 +36,7 @@ from distress_radar.acquisition.models import (
 )
 
 STAGE = "A1"
+SEGMENTS_DIR = Path(__file__).resolve().parents[3] / "config" / "segments"
 KRS_LIST_COLUMNS = ("krs_num", "krs")
 
 
@@ -45,6 +48,22 @@ class SeedLoad:
 
 def load_segment(path: Path) -> SegmentSpec:
     return SegmentSpec.model_validate(yaml.safe_load(path.read_text(encoding="utf-8")))
+
+
+def load_left_out(segments_dir: Path = SEGMENTS_DIR) -> LeftOutEntities:
+    """The highest-numbered `left_out_entities_v<n>.yaml`; its version must match its name."""
+    found = {
+        int(m.group(1)): p
+        for p in segments_dir.glob("left_out_entities_v*.yaml")
+        if (m := re.fullmatch(r"left_out_entities_v(\d+)\.yaml", p.name))
+    }
+    if not found:
+        raise ValueError(f"{segments_dir}: no left_out_entities_v<n>.yaml")
+    path = found[max(found)]
+    left_out = LeftOutEntities.model_validate(yaml.safe_load(path.read_text(encoding="utf-8")))
+    if f"{left_out.version}.yaml" != path.name:
+        raise ValueError(f"{path.name}: declares version {left_out.version}")
+    return left_out
 
 
 def load_seed(path: Path, *, ingestion_run_id: str, discovered_at: datetime) -> SeedLoad:

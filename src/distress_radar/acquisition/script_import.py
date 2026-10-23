@@ -35,6 +35,9 @@ A correction RDF lists as a row of its own (one tab, flagged a correction; 2026-
 item 3) corrects the one indexed original of its entity, type and period submitted no later
 (`_filed_original`); with none or several, it is refused.
 
+An entity the owner left out (`config/segments/left_out_entities_v<n>.yaml`) has none of its
+listed documents imported; the report names it with the count.
+
 Nothing is dropped silently: every row, ZIP or entity that cannot be used is in the report. Only
 rows with nothing recorded are written, so importing the same inbox twice adds nothing.
 """
@@ -516,6 +519,7 @@ class ScriptImportReport:
     zips_without_row: list[str] = field(default_factory=list[str])
     incomplete_entities: list[str] = field(default_factory=list[str])
     too_few_years: list[str] = field(default_factory=list[str])  # under `min_history_years`
+    left_out: list[str] = field(default_factory=list[str])  # the owner's decision; not imported
     incomplete_groups: list[str] = field(default_factory=list[str])  # tabs missing; ZIP held back
     disagreements: list[str] = field(default_factory=list[str])  # listing vs an earlier source
     problems: list[str] = field(default_factory=list[str])
@@ -538,6 +542,7 @@ class ScriptImportReport:
             "zips_without_row": len(self.zips_without_row),
             "incomplete_entities": len(self.incomplete_entities),
             "too_few_years": len(self.too_few_years),
+            "left_out": len(self.left_out),
             "incomplete_groups": len(self.incomplete_groups),
             "disagreements": len(self.disagreements),
             "problems": len(self.problems),
@@ -1020,11 +1025,13 @@ def import_listing(
     document_types: RdfDocumentTypes,
     resolved: Collection[str],
     min_history_years: int | None = None,
+    left_out: Collection[str] = (),
 ) -> ScriptImportReport:
     """Import the script's inbox into the manifest; commits per step.
 
     An entity listing fewer filed years than `min_history_years` (the segment's) is not imported
-    and is reported; a later listing with enough years imports it.
+    and is reported; a later listing with enough years imports it. An entity in `left_out` (the
+    owner's decision) is never imported and is reported.
     """
     report = ScriptImportReport()
     report.backfilled, problems = backfill_document_ids(conn, store, document_types)
@@ -1134,9 +1141,18 @@ def import_listing(
     listed_krs = {t.krs for t in current.values()} | {s.krs for s in searches}
     report.not_in_entity_master = sorted(k for k in listed_krs if k not in resolved)
     groups: dict[tuple[str, str], list[ListedTab]] = {}
+    skipped: dict[str, int] = {}
+    skipped_files: set[str] = set()
     for listed in current.values():
-        if listed.krs in resolved and listed.krs not in young:
+        if listed.krs in left_out:
+            skipped[listed.krs] = skipped.get(listed.krs, 0) + 1
+            skipped_files.update([listed.file] if listed.file is not None else [])
+        elif listed.krs in resolved and listed.krs not in young:
             groups.setdefault((listed.krs, listed.row_document_id), []).append(listed)
+    report.left_out = [
+        f"{krs}: left out by the owner's decision; {n} listed documents not imported"
+        for krs, n in sorted(skipped.items())
+    ]
 
     refs: dict[str, str] = {}
     if documents_record is not None:
@@ -1206,7 +1222,7 @@ def import_listing(
         )
         conn.commit()
 
-    named = set(by_file)
+    named = set(by_file) | skipped_files
     for path in sorted(inbox.glob("*/*.zip")):
         relative = path.relative_to(inbox).as_posix()
         if _KRS.fullmatch(path.parent.name) and relative not in named:
@@ -1215,7 +1231,7 @@ def import_listing(
     latest: dict[str, ListedSearch] = {}
     for search in sorted(searches, key=lambda s: s.searched_at):
         latest[search.krs] = search
-    for krs in sorted({k for k, _ in groups} | (set(latest) - young)):
+    for krs in sorted({k for k, _ in groups} | (set(latest) - young - set(left_out))):
         search = latest.get(krs)
         if krs in resolved and (
             search is None or not complete_search(search, len(rows_listed.get(krs, ())))

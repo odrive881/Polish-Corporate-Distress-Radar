@@ -59,7 +59,8 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   ├── segments/
 │   │   ├── construction_sme_v1.yaml   # declarative universe spec
 │   │   ├── construction_sme_v1_draw_v1.yaml  # list v3's draw: frame, runs, log hashes (plan 0019)
-│   │   └── construction_sme_v1_seed.yaml  # the hand-picked 17-entity seed, with status hints
+│   │   ├── construction_sme_v1_seed.yaml  # the hand-picked 17-entity seed, with status hints
+│   │   └── left_out_entities_v1.yaml  # entities the owner left out, with reasons: never imported, population `left_out` (plan 0014)
 │   ├── alerts/
 │   │   ├── alert_rules_v1.yaml        # L: alert thresholds and flags, versioned; the version is in every alert id (plan 0018 step D)
 │   │   └── alert_rules_v2.yaml        # v1 with `filing_overdue` looking back one cycle only (owner, 2026-10-17); the current one

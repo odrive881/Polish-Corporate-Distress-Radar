@@ -5,6 +5,8 @@ were never fetched. Its rows would teach it the state of the downloads, not of t
 backtest whose config names a `population` keeps only the labelled entities whose acquisition is
 complete, and reports every other one with its reason:
 
+- `left_out`: the owner left the entity out (`config/segments/left_out_entities_v<n>.yaml`, plan
+  0014, 2026-10-23), whatever its acquisition;
 - `rdf_not_searched`: no stored RDF search (list v1's companies the owner's script has not reached,
   or reached only during an outage);
 - `rdf_not_found`: the latest search found no entity on RDF;
@@ -30,7 +32,7 @@ pinned like the label set: the SHA-256 of the sorted included KRS numbers, in th
 from __future__ import annotations
 
 import hashlib
-from collections.abc import Iterable
+from collections.abc import Collection, Iterable
 from dataclasses import dataclass
 from typing import Literal
 
@@ -38,8 +40,11 @@ import polars as pl
 from psycopg import Connection
 from pydantic import BaseModel, ConfigDict, Field
 
+from distress_radar.acquisition.universe_discovery import load_left_out
+
 DRAW_REASON = "not_in_draw"
 REASONS = (
+    "left_out",
     "rdf_not_searched",
     "rdf_not_found",
     "rdf_search_incomplete",
@@ -105,6 +110,7 @@ def classify(
     complete_by_capture: Iterable[str],
     download_codes: Iterable[str],
     draw: frozenset[str] | None = None,
+    left_out: Collection[str] = (),
 ) -> Population:
     """Each entity in `entities` included, or excluded with the first reason that applies.
 
@@ -112,6 +118,7 @@ def classify(
     `filings`: non-deleted `filing_index` rows (`FILINGS_SCHEMA`), `stored` when their bytes are.
     `sources`: `universe_candidates` (`SOURCES_SCHEMA`); an entity may come from several.
     `draw`: a weighted backtest's drawn entities; any other is `not_in_draw`.
+    `left_out`: the entities the owner left out.
     """
     captured = set(
         sources.filter(pl.col("discovery_source").is_in(list(complete_by_capture)))
@@ -134,6 +141,8 @@ def classify(
         search = latest.get(krs)
         if draw is not None and krs not in draw:
             excluded[krs] = DRAW_REASON
+        elif krs in left_out:
+            excluded[krs] = "left_out"
         elif krs not in captured and search is None:
             excluded[krs] = "rdf_not_searched"
         elif krs not in captured and search is not None and not search[0]:
@@ -157,7 +166,7 @@ def read_population(
     draw: frozenset[str] | None = None,
 ) -> Population:
     """`classify` over the Postgres acquisition records: `rdf_listed_entities`, `filing_index`
-    (non-deleted rows) and `universe_candidates`."""
+    (non-deleted rows) and `universe_candidates`, with the latest left-out list."""
     searches = pl.DataFrame(
         conn.execute(
             "SELECT trim(krs), searched_at, found, complete FROM rdf_listed_entities"
@@ -188,6 +197,7 @@ def read_population(
         complete_by_capture=config.complete_by_capture,
         download_codes=download_codes,
         draw=draw,
+        left_out=load_left_out().krs,
     )
 
 

@@ -1,0 +1,15 @@
+# Entities the owner has decided to leave out of the universe, each with its reason (plan 0014,
+# 2026-10-23). Read by the scripted-downloads import (A3), which imports none of their listed
+# documents and reports them, and by the modelling population, which excludes them as `left_out`.
+# What is already stored stays stored (raw immutability); nothing here is about the company's
+# outcome, so no row is selected by its label.
+#
+# Never edit a version: a change is a new file, left_out_entities_v<n+1>.yaml.
+version: left_out_entities_v1
+entities:
+  # Its statements' notes from 2021 on name its shareholders with their PESEL numbers in free
+  # text, which no redaction version removes (6 ZIPs refused by the post-redaction scan, never
+  # stored). Leaving it out, rather than redacting free text, is the owner's choice (ADR 0009).
+  - krs: "0000500757"
+    reason: personal_data_in_free_text
+    decided: 2026-10-23

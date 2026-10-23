@@ -1,7 +1,15 @@
 from datetime import UTC, datetime
 from pathlib import Path
 
-from distress_radar.acquisition.universe_discovery import load_krs_list, load_seed, load_segment
+import pytest
+from pydantic import ValidationError
+
+from distress_radar.acquisition.universe_discovery import (
+    load_krs_list,
+    load_left_out,
+    load_seed,
+    load_segment,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SEGMENTS = REPO_ROOT / "config" / "segments"
@@ -122,3 +130,31 @@ def test_a_krs_list_gives_candidates_from_its_krs_column_alone(tmp_path: Path):
     [bad] = result.quarantine
     assert (bad.entity_key, bad.reason_code, bad.krs) == ("list.csv#3", "malformed_krs", None)
     assert "TESTOWY" not in bad.detail
+
+
+def test_the_committed_left_out_list_names_the_entity_with_personal_data_in_its_notes():
+    left_out = load_left_out()
+    assert left_out.version == "left_out_entities_v1"
+    assert left_out.krs == {"0000500757"}
+    assert left_out.entities[0].reason == "personal_data_in_free_text"
+
+
+def test_the_latest_left_out_list_is_read_and_must_carry_its_own_version(tmp_path: Path):
+    entry = '  - {krs: "0000000001", reason: personal_data_in_free_text, decided: 2026-10-23}\n'
+    (tmp_path / "left_out_entities_v1.yaml").write_text(
+        "version: left_out_entities_v1\nentities: []\n"
+    )
+    (tmp_path / "left_out_entities_v2.yaml").write_text(
+        f"version: left_out_entities_v2\nentities:\n{entry}"
+    )
+    assert load_left_out(tmp_path).krs == {"0000000001"}
+    (tmp_path / "left_out_entities_v3.yaml").write_text(
+        f"version: left_out_entities_v2\nentities:\n{entry}"
+    )
+    with pytest.raises(ValueError, match="declares version"):
+        load_left_out(tmp_path)
+    (tmp_path / "left_out_entities_v3.yaml").write_text(
+        f"version: left_out_entities_v3\nentities:\n{entry}{entry}"
+    )
+    with pytest.raises(ValidationError, match="listed twice"):
+        load_left_out(tmp_path)
