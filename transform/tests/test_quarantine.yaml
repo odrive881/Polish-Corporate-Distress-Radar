@@ -127,10 +127,10 @@ test_a_tolerated_xsd_violation_is_never_a_quarantine_reason:
       rows:
         - {stage: C2, entity_key: "0000000009:ref9", krs: "0000000009", document_ref: ref9, source_document_hash: h9, source_member: "zip:9.xml", reason_codes: [period_mismatch], known_from: 2025-06-30, first_detected_at: "2026-10-15 08:00:00+00"}
 
-# A unit correction (C2) and a unit suspicion (E2) are recorded but quarantine nothing (plan
-# 0023): T11 parsed with its unit corrected, T12 was flagged; both are graded `warn`. Neither
-# is in the set.
-test_a_unit_correction_or_suspicion_is_never_a_quarantine_reason:
+# A unit correction (C2), a unit suspicion and a sign suspicion (E2) are recorded but quarantine
+# nothing (plan 0023; the sign check, 2026-10-23): T11 parsed with its unit corrected, T12 was
+# flagged by both checks; both are graded `warn`. Neither is in the set.
+test_a_unit_correction_or_a_unit_or_sign_suspicion_is_never_a_quarantine_reason:
   model: quarantine.quarantine
   inputs:
     ext.financial_statements_canonical:
@@ -147,6 +147,7 @@ test_a_unit_correction_or_suspicion_is_never_a_quarantine_reason:
       rows:
         - {stage: C2, entity_key: "0000000011:ref11", reason_code: unit_corrected, source_document_hash: h11, created_at: "2026-10-21 08:00:00+00", krs: "0000000011", document_ref: ref11}
         - {stage: E2, entity_key: "0000000012:ref12", reason_code: unit_suspected, source_document_hash: h12, created_at: "2026-10-21 08:00:00+00", krs: "0000000012", document_ref: ref12}
+        - {stage: E2, entity_key: "0000000012:ref12", reason_code: sign_suspected, source_document_hash: h12, created_at: "2026-10-23 08:00:00+00", krs: "0000000012", document_ref: ref12}
   outputs:
     query:
       rows: []

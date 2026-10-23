@@ -15,7 +15,8 @@ every run, asking whichever source knows the current answer for each stage:
   record a violation C1 allowed, on a file that parsed (plan 0017 step E). So are
   `unit_corrected` (C2) and `unit_suspected` (E2): a file mapped in the unit the
   owner reviewed, and one flagged for that review, both parsed and graded at best
-  `warn` (plan 0023).
+  `warn` (plan 0023); and `sign_suspected` (E2), a file with a balance-sheet line
+  below zero that the forms allow none on, flagged and graded at best `warn`.
 - A1–A4, and C4 (legal-event normalisation): nothing downstream records these, so
   the log is the only source: the most recent detection per (stage, entity_key).
 - G1, G2 (text signals, plan 0013 step H): `text_coverage`, rebuilt on every run of the text
@@ -166,7 +167,7 @@ WITH e2_files AS (
     CASE WHEN stage IN ('A1', 'A2', 'A3', 'A4', 'C4') THEN NULL ELSE source_document_hash END AS file_hash,
     MIN(created_at) AS first_detected_at
   FROM ext.quarantine_events
-  WHERE reason_code NOT IN ('xsd_tolerated', 'unit_corrected', 'unit_suspected')
+  WHERE reason_code NOT IN ('xsd_tolerated', 'unit_corrected', 'unit_suspected', 'sign_suspected')
   GROUP BY ALL
 )
 SELECT

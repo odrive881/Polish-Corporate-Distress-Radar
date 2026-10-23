@@ -11,6 +11,8 @@
 - `config/mappings/unit_corrections_v<n>.yaml`: statement files whose declared unit the
   owner has reviewed as wrong, and the thresholds of the check that flags new suspects, the
   highest version in use (plan 0023).
+- `config/mappings/sign_check_v<n>.yaml`: the balance-sheet lines that may be negative; any
+  other below zero flags its file (`parsing/sign_plausibility.py`), the highest version in use.
 
 `load_mapping_config()` loads all six and checks the references between them,
 so a bad edit fails at load time rather than as missing facts.
@@ -391,6 +393,22 @@ class UnitCorrections(_Frozen):
         return None
 
 
+# --- sign check (2026-10-23) -----------------------------------------------------------------------
+
+
+class SignCheck(_Frozen):
+    """The balance-sheet lines the forms allow below zero; every other one is an amount."""
+
+    version: str = Field(pattern=r"^sign_check_v\d+$")
+    may_be_negative: tuple[str, ...] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def _unique(self) -> SignCheck:
+        if len(set(self.may_be_negative)) != len(self.may_be_negative):
+            raise ValueError(f"{self.version}: a line is listed twice")
+        return self
+
+
 def read_paths(spec: StructureSpec) -> tuple[tuple[str, ...], ...]:
     """What C reads below a spec's statement root, outside the introduction: the header and
     every statement element it binds. `xsd_tolerances.check_introduction` adds the items."""
@@ -413,6 +431,7 @@ class MappingConfig(_Frozen):
     catalog: StructureCatalog
     tolerances: XsdTolerances
     unit_corrections: UnitCorrections
+    sign_check: SignCheck
     # structure_version -> SHA-256 over the files that shape its output
     spec_hashes: dict[str, str]
 
@@ -457,6 +476,14 @@ class MappingConfig(_Frozen):
                     f"unit correction {correction.id}: {spec.structure_version} declares no "
                     f"multiplier {correction.declared_multiplier}"
                 )
+        balance_sheet = {
+            code
+            for code, item in self.chart.by_code().items()
+            if item.statement_type == "balance_sheet"
+        }
+        unknown_lines = sorted(set(self.sign_check.may_be_negative) - balance_sheet)
+        if unknown_lines:
+            raise ValueError(f"{self.sign_check.version}: not balance-sheet codes {unknown_lines}")
         for spec in self.specs.values():
             for tol in self.tolerances.for_spec(spec.structure_version):
                 for pattern in tol.patterns:
@@ -518,6 +545,7 @@ def load_mapping_config(config_dir: Path = CONFIG_DIR) -> MappingConfig:
     mappings = config_dir / "mappings"
     tolerances = XsdTolerances.model_validate(_yaml(_tolerances_path(mappings)))
     unit_corrections = UnitCorrections.model_validate(_yaml(_latest(mappings, "unit_corrections")))
+    sign_check = SignCheck.model_validate(_yaml(_latest(mappings, "sign_check")))
     chart_path = mappings / "canonical_chart.yaml"
     chart = CanonicalChart.model_validate(_yaml(chart_path))
     body_paths = {p.stem: p for p in sorted((mappings / "structures" / "bodies").glob("*.yaml"))}
@@ -556,5 +584,6 @@ def load_mapping_config(config_dir: Path = CONFIG_DIR) -> MappingConfig:
         catalog=catalog,
         tolerances=tolerances,
         unit_corrections=unit_corrections,
+        sign_check=sign_check,
         spec_hashes=hashes,
     )

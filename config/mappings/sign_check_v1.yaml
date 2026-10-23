@@ -1,0 +1,26 @@
+# Sign check v1 (2026-10-23; AGENT_SPEC §4.3, PROJECT_OVERVIEW stage 5: "sign errors").
+# Loaded and checked by `distress_radar.parsing.canonical_schema.load_mapping_config`.
+#
+# The balance-sheet forms of the accounting act (UoR, załączniki 1, 4 and 5) carry amounts, not
+# signed figures: an asset, a liability, a capital or a provision is never below zero, and a
+# sp. z o.o.'s share capital is at least 5,000 zł (KSH art. 154). Only the lines below may be
+# negative: the result lines, the line the form marks "wielkość ujemna", the revaluation reserve
+# (which holds fair-value losses too), and their sums. `parsing/sign_plausibility.py` flags a
+# file with any other balance-sheet line below zero, in any column, logs `sign_suspected` (E2)
+# and caps its grade at `warn`. It never corrects: what the filer meant is not knowable from the
+# file (the most common case, a share capital carrying the accumulated losses, is a misfiled
+# line, not a flipped sign).
+#
+# The file name is the version: a change is a new file, never an edit.
+
+version: sign_check_v1
+
+may_be_negative:
+  - BS.EQUITY_LIABILITIES.A          # Kapitał (fundusz) własny
+  - BS.EQUITY_LIABILITIES.A.USER
+  - BS.EQUITY_LIABILITIES.A.III      # Kapitał (fundusz) z aktualizacji wyceny
+  - BS.EQUITY_LIABILITIES.A.III.USER
+  - BS.EQUITY_LIABILITIES.A.III.1
+  - BS.EQUITY_LIABILITIES.A.V        # Zysk (strata) z lat ubiegłych
+  - BS.EQUITY_LIABILITIES.A.VI       # Zysk (strata) netto
+  - BS.EQUITY_LIABILITIES.A.VII      # Odpisy z zysku netto w ciągu roku obrotowego (wielkość ujemna)

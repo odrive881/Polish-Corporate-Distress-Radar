@@ -27,6 +27,7 @@ from distress_radar.acquisition.models import QuarantineRecord, QuarantineStage
 from distress_radar.acquisition.raw_store import raw_key
 from distress_radar.parsing import (
     manifest,
+    sign_plausibility,
     statement_introduction,
     unit_plausibility,
     xsd_tolerances,
@@ -170,7 +171,9 @@ def financial_statements_canonical(context: dg.AssetExecutionContext) -> dg.Mate
       or `E2` (identity failures that grade a file `quarantined`); and one `C1`
       `xsd_tolerated` row per file that parsed because every XSD violation it has
       is in `config/mappings/xsd_tolerances_v<n>.yaml` (plan 0017 step E), whose
-      grade is then at best `warn`;
+      grade is then at best `warn`; `unit_corrected` (C2), `unit_suspected` (E2, plan 0023)
+      and `sign_suspected` (E2, a balance-sheet line below zero that
+      `config/mappings/sign_check_v<n>.yaml` does not allow), each capping the file at `warn`;
     - `WAREHOUSE_DIR/financial_statements_canonical/fiscal_year=YYYY/`: the
       canonical facts (AGENT_SPEC §5 plus `document_ref`, `source_member`),
       with `quality_grade` set. Quarantined files keep their rows.
@@ -338,6 +341,22 @@ def financial_statements_canonical(context: dg.AssetExecutionContext) -> dg.Mate
             )
             capped.add((row["source_document_hash"], row["source_member"]))
             reasons["E2:unit_suspected"] += 1
+        # A balance-sheet line below zero that the forms allow none on: flagged, never corrected.
+        for row in sign_plausibility.suspects(facts, config.sign_check).iter_rows(named=True):
+            _quarantine(
+                conn,
+                "E2",
+                row["krs"],
+                row["document_ref"],
+                row["source_member"],
+                "sign_suspected",
+                row["detail"],
+                row["source_document_hash"],
+                run_id,
+                now,
+            )
+            capped.add((row["source_document_hash"], row["source_member"]))
+            reasons["E2:sign_suspected"] += 1
         graded = FINANCIAL_STATEMENTS_CANONICAL.validate(
             grade(facts, results, frozenset(capped)).sort(SORT_KEY)
         )

@@ -12,7 +12,7 @@ mistakes (values off by a factor of 1,000)"). It closes plan 0020's outstanding 
   corrections file names documents by hash and the pipeline's own member tokens, never a filer's file
   name).
 
-## Status: complete (2026-10-21): owner decision taken (correct through a reviewed list, flag the rest); steps A–D built and run
+## Status: complete (2026-10-21): owner decision taken (correct through a reviewed list, flag the rest); steps A–D built and run; 2026-10-23: the sign check built (§ "The sign check"), not yet run on the store; open: the Art. 233 tripwire on a misfiled share capital (owner)
 
 ## Findings (2026-10-21)
 
@@ -111,6 +111,32 @@ lists it in a new corrections version. Thresholds: 0.5, 0.8, 5 lines.
 
 ## Out of scope
 
-- Negative share capital (above): a sign-plausibility check, not built.
+- ~~Negative share capital (above): a sign-plausibility check, not built.~~ *Built 2026-10-23 (owner's
+  request), § "The sign check".*
 - Re-running `backtest_v9`: its features move for one population entity (`0000310926`), so its stored
   report stays a statement about the data it ran on; `backtest_v10` will run on the corrected store.
+
+## The sign check (2026-10-23)
+
+Asked for by the owner after plan 0013's K1-K3, as the cheap check to have before list v3's filers arrive.
+
+- **What it checks.** The balance-sheet forms carry amounts, so only the lines in
+  `config/mappings/sign_check_v1.yaml` may be below zero: total equity, the revaluation reserve, the
+  prior years' and the year's result, the write-offs from net profit, and their `.USER` detail sums.
+  `parsing/sign_plausibility.py` flags a file with any other balance-sheet line below zero, in any column:
+  logged `sign_suspected` (E2), capped at `warn`, never corrected, left out of the current `quarantine` set
+  (as `unit_suspected` is). `MappingConfig` refuses a listed code that is not a balance-sheet code.
+- **On the store (dry run, 2026-10-23):** 179 of 2,848 files, 70 entities. 117 of them graded `pass` now,
+  26 `warn`, 36 `quarantined`. For 83 the one finding is the share capital. The asset applies it on the
+  next `financial_statements_canonical` run; features read no `warn`, so nothing downstream moves but the
+  grades and `dq_mart`.
+- **What the negative share capitals are (finding).** Not flipped signs. In 82 of the 90 current-year
+  cases the equity lines still sum to the total, with the prior years' result (`A.V`) at zero or null:
+  the filer has put the accumulated losses into the share capital line (`0000270680`: each year's share
+  capital is the year before's total equity). That misfiling reaches a feature: the Art. 233 tripwire
+  (`ksh_tripwires.yaml`) reads the losses as `A.V` + `A.VI` and the threshold as half the share capital,
+  so with `A.V` at zero and the capital negative, a loss year triggers it (rightly, by accident: the
+  equity is negative) and a profit year does not (wrongly: 0000270680's 2022 and 2023, 0000271948's
+  2022–2025). *For the owner:* whether the tripwire should read a negative share capital as not filed
+  (null) or count a negative total equity as triggered, which is a new tripwire version and feature set.
+
