@@ -132,11 +132,11 @@ def test_a_krs_list_gives_candidates_from_its_krs_column_alone(tmp_path: Path):
     assert "TESTOWY" not in bad.detail
 
 
-def test_the_committed_left_out_list_names_the_entity_with_personal_data_in_its_notes():
+def test_the_committed_left_out_list_names_the_entities_with_personal_data_in_their_notes():
     left_out = load_left_out()
-    assert left_out.version == "left_out_entities_v1"
-    assert left_out.krs == {"0000500757"}
-    assert left_out.entities[0].reason == "personal_data_in_free_text"
+    assert left_out.version == "left_out_entities_v2"
+    assert left_out.krs == {"0000500757", "0000924557"}
+    assert {e.reason for e in left_out.entities} == {"personal_data_in_free_text"}
 
 
 def test_the_latest_left_out_list_is_read_and_must_carry_its_own_version(tmp_path: Path):
