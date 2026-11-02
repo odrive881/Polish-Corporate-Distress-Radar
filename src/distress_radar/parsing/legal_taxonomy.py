@@ -8,20 +8,21 @@ rather than as mislabelled events:
 - a class outside §4.6 does not validate;
 - two mappings for the same source event never overlap in time;
 - a mapping's dates lie inside its statute's;
-- a `change` mapping (plan 0010 step B) is dated by its entry, so it takes no `when` or date field.
+- a `change` mapping (plan 0010 step B) is dated by its entry, so it takes no `when` or date field;
+- a `publication_grace_days` (version 3, plan 0024) sits on an MSiG mapping only.
 """
 
 from __future__ import annotations
 
 from collections import Counter, defaultdict
 from collections.abc import Mapping
-from datetime import date
+from datetime import date, timedelta
 from itertools import pairwise
 from pathlib import Path
 from typing import Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from distress_radar.parsing.canonical_schema import CONFIG_DIR
 
@@ -153,9 +154,17 @@ class SourceMapping(_Frozen):
     effective_to: date | None = None
     date_field: str | None = None  # None: dated by the registry entry
     date_parse: Literal["exact", "leading"] = "exact"
+    # Version 3 (plan 0024 decision 7): an event dated by its MSiG publication still resolves
+    # here when published at most this many days after the range ends.
+    publication_grace_days: int | None = Field(default=None, ge=1)
 
     @model_validator(mode="after")
     def _date_parse_needs_field(self) -> SourceMapping:
+        if self.publication_grace_days is not None and self.source != "MSiG":
+            raise ValueError(
+                f"{self.locator}: `publication_grace_days` is for MSiG mappings only, "
+                "whose events can be dated by their publication"
+            )
         if self.date_parse == "leading" and self.date_field is None:
             raise ValueError(f"{self.locator}: `date_parse: leading` needs a `date_field`")
         if self.change is not None:
@@ -239,6 +248,12 @@ class ProcedureTaxonomy(_Frozen):
         end = m.effective_to or statute.effective_to or _OPEN_END
         return start, end
 
+    def _in_range(self, m: SourceMapping, on: date, *, publication_dated: bool) -> bool:
+        start, end = self.mapping_range(m)
+        if publication_dated and m.publication_grace_days is not None and end != _OPEN_END:
+            end = end + timedelta(days=m.publication_grace_days)
+        return start <= on <= end
+
     def event_type(self, name: str) -> EventType:
         return next(e for e in self.event_types if e.event_type == name)
 
@@ -246,11 +261,19 @@ class ProcedureTaxonomy(_Frozen):
         return {m.locator for m in self.mappings if m.source == source}
 
     def resolve(
-        self, source: Source, locator: str, fields: Mapping[str, str], on: date
+        self,
+        source: Source,
+        locator: str,
+        fields: Mapping[str, str],
+        on: date,
+        *,
+        publication_dated: bool = False,
     ) -> ResolvedEvent | None:
         """The mapping for a source record on `on`, or None: the caller quarantines it.
 
         `on` is the event's decision date, or its `known_from` when the source gives none.
+        `publication_dated`: `on` is the notice's publication, so a mapping's
+        `publication_grace_days` applies (version 3).
         """
         hits = [
             m
@@ -258,7 +281,7 @@ class ProcedureTaxonomy(_Frozen):
             if m.source == source
             and m.locator == locator
             and (m.when is None or m.when.matches(fields))
-            and self.mapping_range(m)[0] <= on <= self.mapping_range(m)[1]
+            and self._in_range(m, on, publication_dated=publication_dated)
         ]
         if not hits:
             return None

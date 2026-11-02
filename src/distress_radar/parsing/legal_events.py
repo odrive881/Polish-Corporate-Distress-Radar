@@ -16,7 +16,11 @@ and features use it:
 - for MSiG, the publication date.
 
 A record whose entry has no date is rejected (`krs_entry_date_missing`), never dated by guess.
-An event with no decision date keeps `event_date` null (the owner's rule, 2026-09-23).
+An event with no decision date keeps `event_date` null (the owner's rule, 2026-09-23). An MSiG
+`event_date` before the entity's own registration cannot be its decision (plan 0024 decision 6:
+a heading quoting the registration date, a statute's date): `null_dates_before_registration`
+sets it null before deduplication, so the row can join the registry's record of the same event,
+and the caller counts it.
 
 **Registry changes (plan 0010 step B).** Board, seat and capital changes are read from a
 section's history, not from one record: a taxonomy mapping with a `change` says how. They are
@@ -492,7 +496,13 @@ def from_msig_notice(
     for index, current in enumerate(rules):
         decided = event_date(current, extracted, published)
         on = decided or published
-        resolved = taxonomy.resolve("MSiG", "notice", {"notice_kind": current.kind}, on)
+        resolved = taxonomy.resolve(
+            "MSiG",
+            "notice",
+            {"notice_kind": current.kind},
+            on,
+            publication_dated=current.date == "publication",
+        )
         if resolved is None:
             reject("legal_event_type_unmapped", f"{current.kind} has no mapping in force on {on}")
             continue
@@ -520,6 +530,25 @@ def from_msig_notice(
 
 
 # --- the dataset ---------------------------------------------------------------------------------
+
+
+def null_dates_before_registration(normalised: Normalised) -> int:
+    """Null every MSiG `event_date` earlier than its entity's `registered` event; the count.
+
+    Run before `finalise`, so an undated row is grouped as one (plan 0024 decision 6).
+    """
+    registered: dict[str, date] = {}
+    for e in normalised.events:
+        if e.event_type == "registered":
+            on = e.event_date or e.known_from
+            registered[e.krs] = min(registered.get(e.krs, on), on)
+    nulled = 0
+    for i, e in enumerate(normalised.events):
+        since = registered.get(e.krs)
+        if e.source == "MSiG" and e.event_date is not None and since and e.event_date < since:
+            normalised.events[i] = replace(e, event_date=None)
+            nulled += 1
+    return nulled
 
 
 def _link(normalised: Normalised) -> dict[tuple[str, str], str]:

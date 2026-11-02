@@ -234,3 +234,58 @@ test_petitions_expire_openings_do_not:
         - {krs: "000000000P", as_of_date: 2012-03-31, horizon_months: 2, excluded_reason: null}
         - {krs: "000000000P", as_of_date: 2012-04-30, horizon_months: 1, excluded_reason: null}
         - {krs: "000000000P", as_of_date: 2012-04-30, horizon_months: 2, excluded_reason: null}
+
+# --- version 4 (plan 0024) ---------------------------------------------------------------------
+# The registry court's initiation of a dissolution without liquidation (MSiG chapter IV), undated,
+# published 2012-02-10: a `silent_exit` petition. It labels the window it falls in, excludes the
+# entity for the petition expiry (2 months here: until 2012-04-10), and the deregistration that
+# follows on 2012-05-15 is still a `silent_exit`. Cutoff 2012-06-30.
+test_a_court_dissolution_initiation_labels_then_expires:
+  model: staging.outcome_label_grid
+  vars:
+    <<: *vars
+    label_petition_expiry_months: 2
+  inputs:
+    ext.entity_master:
+      rows:
+        - {krs: "000000000I"}
+    ext.legal_source_fetches:
+      rows:
+        - {krs: "000000000I", source: KRS, fetched_at: "2012-06-30 12:00:00+00"}
+    staging.legal_events_canonical:
+      rows:
+        - {dedup_group_id: i1, krs: "000000000I", event_type: court_dissolution_initiated, outcome_class: silent_exit, stage: petition, ends: [], event_date: null, known_from: 2012-02-10, effective_date: 2012-02-10, label_class: silent_exit}
+        - {dedup_group_id: i2, krs: "000000000I", event_type: deregistered, outcome_class: silent_exit, stage: exit, ends: [bankruptcy, restructuring, liquidation], event_date: 2012-05-15, known_from: 2012-05-15, effective_date: 2012-05-15, label_class: silent_exit}
+  outputs:
+    query:
+      partial: true
+      rows:
+        # Excluded rows keep the grid's reading; `marts.outcome_labels` drops them.
+        - {krs: "000000000I", as_of_date: 2012-01-31, horizon_months: 1, excluded_reason: null, outcome_class: silent_exit, trigger_event_type: court_dissolution_initiated, event_known_from: 2012-02-10, proceeding_id_note: procedure_has_no_case}
+        - {krs: "000000000I", as_of_date: 2012-01-31, horizon_months: 2, excluded_reason: null, outcome_class: silent_exit, trigger_event_type: court_dissolution_initiated, event_known_from: 2012-02-10, proceeding_id_note: procedure_has_no_case}
+        - {krs: "000000000I", as_of_date: 2012-02-29, horizon_months: 1, excluded_reason: in_proceeding, outcome_class: alive, trigger_event_type: null, event_known_from: null, proceeding_id_note: null}
+        - {krs: "000000000I", as_of_date: 2012-02-29, horizon_months: 2, excluded_reason: in_proceeding, outcome_class: alive, trigger_event_type: null, event_known_from: null, proceeding_id_note: null}
+        - {krs: "000000000I", as_of_date: 2012-03-31, horizon_months: 1, excluded_reason: in_proceeding, outcome_class: alive, trigger_event_type: null, event_known_from: null, proceeding_id_note: null}
+        - {krs: "000000000I", as_of_date: 2012-03-31, horizon_months: 2, excluded_reason: in_proceeding, outcome_class: silent_exit, trigger_event_type: deregistered, event_known_from: 2012-05-15, proceeding_id_note: procedure_has_no_case}
+        # Past the expiry (2012-04-10): a prediction target again, and the deregistration labels it.
+        - {krs: "000000000I", as_of_date: 2012-04-30, horizon_months: 1, excluded_reason: null, outcome_class: silent_exit, trigger_event_type: deregistered, event_known_from: 2012-05-15, proceeding_id_note: procedure_has_no_case}
+        - {krs: "000000000I", as_of_date: 2012-04-30, horizon_months: 2, excluded_reason: null, outcome_class: silent_exit, trigger_event_type: deregistered, event_known_from: 2012-05-15, proceeding_id_note: procedure_has_no_case}
+        - {krs: "000000000I", as_of_date: 2012-05-31, horizon_months: 1, excluded_reason: deregistered, outcome_class: alive, trigger_event_type: null, event_known_from: null, proceeding_id_note: null}
+        - {krs: "000000000I", as_of_date: 2012-05-31, horizon_months: 2, excluded_reason: deregistered, outcome_class: null, trigger_event_type: null, event_known_from: null, proceeding_id_note: null}
+        - {krs: "000000000I", as_of_date: 2012-06-30, horizon_months: 1, excluded_reason: deregistered, outcome_class: null, trigger_event_type: null, event_known_from: null, proceeding_id_note: null}
+        - {krs: "000000000I", as_of_date: 2012-06-30, horizon_months: 2, excluded_reason: deregistered, outcome_class: null, trigger_event_type: null, event_known_from: null, proceeding_id_note: null}
+
+# The initiation precludes nothing: the deregistration after it is a `silent_exit`, not `merged_away`.
+test_a_deregistration_after_an_initiation_stays_a_silent_exit:
+  model: staging.legal_events_canonical
+  inputs:
+    ext.legal_events:
+      rows:
+        - {krs: "000000000J", event_type: court_dissolution_initiated, outcome_class: silent_exit, stage: petition, ends: [], precludes_silent_exit: false, event_date: null, known_from: 2024-05-10, source: MSiG, dedup_group_id: j1}
+        - {krs: "000000000J", event_type: deregistered, outcome_class: silent_exit, stage: exit, ends: [bankruptcy, restructuring, liquidation], precludes_silent_exit: false, event_date: 2025-01-20, known_from: 2025-01-20, source: KRS, dedup_group_id: j2}
+  outputs:
+    query:
+      partial: true
+      rows:
+        - {dedup_group_id: j1, event_type: court_dissolution_initiated, effective_date: 2024-05-10, label_class: silent_exit}
+        - {dedup_group_id: j2, event_type: deregistered, effective_date: 2025-01-20, label_class: silent_exit}

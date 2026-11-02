@@ -32,6 +32,7 @@ from distress_radar.parsing.legal_events import (
     finalise,
     from_krs_extract,
     from_msig_notice,
+    null_dates_before_registration,
     to_frame,
 )
 from distress_radar.parsing.legal_taxonomy import load_procedure_taxonomy
@@ -303,7 +304,9 @@ def legal_events(context: dg.AssetExecutionContext, config: SegmentConfig) -> dg
     C4 `quarantine_events` rows for records the taxonomy or the notice kinds do not map
     (`legal_event_type_unmapped`, `msig_notice_unclassified`, `krs_entry_date_missing`).
     `ingestion_run_id` on each row is the run that first stored its source document, so
-    unchanged input re-materializes to identical bytes.
+    unchanged input re-materializes to identical bytes. An MSiG `event_date` before the
+    entity's registration is set null and counted (`msig_dates_before_registration_nulled`,
+    plan 0024).
     Partition scheme: none (unpartitioned); files split by `event_year`.
     """
     postgres = cast("PostgresResource", context.resources.postgres)
@@ -357,6 +360,7 @@ def legal_events(context: dg.AssetExecutionContext, config: SegmentConfig) -> dg
         )
         conn.commit()
 
+    nulled = null_dates_before_registration(normalised)
     frame = LEGAL_EVENTS.validate(to_frame(finalise(normalised)))
     write_dataset(frame, settings.warehouse_dir, LEGAL_EVENTS_DATASET, "event_year")
     reasons = Counter(f"{_REASON}{r.reason_code}" for r in normalised.rejects)
@@ -386,6 +390,7 @@ def legal_events(context: dg.AssetExecutionContext, config: SegmentConfig) -> dg
             "entities": frame["krs"].n_unique(),
             "dedup_groups": frame["dedup_group_id"].n_unique(),
             "rows_by_source": dict(Counter(frame["source"].to_list())),
+            "msig_dates_before_registration_nulled": nulled,
         },
         check_results=[_quarantine_check("legal_events_quarantine", reasons), acceptance],
     )

@@ -87,7 +87,7 @@ class Settings(BaseSettings):
     # Which `config/labels/<label_version>.yaml` the label models build (plan 0009). A frozen set
     # records its version. From v3 a version also names its mapping versions (plan 0022), so an
     # older one is rebuilt by checking out a commit whose mappings it names, not by switching here.
-    label_version: str = "outcome_labels_v3"
+    label_version: str = "outcome_labels_v4"
     # Which `config/features/<feature_set_version>.yaml` builds `feature_store` (plan 0010). v6 is
     # v5 plus the auditor report's age; v5 is v4 plus the auditor reports' opinion, auditor change
     # and emphasis of matter; v4 is v3 (v1, the classical models' ratios and the 2025 revenue line,

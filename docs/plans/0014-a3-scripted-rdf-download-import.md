@@ -236,7 +236,9 @@ As of 2026-10-07:
    - **Most likely no event:** 22 notices of chapter IV (19 entities) carrying "wpis do rejestru" with
      liquidation terms, most likely MSiG's publication of KRS entries; the KRS extracts, which record a
      liquidation in dział 6, hold none for them. And 36 KRS suspensions of business (`zawieszenieWznowienie`),
-     which the taxonomy does not treat as distress.
+     which the taxonomy does not treat as distress. *Corrected 2026-11-02 (plan 0024): chapter IV is not a
+     republication but the registry court's initiation of a dissolution without liquidation (ustawa o KRS,
+     art. 25a), a `silent_exit` from label version 4; 0000370981's restructuring is accepted there too.*
 
 **What can be built meanwhile (2026-10-07), in this order** (1–3 done 2026-10-08, § "Progress"):
 

@@ -11,10 +11,13 @@
 # Version 2 (plan 0022, label version 3): the restructuring records list v2's distress group
 # brought — the registry's arrangement section, its restructuring endings and revocations, an
 # opening that does not name its procedure, GR-register cases entered in the bankruptcy section —
-# and MSiG's accelerated-arrangement and unspecified openings. A label version names the taxonomy
-# version it is built from (`config/labels/`), so a change here is a new version.
+# and MSiG's accelerated-arrangement and unspecified openings. Version 3 (plan 0024, label
+# version 4): the registry court's initiation of a dissolution without liquidation (MSiG chapter
+# IV, ustawa o KRS art. 25a), and a publication grace for the simplified restructuring. A label
+# version names the taxonomy version it is built from (`config/labels/`), so a change here is a
+# new version.
 
-version: 2
+version: 3
 
 # Acts and procedures, with the dates they applied. A mapping's range must lie inside its statute's.
 statutes:
@@ -44,6 +47,13 @@ statutes:
   - id: krs_1997
     act: Ustawa z 20 sierpnia 1997 r. o Krajowym Rejestrze Sądowym
     effective_from: 2001-01-01
+  # Version 3 (plan 0024). Art. 25a–25d, added by the act of 28 November 2014 (Dz.U. 2014 poz.
+  # 1924), whose art. 6 puts it in force on 1 January 2015 (checked against the act, 2026-11-01).
+  - id: krs_art25a
+    act: >-
+      Ustawa z 20 sierpnia 1997 r. o Krajowym Rejestrze Sądowym, art. 25a–25d — rozwiązanie
+      podmiotu bez przeprowadzenia postępowania likwidacyjnego (added by the act of 28 November 2014)
+    effective_from: 2015-01-01
 
 # KRZ went live on 1 December 2021 (ustawa z 6 grudnia 2018 r. o Krajowym Rejestrze Zadłużonych).
 # Before it, petitions and dismissals are largely invisible: `outcome_labels.source_era` is
@@ -144,6 +154,19 @@ event_types:
     stage: closing
     ends: [liquidation]
     precludes_silent_exit: false
+  # Version 3 (plan 0024 decisions 1, 3 and 4): the registry court has started proceedings to
+  # dissolve the company without liquidation (art. 25a), announced in MSiG chapter IV. The label
+  # fires when the court acts; the deregistration that follows stays a `silent_exit` (it
+  # precludes nothing). A petition stage, not an opening: the court discontinues the proceeding
+  # when property or filings turn up, and no source this project reads records that. Over list
+  # v3, 22 of the 113 initiated companies filed or changed their board afterwards without being
+  # deregistered, and 33 of the 60 initiated at least 24 months before were still registered
+  # (step A.3, 2026-11-01), so the initiation keeps an entity excluded only for
+  # `petition_expiry_months`, like a bankruptcy petition.
+  - event_type: court_dissolution_initiated
+    stage: petition
+    outcome_class: silent_exit
+    precludes_silent_exit: false
   # A silent exit only when no event that precludes it came earlier (plan 0008 decision 5).
   - event_type: deregistered
     stage: exit
@@ -191,6 +214,11 @@ event_types:
 # records, ADR 0009 addendum); the mappings below read that kind as `notice_kind`, and a notice
 # is dated by the rule's date policy, `known_from` being its publication date. KRZ has no
 # mappings: it is not built in Phase 4 (ADR 0011 decision 4).
+#
+# `publication_grace_days` (version 3, plan 0024 decision 7; MSiG mappings only): an event the
+# notice dates by its publication resolves under this mapping when published at most that many
+# days after the mapping's range ends. A procedure begun under a statute can be announced a few
+# days after the statute's last day; the statute's own dates stay as enacted.
 #
 # A `change` mapping reads a section's history instead of single records (plan 0010 step B):
 # - `replaced`: a record that an entry introduced, when the same entry removed another record at
@@ -400,6 +428,10 @@ mappings:
     when: {field: notice_kind, equals: simplified_restructuring_announced}
     event_type: simplified_restructuring_announced
     statute: upr_covid
+    # 0000370981 (arrangement day 2021-11-27, published 2021-12-07) and 0000552750 (2021-12-01,
+    # published 2021-12-03): announced just after the statute's end, accepted (plan 0024 owner
+    # decision 2).
+    publication_grace_days: 31
   - source: MSiG
     locator: notice
     when: {field: notice_kind, equals: restructuring_petition_security}
@@ -445,3 +477,9 @@ mappings:
     when: {field: notice_kind, equals: bankruptcy_petition_dismissed_by_restructuring}
     event_type: bankruptcy_petition_dismissed
     statute: pr_2015
+  # Version 3 (plan 0024).
+  - source: MSiG
+    locator: notice
+    when: {field: notice_kind, equals: court_dissolution_initiated}
+    event_type: court_dissolution_initiated
+    statute: krs_art25a

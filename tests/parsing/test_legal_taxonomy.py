@@ -5,7 +5,7 @@ from __future__ import annotations
 import copy
 import json
 import re
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +20,7 @@ from distress_radar.parsing.legal_taxonomy import (
     When,
     load_procedure_taxonomy,
 )
+from distress_radar.parsing.msig_notice_kinds import load_notice_kinds
 
 KRS_FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "legal" / "krs"
 BANKRUPTCY = "dane.dzial6.postepowanieUpadlosciowe.informacjaOOgloszeniuUpadlosci"
@@ -108,6 +109,51 @@ def test_simplified_restructuring_window_edges() -> None:
     assert taxonomy.resolve("MSiG", "notice", fields, date(2020, 6, 24)) is not None
     assert taxonomy.resolve("MSiG", "notice", fields, date(2021, 11, 30)) is not None
     assert taxonomy.resolve("MSiG", "notice", fields, date(2021, 12, 1)) is None
+
+
+def test_publication_grace_is_for_msig_mappings_only() -> None:
+    """Version 3 (plan 0024 decision 7): only an MSiG event can be dated by its publication."""
+    raw = _raw()
+    krs = next(m for m in raw["mappings"] if m["source"] == "KRS")
+    krs["publication_grace_days"] = 31
+    with pytest.raises(ValidationError, match="for MSiG mappings only"):
+        ProcedureTaxonomy.model_validate(raw)
+
+
+def test_publication_grace_applies_only_to_a_publication_dated_event(
+    taxonomy: ProcedureTaxonomy,
+) -> None:
+    fields = {"notice_kind": "simplified_restructuring_announced"}
+    on = date(2021, 12, 7)
+    assert taxonomy.resolve("MSiG", "notice", fields, on) is None
+    assert taxonomy.resolve("MSiG", "notice", fields, on, publication_dated=True) is not None
+    late = date(2021, 12, 31) + timedelta(days=1)
+    assert taxonomy.resolve("MSiG", "notice", fields, late, publication_dated=True) is None
+
+
+def test_every_grace_names_a_notice_kind_dated_by_publication(
+    taxonomy: ProcedureTaxonomy,
+) -> None:
+    rules = {r.kind: r for r in load_notice_kinds().rules}
+    graced = [m for m in taxonomy.mappings if m.publication_grace_days is not None]
+    assert graced
+    for m in graced:
+        assert m.when is not None and m.when.field == "notice_kind" and m.when.equals
+        assert rules[m.when.equals].date == "publication", m.when.equals
+
+
+def test_article_25a_initiation_is_a_silent_exit_petition(taxonomy: ProcedureTaxonomy) -> None:
+    """Version 3 (plan 0024): in force from 2015-01-01 (the act of 28 November 2014, art. 6)."""
+    initiated = taxonomy.event_type("court_dissolution_initiated")
+    assert (initiated.stage, initiated.outcome_class, initiated.precludes_silent_exit) == (
+        "petition",
+        "silent_exit",
+        False,
+    )
+    fields = {"notice_kind": "court_dissolution_initiated"}
+    assert taxonomy.resolve("MSiG", "notice", fields, date(2014, 12, 31)) is None
+    hit = taxonomy.resolve("MSiG", "notice", fields, date(2015, 1, 1))
+    assert hit is not None and hit.statute.id == "krs_art25a"
 
 
 def test_source_era_changes_at_krz_launch(taxonomy: ProcedureTaxonomy) -> None:

@@ -56,9 +56,18 @@ def test_version_3_changes_only_the_mapping_versions() -> None:
     assert changed == {"label_version", "taxonomy_version", "notice_kinds_version"}
 
 
-def test_the_default_label_version_is_3_and_matches_the_mappings() -> None:
+def test_version_4_changes_only_the_mapping_versions() -> None:
+    """Plan 0024: chapter IV initiations, liquidation dates, the simplified-restructuring grace."""
+    v3 = load_label_config("outcome_labels_v3")
+    v4 = load_label_config("outcome_labels_v4")
+    assert (v4.taxonomy_version, v4.notice_kinds_version) == (3, 3)
+    changed = {k for k, v in v4.model_dump().items() if v != v3.model_dump()[k]}
+    assert changed == {"label_version", "taxonomy_version", "notice_kinds_version"}
+
+
+def test_the_default_label_version_is_4_and_matches_the_mappings() -> None:
     config = load_label_config(Settings().label_version)
-    assert config.label_version == "outcome_labels_v3"
+    assert config.label_version == "outcome_labels_v4"
     check_mapping_versions(config, load_procedure_taxonomy().version, load_notice_kinds().version)
 
 

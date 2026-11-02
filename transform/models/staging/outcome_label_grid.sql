@@ -13,7 +13,10 @@ statutory taxonomy (`transform/config.py`), never restated here.
   - `in_proceeding`: a petition-stage or opening event of some class happened on or before
     `as_of_date`, with no closing event for that class since. An event on `as_of_date`
     itself counts as already happened. From version 2 (plan 0009), a petition-stage event
-    counts only for `label_petition_expiry_months`; an opening lasts until it is closed.
+    counts only for `label_petition_expiry_months`; an opening lasts until it is closed. From
+    version 4 (plan 0024), the registry court's initiation of a dissolution without
+    liquidation is a `silent_exit` petition: excluded for the same months, and nothing closes
+    it but the expiry or the deregistration.
 - **Label.** The first event in `(as_of_date, window_end]` with a `label_class`, where
   `window_end` is the month-end `horizon` months on (29 Feb + 1 month is 31 Mar, not 29 Mar),
   by effective date, then by `label_precedence` on a tie. Its class is the label. A
@@ -96,7 +99,7 @@ WITH fetches AS (
       SELECT 1 FROM staging.legal_events_canonical AS o
       WHERE o.krs = g.krs
         AND o.stage IN ('petition', 'opening')
-        AND o.outcome_class IN ('bankruptcy', 'restructuring', 'liquidation')
+        AND o.outcome_class IN ('bankruptcy', 'restructuring', 'liquidation', 'silent_exit')
         AND o.effective_date <= g.as_of_date
         AND (
           o.stage = 'opening'

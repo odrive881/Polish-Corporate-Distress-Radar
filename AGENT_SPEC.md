@@ -136,7 +136,7 @@ Ratios live in `config/statutory/ksh_tripwires.yaml`; `ksh_tripwires_v2.yaml` (f
 | `bankruptcy` | petition filed, bankruptcy declared, petition dismissed for insufficient assets |
 | `restructuring` | arrangement approval, accelerated arrangement, arrangement proceedings, remedial proceedings, COVID-era simplified restructuring |
 | `liquidation` | voluntary liquidation opened |
-| `silent_exit` | deregistered with no earlier event that rules it out: a bankruptcy, restructuring or liquidation (the deregistration then takes that class), or a merger (the row is censored). Filings ceasing is a Phase 5 feature, not a second label rule (plan 0008 decision 5) |
+| `silent_exit` | deregistered with no earlier event that rules it out: a bankruptcy, restructuring or liquidation (the deregistration then takes that class), or a merger (the row is censored). From label version 4 (plan 0024), also the registry court's initiation of a dissolution without liquidation (ustawa o KRS art. 25a, MSiG chapter IV): a petition-stage event, so it excludes the entity for `petition_expiry_months` at most, and the deregistration after it is still a `silent_exit`. Filings ceasing is a Phase 5 feature, not a second label rule (plan 0008 decision 5) |
 | `alive` | none of the above within the horizon |
 
 Rules:

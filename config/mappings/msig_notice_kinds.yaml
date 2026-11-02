@@ -25,10 +25,12 @@
 #
 # Written against the seed's 49 notices (2026-09-23): every rule has at least one of them.
 # Version 2 (plan 0022, label version 3) adds chapter IX's openings and endings from list v2's
-# distress group, each checked against the registry's own record of the same case. A label
-# version names the notice-kinds version it is built from (`config/labels/`).
+# distress group, each checked against the registry's own record of the same case. Version 3
+# (plan 0024, label version 4) adds chapter IV's court dissolutions and stops dating a liquidation
+# opening by its first body date. A label version names the notice-kinds version it is built from
+# (`config/labels/`).
 
-version: 2
+version: 3
 
 rules:
   # --- bankruptcy (chapter III) ----------------------------------------------------------------
@@ -132,11 +134,15 @@ rules:
     event: false
 
   # --- company law (chapter I) -----------------------------------------------------------------
+  # Version 3 (plan 0024 decision 6): with no "uchwał" date the opening is undated, never the
+  # first body date, which is often the company's registration quoted in the heading
+  # (0000435747, 0000523549) or the KSH's own date (0000302136). The registry's record of the
+  # same opening then dates it.
   - kind: liquidation_opened
     chapters: [I/2]
     all: [likwidac]
     any: [otwarci, uchwał, rozwiąz]
-    date: {prefer: [[uchwał]]}
+    date: {prefer: [[uchwał]], otherwise: none}
   - kind: merger_division_transformation
     chapters: [I/2]
     any: [połącz, przekształc, plan podziału]
@@ -147,3 +153,16 @@ rules:
     chapters: [I/2]
     none: [likwidac]
     event: false
+
+  # --- registry court (chapter IV) -------------------------------------------------------------
+  # Version 3 (plan 0024 decisions 1 and 5). "IV. Ogłoszenia wymagane przez ustawę o KRS": the
+  # registry court announcing that it has started (wszczęcie) proceedings to dissolve a dormant
+  # company without liquidation (ustawa o KRS, art. 25a–25d), calling on whoever holds its
+  # property to come forward. Not a registry republication (plan 0014 item 7 read it so). All
+  # 132 notices over list v3 carry both terms (2026-11-01); none had a "postanowieni" date, so the
+  # initiation is dated on or before its publication. A chapter IV notice without both terms is
+  # quarantined.
+  - kind: court_dissolution_initiated
+    chapters: [IV]
+    all: [likwidac, rozwiąz]
+    date: {prefer: [[postanowieni]], otherwise: none}

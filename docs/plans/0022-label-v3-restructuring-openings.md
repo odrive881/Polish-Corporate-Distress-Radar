@@ -106,7 +106,9 @@ discontinued 2025-11-21).
 - **Chapter IV (36 notices, 30 entities, 21 with no event at all):** "ogłasza / wpis do rejestru / likwidac /
   rozwiąz", mostly 2024–2026. Plan 0014 read them as MSiG republishing registry entries; they may instead be the
   court's proceedings to dissolve a dormant company without liquidation, which would be a silent exit. The
-  notice text is not stored, so one notice read by hand decides it. Not mapped by guess.
+  notice text is not stored, so one notice read by hand decides it. Not mapped by guess. *Decided 2026-10-26
+  without storing any text (plan 0024): they are the art. 25a initiation, mapped as a `silent_exit` petition
+  in label version 4.*
 - **Chapter III/9 (139 notices, 40 entities):** every one of these entities already has a bankruptcy event, and
   in all but one the notices come after it (trustee notices). No label changes.
 - **The rest of chapter IX** (approval and supervisor notices), **KRS suspensions** (56, deliberately unmapped),

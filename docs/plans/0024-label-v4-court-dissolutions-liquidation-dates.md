@@ -2,7 +2,9 @@
 
 **Stage:** C (legal events) and F (labels), after plan 0022. **Status: active (2026-10-26): written on the
 owner's request after the review of the legal quarantine (§ "Why"); owner decisions 1 and 2 taken
-(2026-10-26), decisions 3–8 this plan's own (flag any to change); nothing built.**
+(2026-10-26), decisions 3–8 this plan's own (flag any to change). 2026-11-02: steps A.3–A.4 done, decision 4
+changed by its own rule (§ "Progress"), steps B–C built on branch `plan-0024-label-v4`; A.1–A.2 and D wait for
+the nightly MSiG fetch to finish.**
 
 - **Invariants:** 1 (point in time: an event is known from its publication), 4 (no silent loss: what no rule
   maps stays quarantined, never guessed), 5 (idempotence: the label set is rebuilt from stored bytes, no
@@ -147,6 +149,37 @@ without liquidation; "filings ceasing" stays a feature); the dated corrections i
 0022 (§ "Left quarantined") that chapter IV is the art. 25a initiation; README's pick-up paragraph; the
 `LABEL_VERSION` default wherever it is quoted; `make docs-check`, then the hand read against this plan's
 results.
+
+## Progress
+
+**2026-11-01, steps A.3 and A.4 (read-only).** Chapter IV now holds 132 notices of 113 entities (list v3's
+first legal fetch). Every one carries both "likwidac" and "rozwiąz"; none has a "postanowieni" date, so every
+initiation is undated, on or before its publication. 35 of the 113 are deregistered, a median 228 days after
+the first notice (97 to 1,848); 12 had a bankruptcy, restructuring or liquidation before it. **22 show life
+afterwards and are not deregistered** (11 filed a statement after the notice, 13 changed their board), and of
+the 60 first notified at least 24 months ago, **33 are still registered**. First notices by year: 3, 1, 3, 9,
+5, 8, 12, 23, 25, 24 (2017–2026). The act of 28 November 2014 (Dz.U. 2014 poz. 1924), art. 6: in force on
+1 January 2015, so `krs_art25a` starts then.
+
+**Decision 4 changed, as it said it would.** 22 is more than a handful: the initiation is a **petition-stage**
+`silent_exit` event, not an opening. It labels the window it falls in, excludes the entity for
+`petition_expiry_months` (24) at most, and nothing else closes it; the deregistration that follows is still
+a `silent_exit`. The label grid's "in a proceeding" test now counts `silent_exit` petitions too (it read only
+the other three classes, so a `silent_exit` opening would never have excluded anything).
+
+**Decision 6's guard sits in `legal_events`, not `legal_events_canonical`.** Nulling the date before
+deduplication lets the undated MSiG row join the registry's record of the same opening (the SQL view groups
+after the date is set, so it could not), and the asset counts it in its metadata
+(`msig_dates_before_registration_nulled`).
+
+**2026-11-02, steps B and C built** (branch `plan-0024-label-v4`, worktree `../LARGE_pipeline-0024`):
+`msig_notice_kinds.yaml` v3 (`court_dissolution_initiated`, `liquidation_opened` with `otherwise: none`),
+`procedure_taxonomy.yaml` v3 (`krs_art25a`, the event type, its mapping, `publication_grace_days: 31` on the
+simplified restructuring, refused at load on a non-MSiG mapping and applied only to an event its notice
+dates by publication), the grid change, `outcome_labels_v4.yaml` as the default `LABEL_VERSION`, and the tests
+step C lists. One seed fixture changes: 0000397658's liquidation notice of 2021-11-25 was dated 01.10.2021 by
+the fallback (the date follows "zawiadamia", not "uchwał"), and is now undated; the replay checks it against
+the registry.
 
 ## What this plan does not do
 

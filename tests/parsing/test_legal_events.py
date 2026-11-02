@@ -6,7 +6,8 @@ import copy
 import hashlib
 import json
 import random
-from datetime import date
+from dataclasses import replace
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +21,7 @@ from distress_radar.parsing.legal_events import (
     from_krs_extract,
     from_msig_notice,
     normalise_signature,
+    null_dates_before_registration,
     to_frame,
 )
 from distress_radar.parsing.legal_taxonomy import ProcedureTaxonomy, load_procedure_taxonomy
@@ -334,7 +336,9 @@ def test_a_change_on_an_undated_entry_is_rejected(taxonomy: ProcedureTaxonomy) -
             date(2019, 10, 29),
         ),
         ("0000386777_2109633", "remedial_proceedings_opened", date(2020, 4, 17), date(2020, 5, 6)),
-        ("0000397658_935723", "liquidation_opened", date(2021, 10, 1), date(2021, 11, 25)),
+        # Undated from notice kinds v3 (plan 0024 decision 6): its 01.10.2021 follows
+        # "zawiadamia", not "uchwał", so the registry's record of the opening dates it.
+        ("0000397658_935723", "liquidation_opened", None, date(2021, 11, 25)),
         ("0000440028_13039478", "liquidation_opened", date(2023, 7, 21), date(2023, 12, 21)),
         (
             "0000225506_8260486",
@@ -349,7 +353,7 @@ def test_each_fixture_notice_is_typed_and_dated(
     kinds: NoticeKinds,
     name: str,
     event_type: str,
-    event_date: date,
+    event_date: date | None,
     known_from: date,
 ) -> None:
     out = _msig(taxonomy, kinds, name)
@@ -608,3 +612,134 @@ def test_frame_passes_the_contract_and_ignores_input_order(
     random.Random(7).shuffle(shuffled.events)
     random.Random(7).shuffle(shuffled.aliases)
     assert to_frame(finalise(shuffled)).equals(frame)
+
+
+# --- plan 0024 (notice kinds v3, taxonomy v3) ------------------------------------------------------
+
+
+def _iv(terms: list[str], published: str, dates: list[tuple[str, list[str]]]) -> dict[str, Any]:
+    """A reduced chapter IV notice: a fixture notice with its chapter, terms and dates replaced."""
+    record = _notice("0000397658_935723")
+    record["extracted"]["chapter_code"] = "IV"
+    record["extracted"]["terms"] = terms
+    record["extracted"]["dates"] = [
+        {"date": d, "in": "body", "terms_before": before} for d, before in dates
+    ]
+    record["notice"]["dateOfPublication"] = f"{published}T00:00:00"
+    return record
+
+
+_IV_TERMS = ["ogłasza", "ogłoszeni", "wpis do rejestru", "likwidac", "rozwiąz"]
+
+
+def test_a_chapter_iv_initiation_is_a_silent_exit_petition(
+    taxonomy: ProcedureTaxonomy, kinds: NoticeKinds
+) -> None:
+    """The registry court starting an art. 25a dissolution: undated, so on or before publication."""
+    record = _iv(_IV_TERMS, "2024-05-10", [("2012-10-08", ["ogłoszeni"])])
+    [event] = _msig(taxonomy, kinds, "", record).events
+    assert (
+        event.event_type,
+        event.outcome_class,
+        event.stage,
+        event.precludes_silent_exit,
+        event.event_date,
+        event.known_from,
+        event.statute,
+    ) == (
+        "court_dissolution_initiated",
+        "silent_exit",
+        "petition",
+        False,
+        None,
+        date(2024, 5, 10),
+        "krs_art25a",
+    )
+    dated = _iv(_IV_TERMS, "2024-05-10", [("2024-04-22", ["postanowieni"])])
+    [event] = _msig(taxonomy, kinds, "", dated).events
+    assert event.event_date == date(2024, 4, 22)
+
+
+def test_a_chapter_iv_notice_without_both_terms_stays_quarantined(
+    taxonomy: ProcedureTaxonomy, kinds: NoticeKinds
+) -> None:
+    record = _iv(["ogłasza", "wpis do rejestru", "likwidac"], "2024-05-10", [])
+    [reject] = _msig(taxonomy, kinds, "", record).rejects
+    assert reject.reason_code == "msig_notice_unclassified"
+
+
+def test_an_initiation_before_article_25a_is_unmapped(
+    taxonomy: ProcedureTaxonomy, kinds: NoticeKinds
+) -> None:
+    [reject] = _msig(taxonomy, kinds, "", _iv(_IV_TERMS, "2014-12-31", [])).rejects
+    assert reject.reason_code == "legal_event_type_unmapped"
+    assert _msig(taxonomy, kinds, "", _iv(_IV_TERMS, "2015-01-01", [])).events
+
+
+def _liquidation(dates: list[tuple[str, list[str]]]) -> dict[str, Any]:
+    record = _notice("0000440028_13039478")
+    record["extracted"]["dates"] = [
+        {"date": d, "in": "body", "terms_before": before} for d, before in dates
+    ]
+    return record
+
+
+def test_a_liquidation_opening_never_takes_the_first_body_date(
+    taxonomy: ProcedureTaxonomy, kinds: NoticeKinds
+) -> None:
+    """0000435747's notice quoted its 2012 registration and no resolution date: undated."""
+    record = _liquidation([("2012-10-08", ["ogłoszeni"])])
+    [event] = _msig(taxonomy, kinds, "", record).events
+    assert (event.event_type, event.event_date) == ("liquidation_opened", None)
+
+
+def test_an_undated_liquidation_notice_takes_the_registrys_date(
+    taxonomy: ProcedureTaxonomy, kinds: NoticeKinds
+) -> None:
+    [notice] = _msig(taxonomy, kinds, "", _liquidation([("2012-10-08", [])])).events
+    registry = replace(
+        notice,
+        source="KRS",
+        event_date=notice.known_from - timedelta(days=40),
+        known_from=notice.known_from - timedelta(days=20),
+        source_element_path="odpis.dane.dzial6.likwidacja.otwarcieLikwidacji[0]",
+    )
+    events = finalise(Normalised(events=[notice, registry]))
+    assert len({e.dedup_group_id for e in events}) == 1
+
+
+def test_an_msig_date_before_registration_is_nulled_and_counted(
+    taxonomy: ProcedureTaxonomy, kinds: NoticeKinds
+) -> None:
+    [notice] = _msig(taxonomy, kinds, "", _liquidation([("2012-10-08", ["uchwał"])])).events
+    assert notice.event_date == date(2012, 10, 8)
+    registered = replace(
+        notice,
+        event_type="registered",
+        outcome_class=None,
+        stage="signal",
+        source="KRS",
+        event_date=None,
+        known_from=date(2012, 10, 8) + timedelta(days=1),
+        source_element_path="odpis.naglowekP.wpis[0]",
+    )
+    krs_dated = replace(notice, source="KRS", event_date=date(2012, 10, 7))
+    out = Normalised(events=[notice, registered, krs_dated])
+    assert null_dates_before_registration(out) == 1  # only the MSiG row
+    assert [e.event_date for e in out.events] == [None, None, date(2012, 10, 7)]
+    assert null_dates_before_registration(out) == 0
+
+
+@pytest.mark.parametrize(
+    ("published", "resolves"),
+    [("2021-12-03", True), ("2021-12-07", True), ("2021-12-31", True), ("2022-01-01", False)],
+)
+def test_a_simplified_restructuring_announced_just_after_the_statute_resolves(
+    taxonomy: ProcedureTaxonomy, kinds: NoticeKinds, published: str, resolves: bool
+) -> None:
+    """0000552750 (2021-12-03) and 0000370981 (2021-12-07): 31 days' grace after 2021-11-30."""
+    record = _notice("0000277937_2155799")
+    record["notice"]["dateOfPublication"] = f"{published}T00:00:00"
+    out = _msig(taxonomy, kinds, "", record)
+    assert bool(out.events) is resolves
+    assert bool(out.rejects) is not resolves
