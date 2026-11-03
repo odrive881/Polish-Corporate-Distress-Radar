@@ -4,8 +4,8 @@
 owner's request after the review of the legal quarantine (§ "Why"); owner decisions 1 and 2 taken
 (2026-10-26), decisions 3–8 this plan's own (flag any to change). 2026-11-02: steps A.3–A.4 done, decision 4
 changed by its own rule (§ "Progress"), steps B–C built on branch `plan-0024-label-v4`. 2026-11-03: A.1–A.2
-done, the liquidation rule excludes merger plans (owner, after A.2), D's replay done; D's rebuild and freeze
-and step E remain.**
+done, the liquidation rule excludes merger plans (owner, after A.2), D's replay done. 2026-11-03: merged to master, D's rebuild done (v4 set `a10a093b9007`); step E
+remains.**
 
 - **Invariants:** 1 (point in time: an event is known from its publication), 4 (no silent loss: what no rule
   maps stays quarantined, never guessed), 5 (idempotence: the label set is rebuilt from stored bytes, no
@@ -204,6 +204,23 @@ fallback date; removed: the 3 merger plans above; re-dated: 85 MSiG liquidation 
 publication). New rejects: only the 7 merger plans. 191 entities change, all in `entity_master`. No MSiG date
 falls before registration once the fallback is gone (the guard nulls 0). `seed_acceptance` unchanged (9
 matched, 8 clear).
+
+**2026-11-03, step D's rebuild** (run 07601e37: `legal_events` and the `labels` group from stored bytes, no
+fetch; the nightly's catch-up fetch was cancelled for it). Label set **`a10a093b90073419b7855247e2d8ec47e5ebd78dc4851cfda9880dc06d831116`**
+(`outcome_labels_v4`, cutoff 2026-11-03), **279,868 rows over 1,489 entities**, against v3's `b1f256f8efea`
+(2026-11-02, 282,626 rows, 1,487 entities). All label checks pass. 120 entities' labels change:
+
+- **`silent_exit` 1,188 → 3,828 rows:** 1,702 `alive` rows (76 entities) and 1,343 censored rows (57) now end
+  in an initiation; 3,570 rows of 106 entities leave the grid, 1,834 of them censored in v3, as excluded while
+  the petition is open (24 months at most).
+- **The three companies of item 2:** 0000435747 and 0000523549 now have label rows (276 and 144, 36 each
+  `liquidation`, dated by the registry: 2024-04-16 and 2020-09-21); 0000302136 is unchanged (`alive`, its
+  merger plan quarantined). The other merger plans lose their false liquidation: 0000172778, 0000811275 and
+  0001006920 have no `liquidation` row left (151 rows `liquidation` → `alive`, 54 → censored).
+- **Simplified restructurings:** 0000370981 and 0000552750 have 36 `restructuring` rows each.
+- **An initiation before a bankruptcy** relabels the window it opens first: 0000676128 (initiation published
+  2025-04-25, bankruptcy 2026-08-31) and 0000069241 (2017-12-01, 2019-10-17), 10 rows `bankruptcy` →
+  `silent_exit`. That is decision 4 as written (the first event in the window sets the class).
 
 ## What this plan does not do
 
