@@ -228,6 +228,8 @@ As of 2026-10-07:
    a label:
    - **Probably a wrong label:** 0000370981, a simplified restructuring announced 2021-12-07, after the
      mapping's end date (2021-11-30); MSiG is its only source, and the company is labelled `alive` across it.
+     *Resolved 2026-11-03 (plan 0024, label version 4): a 31-day publication grace maps it, and it is labelled
+     `restructuring`.*
      0001011389, a KRS dissolution section (`rozwiazanieUniewaznienie`) not mapped, labelled `alive` through
      2024-09. Neither is in `backtest_v5`'s population, so no result so far is affected.
    - **The class already right, a detail lost:** 0000205656 (a composition proceeding, `postepowanieUkladowe`,

@@ -1,11 +1,10 @@
 # 0024 — Outcome labels, version 4: court dissolutions, liquidation dates, late simplified restructurings
 
-**Stage:** C (legal events) and F (labels), after plan 0022. **Status: active (2026-10-26): written on the
+**Stage:** C (legal events) and F (labels), after plan 0022. **Status: complete (2026-11-03). Active from 2026-10-26: written on the
 owner's request after the review of the legal quarantine (§ "Why"); owner decisions 1 and 2 taken
 (2026-10-26), decisions 3–8 this plan's own (flag any to change). 2026-11-02: steps A.3–A.4 done, decision 4
 changed by its own rule (§ "Progress"), steps B–C built on branch `plan-0024-label-v4`. 2026-11-03: A.1–A.2
-done, the liquidation rule excludes merger plans (owner, after A.2), D's replay done. 2026-11-03: merged to master, D's rebuild done (v4 set `a10a093b9007`); step E
-remains.**
+done, the liquidation rule excludes merger plans (owner, after A.2), D's replay done. 2026-11-03: merged to master, D's rebuild done (v4 set `a10a093b9007`), step E's docs sweep done.**
 
 - **Invariants:** 1 (point in time: an event is known from its publication), 4 (no silent loss: what no rule
   maps stays quarantined, never guessed), 5 (idempotence: the label set is rebuilt from stored bytes, no
@@ -221,6 +220,12 @@ fetch; the nightly's catch-up fetch was cancelled for it). Label set **`a10a093b
 - **An initiation before a bankruptcy** relabels the window it opens first: 0000676128 (initiation published
   2025-04-25, bankruptcy 2026-08-31) and 0000069241 (2017-12-01, 2019-10-17), 10 rows `bankruptcy` →
   `silent_exit`. That is decision 4 as written (the first event in the window sets the class).
+
+**2026-11-03, step E.** AGENT_SPEC §4.6's `silent_exit` row and the label paragraph (a `silent_exit`
+petition excludes like the others), its status paragraph, plan 0014 item 7 (0000370981 resolved) and
+plan 0022's chapter IV correction, README's status line and pick-up paragraph (the v4 set, scoring refused
+until `backtest_v10`), `backtest_v10.yaml`'s note that it pins a v4 set, and the `LABEL_VERSION` default
+(`settings.py`, `.env.example`, README). `make docs-check` passes.
 
 ## What this plan does not do
 

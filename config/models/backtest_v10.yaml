@@ -21,7 +21,7 @@
 #   1. the owner's script has searched every drawn company (the notebook's section 2 lists none
 #      `rdf_not_searched`), the import is done and parsed;
 #   2. the nightly registry check has fetched their legal sources and a label set over them is
-#      frozen;
+#      frozen (an `outcome_labels_v4` set, the default since plan 0024);
 #   3. `feature_store` is rebuilt with FEATURE_SET_VERSION=feature_set_v8.
 # Filling a placeholder before the first run is recording the version, not changing it; once it has
 # run, any change is a new file.
