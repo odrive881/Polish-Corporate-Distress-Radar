@@ -3,8 +3,9 @@
 **Stage:** C (legal events) and F (labels), after plan 0022. **Status: active (2026-10-26): written on the
 owner's request after the review of the legal quarantine (§ "Why"); owner decisions 1 and 2 taken
 (2026-10-26), decisions 3–8 this plan's own (flag any to change). 2026-11-02: steps A.3–A.4 done, decision 4
-changed by its own rule (§ "Progress"), steps B–C built on branch `plan-0024-label-v4`; A.1–A.2 and D wait for
-the nightly MSiG fetch to finish.**
+changed by its own rule (§ "Progress"), steps B–C built on branch `plan-0024-label-v4`. 2026-11-03: A.1–A.2
+done, the liquidation rule excludes merger plans (owner, after A.2), D's replay done; D's rebuild and freeze
+and step E remain.**
 
 - **Invariants:** 1 (point in time: an event is known from its publication), 4 (no silent loss: what no rule
   maps stays quarantined, never guessed), 5 (idempotence: the label set is rebuilt from stored bytes, no
@@ -180,6 +181,29 @@ dates by publication), the grid change, `outcome_labels_v4.yaml` as the default 
 step C lists. One seed fixture changes: 0000397658's liquidation notice of 2021-11-25 was dated 01.10.2021 by
 the fallback (the date follows "zawiadamia", not "uchwał"), and is now undated; the replay checks it against
 the registry.
+
+**2026-11-02, steps A.1 and A.2 (read-only, the same in-memory probe).** A.1: of the 132 chapter IV notices,
+all 132 name the company's assets and 124 say "wszczęcie"; none says the court dissolved the company or
+discontinued the proceeding. The other 8 are the same call worded otherwise, so no further kind is needed.
+A.2: **0000302136's notice is a merger plan** ("plan połączenia", the acquired company dissolved "bez
+przeprowadzenia likwidacji"), with neither "otwarcie likwidacji" nor "w likwidacji". The stored records
+show 7 notices of 5 entities the liquidation rule matched with a merger term (0000172778, 0000251888 ×3,
+0000302136, 0000811275, 0001006920), none with "otwarci"; the probe found each a merger plan. No other
+notice the rule matches has a merger term. **Owner decision (2026-11-03):** `liquidation_opened` gains
+`none: [połącz, przekształc, plan podziału]`; such a notice matches no rule and stays quarantined
+(`msig_notice_unclassified`), and the registry's record dates the merger itself. Three of them (0000172778,
+0000811275, 0001006920) were dated liquidation openings under v2 too, so the current v3 labels carry a false
+liquidation for those three.
+
+**2026-11-03, step D's replay** (stored bytes, master config v2 against the branch's v3, nothing written):
+2,877 documents (1,497 KRS extracts, 1,380 MSiG fetches). Rows 7,778 → 7,911, rejects 595 → 462. Added:
+132 `court_dissolution_initiated` (113 entities, all undated, so effective from publication), 2
+`simplified_restructuring_announced` (0000370981, 0000552750), 2 `liquidation_opened` once refused for their
+fallback date; removed: the 3 merger plans above; re-dated: 85 MSiG liquidation openings now undated
+(0000397658, 0000435747 and 0000523549 take the registry's date; 18 entities have no registry row and take
+publication). New rejects: only the 7 merger plans. 191 entities change, all in `entity_master`. No MSiG date
+falls before registration once the fallback is gone (the guard nulls 0). `seed_acceptance` unchanged (9
+matched, 8 clear).
 
 ## What this plan does not do
 

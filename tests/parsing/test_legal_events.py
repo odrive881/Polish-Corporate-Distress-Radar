@@ -693,6 +693,17 @@ def test_a_liquidation_opening_never_takes_the_first_body_date(
     assert (event.event_type, event.event_date) == ("liquidation_opened", None)
 
 
+@pytest.mark.parametrize("merger_term", ["połącz", "przekształc", "plan podziału"])
+def test_a_merger_plan_naming_a_dissolution_without_liquidation_stays_quarantined(
+    taxonomy: ProcedureTaxonomy, kinds: NoticeKinds, merger_term: str
+) -> None:
+    """0000302136's notice (plan 0024 step A.2): a merger plan, not a liquidation opening."""
+    record = _liquidation([("2025-09-30", ["uchwał"])])
+    record["extracted"]["terms"] = ["likwidac", "rozwiąz", "uchwał", merger_term]
+    [reject] = _msig(taxonomy, kinds, "", record).rejects
+    assert reject.reason_code == "msig_notice_unclassified"
+
+
 def test_an_undated_liquidation_notice_takes_the_registrys_date(
     taxonomy: ProcedureTaxonomy, kinds: NoticeKinds
 ) -> None:

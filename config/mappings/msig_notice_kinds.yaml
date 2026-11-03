@@ -137,11 +137,15 @@ rules:
   # Version 3 (plan 0024 decision 6): with no "uchwał" date the opening is undated, never the
   # first body date, which is often the company's registration quoted in the heading
   # (0000435747, 0000523549) or the KSH's own date (0000302136). The registry's record of the
-  # same opening then dates it.
+  # same opening then dates it. A merger plan is not a liquidation: the acquired company is
+  # dissolved "bez przeprowadzenia likwidacji", so its notice carries "likwidac", "rozwiąz" and
+  # "uchwał" (plan 0024 step A.2: 7 notices of 5 companies, 0000302136 among them, each a "plan
+  # połączenia"). It matches no rule and is quarantined; the registry's record dates the merger.
   - kind: liquidation_opened
     chapters: [I/2]
     all: [likwidac]
     any: [otwarci, uchwał, rozwiąz]
+    none: [połącz, przekształc, plan podziału]
     date: {prefer: [[uchwał]], otherwise: none}
   - kind: merger_division_transformation
     chapters: [I/2]
