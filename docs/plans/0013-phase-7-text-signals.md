@@ -224,13 +224,15 @@ result moves, and the seed's samples label as before.
     the agreement per signal. With one labeller, that agreement is the ceiling on what any score can mean.
 23. **Time a page.** A save records the seconds the page was on screen (local, never exported); `make
     label-review` prints the median by stratum, from which the next sample's rates are set.
-24. **The gate compares methods in pairs** (`eval_gate_v2`, now the default). A new method fails when its
+24. **The gate compares methods in pairs** (`eval_gate_v2`, written; *not adopted*: the owner kept v1, hold
+    or improve, 2026-11-06, and v1 stays the default). A new method fails when its
     end-to-end precision or recall falls more than 10 points below the accepted one's, or when McNemar's exact
     one-sided test on the same pages says it loses at 5%: the positives the accepted one finds and it misses
     against the other way round, and the pages it claims falsely against the other way round. Once the set holds
     hundreds of pages, v1's tolerance of 0 fails a change on a single disputed page. On a handful of positives,
-    losing one is still more than 10 points and fails. *The owner's to confirm* (the tolerances are the owner's):
-    `EVAL_GATE_VERSION=eval_gate_v1` keeps the old rule.
+    losing one is still more than 10 points and fails. The tolerances are the owner's: v2 can be named later
+    with `EVAL_GATE_VERSION=eval_gate_v2`, a decision that would also change the rule in CLAUDE.md, AGENT_SPEC
+    §6 G3 and TECHNICAL_ARCHITECTURE.
 
 Found and fixed while building it: the gate re-scored a stored result without its page weights. Once a weighted
 page was exported, every current result would have failed as "stored scores are not its examples' scores". It
@@ -249,7 +251,7 @@ now re-scores with them (tested).
   `review`, `make label-review`), the notebook (draw order, progress and pilot banners, only the page's signals,
   unsure and reason, rechecks due, time on screen), `eval_harness.py` (`holdout`, `without_unsure`, the paired
   test, `document_scores`, `labeller_consistency`, re-scoring with weights), `eval_run.py` (their printout,
-  `make eval-errors`), `eval_gate_v2.yaml`, the labelling guide v2, and `golden_sample_v4`/`v5` written with
+  `make eval-errors`), `eval_gate_v2.yaml` (not the default), the labelling guide v2, and `golden_sample_v4`/`v5` written with
   provisional ceilings. Tests: `tests/extraction/test_golden.py` and `test_eval_harness.py`, on synthetic pages.
 - **K4** (after list v3's import and its `text` run): `make label-queue`, then set v4's and v5's rates from the
   pools it prints, before the first label; label the pilot, `make label-review`, freeze the guide; label in draw

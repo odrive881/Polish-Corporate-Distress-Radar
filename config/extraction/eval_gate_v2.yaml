@@ -12,6 +12,9 @@
 #   it claims falsely that the accepted one does not against the other way round, at `alpha`.
 # The two pairs compare the methods page by page, so they see a real loss far sooner than two
 # overlapping intervals would.
+#
+# Not the default: the owner kept v1, hold or improve (2026-11-06). Kept so that a later decision can
+# name it with `EVAL_GATE_VERSION=eval_gate_v2`.
 
 eval_gate_version: eval_gate_v2
 tolerance:

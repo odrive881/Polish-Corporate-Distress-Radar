@@ -105,8 +105,8 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │       └── small-2025-w2-v1-0.yaml  # CRWDE 13818 (plan 0017 step B)
 │   ├── xsd/                           # official MF/CRWDE XSDs, vendored (catalog.yaml)
 │   ├── extraction/                    # text-signal engineering config (plan 0013)
-│   │   ├── eval_gate_v1.yaml          # how far a change may fall below the accepted scores (owner's tolerance)
-│   │   ├── eval_gate_v2.yaml          # v1 at 10 points, plus a paired test on the same pages (the default, EVAL_GATE_VERSION)
+│   │   ├── eval_gate_v1.yaml          # how far a change may fall below the accepted scores: 0, hold or improve (the default, EVAL_GATE_VERSION)
+│   │   ├── eval_gate_v2.yaml          # v1 at 10 points, plus a paired test on the same pages (kept, not in use: owner, 2026-11-06)
 │   │   ├── extractor_v1.yaml          # model, effort, prefilter, and the method (llm + prompt, or rule) per signal_type
 │   │   ├── extractor_v2.yaml          # v1 with rules_v2 and prefilter_v2
 │   │   ├── extractor_v3.yaml          # v2 with rules_v3

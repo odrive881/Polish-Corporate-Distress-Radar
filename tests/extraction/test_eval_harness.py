@@ -357,7 +357,7 @@ def test_the_paired_test_sees_a_loss_the_tolerance_lets_through() -> None:
     v2 = h.load_gate("eval_gate_v2")
     assert v2.paired == h.Paired(alpha=0.05)
     assert (v2.tolerance.precision, v2.tolerance.recall) == (0.10, 0.10)
-    assert Settings().eval_gate_version == "eval_gate_v2"
+    assert Settings().eval_gate_version == "eval_gate_v1"  # the owner kept hold or improve
 
 
 def test_document_scores_read_the_flag_as_the_features_see_it(tmp_path: Path) -> None:
