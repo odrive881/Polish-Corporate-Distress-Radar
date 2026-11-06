@@ -164,7 +164,16 @@ from dagster_defs.jobs import jobs
 from dagster_defs.schedules import schedules
 from dagster_defs.sensors import sensors
 
+# One step at a time in every job, the UI's ad-hoc materializations included: parallel steps ran
+# WSL out of memory (2026-10-18; `make reproduce` already ran with this cap). A run may still raise
+# it in its own config (`execution.config.multiprocess.max_concurrent`).
+MAX_CONCURRENT_STEPS = 1
+ONE_STEP_EXECUTOR = dg.multiprocess_executor.configured(
+    {"max_concurrent": MAX_CONCURRENT_STEPS}, name="one_step_multiprocess"
+)
+
 defs = dg.Definitions(
+    executor=ONE_STEP_EXECUTOR,
     assets=[
         *acquisition_assets,
         *parsing_assets,

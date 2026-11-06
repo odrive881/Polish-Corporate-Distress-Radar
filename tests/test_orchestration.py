@@ -9,7 +9,7 @@ from zoneinfo import ZoneInfo
 
 import dagster as dg
 from dagster._core.run_coordinator import QueuedRunCoordinator
-from dagster_defs.definitions import defs
+from dagster_defs.definitions import MAX_CONCURRENT_STEPS, ONE_STEP_EXECUTOR, defs
 
 SETTINGS = Path(__file__).parent.parent / "dagster_defs" / "dagster.yaml"
 
@@ -44,6 +44,15 @@ def test_the_whole_repository_resolves():
         "alerting",
         "monitoring",
     }
+
+
+def test_every_job_runs_one_step_at_a_time():
+    """Parallel steps ran WSL out of memory (2026-10-18): every job, the implicit asset job the
+    UI materializes through included, inherits the capped executor."""
+    assert MAX_CONCURRENT_STEPS == 1
+    repository = defs.get_repository_def()
+    for job in repository.get_all_jobs():
+        assert job.executor_def is ONE_STEP_EXECUTOR, job.name
 
 
 def test_every_schedule_and_sensor_ships_stopped():
