@@ -20,8 +20,17 @@ stores and writes the files.
     in the sample is its entity's π times that rate, exactly, and its weight the inverse: the
     estimates are the draw's segment's, the strata only make them cheaper. Nothing is left out: a
     drawn page already labelled in another queue or the golden set carries its labels over.
-  The owner labels every page for every `signal_type`. A queue is local and never committed:
-  until the owner has read a page, the masker's misses are still in it.
+  The owner labels every page for every `signal_type`, except on a stratified sample's page, which
+  is labelled for the signals its document kind is asked (`labelled`, decision 15). A queue is
+  local and never committed: until the owner has read a page, the masker's misses are still in it.
+- **Labelling a stratified sample in order** (decisions 16–23, 2026-11-06). Its rates are
+  ceilings, and its pages are labelled in the order of their draw positions (`u / rate`). The
+  labelled pages are those below the first unlabelled one's position, `cut`, so stopping at any
+  point is the sample a rate of `cut × rate` would have drawn, and the export writes each page's
+  π at that cut. The answered-present stratum is drawn by document, so a document the feature
+  flags has every flagged page labelled; a held-out share of entities is kept out of prompt
+  tuning; proposals are shown only where the model answered present; a share of pages is
+  re-checked blind after some days, which measures the labeller against themself.
 - **Hand masking.** A name the masker missed is replaced by the owner with its token, and counted:
   those counts against the masker's own are its recall (decision 1). Over-masking cannot be
   judged from masked text, and is accepted (ADR 0009, third addendum).
@@ -44,9 +53,11 @@ import re
 from collections import Counter
 from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import dataclass, field
+from datetime import date
 from fractions import Fraction
 from pathlib import Path
-from typing import Any, Literal, cast
+from statistics import median
+from typing import Any, Literal, cast, get_args
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -111,6 +122,32 @@ Sample = Literal["selected", "rejected"]
 # A stratified sample's strata (decision 12), by the kept answers of the extractor the sample names.
 Stratum = Literal["answered_present", "answered_absent", "not_selected"]
 STRATA: tuple[Stratum, ...] = ("answered_present", "answered_absent", "not_selected")
+# Why a label differs from the model's answer (decision 21): picked when the owner overrules a
+# proposal, or labels present what the model did not answer. A fixed list, so the reasons count.
+Reason = Literal[
+    "template_sentence",  # a policy or boilerplate sentence, no threat or event stated
+    "other_company",  # about another company (a shareholder, a subsidiary, a client)
+    "earlier_year",  # carried over from an earlier year's statement
+    "hypothetical",  # a risk described, not stated as the case
+    "not_this_page",  # the signal is on the page, but its sentence starts on another
+    "wrong_value",  # present, but another opinion or kind of event
+    "missed_by_model",  # present, and the model said absent or was not asked
+    "other",
+]
+REASONS: tuple[Reason, ...] = get_args(Reason)
+GUIDE_FILE = "labelling_guide.md"
+_GUIDE_VERSION = re.compile(r"^\*\*Version: (labelling_guide_v\d+)\*\*", re.MULTILINE)
+
+
+def guide_version(directory: Path = GOLDEN_DIR) -> str:
+    """The labelling guide's version, from its `**Version: labelling_guide_v<n>**` line
+    (decision 20): a stratified page records the version it was labelled under."""
+    found = _GUIDE_VERSION.search((directory / GUIDE_FILE).read_text(encoding="utf-8"))
+    if found is None:
+        raise ValueError(
+            f"{directory / GUIDE_FILE} has no `**Version: labelling_guide_v<n>**` line"
+        )
+    return found.group(1)
 
 
 class _Frozen(BaseModel):
@@ -142,6 +179,16 @@ class DrawPin(_Frozen):
     distress: str | None = None
 
 
+class Targets(_Frozen):
+    """Decision 16: when labelling may stop. Each named signal has `positives` labelled positives
+    below the cut (for a signal in `answered_values`, positives with one of those values), or every
+    answered-present page is labelled. Fixed before the first label and read on counts only, never
+    on a score, so stopping does not pick a result."""
+
+    signals: tuple[SignalType, ...] = Field(min_length=1)
+    positives: int = Field(default=20, ge=1)
+
+
 class StratifiedSample(_Frozen):
     """Decision 12: every text page of the draw's entities, in one stratum by the kept answers
     of extractor `answers` for `signals`, drawn at its stratum's rate."""
@@ -149,15 +196,48 @@ class StratifiedSample(_Frozen):
     draw: DrawPin
     answers: str  # the extractor version whose kept answers in `text_signals` decide the strata
     signals: tuple[SignalType, ...] = Field(min_length=1)
+    # Decision 16: ceilings. Pages are labelled in draw order, and the cut where labelling stops
+    # scales every rate alike, so their ratios are the allocation and the cut the size.
     rates: dict[Stratum, float]
+    targets: Targets
     # Decision 13: the share of pages labelled without the answers shown as proposals, drawn by
-    # hash, so the owner's agreement with the model is measured with and without them.
+    # hash, so the owner's agreement with the model is measured with and without them. Within the
+    # answered-present stratum only: the other two are always blind (decision 17).
     blind_rate: float = Field(default=0.2, gt=0, lt=1)
+    # Decision 15: the signals a page of this document kind is labelled for. The others are not
+    # asked on it, and its page is in no golden file of theirs.
+    labelled: tuple[SignalType, ...] = SIGNAL_TYPES
+    # Decision 18: a kept answer counts as answered present for the strata only with one of these
+    # values (`opinion_type`: the modified opinions, so the unmodified ones are not oversampled).
+    answered_values: dict[SignalType, tuple[str, ...]] = {}
+    # Decision 19: the share of entities whose pages are held out of prompt tuning, by hash: a
+    # whole entity, since its accountants' wording repeats across its pages.
+    holdout_rate: float = Field(default=0.3, ge=0, lt=1)
+    # Decision 20: the first pages in draw order, after which the guide is reviewed and frozen.
+    pilot_pages: int = Field(default=30, ge=0)
+    # Decision 22: the share of pages labelled again, blind to the first labels, after some days.
+    recheck_rate: float = Field(default=0.05, ge=0, lt=1)
+    recheck_after_days: int = Field(default=7, ge=1)
 
     @model_validator(mode="after")
     def _a_rate_per_stratum(self) -> StratifiedSample:
         if set(self.rates) != set(STRATA) or not all(0 < r <= 1 for r in self.rates.values()):
             raise ValueError(f"`rates` needs each of {STRATA}, in (0, 1]")
+        labelled = set(self.labelled)
+        if not labelled or len(labelled) != len(self.labelled):
+            raise ValueError("`labelled` names each signal once, at least one")
+        outside = [
+            s
+            for s in (*self.signals, *self.targets.signals, *self.answered_values)
+            if s not in labelled
+        ]
+        if outside:
+            raise ValueError(f"{sorted(set(outside))} are not in `labelled`")
+        for signal, values in self.answered_values.items():
+            if signal not in self.signals:
+                raise ValueError(f"`answered_values` names {signal}, which does not stratify")
+            if not values or not set(values) <= set(SIGNAL_VALUES.get(signal, ())):
+                raise ValueError(f"`answered_values.{signal}` must be some of its values")
         return self
 
 
@@ -194,6 +274,8 @@ class GoldenSample(_Frozen):
             )
         if stratified and self.discovery_sources is not None:
             raise ValueError("a stratified sample is drawn from its draw, not `discovery_sources`")
+        if self.stratified is not None and not set(self.parked) <= set(self.stratified.labelled):
+            raise ValueError("a parked signal must be one the sample labels")
         return self
 
 
@@ -212,11 +294,15 @@ def load_golden_sample(version: str, config_dir: Path = CONFIG_DIR) -> GoldenSam
 
 
 class Label(_Frozen):
-    """One signal on one page. Present needs evidence: a verbatim span of the masked page."""
+    """One signal on one page. Present needs evidence: a verbatim span of the masked page.
+    `unsure` marks a call the owner doubts (the guide's "when unsure, absent"), so a score can be
+    read without them; `reason` says why the label differs from the model's answer (decision 21)."""
 
     present: bool
     value: str | None = None
     evidence: str | None = None
+    unsure: bool = False
+    reason: Reason | None = None
 
     @model_validator(mode="after")
     def _evidence_with_presence(self) -> Label:
@@ -225,6 +311,24 @@ class Label(_Frozen):
         if not self.present and (self.value is not None or self.evidence is not None):
             raise ValueError("an absent signal has no value and no evidence")
         return self
+
+    def written(self) -> dict[str, Any]:
+        """As an eval file holds it: `unsure` and `reason` only when set, so a label without
+        them keeps the bytes it had before decision 21."""
+        data = self.model_dump()
+        if not self.unsure:
+            del data["unsure"]
+        if self.reason is None:
+            del data["reason"]
+        return data
+
+
+class Recheck(_Frozen):
+    """A signal labelled a second time, blind to the first label (decision 22): presence, and
+    the value of a valued signal. No evidence: only agreement is measured."""
+
+    present: bool
+    value: str | None = None
 
 
 class QueuePage(_Frozen):
@@ -258,11 +362,37 @@ class QueuePage(_Frozen):
     # the export writes the owner's labels, and `proposed_by` when proposals were shown.
     proposals: dict[SignalType, Label] = {}
     blind: bool = False
+    # Decision 15: the signals this page is labelled for; None, every one (the seed's samples).
+    signals: tuple[SignalType, ...] | None = None
+    # Decision 16: the page's draw position, u / rate, the order it is labelled in, and whether a
+    # page labelled in another queue was carried over (it is no gap in this one's order).
+    draw_position: float | None = Field(default=None, ge=0, lt=1)
+    carried: bool = False
+    # Decision 17: the signals the answering extractor kept present anywhere in the page's
+    # document: what its document-level feature says.
+    flagged: tuple[SignalType, ...] = ()
+    holdout: bool | None = None  # decision 19: its entity is held out of prompt tuning
+    guide_version: str | None = None  # decision 20: the guide it was labelled under
+    labelled_on: date | None = None
+    seconds: float | None = None  # how long the page was on screen before it was saved; local
+    # Decision 22: drawn for a second, blind labelling, and that labelling once done.
+    recheck: bool = False
+    rechecks: dict[SignalType, Recheck] = {}
+    rechecked_on: date | None = None
 
     @model_validator(mode="after")
     def _labels_fit_the_page(self) -> QueuePage:
-        if not (self.stratum is None) == (self.inclusion_probability is None) == (self.krs is None):
+        drawn = (self.stratum, self.inclusion_probability, self.krs)
+        if len({v is None for v in drawn}) != 1:
             raise ValueError(f"{self.page_id}: a stratum needs its inclusion probability and krs")
+        if self.stratum is None and (self.draw_position is not None or self.holdout is not None):
+            raise ValueError(f"{self.page_id}: a draw position or holdout needs a stratum")
+        outside = [s for s in (*self.labels, *self.rechecks) if s not in self.required]
+        if outside:
+            raise ValueError(f"{self.page_id}: {outside} are not labelled on this page")
+        for signal, check in self.rechecks.items():
+            if check.value is not None and check.value not in SIGNAL_VALUES.get(signal, ()):
+                raise ValueError(f"{self.page_id} {signal}: recheck value {check.value!r}")
         for signal, label in [*self.labels.items(), *self.proposals.items()]:
             if label.evidence is not None and label.evidence not in self.text:
                 raise ValueError(f"{self.page_id} {signal}: evidence is not a span of the page")
@@ -276,8 +406,14 @@ class QueuePage(_Frozen):
         return self
 
     @property
+    def required(self) -> tuple[SignalType, ...]:
+        """The signals this page is labelled for, in `SIGNAL_TYPES` order."""
+        asked = set(self.signals) if self.signals is not None else set(SIGNAL_TYPES)
+        return tuple(s for s in SIGNAL_TYPES if s in asked)
+
+    @property
     def complete(self) -> bool:
-        return self.labelled_by is not None and set(self.labels) == set(SIGNAL_TYPES)
+        return self.labelled_by is not None and set(self.labels) == set(self.required)
 
 
 def page_id(document_hash: str, source_member: str, attachment: int, page: int) -> str:
@@ -482,6 +618,11 @@ def _drawn(version: str, pid: str, rate: float) -> bool:
     return int(_sample_key(version, pid)[:16], 16) < rate * 2**64
 
 
+def uniform(version: str, unit: str) -> float:
+    """A unit's draw number in [0, 1): its hash with the version, as `_drawn` thresholds it."""
+    return int(_sample_key(version, unit)[:16], 16) / 2**64
+
+
 def build_targeted_queue(
     pages: Iterable[TextPage],
     prefilter: Prefilter,
@@ -531,6 +672,10 @@ class StratifiedFrame:
     proposals: Mapping[str, Mapping[SignalType, Label]] = field(
         default_factory=dict[str, Mapping[SignalType, Label]]
     )
+    # (document hash, member) → the signals the answering extractor kept present in it (decision 17)
+    flagged: Mapping[tuple[str, str], frozenset[SignalType]] = field(
+        default_factory=dict[tuple[str, str], frozenset[SignalType]]
+    )
 
 
 def proposal(signal: SignalType, value: str, evidence: str | None) -> Label | None:
@@ -573,8 +718,15 @@ def build_stratified_queue(
     stats: QueueStats,
 ) -> list[QueuePage]:
     """The pages (with their entity's KRS) of the draw's entities drawn at their stratum's rate,
-    each with its stratum and inclusion probability, masked, sorted by page id. Raises when a
-    page's document was not read by the answering extractor: its stratum would be a missing run's."""
+    each with its stratum, inclusion probability at the ceiling rate and draw position, masked,
+    sorted by page id. Raises when a page's document was not read by the answering extractor: its
+    stratum would be a missing run's.
+
+    An answered-present page is drawn by its document's hash, so a document's answered-present
+    pages are drawn together and share a position (decision 17); every other page by its own.
+    Proposals are offered only on answered-present pages: on the others the model's answer is
+    "absent", and showing it would pull the labels that measure its misses toward it (decision 17).
+    The holdout is drawn by entity (decision 19), the recheck by page (decision 22)."""
     _check_prefilter(prefilter, sample)
     design = sample.stratified
     if design is None:
@@ -586,20 +738,32 @@ def build_stratified_queue(
         pi = frame.entity_pi.get(krs)
         if pi is None:
             continue
-        if (page.document_hash, page.source_member) not in frame.read:
-            unread.add((page.document_hash, page.source_member))
+        document = (page.document_hash, page.source_member)
+        if document not in frame.read:
+            unread.add(document)
             continue
         row, _sentences = _row(page, prefilter, sample, mask_nlp, lemma_nlp, stats)
         stratum = stratum_of(row, design.signals, frame.answered_present)
         stats.strata[stratum] += 1
         rate = design.rates[stratum]
-        if not _drawn(version, row.page_id, rate):
+        unit = (
+            f"{page.document_hash}/{page.source_member}"
+            if stratum == "answered_present"
+            else row.page_id
+        )
+        u = uniform(version, unit)
+        if u >= rate:
             continue
         stats.drawn[stratum] += 1
+        flagged = frame.flagged.get(document, frozenset())
         drawn = {
             "stratum": stratum,
             "inclusion_probability": float(pi * Fraction(str(rate))),
             "krs": krs,
+            "draw_position": u / rate,
+            "holdout": _drawn(f"{version}:holdout", krs, design.holdout_rate),
+            "flagged": tuple(s for s in SIGNAL_TYPES if s in flagged),
+            "recheck": _drawn(f"{version}:recheck", row.page_id, design.recheck_rate),
         }
         done = frame.labelled_elsewhere.get(row.page_id)
         if done is not None:  # its labelled row, hand masking and all, joins this sample
@@ -607,6 +771,7 @@ def build_stratified_queue(
             row = done.model_copy(
                 update={
                     **drawn,
+                    "carried": True,
                     "golden_sample_version": version,
                     "prefilter_version": row.prefilter_version,
                     "sample": row.sample,
@@ -617,11 +782,22 @@ def build_stratified_queue(
         else:
             offered = frame.proposals.get(row.page_id, {})
             kept = {  # evidence the masked page no longer holds is not offered
-                s: lb for s, lb in offered.items() if lb.evidence is None or lb.evidence in row.text
+                s: lb
+                for s, lb in offered.items()
+                if s in design.labelled and (lb.evidence is None or lb.evidence in row.text)
             }
-            stats.proposals_dropped += len(offered) - len(kept)
-            blind = _drawn(f"{version}:blind", row.page_id, design.blind_rate)
-            row = row.model_copy(update={**drawn, "proposals": kept, "blind": blind})
+            stats.proposals_dropped += sum(s in design.labelled for s in offered) - len(kept)
+            blind = stratum != "answered_present" or _drawn(
+                f"{version}:blind", row.page_id, design.blind_rate
+            )
+            row = row.model_copy(
+                update={
+                    **drawn,
+                    "proposals": kept,
+                    "blind": blind,
+                    "signals": design.labelled,
+                }
+            )
         queued.append(row)
     if unread:
         raise ValueError(
@@ -708,27 +884,40 @@ def label(
     labels: dict[SignalType, Label],
     labelled_by: str,
     proposed_by: str | None = None,
+    *,
+    guide: str | None = None,
+    on: date | None = None,
+    seconds: float | None = None,
 ) -> QueuePage:
-    """The page with every signal labelled; validated against the page. `proposed_by` names the
-    extractor whose answers were shown as proposals (decision 13), None when none were."""
-    if set(labels) != set(SIGNAL_TYPES):
-        missing = [s for s in SIGNAL_TYPES if s not in labels]
-        raise ValueError(f"every signal_type needs a label; missing {missing}")
+    """The page with every signal it is asked labelled; validated against the page. `proposed_by`
+    names the extractor whose answers were shown as proposals (decision 13), None when none were;
+    `guide` the labelling guide's version, `on` the day and `seconds` the time on screen, which a
+    stratified page records (decisions 20–23)."""
+    if set(labels) != set(row.required):
+        missing = [s for s in row.required if s not in labels]
+        extra = [s for s in labels if s not in row.required]
+        raise ValueError(
+            f"the page's signals need a label each; missing {missing}, not asked {extra}"
+        )
     if not labelled_by.strip():
         raise ValueError("labelled_by names who labelled the page")
     return QueuePage.model_validate(
         {
             **row.model_dump(),
-            "labels": {s: labels[s].model_dump() for s in SIGNAL_TYPES},
+            "labels": {s: labels[s].model_dump() for s in row.required},
             "labelled_by": labelled_by,
             "proposed_by": proposed_by,
+            "guide_version": guide,
+            "labelled_on": on,
+            "seconds": None if seconds is None else round(seconds, 1),
         }
     )
 
 
 def shows_proposals(row: QueuePage) -> bool:
-    """Whether the page is labelled with the model's answers shown (decision 13)."""
-    return bool(row.proposals) and not row.blind
+    """Whether the page is labelled with the model's answers shown (decision 13): never outside the
+    answered-present stratum (decision 17), whatever its `blind` says."""
+    return bool(row.proposals) and not row.blind and row.stratum in (None, "answered_present")
 
 
 def prefill(row: QueuePage, parked: Iterable[SignalType] = ()) -> dict[SignalType, Label]:
@@ -736,10 +925,242 @@ def prefill(row: QueuePage, parked: Iterable[SignalType] = ()) -> dict[SignalTyp
     "absent" for a parked signal with none. A signal with nothing is left out: the owner decides."""
     if row.labels:
         return dict(row.labels)
-    start: dict[SignalType, Label] = {s: Label(present=False) for s in parked}
+    start: dict[SignalType, Label] = {s: Label(present=False) for s in parked if s in row.required}
     if shows_proposals(row):
-        start.update(row.proposals)
+        start.update({s: lb for s, lb in row.proposals.items() if s in row.required})
     return start
+
+
+# --- labelling in draw order (decision 16) -------------------------------------------------------
+
+
+def in_draw_order(rows: Iterable[QueuePage]) -> list[QueuePage]:
+    """A stratified queue's rows in the order they are labelled: by draw position, a document's
+    answered-present pages together; a row without one (another design) after, by page id."""
+    return sorted(
+        rows,
+        key=lambda r: (r.draw_position is None, r.draw_position or 0.0, r.document_hash, r.page_id),
+    )
+
+
+def cut(rows: Iterable[QueuePage]) -> dict[str, float]:
+    """Each stratified sample's cut: the draw position of its first unlabelled page, 1.0 when
+    every page is labelled. The pages below it are the labelled sample."""
+    out: dict[str, float] = {}
+    for row in rows:
+        if row.draw_position is None:
+            continue
+        version = row.golden_sample_version
+        out.setdefault(version, 1.0)
+        if not row.complete:
+            out[version] = min(out[version], row.draw_position)
+    return out
+
+
+def _counts_toward(row: QueuePage, signal: SignalType, design: StratifiedSample) -> bool:
+    label = row.labels.get(signal)
+    if label is None or not label.present:
+        return False
+    values = design.answered_values.get(signal)
+    return values is None or label.value in values
+
+
+@dataclass(frozen=True)
+class Progress:
+    """Where labelling a stratified sample stands (decision 16)."""
+
+    cut: float
+    queued: int
+    labelled: int  # pages below the cut
+    beyond: tuple[str, ...]  # pages labelled above the cut, not carried: gaps to fill first
+    positives: dict[SignalType, int]  # the targets' positives below the cut
+    target: int
+    answered_present_done: bool  # every answered-present page labelled
+    pilot_pages: int
+    stale_guide: int  # pages labelled under another version of the guide
+
+    @property
+    def met(self) -> bool:
+        """Whether the stopping rule holds: every target reached, or nothing left to find them in."""
+        return self.answered_present_done or all(n >= self.target for n in self.positives.values())
+
+    @property
+    def in_pilot(self) -> bool:
+        return self.labelled < self.pilot_pages
+
+
+def progress(rows: list[QueuePage], sample: GoldenSample, guide: str | None = None) -> Progress:
+    design = sample.stratified
+    if design is None:
+        raise ValueError(f"{sample.golden_sample_version} is not a stratified sample")
+    version = sample.golden_sample_version
+    ours = [r for r in rows if r.golden_sample_version == version and r.draw_position is not None]
+    at = cut(ours).get(version, 1.0)
+    below = [r for r in ours if r.draw_position is not None and r.draw_position < at]
+    return Progress(
+        cut=at,
+        queued=len(ours),
+        labelled=len(below),
+        beyond=tuple(
+            r.page_id
+            for r in ours
+            if r.complete
+            and not r.carried
+            and r.draw_position is not None
+            and r.draw_position >= at
+        ),
+        positives={
+            s: sum(_counts_toward(r, s, design) for r in below) for s in design.targets.signals
+        },
+        target=design.targets.positives,
+        answered_present_done=all(r.complete for r in ours if r.stratum == "answered_present"),
+        pilot_pages=design.pilot_pages,
+        stale_guide=sum(
+            r.complete and r.guide_version is not None and r.guide_version != guide
+            for r in ours
+            if guide is not None
+        ),
+    )
+
+
+def at_cut(rows: Iterable[QueuePage]) -> list[QueuePage]:
+    """The rows as the export writes them: a stratified page below its sample's cut with its π at
+    the cut (π_entity × rate × cut), one above it left out. A page labelled above the cut that
+    was not carried over is a gap left in the order, and refused: label the pages before it."""
+    rows = list(rows)
+    cuts = cut(rows)
+    out: list[QueuePage] = []
+    beyond: list[str] = []
+    for row in rows:
+        if row.draw_position is None or row.inclusion_probability is None:
+            out.append(row)
+            continue
+        at = cuts[row.golden_sample_version]
+        if row.draw_position >= at:
+            if row.complete and not row.carried:
+                beyond.append(row.page_id)
+            continue  # not in the sample yet; a carried page is written from its own queue
+        out.append(row.model_copy(update={"inclusion_probability": row.inclusion_probability * at}))
+    if beyond:
+        raise ValueError(
+            f"{len(beyond)} page(s) are labelled after the first unlabelled one in draw order "
+            f"(e.g. {beyond[:3]}): label the pages before them, so the labelled pages stay a draw"
+        )
+    return out
+
+
+# --- rechecks (decision 22) ----------------------------------------------------------------------
+
+
+def recheck_due(row: QueuePage, today: date, after_days: int) -> bool:
+    """Whether a page drawn for a recheck is due: labelled at least `after_days` ago, not yet
+    rechecked."""
+    return (
+        row.recheck
+        and row.complete
+        and not row.rechecks
+        and row.labelled_on is not None
+        and (today - row.labelled_on).days >= after_days
+    )
+
+
+def record_recheck(row: QueuePage, checks: dict[SignalType, Recheck], on: date) -> QueuePage:
+    """The page with its second labelling, every signal it is asked; the first labels unchanged."""
+    if set(checks) != set(row.required):
+        raise ValueError(f"a recheck labels every signal of the page: {list(row.required)}")
+    return QueuePage.model_validate(
+        {
+            **row.model_dump(),
+            "rechecks": {s: checks[s].model_dump() for s in row.required},
+            "rechecked_on": on,
+        }
+    )
+
+
+def agrees(first: Label | Recheck, second: Label | Recheck) -> bool:
+    """Two labellings of one signal agree on presence, and on the value when both give one."""
+    return first.present == second.present and (
+        not first.present
+        or first.value is None
+        or second.value is None
+        or first.value == second.value
+    )
+
+
+def consistency(rows: Iterable[QueuePage]) -> dict[SignalType, tuple[int, int]]:
+    """(rechecks agreeing with the first label, rechecks) by signal."""
+    tally: dict[SignalType, list[int]] = {}
+    for row in _once(r for r in rows if r.complete):
+        for signal, check in row.rechecks.items():
+            arm = tally.setdefault(signal, [0, 0])
+            arm[0] += agrees(row.labels[signal], check)
+            arm[1] += 1
+    return {s: (a, t) for s, (a, t) in tally.items()}
+
+
+# --- review (decisions 20, 21, 23) ---------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class Disagreement:
+    """A label that differs from the model's answer: ids and labels only, never text."""
+
+    position: int  # 1-based, in draw order
+    page_id: str
+    signal: SignalType
+    model: str  # "present", "absent", a value, or "not asked"
+    owner: str
+    reason: str | None
+    unsure: bool
+    blind: bool
+
+
+def _said(label: Label | None) -> str:
+    if label is None:
+        return "not asked"
+    return (label.value or "present") if label.present else "absent"
+
+
+def disagreements(rows: list[QueuePage]) -> list[Disagreement]:
+    """Every labelled signal of a stratified queue that differs from the model's kept answer, in
+    draw order: what the pilot's review reads before the guide is frozen (decision 20), and what
+    the reasons sum over (decision 21). A page with no proposal for a signal counts as the model
+    saying absent where the prefilter selected it, and not asked where it did not."""
+    out: list[Disagreement] = []
+    for n, row in enumerate(in_draw_order(rows), start=1):
+        if not row.complete or row.stratum is None:
+            continue
+        for signal in row.required:
+            mine = row.labels[signal]
+            theirs = row.proposals.get(signal)
+            if theirs is None and signal in row.candidates:
+                theirs = Label(present=False)
+            if theirs is None and not mine.present:
+                continue
+            if theirs is not None and agrees(mine, theirs):
+                continue
+            out.append(
+                Disagreement(
+                    n,
+                    row.page_id,
+                    signal,
+                    _said(theirs),
+                    _said(mine),
+                    mine.reason,
+                    mine.unsure,
+                    row.blind,
+                )
+            )
+    return out
+
+
+def seconds_by_stratum(rows: Iterable[QueuePage]) -> dict[str, tuple[int, float]]:
+    """(pages timed, median seconds on screen) by stratum (decision 23), to size the next sample."""
+    times: dict[str, list[float]] = {}
+    for row in rows:
+        if row.complete and row.seconds is not None and row.stratum is not None:
+            times.setdefault(row.stratum, []).append(row.seconds)
+    return {s: (len(t), round(median(t), 1)) for s, t in sorted(times.items())}
 
 
 def _agrees(label: Label, offered: Label) -> bool:
@@ -755,7 +1176,9 @@ def proposal_agreement(rows: Iterable[QueuePage]) -> dict[str, tuple[int, int]]:
     rate means the proposals pull the labels toward the model."""
     tally = {"shown": [0, 0], "blind": [0, 0]}
     for row in rows:
-        if not row.complete or not row.proposals:
+        # within the answered-present stratum only: elsewhere every page is blind, and its base
+        # rate is not the shown pages', so it would not measure the pull (decision 17)
+        if not row.complete or not row.proposals or row.stratum not in (None, "answered_present"):
             continue
         arm = tally["blind" if row.blind else "shown"]
         for signal, offered in row.proposals.items():
@@ -806,12 +1229,25 @@ def load_queue(data: bytes) -> list[QueuePage]:
     return [QueuePage.model_validate_json(line) for line in data.splitlines() if line.strip()]
 
 
-def export(rows: Iterable[QueuePage], nlp: Any) -> dict[str, bytes]:
-    """`pages.jsonl` and one `<signal_type>.jsonl` per signal, from the labelled pages only.
-    Raises when a page fails the masking check: it is fixed in the queue, never exported."""
-    done = _once(row for row in rows if row.complete)
+RECHECKS_FILE = "rechecks.jsonl"
+
+
+def export(rows: Iterable[QueuePage], nlp: Any, guide: str | None = None) -> dict[str, bytes]:
+    """`pages.jsonl` and one `<signal_type>.jsonl` per signal, from the labelled pages only, a
+    stratified sample's at its cut (`at_cut`), and `rechecks.jsonl`. A page is in a signal's file
+    only when it was labelled for it (decision 15). Raises when a page fails the masking check: it
+    is fixed in the queue, never exported; and when a stratified page was labelled under a guide
+    other than `guide`, the version in force: it is labelled again first (decision 20)."""
+    done = _once(row for row in at_cut(rows) if row.complete)
     if not done:
         raise ValueError("no page is labelled yet: nothing to export")
+    if guide is not None:
+        stale = [r.page_id for r in done if r.guide_version not in (None, guide)]
+        if stale:
+            raise ValueError(
+                f"{len(stale)} page(s) were labelled under another guide than {guide} "
+                f"(e.g. {stale[:3]}): label them again before exporting"
+            )
     failures = {
         row.page_id: findings
         for row in done
@@ -839,15 +1275,24 @@ def export(rows: Iterable[QueuePage], nlp: Any) -> dict[str, bytes]:
         "proposed_by",
         "text",
     ]
-    # A stratified sample's three fields are written only on its pages: the seed's rows keep their bytes.
-    drawn_keys = ["stratum", "inclusion_probability", "krs"]
+    # A stratified sample's fields are written only on its pages: the seed's rows keep their bytes.
+    drawn_keys = [
+        "stratum",
+        "inclusion_probability",
+        "krs",
+        "holdout",
+        "flagged",
+        "guide_version",
+        "labelled_on",
+    ]
     files = {
         PAGES_FILE: "".join(
             _line(
                 {
                     k: v
-                    for k, v in row.model_dump().items()
-                    if k in page_keys or (k in drawn_keys and v is not None)
+                    for k, v in row.model_dump(mode="json").items()
+                    if k in page_keys
+                    or (k in drawn_keys and v is not None and row.stratum is not None)
                 }
             )
             for row in done
@@ -859,11 +1304,24 @@ def export(rows: Iterable[QueuePage], nlp: Any) -> dict[str, bytes]:
                 {
                     "page_id": row.page_id,
                     "prefilter_selected": signal in row.candidates,
-                    **row.labels[signal].model_dump(),
+                    **row.labels[signal].written(),
                 }
             )
             for row in done
+            if signal in row.required
         )
+    files[RECHECKS_FILE] = "".join(
+        _line(
+            {
+                "page_id": row.page_id,
+                "signal_type": signal,
+                **check.model_dump(),
+                "rechecked_on": str(row.rechecked_on),
+            }
+        )
+        for row in done
+        for signal, check in row.rechecks.items()
+    )
     # Only the reviewed spans that are still flagged are written: the record never outlives them.
     cleared = {
         row.page_id: sorted(set(row.cleared) & set(_flagged(_page_texts(row), nlp))) for row in done

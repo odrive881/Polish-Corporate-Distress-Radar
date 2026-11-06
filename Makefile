@@ -3,7 +3,7 @@ export UV_LINK_MODE := copy
 
 .PHONY: install lock lint typecheck test test-integration check dev-up dev-down api app site report \
 	transform-setup transform-plan transform-run transform-test docs-check hooks models \
-	label-queue label-clear label-export eval eval-accept orchestrate reproduce
+	label-queue label-clear label-export label-review eval eval-accept eval-errors orchestrate reproduce
 
 install:    ## create/sync .venv exactly from uv.lock (fails if lock is stale)
 	$(UV) sync --locked --extra dev
@@ -51,6 +51,9 @@ label-clear: ## record what the masker still flags on labelled pages as reviewed
 label-export: ## write the labelled pages to evals/text_signals/, after the masking check
 	$(UV) run --locked python -m distress_radar.extraction.label_queue export
 
+label-review: ## a stratified queue's progress, disagreements with the model and their reasons, rechecks, time a page
+	$(UV) run --locked python -m distress_radar.extraction.label_queue review
+
 # Scoring the extractors on the golden set (plan 0013 step G). `eval` calls the model for model
 # signals only after EXTRACTION_API_CONFIRMED (decision 2); the gate itself runs offline in `check`.
 eval:        ## run the extractors in use over the golden set, write results (needs make dev-up for model signals)
@@ -58,6 +61,9 @@ eval:        ## run the extractors in use over the golden set, write results (ne
 
 eval-accept: ## the owner accepts the current result for a signal: make eval-accept SIGNAL=litigation BY=owner
 	$(UV) run --locked python -m distress_radar.extraction.eval_run accept $(SIGNAL) --by $(BY)
+
+eval-errors: ## the method in use's errors on a signal, held-out pages left out: make eval-errors SIGNAL=litigation
+	$(UV) run --locked python -m distress_radar.extraction.eval_run errors $(SIGNAL)
 
 docs-check: ## mechanical doc drift: missing paths, the tree, plan and ADR statuses (in `check` too)
 	$(UV) run --locked pytest -q tests/test_docs.py

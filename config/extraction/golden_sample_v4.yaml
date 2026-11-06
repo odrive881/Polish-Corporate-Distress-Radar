@@ -1,0 +1,51 @@
+# Golden sample v4 (plan 0013 K4, decisions 12 and 15–23; written 2026-11-06): the notes of list v3's
+# draw, stratified by what `extractor_v7` already answered, labelled in draw order until the stopping
+# rule holds. Engineering config, not statute. Loaded by `distress_radar.extraction.golden.load_golden_sample`.
+#
+# The frame is every text page of the notes of the draw's entities (pinned as `backtest_v10` pins it),
+# once the `text` job has read them under `extractor_v7`: `label_queue build` refuses until it has.
+# Each page is in one stratum by `extractor_v7`'s kept answers for `signals`, the two that feed
+# features from the notes (decision 11); an answered-present page is drawn with its document's other
+# answered-present pages (decision 17).
+#
+# `rates` are ceilings (decision 16). Their ratios are the allocation: about every answered-present
+# page, a tenth of the pages the prefilter selected and the model found nothing on (its misses), and
+# one in two hundred of the pages the prefilter selected for neither (the prefilter's misses). The cut
+# where labelling stops scales them alike. **Provisional:** set from the pools `make label-queue`
+# prints, before the first page is labelled; a rate changed after that is a new sample version.
+#
+# Labelled for the seven signals the notes carry (decision 15): not `opinion_type` or
+# `emphasis_of_matter`, which an auditor gives in a report (v5). `covenant_breach` and
+# `key_customer_loss` are parked (decision 10): "absent" to start, one click to change.
+
+golden_sample_version: golden_sample_v4
+prefilter_version: prefilter_v4
+document_kind: statement_notes
+parked: [covenant_breach, key_customer_loss]
+stratified:
+  draw:
+    draw_spec_sha256: 206fe47ee9725633c2e7a0d18d33fb22aaa9c38c44b5325c16157d666aa42e25
+    random: rejestr_io_v3_random
+    distress: rejestr_io_v3_distress
+  answers: extractor_v7
+  signals: [going_concern_uncertainty, loss_coverage_resolution]
+  rates:
+    answered_present: 1.0
+    answered_absent: 0.1
+    not_selected: 0.005
+  targets:
+    signals: [going_concern_uncertainty, loss_coverage_resolution]
+    positives: 20
+  labelled:
+    - going_concern_uncertainty
+    - covenant_breach
+    - key_customer_loss
+    - litigation
+    - post_balance_sheet_event
+    - loss_coverage_resolution
+    - continued_existence_vote
+  blind_rate: 0.2
+  holdout_rate: 0.3
+  pilot_pages: 30
+  recheck_rate: 0.05
+  recheck_after_days: 7

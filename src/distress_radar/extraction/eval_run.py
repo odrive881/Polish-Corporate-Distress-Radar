@@ -3,6 +3,11 @@ The scoring and the gate are `extraction.eval_harness`'s; this reads the stores 
 
     uv run python -m distress_radar.extraction.eval_run run [--sync]
     uv run python -m distress_radar.extraction.eval_run accept <signal_type> --by <name>
+    uv run python -m distress_radar.extraction.eval_run errors <signal_type>
+
+`errors` (`make eval-errors SIGNAL=...`) lists the method in use's end-to-end errors on a signal by
+page id, without the held-out entities' pages (plan 0013 decision 19): tune a prompt on these, and
+read the held-out scores only when accepting.
 
 `run` (`make eval`) reads the committed golden files, selects pages with the prefilter in use, runs
 the extractor in use (`EXTRACTOR_VERSION`) and writes one result per signal with a golden file to
@@ -179,6 +184,18 @@ def run(settings: Settings, sync: bool = False, golden_dir: Path = GOLDEN_DIR) -
                 if (w := result.scores.weighted)
                 else ""
             )
+            + (
+                f"; held out ({hw.pages} pages, {hw.clusters} entities) "
+                f"P {hw.precision} {_span(hw.precision_interval)} "
+                f"R {hw.recall} {_span(hw.recall_interval)}"
+                if (hw := result.scores.holdout)
+                else ""
+            )
+            + (
+                f"; without unsure labels P {wu.precision} R {wu.recall}"
+                if (wu := result.scores.without_unsure)
+                else ""
+            )
             + ("" if result.accepted else "; not accepted")
         )
     summary = masker_summary(golden_dir)
@@ -188,8 +205,55 @@ def run(settings: Settings, sync: bool = False, golden_dir: Path = GOLDEN_DIR) -
     status["masking"] = (
         f"masker recall {summary['masker_recall']} ({summary['persons_by_hand']} by hand)"
     )
+    for key, d in h.document_scores(golden_dir).items():
+        status[f"{key} (as the features see it)"] = (
+            f"{d.documents} flagged documents, {d.pages} pages; "
+            f"precision {d.precision} {_span(d.precision_interval)} "
+            f"recall {d.recall} {_span(d.recall_interval)}"
+        )
+    consistency = h.labeller_consistency(golden_dir)
+    if consistency:
+        status["labeller"] = "rechecks agreeing: " + ", ".join(
+            f"{s} {a} of {t}" for s, (a, t) in consistency.items()
+        )
     status["calls"] = f"{stats.called} sent, {stats.replayed} replayed from the store"
     return status
+
+
+def errors(settings: Settings, signal: SignalType, golden_dir: Path = GOLDEN_DIR) -> list[str]:
+    """The method in use's end-to-end errors on one signal, by page id, leaving out the held-out
+    entities' pages (decision 19): what a prompt is tuned against. Ids, outcomes and the owner's
+    reason only, never text."""
+    extractor = ex.load_extractor(settings.extractor_version)
+    path = h.result_path(signal, h.method_id(extractor, signal), golden_dir / "results")
+    if not path.exists():
+        raise ValueError(f"no result at {path}: run `make eval` first")
+    result = h.load_result(path)
+    held = {pid for pid, page in h.page_weights(golden_dir).items() if page.holdout}
+    labels = {lb.page_id: lb for lb in h.golden_labels(signal, golden_dir) or []}
+    out: list[str] = []
+    for e in result.examples:
+        lb = labels[e.page_id]
+        predicted = e.outcome == "present"
+        right = lb.present and predicted and (lb.value is None or lb.value == e.value)
+        if right or (not lb.present and not predicted):
+            continue
+        if e.page_id in held:
+            continue
+        kind = (
+            "false positive"
+            if predicted and not lb.present
+            else "miss"
+            if not predicted
+            else "wrong value"
+        )
+        out.append(
+            f"{e.page_id}: {kind} (model {e.outcome}{f' {e.value}' if e.value else ''}, "
+            f"label {lb.value or ('present' if lb.present else 'absent')}"
+            f"{f', reason {lb.reason}' if lb.reason else ''}{', unsure' if lb.unsure else ''})"
+        )
+    out.append(f"{len(held & set(labels))} held-out page(s) not listed")
+    return out
 
 
 def _span(interval: h.Interval | None) -> str:
@@ -228,6 +292,14 @@ def main(argv: list[str] | None = None) -> int:
         if args[:1] == ["run"] and set(args[1:]) <= {"--sync"}:
             for signal, line in run(settings, sync="--sync" in args).items():
                 print(f"{signal}: {line}")
+            return 0
+        if len(args) == 2 and args[0] == "errors":
+            named: SignalType | None = next(
+                (s for s in preprocessing.SIGNAL_TYPES if s == args[1]), None
+            )
+            if named is None:
+                raise ValueError(f"{args[1]} is not a signal_type")
+            print("\n".join(errors(settings, named)))
             return 0
         if len(args) == 4 and args[0] == "accept" and args[2] == "--by":
             chosen: SignalType | None = next(

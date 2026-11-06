@@ -282,6 +282,7 @@ def test_export_writes_labelled_pages_once_and_a_file_per_signal(
     assert set(files) == {
         "pages.jsonl",
         golden.CLEARED_FILE,
+        golden.RECHECKS_FILE,
         *(f"{s}.jsonl" for s in preprocessing.SIGNAL_TYPES),
     }
     assert json.loads(files[golden.CLEARED_FILE]) == {}
@@ -486,7 +487,24 @@ def test_a_report_page_is_exported_with_its_kind(mask_nlp: Any, lemma_nlp: Any) 
 
 
 def test_the_committed_samples_are_the_notes_the_reports_and_the_targeted_notes() -> None:
-    assert label_queue.versions() == ["golden_sample_v1", "golden_sample_v2", "golden_sample_v3"]
+    assert label_queue.versions() == [f"golden_sample_v{n}" for n in range(1, 6)]
+    v4, v5 = (golden.load_golden_sample(f"golden_sample_v{n}") for n in (4, 5))
+    assert v4.stratified is not None and v5.stratified is not None
+    # decision 15: the notes are not asked the auditor's signals, the reports only theirs
+    assert not {"opinion_type", "emphasis_of_matter"} & set(v4.stratified.labelled)
+    assert set(v5.stratified.labelled) == {
+        "going_concern_uncertainty",
+        "opinion_type",
+        "emphasis_of_matter",
+    }
+    # decision 18: an unmodified opinion does not make a report page answered present
+    assert v5.stratified.answered_values == {"opinion_type": ("qualified", "adverse", "disclaimer")}
+    # both drawn from backtest_v10's pin, answered by the extractor in use
+    assert v4.stratified.draw == v5.stratified.draw
+    assert v4.stratified.draw.draw_spec_sha256 == (
+        "206fe47ee9725633c2e7a0d18d33fb22aaa9c38c44b5325c16157d666aa42e25"
+    )
+    assert v4.stratified.answers == v5.stratified.answers == Settings().extractor_version
     v3 = golden.load_golden_sample("golden_sample_v3")
     assert (v3.document_kind, v3.prefilter_version, v3.targeted) == (
         "statement_notes",
@@ -686,6 +704,7 @@ def _stratified(**rates: float) -> GoldenSample:
             answers="extractor_v1",
             signals=("going_concern_uncertainty",),
             rates={stratum: rates.get(stratum, 1.0) for stratum in golden.STRATA},
+            targets=golden.Targets(signals=("going_concern_uncertainty",), positives=1),
         ),
     )
 
@@ -801,6 +820,9 @@ def test_a_drawn_page_labelled_elsewhere_carries_its_labels_over_and_is_exported
                 "stratum": None,
                 "inclusion_probability": None,
                 "krs": None,
+                "draw_position": None,
+                "holdout": None,
+                "signals": None,
             }
         ),
         going_concern_uncertainty=GOING_CONCERN,
@@ -847,6 +869,7 @@ def test_a_stratified_sample_needs_a_rate_per_stratum_and_no_list() -> None:
             answers="extractor_v1",
             signals=("going_concern_uncertainty",),
             rates={"answered_present": 1.0},  # type: ignore[dict-item]
+            targets=golden.Targets(signals=("going_concern_uncertainty",)),
         )
     with pytest.raises(ValidationError, match="drawn from its draw"):
         GoldenSample.model_validate(
@@ -872,9 +895,11 @@ def _stratified_row() -> QueuePage:
         candidates={},
         text=FIGURES,
         masked={},
-        stratum="not_selected",
+        stratum="answered_present",
         inclusion_probability=0.25,
         krs="0000000001",
+        draw_position=0.5,
+        holdout=False,
     )
 
 
@@ -924,9 +949,25 @@ def test_a_stratified_queue_offers_the_answers_on_the_page_and_blinds_a_fixed_sh
     # the litigation answer's evidence is not on the masked page: not offered, and counted
     assert set(first.proposals) == {"going_concern_uncertainty"}
     assert stats.proposals_dropped == 1
-    blind = [r.blind for r in queue]
+    # decision 17: every page outside the answered-present stratum is blind
+    assert all(r.blind for r in queue if r.stratum != "answered_present")
+    # within it, a fixed share by hash: forty answered-present pages, each its own document
+    many = [
+        ("0000000001", TextPage(f"{n:064d}", "sf-1.xml", 1, 1, GOING_CONCERN)) for n in range(40)
+    ]
+    answered = frozenset(golden.page_id(p.document_hash, "sf-1.xml", 1, 1) for _k, p in many)
+    ap_frame = golden.StratifiedFrame(
+        entity_pi={"0000000001": Fraction(1, 2)},
+        answered_present=answered,
+        read=frozenset((p.document_hash, "sf-1.xml") for _k, p in many),
+        proposals={
+            pid: {"going_concern_uncertainty": Label(present=True, evidence=GOING_CONCERN)}
+            for pid in answered
+        },
+    )
+    blind = [r.blind for r in _build(sample, many, ap_frame, (mask_nlp, lemma_nlp))]
     assert any(blind) and not all(blind)
-    again = _build(sample, _drawn_pages(40), frame, (mask_nlp, lemma_nlp))
+    again = _build(sample, many, ap_frame, (mask_nlp, lemma_nlp))
     assert [r.blind for r in again] == blind  # by hash, not by chance
 
 
@@ -978,5 +1019,220 @@ def test_a_proposal_s_evidence_must_be_on_the_page() -> None:
             {
                 **_stratified_row().model_dump(),
                 "proposals": {"litigation": {"present": True, "evidence": "elsewhere"}},
+            }
+        )
+
+
+# --- labelling the stratified samples (plan 0013 decisions 15–23) ---------------------------------
+
+
+def _sample_with(**fields: Any) -> GoldenSample:
+    """`_stratified()` with fields of its design changed."""
+    sample = _stratified()
+    assert sample.stratified is not None
+    return sample.model_copy(update={"stratified": sample.stratified.model_copy(update=fields)})
+
+
+def test_a_stratified_page_is_labelled_only_for_its_kind_s_signals(
+    mask_nlp: Any, lemma_nlp: Any
+) -> None:
+    asked: tuple[preprocessing.SignalType, ...] = ("going_concern_uncertainty", "litigation")
+    queue = _build(_sample_with(labelled=asked), _drawn_pages(1), _frame(), (mask_nlp, lemma_nlp))
+    row = queue[0]
+    assert row.signals == asked and row.required == asked
+    with pytest.raises(ValueError, match="not asked"):
+        golden.label(row, _all_absent(), "owner")
+    done = [golden.label(r, {s: Label(present=False) for s in asked}, "owner") for r in queue]
+    assert all(r.complete for r in done)
+    files = golden.export(done, mask_nlp)
+    assert files["litigation.jsonl"].count(b"\n") == len(done)
+    assert files["opinion_type.jsonl"] == b""  # not asked on these pages, so in no file of its
+
+
+def test_a_document_s_answered_present_pages_are_drawn_together_with_its_flags(
+    mask_nlp: Any, lemma_nlp: Any
+) -> None:
+    both = frozenset(golden.page_id("1" * 64, "sf-1.xml", 1, n) for n in (1, 2))
+    flags = {("1" * 64, "sf-1.xml"): frozenset({"going_concern_uncertainty", "litigation"})}
+    queue = _build(
+        _stratified(),
+        _drawn_pages(1),
+        _frame(answered_present=both, flagged=flags),
+        (mask_nlp, lemma_nlp),
+    )
+    ours = [r for r in queue if r.document_hash == "1" * 64]
+    assert {r.stratum for r in ours} == {"answered_present"}
+    assert len({r.draw_position for r in ours}) == 1  # one draw for the document
+    assert {r.flagged for r in ours} == {("going_concern_uncertainty", "litigation")}
+    assert {r.flagged for r in queue if r.document_hash == "2" * 64} == {()}
+
+
+def test_the_holdout_is_drawn_by_entity(mask_nlp: Any, lemma_nlp: Any) -> None:
+    pages = [
+        (f"{k:010d}", TextPage(f"{k:064d}", "sf.xml", 1, n, f"{FIGURES} Pozycja {n}."))
+        for k in range(1, 13)
+        for n in (1, 2)
+    ]
+    frame = golden.StratifiedFrame(
+        entity_pi={krs: Fraction(1, 2) for krs, _p in pages},
+        answered_present=frozenset(),
+        read=frozenset((p.document_hash, "sf.xml") for _k, p in pages),
+    )
+    queue = _build(_sample_with(holdout_rate=0.5), pages, frame, (mask_nlp, lemma_nlp))
+    by_entity: dict[str | None, set[bool | None]] = {}
+    for row in queue:
+        by_entity.setdefault(row.krs, set()).add(row.holdout)
+    assert all(len(held) == 1 for held in by_entity.values())
+    assert {next(iter(h)) for h in by_entity.values()} == {True, False}
+
+
+def _ordered(*positions: float) -> list[QueuePage]:
+    return [
+        _stratified_row().model_copy(
+            update={"page_id": f"{n:016d}", "draw_position": pos, "inclusion_probability": 0.5}
+        )
+        for n, pos in enumerate(positions)
+    ]
+
+
+def test_the_labelled_pages_are_the_draw_below_the_first_unlabelled_one(mask_nlp: Any) -> None:
+    first, second, third = _ordered(0.1, 0.4, 0.7)
+    assert golden.in_draw_order([third, first, second]) == [first, second, third]
+    one = [_labelled(first), second, third]
+    assert golden.cut(one) == {"golden_sample_s": 0.4}
+    [page] = [json.loads(x) for x in golden.export(one, mask_nlp)["pages.jsonl"].splitlines()]
+    # π at the cut: the sample a rate of 0.4 × the ceiling would have drawn
+    assert page["inclusion_probability"] == pytest.approx(0.5 * 0.4)
+    with pytest.raises(ValueError, match="labelled after the first unlabelled one"):
+        golden.export([_labelled(first), second, _labelled(third)], mask_nlp)
+    # a page carried over from another queue is no gap: left out until the cut passes it
+    carried = _labelled(third).model_copy(update={"carried": True})
+    files = golden.export([_labelled(first), second, carried], mask_nlp)
+    assert files["pages.jsonl"].count(b"\n") == 1
+    every = [_labelled(r) for r in (first, second, third)]
+    pages = [json.loads(x) for x in golden.export(every, mask_nlp)["pages.jsonl"].splitlines()]
+    assert {p["inclusion_probability"] for p in pages} == {0.5}  # all labelled: the ceiling
+
+
+def test_progress_says_when_the_stopping_rule_holds() -> None:
+    sample = _stratified()  # target: one going-concern positive
+    first, second, third = _ordered(0.1, 0.4, 0.7)
+    p = golden.progress([first, second, third], sample, "labelling_guide_v2")
+    assert (p.labelled, p.queued, p.met, p.in_pilot) == (0, 3, False, True)
+    found = _labelled(first, going_concern_uncertainty=FIGURES).model_copy(
+        update={"guide_version": "labelling_guide_v1"}
+    )
+    p = golden.progress([found, second, third], sample, "labelling_guide_v2")
+    assert (p.labelled, p.positives, p.met) == (1, {"going_concern_uncertainty": 1}, True)
+    assert p.stale_guide == 1
+    gap = golden.progress([first, second, _labelled(third)], sample)
+    assert gap.beyond == (third.page_id,)
+
+
+def test_a_recheck_is_due_after_the_days_and_its_agreement_is_counted(
+    mask_nlp: Any, tmp_path: Path
+) -> None:
+    from datetime import date
+
+    from distress_radar.extraction import eval_harness
+
+    row = _labelled(_ordered(0.1)[0], litigation=FIGURES).model_copy(
+        update={"recheck": True, "labelled_on": date(2026, 11, 1)}
+    )
+    assert not golden.recheck_due(row, date(2026, 11, 5), 7)
+    assert golden.recheck_due(row, date(2026, 11, 8), 7)
+    checks = {s: golden.Recheck(present=False) for s in preprocessing.SIGNAL_TYPES}
+    with pytest.raises(ValueError, match="every signal"):
+        golden.record_recheck(row, {"litigation": golden.Recheck(present=True)}, date(2026, 11, 8))
+    done = golden.record_recheck(row, checks, date(2026, 11, 8))  # disagrees on litigation only
+    assert not golden.recheck_due(done, date(2026, 11, 9), 7)
+    assert golden.consistency([done])["litigation"] == (0, 1)
+    assert golden.consistency([done])["going_concern_uncertainty"] == (1, 1)
+    files = golden.export([done], mask_nlp)
+    for name, data in files.items():
+        (tmp_path / name).write_bytes(data)
+    assert eval_harness.labeller_consistency(tmp_path)["litigation"] == (0, 1)
+    assert files[golden.RECHECKS_FILE].count(b"\n") == len(preprocessing.SIGNAL_TYPES)
+
+
+def test_the_export_refuses_a_page_labelled_under_another_guide(mask_nlp: Any) -> None:
+    assert golden.guide_version() == "labelling_guide_v2"
+    row = _labelled(_ordered(0.1)[0]).model_copy(update={"guide_version": "labelling_guide_v1"})
+    with pytest.raises(ValueError, match="another guide"):
+        golden.export([row], mask_nlp, "labelling_guide_v2")
+    ok = row.model_copy(update={"guide_version": "labelling_guide_v2"})
+    page = json.loads(golden.export([ok], mask_nlp, "labelling_guide_v2")["pages.jsonl"])
+    assert page["guide_version"] == "labelling_guide_v2"
+
+
+def test_unsure_and_a_reason_are_written_only_when_set(mask_nlp: Any) -> None:
+    plain = Label(present=False)
+    assert plain.written() == {"present": False, "value": None, "evidence": None}
+    doubted = Label(present=True, evidence=FIGURES, unsure=True, reason="template_sentence")
+    labels = _all_absent()
+    labels["litigation"] = doubted
+    row = golden.label(_ordered(0.1)[0], labels, "owner")
+    files = golden.export([row], mask_nlp)
+    lit = json.loads(files["litigation.jsonl"])
+    assert (lit["unsure"], lit["reason"]) == (True, "template_sentence")
+    assert "unsure" not in json.loads(files["covenant_breach.jsonl"])
+    with pytest.raises(ValidationError):
+        Label(present=False, reason="because")  # type: ignore[arg-type]
+
+
+def test_the_review_lists_each_label_that_differs_from_the_model() -> None:
+    offered = {"litigation": Label(present=True, evidence=FIGURES)}
+    shown = _ordered(0.1)[0].model_copy(update={"proposals": offered})
+    labels = _all_absent()
+    labels["litigation"] = Label(present=False, reason="template_sentence")
+    missed = _ordered(0.2)[0].model_copy(
+        update={
+            "page_id": "m" * 16,
+            "stratum": "answered_absent",
+            "blind": True,
+            "candidates": {"going_concern_uncertainty": ((0, 5),)},
+        }
+    )
+    found = golden.disagreements(
+        [
+            golden.label(shown, labels, "owner", "extractor_v7"),
+            _labelled(missed, going_concern_uncertainty=FIGURES),
+        ]
+    )
+    assert [(d.position, d.signal, d.model, d.owner, d.reason, d.blind) for d in found] == [
+        (1, "litigation", "present", "absent", "template_sentence", False),
+        (2, "going_concern_uncertainty", "absent", "present", None, True),
+    ]
+
+
+def test_the_time_a_page_is_summed_by_stratum() -> None:
+    rows = [
+        golden.label(r, _all_absent(), "owner", seconds=s)
+        for r, s in zip(_ordered(0.1, 0.2, 0.3), (10.0, 30.0, 20.04), strict=True)
+    ]
+    assert golden.seconds_by_stratum(rows) == {"answered_present": (3, 20.0)}
+
+
+def test_a_stratified_design_is_refused_when_its_lists_disagree() -> None:
+    with pytest.raises(ValidationError, match="not in `labelled`"):  # the stratifying signal
+        golden.StratifiedSample.model_validate(
+            {**_stratified().model_dump()["stratified"], "labelled": ["litigation"]}
+        )
+    with pytest.raises(ValidationError, match="does not stratify"):
+        golden.StratifiedSample.model_validate(
+            {
+                **_stratified().model_dump()["stratified"],
+                "answered_values": {"litigation": ["present"]},
+            }
+        )
+    with pytest.raises(ValidationError, match="parked signal"):
+        GoldenSample.model_validate(
+            {
+                **_stratified().model_dump(),
+                "parked": ["covenant_breach"],
+                "stratified": {
+                    **_stratified().model_dump()["stratified"],
+                    "labelled": ["going_concern_uncertainty"],
+                },
             }
         )

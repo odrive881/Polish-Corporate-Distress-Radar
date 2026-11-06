@@ -51,6 +51,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   └── text_signals/
 │       ├── labelling_guide.md         # what each signal_type means to the labeller (plan 0013 step E)
 │       ├── pages.jsonl                # the labelled pages' masked text, once (`make label-export`)
+│       ├── rechecks.jsonl             # second, blind labellings of a share of pages: the labeller's consistency (plan 0013 decision 22)
 │       ├── going_concern_uncertainty.jsonl   # hand-labelled golden set, one label per page
 │       ├── covenant_breach.jsonl
 │       └── results/                   # per signal: <prompt>__<model>.json or <rules>__rule.json; masking/ (plan 0013 step G)
@@ -105,6 +106,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   ├── xsd/                           # official MF/CRWDE XSDs, vendored (catalog.yaml)
 │   ├── extraction/                    # text-signal engineering config (plan 0013)
 │   │   ├── eval_gate_v1.yaml          # how far a change may fall below the accepted scores (owner's tolerance)
+│   │   ├── eval_gate_v2.yaml          # v1 at 10 points, plus a paired test on the same pages (the default, EVAL_GATE_VERSION)
 │   │   ├── extractor_v1.yaml          # model, effort, prefilter, and the method (llm + prompt, or rule) per signal_type
 │   │   ├── extractor_v2.yaml          # v1 with rules_v2 and prefilter_v2
 │   │   ├── extractor_v3.yaml          # v2 with rules_v3
@@ -115,6 +117,8 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │   ├── golden_sample_v1.yaml      # which pages go to the labeller: all selected, a fixed rejected sample
 │   │   ├── golden_sample_v2.yaml      # the auditor reports' pages: whole reports, every modified opinion and a fixed draw
 │   │   ├── golden_sample_v3.yaml      # the notes targeted at covenant_breach and key_customer_loss, and a hashed share of rejected pages (shelved)
+│   │   ├── golden_sample_v4.yaml      # list v3's draw, the notes: stratified by extractor_v7's answers, labelled in draw order (plan 0013 K4)
+│   │   ├── golden_sample_v5.yaml      # list v3's draw, the auditor reports: the same, modified opinions oversampled
 │   │   ├── prefilter_v1.yaml          # lemma terms per signal_type; the file name is the prefilter_version
 │   │   ├── prefilter_v2.yaml          # v1 with every page naming an opinion selected for opinion_type
 │   │   ├── prefilter_v3.yaml          # v2 + the opinion sentence's own words ("zdaniem … sprawozdanie") for opinion_type
@@ -346,7 +350,7 @@ src/distress_radar/
 │   ├── masking.py               # G1 — person names, PESEL, contacts masked (ADR 0009, third addendum)
 │   ├── preprocessing.py         # G1 — spaCy sentences and lemmas, lemma prefilter (config/extraction/)
 │   ├── golden.py                 # G3 — labelling queues (notes; whole auditor reports), golden rows, export, masking check of evals/
-│   ├── label_queue.py            # G3 — builds every sample's queue from the stores, exports them to evals/ (make label-*)
+│   ├── label_queue.py            # G3 — builds every sample's queue from the stores, exports them to evals/, reviews a stratified queue (make label-*)
 │   ├── schemas.py                # G2 — output schemas and response models, kept and discarded answers
 │   ├── rules.py                  # G2 — lemma or heading rules (config/extraction/rules_*.yaml)
 │   ├── response_store.py         # G2 — responses stored by request hash, replayed (decision 3)
@@ -356,7 +360,7 @@ src/distress_radar/
 │   ├── contracts.py              # Pandera contracts for all three
 │   ├── manifest.py               # text_extractions (Postgres): first run per file and pipeline
 │   ├── eval_harness.py           # G3 — scores against evals/text_signals/, the gate in make check
-│   └── eval_run.py               # G3 — make eval (runs the extractors on the golden set), make eval-accept
+│   └── eval_run.py               # G3 — make eval (runs the extractors on the golden set), make eval-accept, make eval-errors
 │
 ├── features/                     # H, in Python with in-process DuckDB (ADR 0012)
 │   ├── config.py                 # typed config/features/ (feature set, line-item map), cross-checked

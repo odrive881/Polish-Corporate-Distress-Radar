@@ -277,6 +277,129 @@ def test_the_ratio_interval_needs_two_entities_in_its_denominator() -> None:
     assert h.ratio_interval([("a", 1.0, 0.0, 0.0), ("b", 1.0, 0.0, 0.0)]) is None
 
 
+def _draw(golden: Path, drawn: dict[str, tuple[float, str, bool]], **extra: object) -> None:
+    """Mark pages of a synthetic golden set as a stratified sample's: π, entity, held out."""
+    pages = [json.loads(line) for line in (golden / "pages.jsonl").read_text("utf-8").splitlines()]
+    for page in pages:
+        if page["page_id"] in drawn:
+            pi, krs, held = drawn[page["page_id"]]
+            page.update(
+                stratum="answered_present", inclusion_probability=pi, krs=krs, holdout=held, **extra
+            )
+    (golden / "pages.jsonl").write_text("".join(json.dumps(p) + "\n" for p in pages), "utf-8")
+
+
+def test_the_held_out_entities_and_the_unsure_labels_are_scored_apart(
+    extractor: ex.Extractor, tmp_path: Path
+) -> None:
+    unsure = _label("p4", True, LITIGATION).model_copy(update={"unsure": True})
+    golden = _write_golden(tmp_path, {"litigation": [*LIT_LABELS[:3], unsure]})
+    _draw(golden, {"p1": (0.5, "1", False), "p2": (0.5, "2", True), "p4": (0.5, "3", True)})
+    weights = h.page_weights(golden)
+    assert weights["p2"] == h.DrawnPage(2.0, "2", True)
+    labels = h.golden_labels("litigation", golden) or []
+    scores = h.score(
+        labels,
+        _examples(_extraction(True, LITIGATION)),
+        h.page_texts(golden),
+        h.rejected_sample(golden),
+        weights,
+    )
+    assert scores.weighted is not None and scores.weighted.pages == 3
+    assert scores.holdout is not None and scores.holdout.pages == 2  # p2 and p4 only
+    assert (scores.holdout.tp, scores.holdout.fn) == (0.0, 2.0)  # p4's positive missed
+    # without the unsure label on p4, the one miss is gone
+    assert scores.without_unsure is not None
+    assert (scores.end_to_end.fn, scores.without_unsure.fn) == (1, 0)
+
+
+def test_the_gate_rescores_a_result_with_its_page_weights(
+    extractor: ex.Extractor, gate: h.Gate, tmp_path: Path
+) -> None:
+    golden = _write_golden(tmp_path, {"litigation": LIT_LABELS})
+    _draw(golden, {"p1": (0.5, "1", False), "p2": (0.5, "2", False)})
+    examples = _examples(_extraction(True, LITIGATION))
+    labels = h.golden_labels("litigation", golden) or []
+    result = _result(extractor, golden, examples).model_copy(
+        update={
+            "scores": h.score(
+                labels,
+                examples,
+                h.page_texts(golden),
+                h.rejected_sample(golden),
+                h.page_weights(golden),
+            ),
+            "accepted": h.Acceptance(by="owner", on=date(2026, 11, 6)),
+        }
+    )
+    assert result.scores.weighted is not None
+    _save(result, golden)
+    assert _problems(extractor, gate, golden) == []  # its weighted scores are its examples'
+
+
+def test_the_paired_test_sees_a_loss_the_tolerance_lets_through() -> None:
+    labels = [_label(f"q{n:02d}", True, LITIGATION) for n in range(40)]
+    old = tuple(h.example(lb.page_id, True, _extraction(True, LITIGATION)) for lb in labels)
+
+    def missing(k: int) -> tuple[h.Example, ...]:
+        return tuple(
+            h.example(lb.page_id, True, _extraction(n >= k, LITIGATION if n >= k else None))
+            for n, lb in enumerate(labels)
+        )
+
+    [(found, p_found), (_claims, p_claims)] = h.paired_losses(labels, missing(1), old).items()
+    assert "misses 1 positive" in found and p_found == 0.5  # one page: noise
+    assert p_claims == 1.0
+    [(_f, p_found)] = list(h.paired_losses(labels, missing(4), old).items())[:1]
+    assert p_found == 1 / 16  # four lost, none won: recall 0.9, inside a 0.10 tolerance
+    [(_f, p_found)] = list(h.paired_losses(labels, missing(5), old).items())[:1]
+    assert p_found == 1 / 32 < 0.05  # five: v2 fails it, though recall only fell 12.5 points
+    v2 = h.load_gate("eval_gate_v2")
+    assert v2.paired == h.Paired(alpha=0.05)
+    assert (v2.tolerance.precision, v2.tolerance.recall) == (0.10, 0.10)
+    assert Settings().eval_gate_version == "eval_gate_v2"
+
+
+def test_document_scores_read_the_flag_as_the_features_see_it(tmp_path: Path) -> None:
+    # golden_sample_v4's design: going concern stratifies. Doc d1 is flagged and holds the signal
+    # on a labelled page; doc d2 is flagged and does not; doc d3 is not flagged and holds it.
+    golden = tmp_path / "golden"
+    golden.mkdir()
+    pages = [
+        ("g1", "d1", "1", "answered_present", ["going_concern_uncertainty"], True),
+        ("g2", "d1", "1", "answered_present", ["going_concern_uncertainty"], False),
+        ("g3", "d2", "2", "answered_present", ["going_concern_uncertainty"], False),
+        ("g4", "d3", "3", "answered_absent", [], True),
+    ]
+    rows = [
+        {
+            "page_id": pid,
+            "document_hash": doc,
+            "source_member": "sf.xml",
+            "golden_sample_version": "golden_sample_v4",
+            "stratum": stratum,
+            "inclusion_probability": 0.5,
+            "krs": krs,
+            "flagged": flagged,
+            "text": FIGURES,
+            "sample": "selected",
+        }
+        for pid, doc, krs, stratum, flagged, _present in pages
+    ]
+    (golden / "pages.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows), "utf-8")
+    labels = [_label(pid, present, FIGURES if present else None) for pid, *_r, present in pages]
+    (golden / "going_concern_uncertainty.jsonl").write_text(
+        "".join(lb.model_dump_json() + "\n" for lb in labels), "utf-8"
+    )
+    scores = h.document_scores(golden)
+    gc = scores["golden_sample_v4/going_concern_uncertainty"]
+    assert (gc.documents, gc.pages) == (2, 4)
+    assert gc.precision == 0.5  # d1 right, d2 not
+    assert gc.recall == 0.5  # of the positive pages, g1 is in a flagged document, g4 is not
+    assert gc.precision_interval is not None
+    assert "golden_sample_v4/loss_coverage_resolution" not in scores  # no golden file
+
+
 # --- the gate ------------------------------------------------------------------------------------
 
 

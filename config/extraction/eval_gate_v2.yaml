@@ -1,0 +1,21 @@
+# Eval gate v2 (plan 0013 decision 24, 2026-11-06): how far an extraction change may fall below the
+# owner's last accepted result before `make check` fails. Engineering config, not statute; the
+# tolerances are the owner's. Loaded by `distress_radar.extraction.eval_harness.load_gate`;
+# `EVAL_GATE_VERSION` names the file in use.
+#
+# Changed from v1 (tolerance 0, on points): with a golden set of hundreds of pages, a change that
+# loses one disputed page fails at tolerance 0, though it is noise. v2 fails a change on either of:
+# - its end-to-end precision or recall falls more than `tolerance` points below the accepted one's
+#   (on a handful of positives, losing one is still a fall of more than 10 points, and fails);
+# - a paired test on the same pages says it is worse: McNemar's exact one-sided test, of the
+#   positives it misses that the accepted one finds against the other way round, and of the pages
+#   it claims falsely that the accepted one does not against the other way round, at `alpha`.
+# The two pairs compare the methods page by page, so they see a real loss far sooner than two
+# overlapping intervals would.
+
+eval_gate_version: eval_gate_v2
+tolerance:
+  precision: 0.10
+  recall: 0.10
+paired:
+  alpha: 0.05

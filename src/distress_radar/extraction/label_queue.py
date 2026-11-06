@@ -5,6 +5,11 @@ reads Postgres and MinIO and writes files. Counts only are printed, never text.
     uv run python -m distress_radar.extraction.label_queue build [golden_sample_v<n>]
     uv run python -m distress_radar.extraction.label_queue export
     uv run python -m distress_radar.extraction.label_queue clear
+    uv run python -m distress_radar.extraction.label_queue review [golden_sample_v<n>]
+
+`review` (`make label-review`) prints where a stratified queue stands: its cut and the targets'
+positives, the labels that differ from the model's answer with their reasons (ids only), agreement
+shown and blind, the rechecks' agreement, and the median time a page (plan 0013 decisions 16–23).
 
 `build` needs `make dev-up` and `make models`. For each sample version (`golden_sample_v*.yaml`),
 or the one named, it writes `<LABELLING_DIR>/<version>.jsonl`, local and gitignored, and keeps
@@ -23,7 +28,9 @@ from __future__ import annotations
 
 import json
 import sys
+from collections import Counter
 from collections.abc import Iterator
+from datetime import UTC, datetime
 from fractions import Fraction
 from pathlib import Path
 
@@ -238,9 +245,22 @@ def stratified_frame(
         pl.col("document_kind") == sample.document_kind
     )
     kept = read_dataset(settings.warehouse_dir, ts.DATASET).filter(ours)
-    answered = kept.filter(
-        pl.col("signal_type").is_in(list(design.signals)) & (pl.col("value") != "absent")
-    )
+    # decision 18: a signal with `answered_values` is answered present only with one of them
+    counts_as_present = pl.lit(False)
+    for signal in design.signals:
+        values = design.answered_values.get(signal)
+        counts_as_present = counts_as_present | (
+            (pl.col("signal_type") == signal)
+            & (pl.col("value").is_in(list(values)) if values else pl.col("value") != "absent")
+        )
+    answered = kept.filter(counts_as_present)
+    flagged: dict[tuple[str, str], set[preprocessing.SignalType]] = {}
+    for h, m, signal in (
+        kept.filter(pl.col("value") != "absent")
+        .select("source_document_hash", "source_member", "signal_type")
+        .iter_rows()
+    ):
+        flagged.setdefault((str(h), str(m)), set()).add(signal)
     proposals: dict[str, dict[preprocessing.SignalType, golden.Label]] = {}
     for h, m, a, p, signal, value, evidence in kept.select(
         "source_document_hash",
@@ -276,6 +296,7 @@ def stratified_frame(
         ),
         labelled_elsewhere={row.page_id: row for row in others},
         proposals=proposals,
+        flagged={doc: frozenset(signals) for doc, signals in flagged.items()},
     )
 
 
@@ -323,7 +344,7 @@ def export(settings: Settings, out_dir: Path = golden.GOLDEN_DIR) -> dict[str, i
     """Every local queue's labelled pages to `out_dir`. Raises when a page already exported there
     is not among them (a queue missing on this machine, say): an export never drops a label."""
     rows = _queued(settings)
-    files = golden.export(rows, masking.load_model())
+    files = golden.export(rows, masking.load_model(), golden.guide_version())
     committed = out_dir / golden.PAGES_FILE
     if committed.exists():
         exported = {
@@ -346,15 +367,94 @@ def export(settings: Settings, out_dir: Path = golden.GOLDEN_DIR) -> dict[str, i
     return {name: data.count(b"\n") for name, data in files.items()}
 
 
+def progress_lines(rows: list[golden.QueuePage], sample: golden.GoldenSample) -> list[str]:
+    """Where a stratified queue stands, as printed by `build` and `review`: counts only."""
+    if sample.stratified is None:
+        return []
+    p = golden.progress(rows, sample, golden.guide_version())
+    lines = [
+        f"labelled {p.labelled} of {p.queued} in draw order (cut {p.cut:.4f}); "
+        + ", ".join(f"{s} {n} of {p.target} positives" for s, n in p.positives.items())
+        + ("; every answered-present page labelled" if p.answered_present_done else "")
+        + ("; stopping rule met: you may stop" if p.met else "")
+    ]
+    if p.in_pilot:
+        lines.append(
+            f"pilot: {p.labelled} of {p.pilot_pages} pages; then `make label-review`, tighten the "
+            "guide and raise its version before labelling on (decision 20)"
+        )
+    if p.beyond:
+        lines.append(
+            f"{len(p.beyond)} page(s) labelled past the first unlabelled one: fill the gap"
+        )
+    if p.stale_guide:
+        lines.append(f"{p.stale_guide} page(s) labelled under an earlier guide: label them again")
+    return lines
+
+
+def review(settings: Settings, version: str) -> list[str]:
+    """A stratified queue's review (decisions 20–23): its progress, each label that differs from
+    the model's answer with its reason, the reasons summed, agreement shown and blind, the
+    rechecks' agreement, and the time per page by stratum. Ids and labels only, never text."""
+    sample = golden.load_golden_sample(version)
+    path = queue_path(settings, version)
+    if sample.stratified is None or not path.exists():
+        return [f"{version}: not a stratified sample, or no queue yet"]
+    rows = golden.load_queue(path.read_bytes())
+    lines = [f"{version}: " + line for line in progress_lines(rows, sample)]
+    found = golden.disagreements(rows)
+    lines.append(f"labels that differ from the model's answer: {len(found)}")
+    lines += [
+        f"  #{d.position} {d.page_id} {d.signal}: model {d.model}, you {d.owner}"
+        f"{f', reason {d.reason}' if d.reason else ', no reason given'}"
+        f"{', unsure' if d.unsure else ''}{', blind' if d.blind else ''}"
+        for d in found
+    ]
+    reasons = Counter(d.reason or "none given" for d in found)
+    if reasons:
+        lines.append("reasons: " + ", ".join(f"{r} {n}" for r, n in reasons.most_common()))
+    unsure = sum(lb.unsure for r in rows if r.complete for lb in r.labels.values())
+    lines.append(f"labels marked unsure: {unsure}")
+    agreement = golden.proposal_agreement(rows)
+    lines.append(
+        "agreement with the model's answers, answered-present pages: "
+        + ", ".join(f"{arm} {a} of {t}" for arm, (a, t) in agreement.items())
+    )
+    checks = golden.consistency(rows)
+    today = datetime.now(UTC).date()
+    due = sum(golden.recheck_due(r, today, sample.stratified.recheck_after_days) for r in rows)
+    lines.append(
+        "rechecks agreeing with the first label: "
+        + (", ".join(f"{s} {a} of {t}" for s, (a, t) in checks.items()) or "none yet")
+        + f"; {due} due"
+    )
+    timing = golden.seconds_by_stratum(rows)
+    if timing:
+        lines.append(
+            "median seconds a page: "
+            + ", ".join(f"{s} {sec} ({n} pages)" for s, (n, sec) in timing.items())
+        )
+    return lines
+
+
 def main(argv: list[str] | None = None) -> int:
     args = sys.argv[1:] if argv is None else argv
-    if not args or args[0] not in {"build", "export", "clear"} or len(args) > 2:
+    if not args or args[0] not in {"build", "export", "clear", "review"} or len(args) > 2:
         print(__doc__, file=sys.stderr)
         return 2
     settings = Settings()
+    if args[0] == "review":
+        stratified = [v for v in versions() if golden.load_golden_sample(v).stratified is not None]
+        for version in args[1:] or stratified:
+            print("\n".join(review(settings, version)))
+        return 0
     if args[0] == "build":
         for version in args[1:] or versions():
-            stats = build(settings, version)
+            try:
+                stats = build(settings, version)
+            except ValueError as exc:  # a stratified sample before its `text` run, say
+                print(f"{version}: not built: {exc}", file=sys.stderr)
+                continue
             drawn = (
                 "drawn by stratum "
                 + ", ".join(f"{k} {stats.drawn[k]} of {stats.strata[k]}" for k in golden.STRATA)
@@ -379,6 +479,8 @@ def main(argv: list[str] | None = None) -> int:
             )
             rows = golden.load_queue(queue_path(settings, version).read_bytes())
             print(f"queue: {len(rows)} pages, {sum(r.complete for r in rows)} labelled")
+            for line in progress_lines(rows, golden.load_golden_sample(version)):
+                print(line)
     elif args[0] == "clear":
         if len(args) > 1:
             print("clear takes no version: it reads every local queue", file=sys.stderr)

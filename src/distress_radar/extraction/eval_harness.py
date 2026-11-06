@@ -51,14 +51,14 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field
 
 from distress_radar.extraction.extractor import PROMPTS_DIR, Extractor
-from distress_radar.extraction.golden import GOLDEN_DIR, PAGES_FILE
-from distress_radar.extraction.preprocessing import SignalType
+from distress_radar.extraction.golden import GOLDEN_DIR, PAGES_FILE, load_golden_sample
+from distress_radar.extraction.preprocessing import SIGNAL_TYPES, SignalType
 from distress_radar.extraction.response_store import canonical
 from distress_radar.extraction.schemas import SCHEMA_VERSION, Discarded, Extraction, json_schema
 from distress_radar.parsing.canonical_schema import CONFIG_DIR
@@ -78,9 +78,16 @@ class Tolerance(_Frozen):
     recall: float = Field(ge=0, le=1)
 
 
+class Paired(_Frozen):
+    """Decision 24: the paired test a new method must also pass against the accepted one."""
+
+    alpha: float = Field(gt=0, lt=1)
+
+
 class Gate(_Frozen):
     eval_gate_version: str
     tolerance: Tolerance
+    paired: Paired | None = None  # from eval_gate_v2
 
 
 def load_gate(version: str, config_dir: Path = CONFIG_DIR) -> Gate:
@@ -102,6 +109,8 @@ class GoldenLabel(_Frozen):
     present: bool
     value: str | None
     evidence: str | None
+    unsure: bool = False  # decision 21
+    reason: str | None = None
 
 
 def _sha256(path: Path) -> str:
@@ -184,6 +193,11 @@ class Scores(_Frozen):
     extractor: Counts
     end_to_end: Counts
     weighted: WeightedCounts | None = None  # decision 14; None when no page carries a weight
+    # Decision 19: the weighted estimate over the held-out entities' pages alone, the one read
+    # when an extractor tuned on the others is accepted; None when no drawn page is held out.
+    holdout: WeightedCounts | None = None
+    # Decision 21: end to end without the pages labelled unsure; None when no label is.
+    without_unsure: Counts | None = None
 
 
 class Acceptance(_Frozen):
@@ -334,6 +348,7 @@ class DrawnPage:
 
     weight: float
     cluster: str
+    holdout: bool = False
 
 
 def ratio_interval(rows: list[tuple[str, float, float, float]], z: float = Z95) -> Interval | None:
@@ -422,6 +437,8 @@ def score(
         if ex.outcome == "discarded":
             reason = str(ex.discard_reason)
             discarded[reason] = discarded.get(reason, 0) + 1
+    weights = weights or {}
+    held_out = {pid: page for pid, page in weights.items() if page.holdout}
     return Scores(
         pages=len(pairs),
         positives=sum(lb.present for lb in labels),
@@ -439,7 +456,11 @@ def score(
         ),
         extractor=_counts([(lb, ex) for lb, ex in pairs if ex.selected]),
         end_to_end=_counts(pairs),
-        weighted=_weighted(pairs, weights or {}),
+        weighted=_weighted(pairs, weights),
+        holdout=_weighted(pairs, held_out) if held_out else None,
+        without_unsure=_counts([(lb, ex) for lb, ex in pairs if not lb.unsure])
+        if any(lb.unsure for lb in labels)
+        else None,
     )
 
 
@@ -462,7 +483,9 @@ def page_weights(golden_dir: Path = GOLDEN_DIR) -> dict[str, DrawnPage]:
         json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
     ]
     return {
-        str(row["page_id"]): DrawnPage(1 / float(row["inclusion_probability"]), str(row["krs"]))
+        str(row["page_id"]): DrawnPage(
+            1 / float(row["inclusion_probability"]), str(row["krs"]), bool(row.get("holdout"))
+        )
         for row in rows
         if row.get("inclusion_probability") is not None
     }
@@ -483,8 +506,9 @@ def unchanged(previous: EvalResult, current: EvalResult) -> bool:
 
 def dump_result(result: EvalResult) -> bytes:
     data = result.model_dump(mode="json")
-    if data["scores"]["weighted"] is None:  # results without weighted pages keep their bytes
-        del data["scores"]["weighted"]
+    for key in ("weighted", "holdout", "without_unsure"):  # results without them keep their bytes
+        if data["scores"][key] is None:
+            del data["scores"][key]
     return (json.dumps(data, ensure_ascii=False, sort_keys=True, indent=1) + "\n").encode("utf-8")
 
 
@@ -526,7 +550,13 @@ def gate_problems(
     )
     if stale:
         return [f"{signal}: {mid} was scored on other {', '.join(stale)}; run `make eval`"]
-    rescored = score(labels, current.examples, page_texts(golden_dir), rejected_sample(golden_dir))
+    rescored = score(
+        labels,
+        current.examples,
+        page_texts(golden_dir),
+        rejected_sample(golden_dir),
+        page_weights(golden_dir),
+    )
     if rescored != current.scores:
         return [f"{signal}: {mid}'s stored scores are not its examples' scores"]
     if current.accepted is not None:
@@ -551,4 +581,165 @@ def gate_problems(
         problems.append(
             f"{signal}: recall {ours.recall} below the accepted {theirs.recall} ({last.method_id})"
         )
+    if gate.paired is not None:
+        problems += [
+            f"{signal}: {what} ({last.method_id}; paired one-sided p {p:.3f} < {gate.paired.alpha})"
+            for what, p in paired_losses(labels, current.examples, last.examples).items()
+            if p < gate.paired.alpha
+        ]
     return problems
+
+
+def _binomial_tail(k: int, n: int) -> float:
+    """P(X ≥ k) for X ~ Binomial(n, 1/2), exactly."""
+    return sum(math.comb(n, i) for i in range(k, n + 1)) / 2**n if n else 1.0
+
+
+def paired_losses(
+    labels: list[GoldenLabel], ours: tuple[Example, ...], theirs: tuple[Example, ...]
+) -> dict[str, float]:
+    """McNemar's exact one-sided test of a new method against the accepted one, on the same pages
+    (decision 24): of the positives one finds and the other misses, and of the pages one claims
+    falsely and the other does not, the chance of the new method losing at least as many of the
+    discordant pages as it does, were both equally good. Keyed by what it tests."""
+    mine = {e.page_id: e for e in ours}
+    old = {e.page_id: e for e in theirs}
+
+    def hit(lb: GoldenLabel, ex: Example) -> bool:
+        return lb.present and ex.outcome == "present" and _same_value(lb, ex)
+
+    def false_claim(lb: GoldenLabel, ex: Example) -> bool:
+        return ex.outcome == "present" and not hit(lb, ex)
+
+    found_lost = found_won = claim_lost = claim_won = 0
+    for lb in labels:
+        a, b = mine.get(lb.page_id), old.get(lb.page_id)
+        if a is None or b is None:
+            continue
+        if lb.present:
+            found_lost += hit(lb, b) and not hit(lb, a)
+            found_won += hit(lb, a) and not hit(lb, b)
+        claim_lost += false_claim(lb, a) and not false_claim(lb, b)
+        claim_won += false_claim(lb, b) and not false_claim(lb, a)
+    return {
+        f"misses {found_lost} positive(s) the accepted one finds, finds {found_won} it misses": (
+            _binomial_tail(found_lost, found_lost + found_won)
+        ),
+        f"claims {claim_lost} page(s) falsely that the accepted one does not, {claim_won} the other way": (
+            _binomial_tail(claim_lost, claim_lost + claim_won)
+        ),
+    }
+
+
+# --- what the features see (decision 17) ---------------------------------------------------------
+
+
+class DocumentScores(_Frozen):
+    """A signal's document-level flag as the answering extractor serves it to the features, over a
+    stratified sample's pages (weighted). Presence only.
+
+    - `precision`: of the documents it flags, the share with the signal on a labelled page. A
+      flagged document's flagged pages are drawn together, so all are labelled; its other pages
+      only in part, so this is a lower bound.
+    - `recall`: of the pages labelled present, the share in a document it flags: a page-weighted
+      recall, unbiased; a document with several positive pages counts for each."""
+
+    documents: int
+    pages: int
+    precision: float | None
+    precision_interval: Interval | None
+    recall: float | None
+    recall_interval: Interval | None
+
+
+def document_scores(golden_dir: Path = GOLDEN_DIR) -> dict[str, DocumentScores]:
+    """By sample and signal, over the drawn pages of `pages.jsonl`: each signal the sample's
+    answered-present stratum is drawn by, other than one stratified by value (decision 18), whose
+    flag that stratum does not hold."""
+    path = golden_dir / PAGES_FILE
+    if not path.exists():
+        return {}
+    by_sample: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if line.strip():
+            row = json.loads(line)
+            if row.get("inclusion_probability") is not None:
+                by_sample[str(row["golden_sample_version"])].append(row)
+    out: dict[str, DocumentScores] = {}
+    for version, rows in sorted(by_sample.items()):
+        design = load_golden_sample(version).stratified
+        if design is None:
+            continue
+        for signal in design.signals:
+            if signal in design.answered_values:
+                continue
+            labels = {lb.page_id: lb for lb in golden_labels(signal, golden_dir) or []}
+            ours = [r for r in rows if str(r["page_id"]) in labels]
+            if not ours:
+                continue
+
+            def doc(r: dict[str, Any]) -> tuple[str, str]:
+                return (str(r["document_hash"]), str(r["source_member"]))
+
+            def weight(r: dict[str, Any]) -> float:
+                return 1 / float(r["inclusion_probability"])
+
+            positive = {doc(r) for r in ours if labels[str(r["page_id"])].present}
+            # one row per flagged document drawn in the answered-present stratum, right when any
+            # of its labelled pages holds the signal
+            flagged_docs = {
+                doc(r): (str(r["krs"]), weight(r))
+                for r in ours
+                if r["stratum"] == "answered_present" and signal in r.get("flagged", [])
+            }
+            p_rows = [(krs, w, float(d in positive), 1.0) for d, (krs, w) in flagged_docs.items()]
+            r_rows = [
+                (str(r["krs"]), weight(r), float(signal in r.get("flagged", [])), 1.0)
+                for r in ours
+                if labels[str(r["page_id"])].present
+            ]
+            p_den, r_den = sum(w for _c, w, *_ in p_rows), sum(w for _c, w, *_ in r_rows)
+            out[f"{version}/{signal}"] = DocumentScores(
+                documents=len(flagged_docs),
+                pages=len(ours),
+                precision=round(sum(w * y for _c, w, y, _x in p_rows) / p_den, 4)
+                if p_den
+                else None,
+                precision_interval=ratio_interval(p_rows),
+                recall=round(sum(w * y for _c, w, y, _x in r_rows) / r_den, 4) if r_den else None,
+                recall_interval=ratio_interval(r_rows),
+            )
+    return out
+
+
+_BY_NAME: dict[str, SignalType] = {s: s for s in SIGNAL_TYPES}
+
+
+def labeller_consistency(golden_dir: Path = GOLDEN_DIR) -> dict[str, tuple[int, int]]:
+    """(rechecks agreeing with the committed label, rechecks) by signal, from `rechecks.jsonl`
+    (decision 22): the labeller measured against themself, the ceiling on what a score can mean."""
+    path = golden_dir / "rechecks.jsonl"
+    if not path.exists():
+        return {}
+    out: dict[str, list[int]] = {}
+    labels: dict[SignalType, dict[str, GoldenLabel]] = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        check = json.loads(line)
+        signal = _BY_NAME[str(check["signal_type"])]
+        if signal not in labels:
+            labels[signal] = {lb.page_id: lb for lb in golden_labels(signal, golden_dir) or []}
+        first = labels[signal].get(str(check["page_id"]))
+        if first is None:
+            continue
+        arm = out.setdefault(signal, [0, 0])
+        same = first.present == bool(check["present"]) and (
+            not first.present
+            or first.value is None
+            or check.get("value") is None
+            or first.value == check["value"]
+        )
+        arm[0] += same
+        arm[1] += 1
+    return {s: (a, t) for s, (a, t) in sorted(out.items())}

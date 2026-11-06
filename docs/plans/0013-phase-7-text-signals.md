@@ -11,7 +11,7 @@
 **Order:** after plan 0012 (complete). It does not wait for ADR 0013: like Phase 6, it builds and measures
 machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set this plan adds.
 
-## Status: active (2026-10-13): owner decisions 0–9 accepted; every step built, J's docs included; the model runs on the seed under `extractor_v6` (the default since 2026-10-13; v4 before) with the provider's terms confirmed; all nine signals accepted on the 166-page golden set (2026-10-15) and held by the gate in `make check`; the `text` and `features` jobs re-run under `extractor_v6` (2026-10-15, plan 0017 step H: 868 new requests, all answered); 2026-10-22: `extractor_v7` (`prefilter_v4`) the default; `golden_sample_v3` shelved and the two signals without positives parked; the plan closes on the feature signals, labelled in a stratified sample of list v3's draw (§ "Labelling after list v3", decisions 10–14; K1–K3 built); open: K4, after list v3's import and `text` run, and the owner's items below
+## Status: active (2026-10-13): owner decisions 0–9 accepted; every step built, J's docs included; the model runs on the seed under `extractor_v6` (the default since 2026-10-13; v4 before) with the provider's terms confirmed; all nine signals accepted on the 166-page golden set (2026-10-15) and held by the gate in `make check`; the `text` and `features` jobs re-run under `extractor_v6` (2026-10-15, plan 0017 step H: 868 new requests, all answered); 2026-10-22: `extractor_v7` (`prefilter_v4`) the default; `golden_sample_v3` shelved and the two signals without positives parked; the plan closes on the feature signals, labelled in a stratified sample of list v3's draw (§ "Labelling after list v3", decisions 10–14; K1–K3 built); 2026-11-06: decisions 15–24 (labelling in draw order to a stopping rule, per-kind signals, a holdout, rechecks, a paired gate) accepted by the owner and built as K5, `golden_sample_v4`/`v5` written with provisional rates; open: K4, after list v3's import and `text` run, and the owner's items below
 
 ### Where this stands (2026-10-21)
 
@@ -170,6 +170,72 @@ Two findings change what is worth labelling:
     not accepted on noise; the gate (tolerance 0, on counts) is reviewed against the intervals once the
     samples are labelled.
 
+### Labelling efficiently (2026-11-06): decisions 15–24
+
+Asked for by the owner before any labelling of v4 and v5 (2026-11-06): how to make labelling and the use of the
+golden set as efficient, and its results as meaningful, as possible. Ten suggestions, all accepted by the owner
+("do all ten"), built the same day as K5 below. Each is a new field or a new file: no committed label, page or
+result moves, and the seed's samples label as before.
+
+15. **Each document kind is asked its own signals** (`labelled` in a stratified sample). The notes (v4) are
+    labelled for seven signals, without `opinion_type` and `emphasis_of_matter`, which an auditor gives in a
+    report; the reports (v5) for those two and `going_concern_uncertainty`, which a report states in its
+    "material uncertainty" section. In the 189 seed pages no notes page held either auditor signal, and no report
+    page held a notes signal except one `litigation`. A page is in the golden files of the signals it was asked
+    only, so each signal is scored on the kind of document that carries it.
+16. **The rates are ceilings, and pages are labelled in draw order to a stopping rule.** Each drawn page has a
+    position, u / rate, u its hash's uniform. The labelled pages are those below the first unlabelled one's
+    position, the cut, so stopping anywhere is exactly the sample a rate of cut × rate would have drawn, and the
+    export writes π_page = π_entity × rate × cut. The rates' ratios are the allocation, the cut the size. The
+    stopping rule is fixed in the sample before the first label (`targets`): every target signal has 20 labelled
+    positives below the cut, or every answered-present page is labelled. It is read on counts, never on a score.
+    *What it costs:* stopping on a count of positives is inverse sampling, so a ratio estimated at the cut is not
+    exactly unbiased; the bias is small beside the intervals, and stated with the results. A page labelled past a
+    gap is refused at export (label the gap first); a page carried over from another queue is not a gap.
+17. **The answered-present stratum is drawn by document, and only it shows proposals.** A document's
+    answered-present pages share one draw, so a statement the feature flags has every flagged page labelled. Each
+    drawn page records the signals the answering extractor kept present anywhere in its document (`flagged`), and
+    `make eval` scores the flag as the features read it (`text_flag`): its precision over flagged documents (a
+    lower bound: a document's other pages are labelled only in part) and the share of the signal's pages that lie
+    in a flagged document (page-weighted, unbiased). On the other two strata the model's answer is "absent", and
+    showing it would pull toward the model the very labels that measure its misses, so those pages are always
+    blind, and decision 13's agreement is compared within the answered-present stratum only.
+18. **A stratifying signal may count only some of its values** (`answered_values`). v5 counts an opinion as
+    answered present only when modified. Every report has an opinion, and `opinion_type` is a rule with 20
+    accepted positives at P and R 1.0 [0.84, 1.0], so the unmodified opinions fall in the lower-rate strata, as a
+    check that the rule carries over. The modified ones, rare and what `modified_opinion` reads, are oversampled.
+    v5's target is `emphasis_of_matter` alone.
+19. **A held-out share of entities** (`holdout_rate` 0.3, by the entity's hash: its accountants' wording repeats
+    across its pages). `make eval` prints their weighted scores apart (`holdout` in a result); `make eval-errors`
+    lists a method's errors without them. A prompt is tuned on the others, and the held-out scores are read when
+    it is accepted.
+20. **A pilot, and the guide's version** (`pilot_pages`: 30 on v4, 15 on v5). After the pilot, `make
+    label-review` lists every label that differs from the model's answer. The guide is tightened where a
+    definition left the labeller guessing, and a changed definition is a new version
+    (`**Version: labelling_guide_v<n>**`, now v2). A stratified page records the version it was labelled under,
+    and the export refuses one labelled under another, so a changed definition is relabelled, not mixed.
+21. **`unsure` and a reason on a label.** A doubted call is still labelled by the guide's "when unsure, absent",
+    and ticked unsure: `make eval` prints each score again without those labels (`without_unsure`). A label that
+    overrules the model takes one of eight reasons (`golden.REASONS`), which `make label-review` sums: the next
+    prompt's to-do list. Both are written only when set, so earlier labels keep their bytes.
+22. **Rechecks** (`recheck_rate` 0.05, by page; `recheck_after_days` 7). A page drawn for a recheck comes back
+    under the notebook's "rechecks due" a week after it was labelled, without its first labels or proposals, for
+    presence and value. `rechecks.jsonl` holds the second labellings; `make eval` and `make label-review` print
+    the agreement per signal. With one labeller, that agreement is the ceiling on what any score can mean.
+23. **Time a page.** A save records the seconds the page was on screen (local, never exported); `make
+    label-review` prints the median by stratum, from which the next sample's rates are set.
+24. **The gate compares methods in pairs** (`eval_gate_v2`, now the default). A new method fails when its
+    end-to-end precision or recall falls more than 10 points below the accepted one's, or when McNemar's exact
+    one-sided test on the same pages says it loses at 5%: the positives the accepted one finds and it misses
+    against the other way round, and the pages it claims falsely against the other way round. Once the set holds
+    hundreds of pages, v1's tolerance of 0 fails a change on a single disputed page. On a handful of positives,
+    losing one is still more than 10 points and fails. *The owner's to confirm* (the tolerances are the owner's):
+    `EVAL_GATE_VERSION=eval_gate_v1` keeps the old rule.
+
+Found and fixed while building it: the gate re-scored a stored result without its page weights. Once a weighted
+page was exported, every current result would have failed as "stored scores are not its examples' scores". It
+now re-scores with them (tested).
+
 **Steps:**
 - **K1** (built 2026-10-22, § "Progress"): decision 12's design, its queue builder and the page weights in
   `golden.py`; `label_queue build` reading the draw and `text_signals`; the weighted counts in the harness
@@ -177,8 +243,18 @@ Two findings change what is worth labelling:
 - **K2** (built 2026-10-22, § "Progress"): intervals (decision 14's second half).
 - **K3** (built 2026-10-22, § "Progress"): proposals and the one-click default in the labelling notebook
   (decision 13).
-- **K4** (after list v3's import and its `text` run): write `golden_sample_v4` and `v5` with their rates,
-  build the queues, label, export, `make eval`; then decision 11's check.
+- **K5** (built 2026-11-06): decisions 15–24. `golden.py` (the sample's and the row's new fields, the draw by
+  document, positions, the holdout and recheck draws, `cut`, `at_cut`, `progress`, rechecks, `disagreements`,
+  `seconds_by_stratum`, the guide's version), `label_queue.py` (`answered_values`, the documents' flags,
+  `review`, `make label-review`), the notebook (draw order, progress and pilot banners, only the page's signals,
+  unsure and reason, rechecks due, time on screen), `eval_harness.py` (`holdout`, `without_unsure`, the paired
+  test, `document_scores`, `labeller_consistency`, re-scoring with weights), `eval_run.py` (their printout,
+  `make eval-errors`), `eval_gate_v2.yaml`, the labelling guide v2, and `golden_sample_v4`/`v5` written with
+  provisional ceilings. Tests: `tests/extraction/test_golden.py` and `test_eval_harness.py`, on synthetic pages.
+- **K4** (after list v3's import and its `text` run): `make label-queue`, then set v4's and v5's rates from the
+  pools it prints, before the first label; label the pilot, `make label-review`, freeze the guide; label in draw
+  order until `make label-review` says the stopping rule holds; export, `make eval`; then decision 11's check,
+  read on the held-out scores.
 
 **K1, built (2026-10-22).** `golden.py`: the `stratified` design (`StratifiedSample`: the draw pinned as a
 backtest pins it, the answering extractor, the signals, a rate per stratum), `build_stratified_queue`, and

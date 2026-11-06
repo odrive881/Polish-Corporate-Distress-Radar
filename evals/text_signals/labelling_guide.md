@@ -3,6 +3,14 @@
 **Status: accepted by the owner, 2026-09-30, as drafted.** A change after labelling has begun means relabelling
 what was done under the old wording: it is a new version of this guide, recorded here with its date.
 
+**Version: labelling_guide_v2**
+
+The version line is read by the tooling: a stratified sample's page records the version it was labelled under,
+and the export refuses a page labelled under another one, so a change to this guide is relabelled, not mixed.
+Versions: v1, 2026-09-30 (the seed's samples; their pages record none); v2, 2026-11-06 (plan 0013 decisions
+15–23: the signals asked per document kind, "unsure", reasons, the pilot and rechecks below; no definition
+changed). Raise it after the pilot if a definition changes.
+
 Labels in this directory are the owner's (plan 0013 decision 5). A model may propose; the owner confirms or
 corrects every proposal, and the row records who proposed (`proposed_by`) and who labelled (`labelled_by`).
 
@@ -15,8 +23,13 @@ corrects every proposal, and the row records who proposed (`proposed_by`) and wh
   another company. A standard sentence that the company is *not* threatened is absent.
 - **Evidence is a verbatim span of the masked page**, the shortest that shows the signal on its own: usually one
   sentence. Copy it from the page; the tool refuses a span that is not on it. Tokens such as `[osoba]` stay in it.
-- **When unsure, absent**, and note the page id: a doubtful positive teaches the extractor more noise than a
-  missed one costs here.
+- **When unsure, absent**, and tick "unsure" on that signal: a doubtful positive teaches the extractor more noise
+  than a missed one costs here. `make eval` reports each score again without the unsure labels, so a result that
+  moves a lot between the two rests on calls you doubted.
+- **Say why you overrule the model** (stratified samples, decision 21). Where the form started from the model's
+  answer and you change it, or you mark present what the model did not answer, pick the reason:
+  `template_sentence`, `other_company`, `earlier_year`, `hypothetical`, `not_this_page`, `wrong_value`,
+  `missed_by_model` or `other`. `make label-review` sums them: they are the to-do list for the next prompt.
 - **Mask first, then label.** A person's name the masker missed (shown in red if the masker itself would still
   catch it, but look for others) is masked with "Mask on this page" before labelling, so evidence never holds it.
   A company name stays. Over-masking is accepted.
@@ -88,3 +101,22 @@ the span (its kind and a hash of its text, per page) is recorded as reviewed in 
 eval files, and the export and `make check` skip exactly that span. Anything else the masker finds on the page,
 including a span added later, still blocks. For pages saved before this existed, `make label-clear` records
 what is flagged on every labelled page at once.
+
+## The stratified samples (v4 on; plan 0013 decisions 15–23, 2026-11-06)
+
+- **Only the signals the document kind is asked.** A page of the notes (`golden_sample_v4`) is labelled for
+  the seven signals the notes carry, without `opinion_type` and `emphasis_of_matter`; a page of an auditor
+  report (`golden_sample_v5`) for `opinion_type`, `emphasis_of_matter` and `going_concern_uncertainty` (the
+  report's "material uncertainty" section). The form shows only those.
+- **In order.** The form takes you to the next page in draw order. Label them in that order and do not skip:
+  the labelled pages are those before the first unlabelled one, and the export refuses a page labelled past a
+  gap. You may stop whenever `make label-review` says the stopping rule is met.
+- **Proposals only where the model found something.** On the answered-present pages the form starts from the
+  model's answers, except on a fixed fifth labelled blind. Every other page is blind: there the model said
+  "absent", and those pages measure what it misses.
+- **The pilot.** The first 30 pages are a pilot. Then run `make label-review`, read where you and the model
+  disagree, and tighten this guide where a definition left you guessing. A definition changed is a new version
+  here, and the pilot's pages are labelled again under it; the export refuses them otherwise.
+- **Rechecks.** About one page in twenty comes back a week after you labelled it, without your first labels.
+  Label it again as if new: the agreement is how consistent the labels are, the ceiling on what any score can
+  show.

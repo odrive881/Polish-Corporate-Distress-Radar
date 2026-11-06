@@ -1,0 +1,46 @@
+# Golden sample v5 (plan 0013 K4, decisions 12 and 15–23; written 2026-11-06): the auditor reports of
+# list v3's draw, stratified by what `extractor_v7` already answered, labelled in draw order until the
+# stopping rule holds. Engineering config, not statute. Loaded by `distress_radar.extraction.golden.load_golden_sample`.
+#
+# The frame is every text page of the dated auditor reports of the draw's entities (pinned as
+# `backtest_v10` pins it), once the `text` job has read them under `extractor_v7`.
+#
+# Strata by `emphasis_of_matter` and `opinion_type`, but an opinion counts as answered present only
+# when modified (decision 18): every report has an opinion, `opinion_type` already has 20 accepted
+# positives at P and R 1.0 [0.84, 1.0], and it is a rule, so an unmodified opinion page falls in the
+# lower-rate strata, a check that the rule carries over to list v3; the modified opinions, rare and
+# what `modified_opinion` reads, are oversampled. The target is `emphasis_of_matter`'s 20 positives,
+# its one golden positive being the weakest measure in the set; if the reports hold fewer, labelling
+# stops once every answered-present page is labelled.
+#
+# `rates` are ceilings (decision 16). **Provisional:** set from the pools `make label-queue` prints,
+# before the first page is labelled; a rate changed after that is a new sample version.
+#
+# Labelled for three signals (decision 15): the opinion, the emphasis of matter, and going concern,
+# which a report states in its "material uncertainty" section.
+
+golden_sample_version: golden_sample_v5
+prefilter_version: prefilter_v4
+document_kind: auditor_report
+stratified:
+  draw:
+    draw_spec_sha256: 206fe47ee9725633c2e7a0d18d33fb22aaa9c38c44b5325c16157d666aa42e25
+    random: rejestr_io_v3_random
+    distress: rejestr_io_v3_distress
+  answers: extractor_v7
+  signals: [emphasis_of_matter, opinion_type]
+  answered_values:
+    opinion_type: [qualified, adverse, disclaimer]
+  rates:
+    answered_present: 1.0
+    answered_absent: 0.2
+    not_selected: 0.02
+  targets:
+    signals: [emphasis_of_matter]
+    positives: 20
+  labelled: [going_concern_uncertainty, opinion_type, emphasis_of_matter]
+  blind_rate: 0.2
+  holdout_rate: 0.3
+  pilot_pages: 15
+  recheck_rate: 0.05
+  recheck_after_days: 7
