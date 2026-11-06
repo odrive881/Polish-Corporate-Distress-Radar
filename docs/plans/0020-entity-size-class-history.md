@@ -17,7 +17,7 @@ owner decision 4's deferral (owner, 2026-10-18), and writes `config/statutory/si
 feature set or population: using the class (a feature, the segment's `size_classes` filter) is decision 9's
 later step.
 
-## Status: active (2026-10-18): owner decisions 0–9 accepted (1 and 7 as asked, the rest as recommended, 2026-10-18); steps A–F built and run (§ "Progress"); decision 9's later step answered by the owner (2026-10-20): the class becomes a feature (`feature_set_v7`), not the segment's filter, since list v3's random draw may bring more small and medium companies (201 of 268 decided population entities are micro); the feature built (2026-10-20, § "The feature"); open: a backtest pinning `feature_set_v7`: recorded as `backtest_v10`, the weighted run over list v3's draw, its pins unset until the draw's downloads are in (plan 0019 step G, 2026-10-21); the unit error found in step E corrected by plan 0023 (2026-10-21)
+## Status: active (2026-10-18): owner decisions 0–9 accepted (1 and 7 as asked, the rest as recommended, 2026-10-18); steps A–F built and run (§ "Progress"); decision 9's later step answered by the owner (2026-10-20): the class becomes a feature (`feature_set_v7`), not the segment's filter, since list v3's random draw may bring more small and medium companies (201 of 268 decided population entities are micro); the feature built (2026-10-20, § "The feature"); open: a backtest pinning the size class: recorded as `backtest_v10` (on `feature_set_v8`, v7 with `ksh_tripwires_v2`, plan 0023, 2026-10-23), the weighted run over list v3's draw, its pins unset until the draw's downloads are in (plan 0019 step G, 2026-10-21); the unit error found in step E corrected by plan 0023 (2026-10-21)
 
 ## The feature (2026-10-20): `feature_set_v7`
 

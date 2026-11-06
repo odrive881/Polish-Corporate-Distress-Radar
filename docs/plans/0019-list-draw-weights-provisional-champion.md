@@ -22,7 +22,7 @@ plan 0014's decision 7 (2026-10-18) visible wherever a champion is shown.
 and step G runs the draw once the owner has exported one. Step B goes first because the Rejestr.io trial has a
 deadline, and the frame must be exported before it ends (`docs/data_inventory.md`).
 
-## Status: active (2026-10-18): written on the owner's request (items 1–3 of "what can be built in the meantime"); owner decisions 0–9 accepted as recommended (2026-10-18); 2026-10-19: list v3's random group drawn by the owner's script and checked (ADR 0014, § "List v3's random group"), decision 10 accepted by the owner (2026-10-19); steps B–D built (2026-10-19); 2026-10-20: the distress group redrawn, the draw spec written (step G); 2026-10-20: `universe_draw` run (800 rows, 793 companies) and ADR 0014's addendum accepted; steps E–F built and `entity_master` run on the draw (790 resolved, 10 quarantined, 2026-10-20); 2026-10-21: `backtest_v10` recorded with its pins unset, the readiness notebook written, the docs swept (step H); `weights.nonresponse: by_group` built, off by default, its factors printed by the readiness notebook (2026-10-21); open: list v3's downloads, then `backtest_v10`'s pins and run (step G); 2026-10-20: the trial ends about 2026-11-02, `ind=F` is the primary PKD and scripted access is allowed (owner)
+## Status: active (2026-10-18): written on the owner's request (items 1–3 of "what can be built in the meantime"); owner decisions 0–9 accepted as recommended (2026-10-18); 2026-10-19: list v3's random group drawn by the owner's script and checked (ADR 0014, § "List v3's random group"), decision 10 accepted by the owner (2026-10-19); steps B–D built (2026-10-19); 2026-10-20: the distress group redrawn, the draw spec written (step G); 2026-10-20: `universe_draw` run (800 rows, 793 companies) and ADR 0014's addendum accepted; steps E–F built and `entity_master` run on the draw (790 resolved, 10 quarantined, 2026-10-20); 2026-10-21: `backtest_v10` recorded with its pins unset, the readiness notebook written, the docs swept (step H); `weights.nonresponse: by_group` built, off by default, its factors printed by the readiness notebook (2026-10-21); 2026-10-28: list v3's random group downloaded and imported (plan 0014), 423 of its 593 in `backtest_v10`'s population by 2026-11-03 (step G); `backtest_v10` names `feature_set_v8` (plan 0023, 2026-10-23); open: the distress group's downloads (131 companies not searched), then `backtest_v10`'s pins and run (step G), and the owner's non-response decision before it; 2026-10-20: the trial ends about 2026-11-02, `ind=F` is the primary PKD and scripted access is allowed (owner)
 
 ### Outstanding (2026-10-19): the owner's
 
@@ -356,7 +356,8 @@ The PDF trigger notebook, re-run after it, is unchanged (no list v3 filing is do
 - **`config/models/backtest_v10.yaml`:** `backtest_v9` with only these differing: `weights` (this spec's hash,
   `rejestr_io_v3_random` and `rejestr_io_v3_distress`, `bootstrap: stratified`), `champion.weighted: true`,
   `feature_set_v7` (plan 0020 decision 9; the regression's five inputs are unchanged, so only LightGBM and the
-  survival models can read the size class), and the two pins, left as zero hashes. No label set or population
+  survival models can read the size class; `feature_set_v8` since 2026-10-23, v7 with `ksh_tripwires_v2`, plan
+  0023), and the two pins, left as zero hashes. No label set or population
   hashes to zeros, so the `backtest` job refuses the file until both are filled. Filling them before the first
   run records the version; after it, any change is a new file. `test_backtest_v10_is_v9_weighted_over_list_v3s_draw`
   holds the rest to v9 and the spec hash to the spec file.
@@ -395,6 +396,24 @@ The PDF trigger notebook, re-run after it, is unchanged (no list v3 filing is do
   bootstrap strata are unchanged. `backtest_v10` leaves it unset (`none`). The readiness notebook's
   section 3 prints the factors it would apply; on 2026-10-21 it cannot run, since no liquidation-group
   company is in the population yet.
+
+*2026-11-03, after list v3's random group (imported 2026-10-28, plan 0014) and label v4 (plan 0024).* The
+readiness notebook, re-run 2026-11-06 with the same result:
+
+| Group | Drawn | Included | Not searched | Other reasons |
+|---|---|---|---|---|
+| A (random) | 593 | 423 | 1 | 80 not found, 61 no statement imported, 18 held back, 8 not in `entity_master`, 1 left out, 1 incomplete |
+| B, w upadłości | 130 | 48 | 67 | 8 held back, 3 no statement, 2 not found, 2 incomplete |
+| B, w likwidacji | 70 | 2 | 65 | 2 not in `entity_master`, 1 no statement |
+
+- **Floor:** 46 events at each horizon in `main`, 32 in `no_regime`, so still short of 50. Ever in distress: 62 of
+  A's 423, 47 of 48 and 2 of 2 in B; 12.8% weighted, 23.5% unweighted.
+- **Included shares by weight:** A 71.1%, B bankrupt 36.9%, B in liquidation 2.9%, so they differ by 68%.
+  `nonresponse: by_group` would scale them by 1.38, 2.71 and 32.5. The owner decides before the run whether to
+  turn it on; a factor of 32.5 on two companies is a reason to wait for the distress group's downloads first.
+- **Not ready:** 133 drawn companies not searched on RDF (131 in B), 4 not in the latest label set, and
+  `feature_store` on `feature_set_v6` where v10 reads `feature_set_v8` (plan 0023). The pins as they would be today:
+  label set `a10a093b…` (v4), population hash `2c235a69…` (473 entities); fill them only once nothing is missing.
 
 ### H. Docs sweep and close-out
 

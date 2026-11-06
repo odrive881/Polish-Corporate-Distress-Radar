@@ -12,9 +12,28 @@
 **Order:** after ADR 0013's decision. It does not wait for plan 0013 (Phase 7). A1 is the owner's
 Rejestr.io list (ADR 0014, accepted 2026-10-06), loaded in step 0.
 
-## Status: active (2026-10-18): owner decisions 1–6 accepted as recommended; steps 0 and B–D built, step F's docs written; list v1 imported three times (2026-10-09, 2026-10-13 and 2026-10-16, Progress) and everything downstream rebuilt, up to `backtest_v8`; list v2's distress group imported and parsed once (2026-10-17), its legal sources and labels rebuilt by the night of 2026-10-19 (plan 0018) and label v3 (plan 0022), and the models retrained on them (`backtest_v9`); list v2's random group superseded by list v3's (plan 0019); what list v2 can bring to the champion rule's event floor in § "Events" (2026-10-18), and how the rule reads it decided the same day (option (a): unweighted, a promotion provisional); deferred by the owner (2026-10-20): the script writing every tab of an expanded row and re-searching list v1's unsearched companies; open: two importer questions from the second import, and step A's field-by-field comparison and step E on the seed
+## Status: active (2026-10-18): owner decisions 1–6 accepted as recommended; steps 0 and B–D built, step F's docs written; list v1 imported three times (2026-10-09, 2026-10-13 and 2026-10-16, Progress) and everything downstream rebuilt, up to `backtest_v8`; list v2's distress group imported and parsed once (2026-10-17), its legal sources and labels rebuilt by the night of 2026-10-19 (plan 0018) and label v3 (plan 0022), and the models retrained on them (`backtest_v9`); list v2's random group superseded by list v3's (plan 0019); what list v2 can bring to the champion rule's event floor in § "Events" (2026-10-18), and how the rule reads it decided the same day (option (a): unweighted, a promotion provisional); deferred by the owner (2026-10-20): the script writing every tab of an expanded row and re-searching list v1's unsearched companies; the second import's two importer questions decided (owner, 2026-10-23: items 3 and 4 below); list v3's random group imported and parsed (2026-10-28, Progress), its legal sources fetched and labels rebuilt (label v4, plan 0024, 2026-11-03), features rebuilt on `feature_set_v6` (2026-11-03); open: list v3's distress group (131 companies not searched), step A's field-by-field comparison and step E on the seed
 
-### Where this stands (2026-10-16, with list v2's distress group added 2026-10-17 and its events 2026-10-18): pick up here
+### Where this stands (2026-11-06): pick up here
+
+- **Last delivery imported:** `E:\financial_statements_new` (2026-10-28, run `5d93893d`): list v3's random group
+  only (group A, 600 searched, 519 found). Its numbers are in § "Progress". List v3's distress group (group B) is
+  not in it: 131 of its companies and 1 of group A's have never been searched (`rdf_not_searched`), and 3 searches
+  did not complete.
+- **In the stores (2026-11-06):** 1,497 entities in `entity_master`, 943 in `filing_index`, 940 with canonical
+  facts. Label set `a10a093b…` (`outcome_labels_v4`, 279,868 rows, plan 0024). `feature_store` on `feature_set_v6`
+  (164,263 rows, 1,497 entities, rebuilt 2026-11-03; `leakage` passed).
+- **Scoring is paused by design (since 2026-11-02):** the served models were trained on a `feature_set_v6` build
+  whose hash no longer matches the store rebuilt over group A, so scheduled `scoring` refuses. It resumes with the
+  models `backtest_v10` trains (plan 0019 step G).
+- **Next, in order:** the script's search of group B's 131 and group A's 1, the 3 incomplete searches, and the 26
+  drawn companies whose statements are held back with only one tab listed (item 1 below; 18 in group A, 8 in
+  B); import them, parse, then
+  let the nightly fetch the legal sources and freeze a new label set; the `text` job once (owner, 2026-10-21);
+  `feature_store` with `FEATURE_SET_VERSION=feature_set_v8`; then `notebooks/exploration/weighted_backtest_readiness.py`
+  and `backtest_v10`'s pins (plan 0019).
+
+### Where it stood after list v1 and list v2's distress group (2026-10-16, with the distress group added 2026-10-17 and its events 2026-10-18)
 
 **The process, each time the owner hands over a new delivery** (README § "Manual RDF capture", "Scripted
 downloads", has the commands): put `outages.csv` in the folder first, import with `rdf_script_import` pointed at
@@ -49,7 +68,8 @@ re-run, record a new `backtest_v<n>` before running it. Record each round's coun
 **Open, the owner's (in order of what they unblock):**
 
 1. **The script writes only an expanded row's first tab.** 34 ZIPs of correction groups are held, and 31
-   entities are left out of the backtest for it (`statements_held_back`).
+   entities are left out of the backtest for it (`statements_held_back`). *2026-11-06:* still so; list v3's group A added 18 held
+   ZIPs, and 26 of list v3's drawn companies are out of `backtest_v10`'s population for it.
 2. **72 list v1 companies have no search** (`rdf_not_searched`; 179 before the 2026-10-16 round), most
    searched only during an outage (2026-10-08, or 2026-10-13 evening). Re-searching them adds list v1's
    missing events; the distress group's 88 (item 5) are likely to add more (§ "Events" below).
@@ -70,7 +90,10 @@ re-run, record a new `backtest_v<n>` before running it. Record each round's coun
    is imported and parsed (2026-10-17, Progress): 199 of its 200 companies resolved into `entity_master` (806
    entities in all), 503 entities with canonical facts. 88 of them were searched only inside the 2026-10-16
    outage and wait for the script's second search; the random group (600) has not been run yet. Of everything
-   open, the 88's second search is the one most likely to add events (§ "Events" below).
+   open, the 88's second search is the one most likely to add events (§ "Events" below). *2026-11-06:* the
+   random group is superseded by list v3's (plan 0019 decision 1). List v3's distress group, the next delivery
+   (§ "Where this stands"), overlaps list v2's in 86 companies, so those of the 88 drawn into it are searched
+   with it; whether to search the others is the owner's.
 6. **The nightly registry check is on (plan 0018, from 2026-10-18).** `registry_check_nightly` fetches the KRS
    extracts and MSiG notices of every `entity_master` entity, the distress group included, and freezes a new label
    set each night, so the legal sources no longer wait for the 88 companies' second search; their RDF side still
@@ -279,6 +302,33 @@ statement tier, and the share of scans; and, from ADR 0014, the list's compositi
 the next list representative.
 
 ### Progress
+
+- **List v3's random group (2026-10-28).** The owner's folder `E:\financial_statements_new` (logs to
+  2026-10-26), reviewed read-only before the import: group A only (its draw file in the folder, hash matching),
+  600 companies searched, 519 found, 2,805 ZIPs, all intact. The 81 never found were each searched 4 to 11 times
+  over 2 to 5 days, mostly between found searches, so they look like non-filers (52 still registered, 67
+  registered from 2015 on), not outages.
+  - **Outages:** three spans written to the folder's `outages.csv` and confirmed by the owner before the import:
+    about 2026-10-22 16:41 to 22:05, 22:06 to 10-23 12:08, and 10-24 00:41 to 10-26 10:05. Nine retry runs of the
+    81 were held as suspected outages by the importer; they are genuine not-founds, so no span was added.
+  - **Import (run `5d93893d`):** 2,612 rows for 440 entities (448 of the batch in `filing_index`, 2,650 rows with a
+    document). It failed, as expected, on 9 refusals: 1 blank row (0000920126's 2023 ZIP), 0000653923's three rows
+    with a 2027 period end, two corrections listed as rows of their own with no indexed original (0000449063,
+    0000718507; item 3's rule refuses them), and 3 ZIPs of 0000924557 refused by the post-redaction scan for a
+    PESEL in their notes. The owner left that entity out as with 0000500757 (item 4): `left_out_entities_v2`
+    (commit `bb12c1a`). `redaction_migration` found 0 objects with personal data. 18 ZIPs held with only tab 1
+    or 2 listed (item 1). `is_ifrs` is `Tak` on 556 rows of UoR forms, which cannot be true; the importer reads
+    the structure, not the flag.
+  - **Parsing (run `98dc5b48`):** of the batch's files, 2,575 valid, 71 quarantined, 40 `needs_pdf_tier`, 1
+    `not_yet_mapped`; 445 of its entities have canonical facts (940 overall). `cashflow_ties` failed once on a
+    spurious missing `sign_check_v<n>.yaml` (a drvfs read error under parallel load) and passed re-run alone; 13
+    files fail it, none graded `pass`. Parallel steps under load are why every job now runs one step at a time
+    (`dagster_defs/definitions.py`, 2026-11-06).
+  - **Downstream:** the legal sources fetched for all 1,497 entities, the label set `6a3b10c44fa0…` (v3, 280,472
+    rows) frozen on 2026-10-29, then plan 0024's `a10a093b…` (v4, 279,868 rows, 2026-11-03); `features` rebuilt on
+    2026-11-01 and again on 2026-11-03 (`feature_set_v6`, 164,263 rows). Runs cut off by a power cut (2026-10-28)
+    and by WSL running out of memory (2026-10-29) were cancelled and re-run; the outputs above come from the
+    re-runs. Readiness after it (plan 0019 step G): 423 of group A's 593 in `backtest_v10`'s population.
 
 - **List v2's distress group, first import (2026-10-17).** The owner's folder `E:\financial_statements_distress
   - 17.10`: `documents.csv` (696 rows, 109 entities) and `entities.csv` (263 searches, all 200 companies of
