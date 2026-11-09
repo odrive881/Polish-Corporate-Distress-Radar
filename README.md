@@ -1,6 +1,6 @@
 # Polish Corporate Distress Radar
 
-A batch data platform that estimates the probability a Polish company enters bankruptcy, restructuring, or liquidation within 12 and 24 months, built from statutory financial filings, registry history, and insolvency registers.
+A data platform built to determine the likelihood of a Polish company going into bankruptcy, restructuring, or liquidation within 12 and 24 months. The project consists of an ingestion pipeline for Polish financial documents, a database containing anonymised data, a statistical model utilizing machine learning to determine distress likelihoods, and a wide array of checks and tests that prevent personal data leaks and maintain computational correctness. The project is built on statutory financial filings, registry history, insolvency registers. 
 
 **Status (2026-11-06):** every stage from acquisition to monitoring is built and has run on real data, and it runs on a schedule while `make orchestrate` is up (plan 0018, complete); the limit now is events, not code. List v3, drawn so that it can be weighted (plan 0019), is half in: its random group was imported on 2026-10-28, and its distress group is the next delivery. Scheduled `scoring` is paused by design until `backtest_v10` runs (below).
 
