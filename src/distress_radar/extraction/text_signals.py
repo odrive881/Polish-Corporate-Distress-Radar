@@ -34,6 +34,7 @@ the current set is recomputed from `text_coverage` by the `quarantine` model.
 from __future__ import annotations
 
 import hashlib
+import re
 from collections import Counter
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
@@ -42,9 +43,12 @@ from pathlib import Path
 from typing import Any, Literal
 
 import polars as pl
+import yaml
+from pydantic import BaseModel, ConfigDict, field_validator
 
 from distress_radar.extraction import extractor as ex
 from distress_radar.extraction import masking, page_text, preprocessing
+from distress_radar.extraction.golden import span_key
 from distress_radar.extraction.preprocessing import (
     SIGNAL_TYPES,
     DocumentKind,
@@ -430,10 +434,88 @@ def build(
 # --- the masking check ---------------------------------------------------------------------------
 
 
-def masking_findings(signals: pl.DataFrame, nlp: Any) -> Mapping[str, int]:
+MASKING_EXCEPTIONS = re.compile(r"masking_exceptions_v(\d+)\.yaml")
+_HEX16 = re.compile(r"[0-9a-f]{16}")
+
+
+class MaskingException(BaseModel):
+    """One evidence span the owner reviewed: what the masker flags in it is not a person."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+    evidence: str  # `evidence_key` of the whole evidence span
+    spans: tuple[str, ...]  # `span_key`s of the flagged spans in it, each `person:<hash>`
+    signal_type: SignalType
+    reason: str
+    reviewed: date
+
+    @field_validator("evidence")
+    @classmethod
+    def _evidence(cls, value: str) -> str:
+        if not _HEX16.fullmatch(value):
+            raise ValueError(f"evidence {value!r}: not 16 hex characters")
+        return value
+
+    @field_validator("spans")
+    @classmethod
+    def _spans(cls, value: tuple[str, ...]) -> tuple[str, ...]:
+        # Only a name can be a false positive: a PESEL, an e-mail or a phone number never is.
+        for key in value:
+            kind, _, digest = key.partition(":")
+            if kind != "person" or not _HEX16.fullmatch(digest):
+                raise ValueError(f"span {key!r}: only `person:<16 hex>` can be an exception")
+        if not value:
+            raise ValueError("an exception names at least one span")
+        return value
+
+
+class MaskingExceptions(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+    version: str
+    exceptions: tuple[MaskingException, ...]
+
+
+def evidence_key(span: str) -> str:
+    """An evidence span as the exceptions name it: a hash of its text, never the text."""
+    return hashlib.sha256(span.encode()).hexdigest()[:16]
+
+
+def load_masking_exceptions(config_dir: Path = CONFIG_DIR) -> dict[str, frozenset[str]]:
+    """The highest-numbered `config/extraction/masking_exceptions_v<n>.yaml`, as the flagged
+    `span_key`s cleared per `evidence_key`; empty when there is none. Its version must match its
+    name."""
+    found = {
+        int(m.group(1)): p
+        for p in (config_dir / "extraction").glob("masking_exceptions_v*.yaml")
+        if (m := MASKING_EXCEPTIONS.fullmatch(p.name))
+    }
+    if not found:
+        return {}
+    path = found[max(found)]
+    loaded = MaskingExceptions.model_validate(yaml.safe_load(path.read_text(encoding="utf-8")))
+    if f"{loaded.version}.yaml" != path.name:
+        raise ValueError(f"{path.name}: declares version {loaded.version}")
+    cleared: dict[str, set[str]] = {}
+    for exception in loaded.exceptions:
+        cleared.setdefault(exception.evidence, set()).update(exception.spans)
+    return {k: frozenset(v) for k, v in cleared.items()}
+
+
+def masking_findings(
+    signals: pl.DataFrame, nlp: Any, exceptions: Mapping[str, frozenset[str]] | None = None
+) -> Mapping[str, int]:
     """What the masker would still replace in the stored evidence spans, by kind; never the text.
-    Evidence is quoted from masked pages, so anything here is a name the first pass missed."""
+    Evidence is quoted from masked pages, so anything here is a name the first pass missed, unless
+    the owner reviewed that very span in that very evidence and cleared it (`exceptions`, from
+    `load_masking_exceptions`): a flag the second pass raises on a short span without its page,
+    such as a company's legal form read as a name."""
+    exceptions = {} if exceptions is None else exceptions
     found: Counter[str] = Counter()
     for span in signals.get_column("evidence_span").drop_nulls().to_list():
-        found.update(masking.mask(str(span), nlp).counts)
+        text = str(span)
+        cleared = exceptions.get(evidence_key(text), frozenset())
+        found.update(
+            kind
+            for start, end, kind in masking.spans(text, nlp)
+            if span_key(kind, text[start:end]) not in cleared
+        )
     return dict(sorted(found.items()))

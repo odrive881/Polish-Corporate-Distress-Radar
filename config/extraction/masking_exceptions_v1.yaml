@@ -1,0 +1,41 @@
+# Evidence spans the owner reviewed after the blocking `evidence_masked` check failed on them, and
+# cleared: what the masker flags in each is not a person (invariant 6; ADR 0009, third addendum).
+# Read by `extraction.text_signals.load_masking_exceptions` (the highest-numbered version), used by
+# the check only. The masker itself is unchanged, so no page is masked differently and no model
+# request is re-keyed.
+#
+# Each entry clears the named spans in one evidence text only: `evidence` is `evidence_key` (a hash
+# of the whole evidence span), `spans` the `span_key`s (kind and a hash) of what the masker flags in
+# it. Neither holds the text. The same words in any other evidence are still flagged, and only a
+# `person` can be cleared: a PESEL, an e-mail or a phone number never is.
+#
+# Never edit a version: a change is a new file, masking_exceptions_v<n+1>.yaml.
+version: masking_exceptions_v1
+exceptions:
+  # `text` run e42b2fa2 (2026-11-09, extractor_v7): 11 rows over these 5 evidence texts, all from
+  # going-concern passages; reviewed in context and cleared by the owner the same day.
+  - evidence: ba51adb3fdf63433  # 5 rows
+    spans: ["person:3f373c902e5147b8"]
+    signal_type: going_concern_uncertainty
+    reason: the legal form in the company's own name ("spółka z ograniczoną odpowiedzialnością")
+    reviewed: 2026-11-09
+  - evidence: 58de33cbd94e5f50  # 2 rows
+    spans: ["person:4839e8aa1b8c1b71"]
+    signal_type: going_concern_uncertainty
+    reason: the company's own name with its legal form ("sp zoo w likwidacji")
+    reviewed: 2026-11-09
+  - evidence: 24daf18b145801a9  # 1 row
+    spans: ["person:be780ffeb9371ba7"]
+    signal_type: going_concern_uncertainty
+    reason: a list item's letter label ("h.") opening the sentence
+    reviewed: 2026-11-09
+  - evidence: 06f77128b3529d66  # 2 rows
+    spans: ["person:be780ffeb9371ba7"]
+    signal_type: going_concern_uncertainty
+    reason: a list item's letter label ("h.") opening the sentence
+    reviewed: 2026-11-09
+  - evidence: 93334694d9597cb5  # 1 row
+    spans: ["person:37ee2d793e0ceb6d"]
+    signal_type: going_concern_uncertainty
+    reason: a company named after its street address, followed by its legal form
+    reviewed: 2026-11-09

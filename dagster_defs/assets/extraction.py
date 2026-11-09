@@ -193,7 +193,8 @@ def text_signals(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
     write_dataset(signals, settings.warehouse_dir, ts.DATASET, "fiscal_year")
     write_dataset(coverage, settings.warehouse_dir, ts.COVERAGE, "fiscal_year")
     write_dataset(reports, settings.warehouse_dir, auditor_reports.DATASET, "fiscal_year")
-    unmasked = ts.masking_findings(signals, mask_nlp)
+    # Spans the owner reviewed and cleared, each in one evidence text (config/extraction/).
+    unmasked = ts.masking_findings(signals, mask_nlp, ts.load_masking_exceptions())
     return dg.MaterializeResult(
         metadata={
             "extractor_version": extractor.config.extractor_version,

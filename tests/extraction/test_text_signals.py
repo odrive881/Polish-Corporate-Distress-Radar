@@ -13,6 +13,7 @@ import json
 from collections.abc import Mapping
 from dataclasses import replace
 from datetime import date
+from pathlib import Path
 from typing import Any
 
 import polars as pl
@@ -24,6 +25,7 @@ from distress_radar.extraction import extractor as ex
 from distress_radar.extraction import masking, preprocessing
 from distress_radar.extraction import text_signals as ts
 from distress_radar.extraction.contracts import TEXT_COVERAGE, TEXT_SIGNALS
+from distress_radar.extraction.golden import span_key
 from distress_radar.extraction.response_store import ResponseStore
 
 # Without diacritics: the PDF's built-in font has no Polish glyphs, and the terms these sentences
@@ -314,3 +316,67 @@ def test_the_masking_check_finds_a_name_in_evidence(models: tuple[Any, Any]) -> 
     )
     found = ts.masking_findings(frame, models[0])
     assert found.get("pesel") == 1 and found.get("person", 0) >= 1
+
+
+NAMED = "Umowę podpisał Jan Kowalski."
+
+
+def _exception(evidence: str, spans: list[str], version: str = "masking_exceptions_v1") -> str:
+    return (
+        f"version: {version}\nexceptions:\n"
+        f"  - evidence: {evidence}\n    spans: {json.dumps(spans)}\n"
+        "    signal_type: going_concern_uncertainty\n    reason: test\n    reviewed: 2026-11-09\n"
+    )
+
+
+def _cleared_keys(text: str, nlp: Any) -> list[str]:
+    return [span_key(k, text[s:e]) for s, e, k in masking.spans(text, nlp) if k == "person"]
+
+
+def test_a_cleared_span_is_cleared_only_in_its_own_evidence(
+    models: tuple[Any, Any], tmp_path: Path
+) -> None:
+    nlp = models[0]
+    keys = _cleared_keys(NAMED, nlp)
+    assert keys, "the placeholder name must be flagged for this test to mean anything"
+    (tmp_path / "extraction").mkdir()
+    (tmp_path / "extraction" / "masking_exceptions_v1.yaml").write_text(
+        _exception(ts.evidence_key(NAMED), keys), encoding="utf-8"
+    )
+    exceptions = ts.load_masking_exceptions(tmp_path)
+    other = f"{NAMED} PESEL 90010112345."  # the same name in another evidence text
+    frame = pl.DataFrame({"evidence_span": [NAMED, other]}, schema={"evidence_span": pl.String})
+    found = ts.masking_findings(frame, nlp, exceptions)
+    assert found.get("pesel") == 1 and found.get("person", 0) >= 1  # only from `other`
+    alone = pl.DataFrame({"evidence_span": [NAMED]}, schema={"evidence_span": pl.String})
+    assert ts.masking_findings(alone, nlp, exceptions) == {}
+    assert ts.masking_findings(alone, nlp).get("person", 0) >= 1
+
+
+@pytest.mark.parametrize(
+    ("spans", "version"),
+    [
+        (["pesel:0123456789abcdef"], "masking_exceptions_v1"),  # never a PESEL
+        (["person:short"], "masking_exceptions_v1"),
+        ([], "masking_exceptions_v1"),
+        (["person:0123456789abcdef"], "masking_exceptions_v2"),  # version must match its name
+    ],
+)
+def test_masking_exceptions_refuse_what_cannot_be_a_false_positive(
+    tmp_path: Path, spans: list[str], version: str
+) -> None:
+    (tmp_path / "extraction").mkdir()
+    (tmp_path / "extraction" / "masking_exceptions_v1.yaml").write_text(
+        _exception("0123456789abcdef", spans, version), encoding="utf-8"
+    )
+    with pytest.raises(ValueError):
+        ts.load_masking_exceptions(tmp_path)
+
+
+def test_no_masking_exceptions_file_clears_nothing(tmp_path: Path) -> None:
+    assert ts.load_masking_exceptions(tmp_path) == {}
+
+
+def test_the_committed_masking_exceptions_load() -> None:
+    exceptions = ts.load_masking_exceptions()
+    assert exceptions and all(v for v in exceptions.values())

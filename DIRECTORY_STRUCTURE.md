@@ -119,6 +119,7 @@ This is the authoritative tree. `AGENT_SPEC.md` §7 and `docs/TECHNICAL_ARCHITEC
 │   │   ├── golden_sample_v3.yaml      # the notes targeted at covenant_breach and key_customer_loss, and a hashed share of rejected pages (shelved)
 │   │   ├── golden_sample_v4.yaml      # list v3's draw, the notes: stratified by extractor_v7's answers, labelled in draw order (plan 0013 K4)
 │   │   ├── golden_sample_v5.yaml      # list v3's draw, the auditor reports: the same, modified opinions oversampled
+│   │   ├── masking_exceptions_v1.yaml # evidence spans the owner cleared after `evidence_masked` flagged them, by hash only (2026-11-09)
 │   │   ├── prefilter_v1.yaml          # lemma terms per signal_type; the file name is the prefilter_version
 │   │   ├── prefilter_v2.yaml          # v1 with every page naming an opinion selected for opinion_type
 │   │   ├── prefilter_v3.yaml          # v2 + the opinion sentence's own words ("zdaniem … sprawozdanie") for opinion_type
