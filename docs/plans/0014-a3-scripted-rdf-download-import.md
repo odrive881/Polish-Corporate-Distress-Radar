@@ -26,7 +26,7 @@ Rejestr.io list (ADR 0014, accepted 2026-10-06), loaded in step 0.
   2019 or later, so they would have filed electronically. They are imported as delivered (the listing is stored as
   received) and excluded as `no_statement_imported`; a later search replaces them, since the latest one decides.
 - **In the stores (2026-11-09):** 1,497 entities in `entity_master`, 976 in `filing_index`, 973 with canonical
-  facts. Label set `2bdf7715…` (`outcome_labels_v4`, frozen 2026-11-06). `feature_store` on `feature_set_v8`
+  facts. Label set `d4e5f58c…` (`outcome_labels_v4`, frozen by the nightly 2026-11-10; `2bdf7715…` on 2026-11-06), still without the 4 drawn companies. `feature_store` on `feature_set_v8`
   (164,263 rows, 1,497 entities; `leakage` passed), rebuilt after the `text` run (run `3077f07e`), so the batch's
   text features are in; `text_signals` from run `be562e44` (`extractor_v7`, 2026-11-09).
 - **The event floor (readiness notebook, 2026-11-09):** 504 drawn companies included (473 on 2026-11-03); 59

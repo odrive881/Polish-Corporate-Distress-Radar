@@ -22,7 +22,7 @@ plan 0014's decision 7 (2026-10-18) visible wherever a champion is shown.
 and step G runs the draw once the owner has exported one. Step B goes first because the Rejestr.io trial has a
 deadline, and the frame must be exported before it ends (`docs/data_inventory.md`).
 
-## Status: active (2026-10-18): written on the owner's request (items 1–3 of "what can be built in the meantime"); owner decisions 0–9 accepted as recommended (2026-10-18); 2026-10-19: list v3's random group drawn by the owner's script and checked (ADR 0014, § "List v3's random group"), decision 10 accepted by the owner (2026-10-19); steps B–D built (2026-10-19); 2026-10-20: the distress group redrawn, the draw spec written (step G); 2026-10-20: `universe_draw` run (800 rows, 793 companies) and ADR 0014's addendum accepted; steps E–F built and `entity_master` run on the draw (790 resolved, 10 quarantined, 2026-10-20); 2026-10-21: `backtest_v10` recorded with its pins unset, the readiness notebook written, the docs swept (step H); `weights.nonresponse: by_group` built, off by default, its factors printed by the readiness notebook (2026-10-21); 2026-10-28: list v3's random group downloaded and imported (plan 0014), 423 of its 593 in `backtest_v10`'s population by 2026-11-03 (step G); `backtest_v10` names `feature_set_v8` (plan 0023, 2026-10-23); open: the distress group's downloads (131 companies not searched), then `backtest_v10`'s pins and run (step G), and the owner's non-response decision before it; 2026-10-20: the trial ends about 2026-11-02, `ind=F` is the primary PKD and scripted access is allowed (owner)
+## Status: active (2026-10-18): written on the owner's request (items 1–3 of "what can be built in the meantime"); owner decisions 0–9 accepted as recommended (2026-10-18); 2026-10-19: list v3's random group drawn by the owner's script and checked (ADR 0014, § "List v3's random group"), decision 10 accepted by the owner (2026-10-19); steps B–D built (2026-10-19); 2026-10-20: the distress group redrawn, the draw spec written (step G); 2026-10-20: `universe_draw` run (800 rows, 793 companies) and ADR 0014's addendum accepted; steps E–F built and `entity_master` run on the draw (790 resolved, 10 quarantined, 2026-10-20); 2026-10-21: `backtest_v10` recorded with its pins unset, the readiness notebook written, the docs swept (step H); `weights.nonresponse: by_group` built, off by default, its factors printed by the readiness notebook (2026-10-21); 2026-10-28: list v3's random group downloaded and imported (plan 0014), 423 of its 593 in `backtest_v10`'s population by 2026-11-03 (step G); `backtest_v10` names `feature_set_v8` (plan 0023, 2026-10-23); 2026-11-09: the distress group's first delivery imported (plan 0014), 504 drawn companies and 59 events per horizon in `main` by 2026-11-10 (step G); open: the rest of the distress group's downloads (87 to re-search, plan 0014), the 4 drawn companies not yet in a label set, then `backtest_v10`'s pins and run (step G), and the owner's non-response decision before it; 2026-10-20: the trial ends about 2026-11-02, `ind=F` is the primary PKD and scripted access is allowed (owner)
 
 ### Outstanding (2026-10-19): the owner's
 
@@ -414,6 +414,24 @@ readiness notebook, re-run 2026-11-06 with the same result:
 - **Not ready:** 133 drawn companies not searched on RDF (131 in B), 4 not in the latest label set, and
   `feature_store` on `feature_set_v6` where v10 reads `feature_set_v8` (plan 0023). The pins as they would be today:
   label set `a10a093b…` (v4), population hash `2c235a69…` (473 entities); fill them only once nothing is missing.
+
+*2026-11-10, after the distress group's first delivery (imported 2026-11-09, plan 0014), the `text` run and the
+nightly's label set `d4e5f58c…`.* The readiness notebook on `feature_set_v8` (each company's first reason):
+
+| Group | Drawn | Included | Reasons left out |
+|---|---|---|---|
+| A (random) | 593 | 423 | 81 not found, 62 no statement imported, 18 held back, 8 not in `entity_master`, 1 left out |
+| B, w upadłości | 130 | 63 | 54 no statement imported, 11 held back, 2 not found |
+| B, w likwidacji | 70 | 18 | 41 no statement imported, 8 not found, 2 not in `entity_master`, 1 held back |
+
+"No statement imported" holds the 87 companies the script listed as found with 0 rows, to re-search (plan 0014).
+
+- **Floor:** 59 events at each horizon in `main`, which reaches 50; 42 in `no_regime`, which does not. Ever in
+  distress: 63 of A's 423, 62 of 63 and 18 of 18 in B; 13.9% weighted, 28.4% unweighted.
+- **Included shares by weight:** A 71.1%, B bankrupt 48.5%, B in liquidation 25.7%, so they differ by 45%.
+  `nonresponse: by_group` would scale them by 1.38, 2.06 and 3.61. The owner's decision before the run.
+- **Not ready:** 4 drawn companies not in the latest label set. The pins as they would be today: label set
+  `d4e5f58c…`, population hash `76abf27f…` (504 entities); fill them only once nothing is missing.
 
 ### H. Docs sweep and close-out
 
