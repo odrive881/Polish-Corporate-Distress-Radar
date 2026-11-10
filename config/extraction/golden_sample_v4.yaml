@@ -9,10 +9,13 @@
 # answered-present pages (decision 17).
 #
 # `rates` are ceilings (decision 16). Their ratios are the allocation: about every answered-present
-# page, a tenth of the pages the prefilter selected and the model found nothing on (its misses), and
-# one in two hundred of the pages the prefilter selected for neither (the prefilter's misses). The cut
-# where labelling stops scales them alike. **Provisional:** set from the pools `make label-queue`
-# prints, before the first page is labelled; a rate changed after that is a new sample version.
+# page, half of the pages the prefilter selected and the model found nothing on (its misses), and
+# three in a hundred of the pages the prefilter selected for neither (the prefilter's misses). The cut
+# where labelling stops scales them alike. **Set by the owner on 2026-11-10, before the first page
+# was labelled,** from the pools `make label-queue` printed that day (answered_present 1,235 pages,
+# answered_absent 1,671, not_selected 8,510): the provisional 0.1 and 0.005 would have left about 6
+# and 1–2 miss pages at the cut the 20-positive targets reach (about 0.035, estimated), too few to
+# say anything about recall. A rate changed after the first label is a new sample version.
 #
 # Labelled for the seven signals the notes carry (decision 15): not `opinion_type` or
 # `emphasis_of_matter`, which an auditor gives in a report (v5). `covenant_breach` and
@@ -31,8 +34,8 @@ stratified:
   signals: [going_concern_uncertainty, loss_coverage_resolution]
   rates:
     answered_present: 1.0
-    answered_absent: 0.1
-    not_selected: 0.005
+    answered_absent: 0.5
+    not_selected: 0.03
   targets:
     signals: [going_concern_uncertainty, loss_coverage_resolution]
     positives: 20

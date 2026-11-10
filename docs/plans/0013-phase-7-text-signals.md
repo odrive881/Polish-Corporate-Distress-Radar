@@ -11,7 +11,7 @@
 **Order:** after plan 0012 (complete). It does not wait for ADR 0013: like Phase 6, it builds and measures
 machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set this plan adds.
 
-## Status: active (2026-10-13): owner decisions 0–9 accepted; every step built, J's docs included; the model runs on the seed under `extractor_v6` (the default since 2026-10-13; v4 before) with the provider's terms confirmed; all nine signals accepted on the 166-page golden set (2026-10-15) and held by the gate in `make check`; the `text` and `features` jobs re-run under `extractor_v6` (2026-10-15, plan 0017 step H: 868 new requests, all answered); 2026-10-22: `extractor_v7` (`prefilter_v4`) the default; `golden_sample_v3` shelved and the two signals without positives parked; the plan closes on the feature signals, labelled in a stratified sample of list v3's draw (§ "Labelling after list v3", decisions 10–14; K1–K3 built); 2026-11-06: decisions 15–24 (labelling in draw order to a stopping rule, per-kind signals, a holdout, rechecks, a paired gate) accepted by the owner and built as K5, `golden_sample_v4`/`v5` written with provisional rates; 2026-11-09: the `text` job run over list v3 (`be562e44`, Progress); open: K4, after list v3's import, and the owner's items below
+## Status: active (2026-10-13): owner decisions 0–9 accepted; every step built, J's docs included; the model runs on the seed under `extractor_v6` (the default since 2026-10-13; v4 before) with the provider's terms confirmed; all nine signals accepted on the 166-page golden set (2026-10-15) and held by the gate in `make check`; the `text` and `features` jobs re-run under `extractor_v6` (2026-10-15, plan 0017 step H: 868 new requests, all answered); 2026-10-22: `extractor_v7` (`prefilter_v4`) the default; `golden_sample_v3` shelved and the two signals without positives parked; the plan closes on the feature signals, labelled in a stratified sample of list v3's draw (§ "Labelling after list v3", decisions 10–14; K1–K3 built); 2026-11-06: decisions 15–24 (labelling in draw order to a stopping rule, per-kind signals, a holdout, rechecks, a paired gate) accepted by the owner and built as K5, `golden_sample_v4`/`v5` written with provisional rates; 2026-11-09: the `text` job run over list v3 (`be562e44`, Progress); 2026-11-10: K4's queues built, v4's rates set by the owner (Progress); open: K4's labelling, and the owner's items below
 
 ### Where this stands (2026-10-21)
 
@@ -374,6 +374,16 @@ companies print it often. The labelling notebook still masks by hand; the export
 
 
 ### Progress
+
+- **K4: the queues built, v4's rates set (2026-11-10).** `make label-queue` after the `text` run (51 minutes on
+  this store). v4's pools: `answered_present` 1,235 pages, `answered_absent` 1,671, `not_selected` 8,510. At the
+  provisional rates (1.0, 0.1, 0.005) the 20-positive targets would stop near a cut of about 0.035 (an
+  estimate), leaving about 6 and 1–2 miss pages, too few for recall, so before the first label the owner set
+  `answered_absent` 0.5 and `not_selected` 0.03 (about 30 and 9 miss pages at that cut). Rebuilt: 2,357 pages
+  queued (1,235, 855, 267), 4 carried over labelled; the pilot is its first 30. v5 has only 13 text pages in the
+  draw (4 queued, 3 labelled), since list v3's auditor reports are not in the store yet: the owner contributes
+  them later, and v5 waits for them. v3's shelved queue lost 5 pages to v4 (96, 12 left out as queued
+  elsewhere). The masker still changes 195 v4 pages on a second pass.
 
 - **The `text` job over list v3 (2026-11-09).** `extractor_v7` on `claude-opus-5-5`, over list v3's random group
   and the distress group's first delivery. Two runs stopped on the provider's 401 (`invalid x-api-key`); `e42b2fa2`
