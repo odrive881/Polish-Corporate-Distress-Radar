@@ -11,7 +11,7 @@
 **Order:** after plan 0012 (complete). It does not wait for ADR 0013: like Phase 6, it builds and measures
 machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set this plan adds.
 
-## Status: active (2026-10-13): owner decisions 0–9 accepted; every step built, J's docs included; the model runs on the seed under `extractor_v6` (the default since 2026-10-13; v4 before) with the provider's terms confirmed; all nine signals accepted on the 166-page golden set (2026-10-15) and held by the gate in `make check`; the `text` and `features` jobs re-run under `extractor_v6` (2026-10-15, plan 0017 step H: 868 new requests, all answered); 2026-10-22: `extractor_v7` (`prefilter_v4`) the default; `golden_sample_v3` shelved and the two signals without positives parked; the plan closes on the feature signals, labelled in a stratified sample of list v3's draw (§ "Labelling after list v3", decisions 10–14; K1–K3 built); 2026-11-06: decisions 15–24 (labelling in draw order to a stopping rule, per-kind signals, a holdout, rechecks, a paired gate) accepted by the owner and built as K5, `golden_sample_v4`/`v5` written with provisional rates; 2026-11-09: the `text` job run over list v3 (`be562e44`, Progress); 2026-11-10: K4's queues built, v4's rates set by the owner (Progress); open: K4's labelling, and the owner's items below
+## Status: active (2026-10-13): owner decisions 0–9 accepted; every step built, J's docs included; the model runs on the seed under `extractor_v6` (the default since 2026-10-13; v4 before) with the provider's terms confirmed; all nine signals accepted on the 166-page golden set (2026-10-15) and held by the gate in `make check`; the `text` and `features` jobs re-run under `extractor_v6` (2026-10-15, plan 0017 step H: 868 new requests, all answered); 2026-10-22: `extractor_v7` (`prefilter_v4`) the default; `golden_sample_v3` shelved and the two signals without positives parked; the plan closes on the feature signals, labelled in a stratified sample of list v3's draw (§ "Labelling after list v3", decisions 10–14; K1–K3 built); 2026-11-06: decisions 15–24 (labelling in draw order to a stopping rule, per-kind signals, a holdout, rechecks, a paired gate) accepted by the owner and built as K5, `golden_sample_v4`/`v5` written with provisional rates; 2026-11-09: the `text` job run over list v3 (`be562e44`, Progress); 2026-11-10: K4's queues built, v4's rates set by the owner, labelling paused for plan 0025's reading-order fix and resumed the same day (Progress); open: the owner accepting the nine signals again (the golden file changed on one page's text, scores unchanged), K4's labelling, and the owner's items below
 
 ### Where this stands (2026-10-21)
 
@@ -254,7 +254,8 @@ now re-scores with them (tested).
   `make eval-errors`), `eval_gate_v2.yaml` (not the default), the labelling guide v2, and `golden_sample_v4`/`v5` written with
   provisional ceilings. Tests: `tests/extraction/test_golden.py` and `test_eval_harness.py`, on synthetic pages.
 - **K4** (after list v3's import and its `text` run): `make label-queue`, then set v4's and v5's rates from the
-  pools it prints, before the first label; label the pilot, `make label-review`, freeze the guide; label in draw
+  pools it prints, before the first label (done 2026-11-10); paused that day for plan 0025's reading-order fix,
+  resumed 2026-11-10 once its queues were rebuilt; label the pilot, `make label-review`, freeze the guide; label in draw
   order until `make label-review` says the stopping rule holds; export, `make eval`; then decision 11's check,
   read on the held-out scores.
 
@@ -384,6 +385,14 @@ companies print it often. The labelling notebook still masks by hand; the export
   draw (4 queued, 3 labelled), since list v3's auditor reports are not in the store yet: the owner contributes
   them later, and v5 waits for them. v3's shelved queue lost 5 pages to v4 (96, 12 left out as queued
   elsewhere). The masker still changes 195 v4 pages on a second pass.
+- **K4: paused and resumed for plan 0025 (2026-11-10).** The owner found notes laid out as a two-column table
+  read across their columns, 68 of them in v4's queue; plan 0025 fixed the reading order (303 pages store-wide,
+  162 requests sent, no statement's signal changed). The owner's 2 labels, both on affected pages, were set
+  aside, to be labelled again on the new text. A rebuild now gives queued pages their new text and keeps the
+  owner's work (`golden.merge`), which also corrected 202 rows still drawn under the provisional rates. Rebuilt:
+  2,358 pages (1,242 `answered_present`, 849 `answered_absent`, 267 `not_selected`), 4 carried over labelled; v3
+  91 pages. The 189-page golden file changed on one page's text, so the nine acceptances of 2026-10-22 lapsed:
+  scores unchanged, and the gate in `make check` fails until the owner accepts them again.
 
 - **The `text` job over list v3 (2026-11-09).** `extractor_v7` on `claude-opus-5-5`, over list v3's random group
   and the distress group's first delivery. Two runs stopped on the provider's 401 (`invalid x-api-key`); `e42b2fa2`
@@ -496,7 +505,8 @@ companies print it often. The labelling notebook still masks by hand; the export
     part of the spec hash, so no file is re-parsed under a new run id; each row carries `config_version`.
 - **Step C (2026-09-30):** `extraction/page_text.py` (the attachments embedded in a statement, each PDF's text
   layer per page: `text`, `needs_ocr` for a scan, `sparse` for a blank or signature page; office files
-  `unsupported`) and `extraction/masking.py` (`[osoba]` for `persName`, `[pesel]` for 11-digit runs, `[email]`,
+  `unsupported`; since 2026-11-10 a page laid out as a two-column table is read by cell or column, not across,
+  plan 0025) and `extraction/masking.py` (`[osoba]` for `persName`, `[pesel]` for 11-digit runs, `[email]`,
   `[telefon]` after a phone marker; company names kept). ADR 0009's third addendum records the rule.
   - **The model is not in `uv.lock`.** `pl_core_news_lg` 3.8.0 is a 550 MB wheel, and `uv` restarts a failed
     download from zero: on this connection it failed after hours. `make models` fetches it resumably, checks the
@@ -1201,7 +1211,7 @@ tests.
 ### C. Page text and masking
 
 *As built (see Progress):* the model is fetched by `make models`, not locked in `uv.lock`; spaCy itself is
-locked. As drafted: `extraction/page_text.py`: the PyMuPDF text layer of each embedded (and, per decision 0, captured) PDF, page by
+locked. The reading order of a page laid out as a two-column table is plan 0025's (2026-11-10). As drafted: `extraction/page_text.py`: the PyMuPDF text layer of each embedded (and, per decision 0, captured) PDF, page by
 page, deterministic; a page with no text layer is recorded `needs_ocr`, counted, not guessed. `extraction/masking.py`:
 spaCy `pl_core_news_lg` NER plus the PESEL patterns, `[osoba]` in place of each name. spaCy and its Polish model
 are locked with `make lock` (the model is a package pinned by URL and hash). ADR 0009's third addendum is written

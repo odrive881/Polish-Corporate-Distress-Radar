@@ -1,10 +1,6 @@
 # 0025 — G: the reading order of notes laid out as a two-column table
 
-**Stage:** G (text signals; the page text of plan 0013 step C), before plan 0013's K4 labelling resumes. **Status:
-proposed (2026-11-10): written on the owner's request (option C of the three put to the owner the same day:
-keep the text as it is, read every page with `sort=False`, or fix only the pages a rule detects); owner
-decisions 1 and 2 taken (2026-11-10: v4 kept, the cost approved); decisions 3–8 this plan's own (flag any to change).
-2026-11-10: step A done (Progress): 303 pages to reorder, method (d) chosen, 164 requests to send (about $0.72).**
+**Stage:** G (text signals; the page text of plan 0013 step C), before plan 0013's K4 labelling resumes. **Status: complete (2026-11-10).** Written on the owner's request (option C of the three put to the owner the same day: keep the text as it is, read every page with `sort=False`, or fix only the pages a rule detects); owner decisions 1 and 2 taken (v4 kept, the cost approved), 3–8 this plan's own. Steps A–E done (Progress): 303 pages read by cell or column, 162 requests sent (about $0.71), no statement's signal changed, 7 going-concern answers no longer discarded; queues rebuilt on the new text and K4's labelling resumed. Left to the owner: accepting the nine signals again (`make eval-accept`), since the golden file changed on one page's text; the gate in `make check` fails until then (decision 8 had expected it to hold).
 
 - **Invariants:** 3 (lineage: a page's text records how it was read), 4 (no silent loss: a reordered page holds
   exactly the words it held before, none dropped or doubled), 5 (idempotence: the reading order is versioned, a
@@ -225,6 +221,11 @@ Plan 0013 (step C's description, the K4 pick-up), AGENT_SPEC §6 G ("As built", 
     new to the queue, not drawn at 0.5 before). They are labelled in draw order like any other.
   So the fix leaves the model's features as they were; what it changes is the text the labeller and the model
   read on 303 pages, the evidence now quoted on 7 of them, and the golden pages drawn from them.
+- **Step E, docs sweep (2026-11-10).** AGENT_SPEC §6 G (Sources: the reading order), plan 0013 (status, step C's
+  Progress and § C, the K4 pick-up, a K4 Progress entry), README (the text-signals line, pick-up item 5 rewritten:
+  it still described the rates as provisional), `docs/data_inventory.md` (the notes' status, the eval sets' row),
+  the owner's `docs/NEXT_STEPS.md`. Checked by hand: no other document says K4 is paused or quotes v4's queue as
+  2,357 pages outside the dated history.
 
 ## What this plan does not do
 
