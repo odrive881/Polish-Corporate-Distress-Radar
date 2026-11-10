@@ -11,7 +11,7 @@
 **Order:** after plan 0012 (complete). It does not wait for ADR 0013: like Phase 6, it builds and measures
 machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set this plan adds.
 
-## Status: active (2026-10-13): owner decisions 0–9 accepted; every step built, J's docs included; the model runs on the seed under `extractor_v6` (the default since 2026-10-13; v4 before) with the provider's terms confirmed; all nine signals accepted on the 166-page golden set (2026-10-15) and held by the gate in `make check`; the `text` and `features` jobs re-run under `extractor_v6` (2026-10-15, plan 0017 step H: 868 new requests, all answered); 2026-10-22: `extractor_v7` (`prefilter_v4`) the default; `golden_sample_v3` shelved and the two signals without positives parked; the plan closes on the feature signals, labelled in a stratified sample of list v3's draw (§ "Labelling after list v3", decisions 10–14; K1–K3 built); 2026-11-06: decisions 15–24 (labelling in draw order to a stopping rule, per-kind signals, a holdout, rechecks, a paired gate) accepted by the owner and built as K5, `golden_sample_v4`/`v5` written with provisional rates; open: K4, after list v3's import and `text` run, and the owner's items below
+## Status: active (2026-10-13): owner decisions 0–9 accepted; every step built, J's docs included; the model runs on the seed under `extractor_v6` (the default since 2026-10-13; v4 before) with the provider's terms confirmed; all nine signals accepted on the 166-page golden set (2026-10-15) and held by the gate in `make check`; the `text` and `features` jobs re-run under `extractor_v6` (2026-10-15, plan 0017 step H: 868 new requests, all answered); 2026-10-22: `extractor_v7` (`prefilter_v4`) the default; `golden_sample_v3` shelved and the two signals without positives parked; the plan closes on the feature signals, labelled in a stratified sample of list v3's draw (§ "Labelling after list v3", decisions 10–14; K1–K3 built); 2026-11-06: decisions 15–24 (labelling in draw order to a stopping rule, per-kind signals, a holdout, rechecks, a paired gate) accepted by the owner and built as K5, `golden_sample_v4`/`v5` written with provisional rates; 2026-11-09: the `text` job run over list v3 (`be562e44`, Progress); open: K4, after list v3's import, and the owner's items below
 
 ### Where this stands (2026-10-21)
 
@@ -27,10 +27,10 @@ auditor reports' queue was completed (102 of 102), 27 labels corrected to the gu
 register number, natural-person firm's address and identifier, and file name masked by hand, the `text` and
 `features` jobs re-run under `extractor_v6` (plan 0017 step H), and all nine accepted on the 189 pages
 (Progress). On 2026-10-21: `golden_sample_v3` built (item 1) and `prefilter_v4` built, not in use (item 4).
-The `text` job has not run since 2026-10-15: the owner chose (2026-10-21) to run it once after list v3's
-downloads are imported, since stored responses replay at no cost; a read-only count that day found 5,048
-requests, 3,224 replayed and 1,824 to send (about $8). A change to the prompt, model, schema or masking re-keys
-every request, so settle any such change before that run.
+The owner chose (2026-10-21) to run the `text` job once after list v3's downloads were imported, since stored
+responses replay at no cost (a read-only count that day: 5,048 requests, 1,824 to send). It ran on 2026-11-09
+(`be562e44`, Progress). A change to the prompt, model, schema or masking re-keys every request (~8,800 now), so
+settle any such change before the next run.
 
 **Open for the owner, in order:**
 
@@ -374,6 +374,15 @@ companies print it often. The labelling notebook still masks by hand; the export
 
 
 ### Progress
+
+- **The `text` job over list v3 (2026-11-09).** `extractor_v7` on `claude-opus-5-5`, over list v3's random group
+  and the distress group's first delivery. Two runs stopped on the provider's 401 (`invalid x-api-key`); `e42b2fa2`
+  sent 5,569 requests (3,225 replayed) and failed the blocking `evidence_masked` check on 11 rows over 5 evidence
+  texts (a legal form, company names and a list label read as names on the short span). The owner cleared them in
+  `config/extraction/masking_exceptions_v1.yaml` (commit `10ef8c7`: person spans only, by evidence hash, the masker
+  unchanged so nothing re-keyed), and `be562e44` passed it, all 8,794 replayed. 5,665 statements (5,617 notes, 48
+  auditor reports, 3 skipped `report_undated`), 9,300 signal rows, 8 quarantined `G2:evidence_not_on_page`; counts
+  by signal in plan 0014 § Progress. `features` rebuilt on it (`3077f07e`, `feature_set_v8`, `leakage` passed).
 
 - **`make label-queue` made safe over a larger store (2026-10-21).** v1 and v2 were drawn when the store held
   the seed alone, and their readers read every stored statement and report. On today's store a rebuild would
