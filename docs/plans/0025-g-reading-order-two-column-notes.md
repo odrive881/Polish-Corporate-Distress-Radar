@@ -3,8 +3,8 @@
 **Stage:** G (text signals; the page text of plan 0013 step C), before plan 0013's K4 labelling resumes. **Status:
 proposed (2026-11-10): written on the owner's request (option C of the three put to the owner the same day:
 keep the text as it is, read every page with `sort=False`, or fix only the pages a rule detects); owner
-decisions 1 and 2 open; decisions 3–8 this plan's own (flag any to change). 2026-11-10: step A done (Progress):
-303 pages to reorder, method (d) chosen, 164 requests to send (about $0.72).**
+decisions 1 and 2 taken (2026-11-10: v4 kept, the cost approved); decisions 3–8 this plan's own (flag any to change).
+2026-11-10: step A done (Progress): 303 pages to reorder, method (d) chosen, 164 requests to send (about $0.72).**
 
 - **Invariants:** 3 (lineage: a page's text records how it was read), 4 (no silent loss: a reordered page holds
   exactly the words it held before, none dropped or doubled), 5 (idempotence: the reading order is versioned, a
@@ -45,19 +45,19 @@ does a one-line answer such as "Nie dotyczy." beside a heading.
   and it falls on the distressed companies' pages, where the positives are. Over the whole store it is not yet
   measured (step A).
 
-## Owner decisions (open)
+## Owner decisions (taken 2026-11-10, as recommended)
 
 1. **`golden_sample_v4` stays v4.** Its rates (set 2026-11-10) and its frame's definition do not change; a page's
    id is `(document_hash, source_member, attachment, page)`, not its text, so draw positions stay as they are.
    The 2 labels already saved, both on affected pages, are set aside (kept in the plan's Progress by page id, not
    exported) and the pages labelled again on the new text, first in draw order. *Alternative:* a new
-   `golden_sample_v6` with v4's settings. *Recommended: keep v4.* The rule that a change makes a new version
+   `golden_sample_v6` with v4's settings. *Recommended: keep v4.* **Taken (owner, 2026-11-10): v4 kept.** The rule that a change makes a new version
    guards against an allocation chosen after seeing labels; a reading-order fix depends on no label, and only 2
    exist. A page whose stratum changes after the re-run (step C) moves with its new stratum, recorded.
 2. **The cost of re-sending the changed pages' requests.** Every request is keyed by a hash of its masked text,
    so only pages whose text changes are sent again; the rest replay. Step A counts them exactly, read-only, before
    anything runs. *Rough expectation:* a few hundred to a thousand requests, a few dollars at October's rate (868
-   for $3.80); the owner approves the count step A prints.
+   for $3.80); the owner approves the count step A prints. **Taken (owner, 2026-11-10): step A's 164 requests, about $0.72, approved.**
 
 ## Decisions this plan makes (flag any you disagree with)
 
