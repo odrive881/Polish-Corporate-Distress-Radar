@@ -192,6 +192,21 @@ Plan 0013 (step C's description, the K4 pick-up), AGENT_SPEC §6 G ("As built", 
     none affected.
   - **Decision 7, v1's seed page** `302135288aaac9f0`: every label absent, so no evidence to recheck; the label
     stands and the page takes its new text at the rebuild.
+  - **`make label-queue`** (about 55 minutes): every queue rebuilt, no labelled page stopped it (v1 87 labelled,
+    v2 102, of them 31 hand-masked, v5 3). In v4 (2,358 pages, one more): text changed on exactly the 68 affected
+    pages and on no other; 6 of them moved `answered_absent` → `answered_present` and 1 affected page joined as
+    `answered_present`; 30 affected pages' proposals changed. **A second effect of the old merge:** 202 rows
+    (155 `answered_absent`, 41 `not_selected`, the 6 above) had kept the draw position and inclusion probability
+    of a build under the provisional rates (0.1, 0.005), their positions now exactly 1/5 and 1/6 of what they were;
+    the pilot order shown before today was therefore partly wrong. No label rested on it (the only 2 were set
+    aside). The pilot's first 30 now hold 3 affected pages, the 2 set aside 3rd and 4th. v3 (shelved) holds 91
+    pages, 5 fewer, none labelled.
+  - **`make label-export`, `make eval`:** only the seed page's text changed in `pages.jsonl`; 0 requests sent,
+    138 replayed; every signal's scores unchanged. The golden file's hash changed, so the owner's acceptances of
+    2026-10-22 no longer apply (`accepted: null`, by design).
+  - **`make check`:** lint, types, `make transform-test` passed; 1,894 tests passed, 9 failed, each
+    `test_the_committed_results_pass_the_gate[<signal>]`: "no accepted result on the current golden file". The
+    gate holds again once the owner re-accepts (`make eval-accept SIGNAL=<signal> BY=owner`), the owner's call.
 
 ## What this plan does not do
 

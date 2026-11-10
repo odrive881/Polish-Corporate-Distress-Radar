@@ -1,8 +1,5 @@
 {
- "accepted": {
-  "by": "owner",
-  "on": "2026-10-22"
- },
+ "accepted": null,
  "examples": [
   {
    "discard_reason": null,
@@ -1709,7 +1706,7 @@
  "extractor_version": "extractor_v7",
  "hashes": {
   "golden": "b140500f80ff98adcc51c2314041d5f002053b3be2ec85f5c4b6ac960df868c4",
-  "pages": "6bb4d4ce1f3197b87d9b34bbc9c69fc87ad20b48bcc7d564fec14dfe426b29cb",
+  "pages": "ba7aa1f28ba5557e613b5bb67b9b35c126617e17799fe0872eabe79c888049ff",
   "prefilter": "1dd33c99f84093fc38d174c565cbdb8595c3aea9b0a78a5f5cc6525ce9255cc8",
   "rules": "87507302a492bbc503d471315200e7b6e2e36c2c0358848888103fbec563d148"
  },
