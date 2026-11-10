@@ -171,8 +171,8 @@ Plan 0013 (step C's description, the K4 pick-up), AGENT_SPEC §6 G ("As built", 
   then passed.
 - **Step C, in progress (2026-11-10).** Merged to `master` (112ede9) and pushed.
   - **The `text` job** (run 77ac1518, 31 minutes): succeeded, `evidence_masked` passed. 162 requests sent and
-    8,634 replayed: 8,796 in all, step A's count (8,794 − 162 + 164), so 2 of the 164 new requests were answered
-    from the store, a page read the same in two statements being the likely cause (not checked page by page).
+    8,634 replayed. Step A's 164 counted (page, signal) pairs; pages with the same masked text share one request,
+    and the 164 pairs make 162 distinct requests (step D), all of them sent.
     `text_coverage`: `pages_reordered` sums to **303**, in 203 statements of **76 entities** (step A's 93 counted
     all 345 detected pages). Against run be562e44: signal rows 9,300 → 9,309; `going_concern_uncertainty`
     present 1,055 → 1,062, every other signal's count unchanged; answers discarded as `evidence_not_on_page`
@@ -207,6 +207,24 @@ Plan 0013 (step C's description, the K4 pick-up), AGENT_SPEC §6 G ("As built", 
   - **`make check`:** lint, types, `make transform-test` passed; 1,894 tests passed, 9 failed, each
     `test_the_committed_results_pass_the_gate[<signal>]`: "no accepted result on the current golden file". The
     gate holds again once the owner re-accepts (`make eval-accept SIGNAL=<signal> BY=owner`), the owner's call.
+- **Step D, result (2026-11-10, read-only, no calls).** On the 303 reordered pages, the model's answers before
+  (the `sort=True` text, its requests) and after (the built order), both read from the response store: before,
+  160 distinct requests (all stored); after, 162, the ones the `text` job sent, about **$0.71** at October's
+  rate (868 for $3.80). By (page, signal):
+  - **7 pages gain a kept `going_concern_uncertainty` present**, each answered present before too but discarded
+    as `evidence_not_on_page`, the model's quote not being a span of the interleaved text: …3781 pages 2 and 6,
+    …5448 pages 2 and 10, …9502 pages 5, 9 and 11. These are the run's discards 8 → 1.
+  - **No answer flipped** between present and absent on any page or signal: `going_concern_uncertainty` present
+    → present 40, absent → absent 10; `loss_coverage_resolution` 7 and 29; `post_balance_sheet_event` 1 and 40;
+    `litigation` 1 and 14; `continued_existence_vote` absent 9; `key_customer_loss` absent 1. The prefilter's
+    selection changed on 8 pages, all `post_balance_sheet_event` read absent either way (3 no longer selected,
+    5 newly).
+  - **By statement** (what `feature_set_v8` reads), over the 203 statements: no signal's answer changed; each
+    of the 7 pages' statements already had `going_concern_uncertainty` present on another page.
+  - **v4's strata:** exactly those 7 pages moved to `answered_present` (6 from `answered_absent`, …9502 page 11
+    new to the queue, not drawn at 0.5 before). They are labelled in draw order like any other.
+  So the fix leaves the model's features as they were; what it changes is the text the labeller and the model
+  read on 303 pages, the evidence now quoted on 7 of them, and the golden pages drawn from them.
 
 ## What this plan does not do
 
