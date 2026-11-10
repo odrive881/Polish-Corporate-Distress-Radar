@@ -133,6 +133,43 @@ def test_a_rebuild_keeps_labels_and_never_drops_a_labelled_page(queue: list[Queu
         golden.merge([labelled], queue[1:])
 
 
+def _reread(row: QueuePage, text: str) -> QueuePage:
+    """The row as a rebuild after a reading-order change gives it: the same page, new text."""
+    return row.model_copy(update={"text": text, "candidates": {}})
+
+
+def test_a_rebuild_gives_the_pages_not_labelled_their_new_text(queue: list[QueuePage]) -> None:
+    fresh = [_reread(queue[0], f"{GOING_CONCERN} Przeczytana na nowo."), *queue[1:]]
+    merged = golden.merge(queue, fresh)
+    assert merged == fresh
+
+
+def test_a_label_whose_evidence_is_still_on_the_page_moves_to_its_new_text(
+    queue: list[QueuePage],
+) -> None:
+    page = queue[0].text
+    labelled = _labelled(queue[0], going_concern_uncertainty=page)
+    fresh = _reread(queue[0], f"Nota 1. {page}")
+    [merged] = golden.merge([labelled], [fresh])
+    assert merged.text == fresh.text and merged.labels == labelled.labels
+    assert (merged.labelled_by, merged.labelled_on) == (labelled.labelled_by, labelled.labelled_on)
+
+
+def test_a_label_whose_evidence_left_the_page_stops_the_rebuild(queue: list[QueuePage]) -> None:
+    page = queue[0].text
+    labelled = _labelled(queue[0], going_concern_uncertainty=page)
+    words = page.split(" ")
+    fresh = _reread(queue[0], " ".join(words[:2]) + "\nNota 1.\n" + " ".join(words[2:]))
+    with pytest.raises(ValueError, match="no longer hold their evidence"):
+        golden.merge([labelled], [fresh])
+
+
+def test_a_hand_masked_row_is_kept_as_the_owner_left_it(queue: list[QueuePage]) -> None:
+    masked = queue[0].model_copy(update={"hand_masked": {"person": 1}})
+    [merged] = golden.merge([masked], [_reread(queue[0], f"{GOING_CONCERN} Inna.")])
+    assert merged == masked
+
+
 def test_the_queue_file_round_trips(queue: list[QueuePage]) -> None:
     data = golden.dump_queue([_labelled(queue[0]), *queue[1:]])
     assert golden.dump_queue(golden.load_queue(data)) == data

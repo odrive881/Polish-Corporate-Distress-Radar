@@ -60,7 +60,7 @@ from statistics import median
 from typing import Any, Literal, cast, get_args
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from distress_radar.extraction import masking, page_text, rules
 from distress_radar.extraction.preprocessing import (
@@ -807,9 +807,29 @@ def build_stratified_queue(
     return sorted(queued, key=lambda row: row.page_id)
 
 
+# What the owner put on a row, carried from the existing queue onto the rebuilt one. Everything
+# else (the text, the candidates, the proposals, the stratum) is the fresh build's.
+OWNER_WORK = frozenset(
+    {
+        "labels",
+        "labelled_by",
+        "proposed_by",
+        "guide_version",
+        "labelled_on",
+        "seconds",
+        "rechecks",
+        "rechecked_on",
+        "cleared",
+    }
+)
+
+
 def merge(existing: list[QueuePage], fresh: list[QueuePage]) -> list[QueuePage]:
-    """The fresh queue, keeping every existing row as it is (labels and hand masking). A labelled
-    row the fresh queue does not have is an error, never dropped."""
+    """The fresh queue, with the owner's work on each existing row carried over (plan 0025): a
+    page's text, proposals and stratum are what the pages read now, so a reading or answering
+    change reaches the pages not yet labelled. A hand-masked row is kept as it is, its text being
+    the owner's edit. A labelled row the fresh queue does not have, or whose evidence is no longer
+    on the fresh page, is an error, never dropped."""
     fresh_ids = {row.page_id for row in fresh}
     orphaned = [row.page_id for row in existing if row.page_id not in fresh_ids and row.labels]
     if orphaned:
@@ -818,7 +838,29 @@ def merge(existing: list[QueuePage], fresh: list[QueuePage]) -> list[QueuePage]:
             "a changed sample or prefilter is a new golden sample version"
         )
     kept = {row.page_id: row for row in existing}
-    return [kept.get(row.page_id, row) for row in fresh]
+    merged: list[QueuePage] = []
+    moved: list[str] = []
+    for row in fresh:
+        old = kept.get(row.page_id)
+        if old is None:
+            merged.append(row)
+        elif old.hand_masked:
+            merged.append(old)
+        else:
+            try:
+                merged.append(
+                    QueuePage.model_validate(
+                        {**row.model_dump(), **old.model_dump(include=set(OWNER_WORK))}
+                    )
+                )
+            except ValidationError:
+                moved.append(row.page_id)
+    if moved:
+        raise ValueError(
+            f"{len(moved)} labelled page(s) no longer hold their evidence or labels in the rebuilt "
+            f"queue (e.g. {moved[:3]}): set their labels aside and label them again"
+        )
+    return merged
 
 
 # --- labelling -----------------------------------------------------------------------------------
