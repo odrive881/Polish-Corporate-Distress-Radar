@@ -169,6 +169,29 @@ Plan 0013 (step C's description, the K4 pick-up), AGENT_SPEC §6 G ("As built", 
   beside figures, a single-column page; `pages_reordered` reaches `text_coverage`. `make check`: lint, types and
   1,898 tests passed, one failed (the external model's column list), fixed; that test and `make transform-test`
   then passed.
+- **Step C, in progress (2026-11-10).** Merged to `master` (112ede9) and pushed.
+  - **The `text` job** (run 77ac1518, 31 minutes): succeeded, `evidence_masked` passed. 162 requests sent and
+    8,634 replayed: 8,796 in all, step A's count (8,794 − 162 + 164), so 2 of the 164 new requests were answered
+    from the store, a page read the same in two statements being the likely cause (not checked page by page).
+    `text_coverage`: `pages_reordered` sums to **303**, in 203 statements of **76 entities** (step A's 93 counted
+    all 345 detected pages). Against run be562e44: signal rows 9,300 → 9,309; `going_concern_uncertainty`
+    present 1,055 → 1,062, every other signal's count unchanged; answers discarded as `evidence_not_on_page`
+    8 → 1, the interleaved text having split the model's quotes.
+  - **`features`** (run de347df2, by hand: no sensor follows the `text` job): succeeded, `leakage` and
+    `feature_coverage` passed (`feature_set_v8`, 164,263 rows, 1,497 entities); `legal_events_quarantine` failed
+    as on every run since 2026-11-03, not blocking.
+  - **The queue rebuild** (bc910d7): `golden.merge` kept every queued row whole, text included, so a rebuild
+    would have left the 68 affected v4 pages (1 in v3, 1 in v1) interleaved. A rebuilt row is now the fresh
+    build's, the owner's work carried over (`golden.OWNER_WORK`); a hand-masked row stays as left; a labelled row
+    whose evidence is no longer on the page stops the rebuild. So `make label-queue` runs before
+    `make label-export`, which exports the queue's text.
+  - **Decision 1, the 2 v4 labels set aside** (owner, 2026-11-10, `labelling_guide_v2`): `2bf97faee0928c9b`
+    (page 5, `going_concern_uncertainty` present, the rest absent) and `7782da95bf1aad18` (page 11, all absent).
+    Their rows are unlabelled again, first in draw order; the queue as it was is kept locally beside it
+    (`.cache/labelling/golden_sample_v4.before-plan-0025.jsonl`). The 4 other labelled v4 rows are carried pages,
+    none affected.
+  - **Decision 7, v1's seed page** `302135288aaac9f0`: every label absent, so no evidence to recheck; the label
+    stands and the page takes its new text at the rebuild.
 
 ## What this plan does not do
 
