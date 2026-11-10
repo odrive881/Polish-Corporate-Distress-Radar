@@ -12,9 +12,9 @@
 **Order:** after ADR 0013's decision. It does not wait for plan 0013 (Phase 7). A1 is the owner's
 Rejestr.io list (ADR 0014, accepted 2026-10-06), loaded in step 0.
 
-## Status: active (2026-10-18): owner decisions 1–6 accepted as recommended; steps 0 and B–D built, step F's docs written; list v1 imported three times (2026-10-09, 2026-10-13 and 2026-10-16, Progress) and everything downstream rebuilt, up to `backtest_v8`; list v2's distress group imported and parsed once (2026-10-17), its legal sources and labels rebuilt by the night of 2026-10-19 (plan 0018) and label v3 (plan 0022), and the models retrained on them (`backtest_v9`); list v2's random group superseded by list v3's (plan 0019); what list v2 can bring to the champion rule's event floor in § "Events" (2026-10-18), and how the rule reads it decided the same day (option (a): unweighted, a promotion provisional); deferred by the owner (2026-10-20): the script writing every tab of an expanded row and re-searching list v1's unsearched companies; the second import's two importer questions decided (owner, 2026-10-23: items 3 and 4 below); list v3's random group imported and parsed (2026-10-28, Progress), its legal sources fetched and labels rebuilt (label v4, plan 0024, 2026-11-03), features rebuilt on `feature_set_v6` (2026-11-03); list v3's distress group's first delivery imported and parsed, features rebuilt on `feature_set_v8` (2026-11-09, Progress); open: re-searching the 87 companies the script listed found with 0 rows, group A's 10 not searched, step A's field-by-field comparison and step E on the seed
+## Status: active (2026-10-18): owner decisions 1–6 accepted as recommended; steps 0 and B–D built, step F's docs written; list v1 imported three times (2026-10-09, 2026-10-13 and 2026-10-16, Progress) and everything downstream rebuilt, up to `backtest_v8`; list v2's distress group imported and parsed once (2026-10-17), its legal sources and labels rebuilt by the night of 2026-10-19 (plan 0018) and label v3 (plan 0022), and the models retrained on them (`backtest_v9`); list v2's random group superseded by list v3's (plan 0019); what list v2 can bring to the champion rule's event floor in § "Events" (2026-10-18), and how the rule reads it decided the same day (option (a): unweighted, a promotion provisional); deferred by the owner (2026-10-20): the script writing every tab of an expanded row and re-searching list v1's unsearched companies; the second import's two importer questions decided (owner, 2026-10-23: items 3 and 4 below); list v3's random group imported and parsed (2026-10-28, Progress), its legal sources fetched and labels rebuilt (label v4, plan 0024, 2026-11-03), features rebuilt on `feature_set_v6` (2026-11-03); list v3's distress group's first delivery imported and parsed, features rebuilt on `feature_set_v8` (2026-11-09, Progress); the `text` job run once over everything imported, and features rebuilt on it (2026-11-09, Progress); open: re-searching the 87 companies the script listed found with 0 rows, group A's 10 not searched, step A's field-by-field comparison and step E on the seed
 
-### Where this stands (2026-11-09): pick up here
+### Where this stands (2026-11-09, the `text` run added): pick up here
 
 - **Last delivery imported:** `E:\missing_docs_download` (2026-11-09, run `77da5ac3`): 152 of the 162 drawn
   companies still missing for `backtest_v10` (77 bankrupt, 65 in liquidation, 20 of group A), searched 2026-11-06
@@ -27,8 +27,8 @@ Rejestr.io list (ADR 0014, accepted 2026-10-06), loaded in step 0.
   received) and excluded as `no_statement_imported`; a later search replaces them, since the latest one decides.
 - **In the stores (2026-11-09):** 1,497 entities in `entity_master`, 976 in `filing_index`, 973 with canonical
   facts. Label set `2bdf7715…` (`outcome_labels_v4`, frozen 2026-11-06). `feature_store` on `feature_set_v8`
-  (164,263 rows, 1,497 entities, run `d137cc6f`; `leakage` passed); the batch's text features are empty until the
-  `text` job runs.
+  (164,263 rows, 1,497 entities; `leakage` passed), rebuilt after the `text` run (run `3077f07e`), so the batch's
+  text features are in; `text_signals` from run `be562e44` (`extractor_v7`, 2026-11-09).
 - **The event floor (readiness notebook, 2026-11-09):** 504 drawn companies included (473 on 2026-11-03); 59
   events at 12 and at 24 months in the main run, which reaches the champion rule's 50, and 42 in `no_regime`
   (32 before), which does not.
@@ -37,7 +37,7 @@ Rejestr.io list (ADR 0014, accepted 2026-10-06), loaded in step 0.
   `backtest_v10` trains (plan 0019 step G).
 - **Next, in order:** the script's re-search of the 87, group A's 10 and the drawn companies still held back with
   only one tab listed (item 1 below); import, parse; the nightly fetches the legal sources and freezes a label set
-  holding the 4 drawn companies not yet in it; the `text` job once (owner, 2026-10-21); the owner's
+  holding the 4 drawn companies not yet in it; the `text` job again only for what that import adds; the owner's
   `weights.nonresponse` decision (the included shares differ by 45%); then `backtest_v10`'s pins (plan 0019).
 
 ### Where it stood after list v1 and list v2's distress group (2026-10-16, with the distress group added 2026-10-17 and its events 2026-10-18)
@@ -309,6 +309,23 @@ statement tier, and the share of scans; and, from ADR 0014, the list's compositi
 the next list representative.
 
 ### Progress
+
+- **The `text` job over list v3 (2026-11-09).** Run once, as the owner chose on 2026-10-21, after list v3's random
+  group and the distress group's first delivery were in; `extractor_v7` (`prefilter_v4`, `claude-opus-5-5`).
+  - **Runs:** `943df07d` and `b892abd6` stopped on the provider's 401 (`invalid x-api-key`) before any response was
+    stored. `e42b2fa2` sent 5,569 requests (3,225 replayed from the store), then failed the blocking
+    `evidence_masked` check: 11 rows over 5 evidence texts, a company's legal form, company names and a list label
+    read as names on the short span. The owner cleared them in `masking_exceptions_v1` (commit `10ef8c7`; the masker
+    is unchanged, so nothing re-keyed), and `be562e44` passed it with 0 requests sent, all 8,794 replayed.
+  - **What it read:** 5,665 statements (5,617 notes, 48 auditor reports; 3 reports skipped as `report_undated`);
+    pages 23,063 with text, 976 sparse, 3,932 `needs_ocr`. 9,300 signal rows; present: `going_concern_uncertainty`
+    1,055, `loss_coverage_resolution` 732, `post_balance_sheet_event` 183, `litigation` 64, `opinion_type` 44,
+    `continued_existence_vote` 32, `emphasis_of_matter` 3, `key_customer_loss` 2. 8 discarded, quarantined as
+    `G2:evidence_not_on_page`.
+  - **Features (run `3077f07e`, by the sensor chain):** `feature_store` on `feature_set_v8`, 164,263 rows, 1,497
+    entities, 64 features; `leakage` and `feature_coverage` passed. Rebuilt again overnight after the nightly's
+    labels (run `54fbaa35`, 2026-11-10), same counts. Scheduled `scoring` refused both times, as by design until
+    `backtest_v10`'s models serve.
 
 - **List v3's distress group, first delivery (2026-11-09).** The owner's folder `E:\missing_docs_download`
   (searches 2026-11-06 to 11-08, with `backtest_v10_krs_list.csv`, the 162 drawn companies still missing),
