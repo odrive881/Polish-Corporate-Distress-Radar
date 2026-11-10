@@ -201,7 +201,7 @@ One row per kept extraction (plan 0013 step H): `value` is `present` or `absent`
 
 ### `text_coverage`
 
-`krs`, `fiscal_year`, `signal_type`, `status`, `known_from`, `period_end`, `document_ref`, `source_document_hash`, `source_member`, `document_kind`, `attachments`, `attachments_unsupported`, `attachment_errors` (list), `pages`, `pages_text`, `pages_needs_ocr`, `pages_sparse`, `pages_selected`, `kept_present`, `kept_absent`, `discarded`, `discard_reasons` (list), `unanswered`, `extractor_version`, `masking_version`, `ingestion_run_id`.
+`krs`, `fiscal_year`, `signal_type`, `status`, `known_from`, `period_end`, `document_ref`, `source_document_hash`, `source_member`, `document_kind`, `attachments`, `attachments_unsupported`, `attachment_errors` (list), `pages`, `pages_text`, `pages_needs_ocr`, `pages_sparse`, `pages_reordered` (text pages read by table cells or columns because `sort=True` read a two-column layout across itself, plan 0025), `pages_selected`, `kept_present`, `kept_absent`, `discarded`, `discard_reasons` (list), `unanswered`, `extractor_version`, `masking_version`, `ingestion_run_id`.
 
 One row per (statement file or auditor report, `signal_type`): what the text stage read (plan 0013 step H), so a missing signal is never read as "no warning" (invariant 4). `status`: `no_text` (no page of the notes, or of the report, has a text layer), `not_run` (the prefilter selected pages for a model signal before the owner confirmed the provider's terms), `partial` (read, but a page was scanned, an attachment unreadable, or an extraction discarded or unanswered), `read` (every page read, every selected page answered; a page not selected counts as absent). Written with `text_signals`, contract `TEXT_COVERAGE`.
 

@@ -96,3 +96,107 @@ def test_normalise_is_stable_and_keeps_polish_letters() -> None:
     raw = "Zarząd  spółki \t ocenia \n\n\n\n  że   ZAŻÓŁĆ  \n"
     assert normalise(raw) == "Zarząd spółki ocenia\n\nże ZAŻÓŁĆ"
     assert normalise(normalise(raw)) == normalise(raw)
+
+
+# --- reading order (plan 0025) --------------------------------------------------------------------
+
+# ASCII only: the test font draws no Polish letters.
+HEADINGS = (
+    "Propozycje co do sposobu podzialu zysku lub pokrycia straty za rok obrotowy",
+    "Dane o stanie rezerw wedlug celu ich utworzenia na poczatek roku obrotowego",
+    "Podzial zobowiazan dlugoterminowych wedlug pozycji bilansu o pozostalym okresie splaty",
+)
+ANSWERS = (
+    "Z uwagi na toczace sie postepowanie nie przedstawia sie sposobu pokrycia straty netto.",
+    "Spolka nie tworzyla rezerw w okresie sprawozdawczym ani w okresie poprzedzajacym go.",
+    "Wszystkie zobowiazania spolki staly sie wymagalne z dniem otwarcia postepowania sadowego.",
+)
+INTRO = (
+    "Informacja dodatkowa do sprawozdania finansowego za rok obrotowy, sporzadzona zgodnie z "
+    "zalacznikiem do ustawy o rachunkowosci, obejmuje ponizsze pozycje."
+)
+
+
+def _table_pdf(
+    right: tuple[str, ...], *, ruled: bool, width: float = 150, mirror: bool = False
+) -> bytes:
+    """One page: a row per heading, the heading in a left cell `width` wide and `right` beside it in
+    a right cell (200 wide, or as wide as the left with `mirror`), both wrapping onto several
+    lines; `ruled` draws the cells' borders."""
+    doc = pymupdf.open()
+    page = doc.new_page()
+    page.insert_textbox(pymupdf.Rect(50, 40, 550, 75), INTRO, fontname="helv", fontsize=9)
+    y = 80.0
+    for heading, answer in zip(HEADINGS, right, strict=True):
+        left_cell = pymupdf.Rect(50, y, 50 + width, y + 80)
+        right_cell = pymupdf.Rect(54 + width, y, 54 + width + (width if mirror else 200), y + 80)
+        page.insert_textbox(left_cell + (2, 2, -2, -2), heading, fontname="helv", fontsize=10)
+        page.insert_textbox(right_cell + (2, 2, -2, -2), answer, fontname="helv", fontsize=10)
+        if ruled:
+            page.draw_rect(left_cell, color=(0, 0, 0), width=0.5)
+            page.draw_rect(right_cell, color=(0, 0, 0), width=0.5)
+        y += 80
+    data = doc.tobytes(garbage=3, deflate=True)
+    doc.close()
+    return data
+
+
+def _sorted_text(pdf: bytes) -> str:
+    with pymupdf.open(stream=pdf, filetype="pdf") as doc:
+        return normalise(str(doc.load_page(0).get_text("text", sort=True)))
+
+
+def _chars(text: str) -> list[str]:
+    return sorted(c for c in text if not c.isspace())
+
+
+def _joined(text: str) -> str:
+    return " ".join(text.split())
+
+
+@pytest.mark.parametrize("ruled", [True, False], ids=["ruled", "unruled"])
+def test_a_two_column_table_is_read_cell_by_cell(ruled: bool) -> None:
+    pdf = _table_pdf(ANSWERS, ruled=ruled)
+    before = _sorted_text(pdf)
+    assert not all(answer in _joined(before) for answer in ANSWERS)  # sort=True reads it across
+    (page,) = pages(pdf)
+    assert page.reordered
+    flat = _joined(page.text)
+    for heading, answer in zip(HEADINGS, ANSWERS, strict=True):
+        assert heading in flat and answer in flat
+        assert flat.index(heading) < flat.index(answer)  # each row: heading, then its answer
+    assert [flat.index(h) for h in HEADINGS] == sorted(flat.index(h) for h in HEADINGS)
+    assert _chars(page.text) == _chars(before)  # the same characters, none lost or doubled
+    assert list(pages(pdf)) == [page]  # the same string every time
+
+
+def test_a_one_line_answer_beside_a_heading_is_not_reordered() -> None:
+    pdf = _table_pdf(("Nie dotyczy.",) * 3, ruled=True)
+    (page,) = pages(pdf)
+    assert not page.reordered and page.text == _sorted_text(pdf)
+
+
+def test_the_same_text_in_both_columns_is_not_reordered() -> None:
+    pdf = _table_pdf(HEADINGS, ruled=True, mirror=True)
+    (page,) = pages(pdf)
+    assert not page.reordered and page.text == _sorted_text(pdf)
+
+
+def test_labels_beside_their_figures_are_not_reordered() -> None:
+    doc = pymupdf.open()
+    page = doc.new_page()
+    page.insert_textbox(pymupdf.Rect(50, 40, 550, 120), INTRO, fontname="helv", fontsize=10)
+    for n, label in enumerate(HEADINGS):
+        y = 140 + 30 * n
+        page.insert_textbox(pymupdf.Rect(50, y, 300, y + 28), label, fontname="helv", fontsize=10)
+        page.insert_textbox(pymupdf.Rect(400, y, 550, y + 28), f"{n + 1} 234,56", fontname="helv")
+    pdf = doc.tobytes()
+    doc.close()
+    (read,) = pages(pdf)
+    assert not read.reordered and read.text == _sorted_text(pdf)
+
+
+def test_a_single_column_page_reads_as_sort_true_did() -> None:
+    pdf = _pdf("text")
+    (page,) = pages(pdf)
+    assert not page.reordered and page.text == _sorted_text(pdf)

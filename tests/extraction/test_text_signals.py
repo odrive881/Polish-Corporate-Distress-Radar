@@ -171,6 +171,53 @@ def test_before_the_owner_confirms_only_rules_run_and_coverage_says_so(
     ]
 
 
+def _two_column_pdf() -> bytes:
+    """One page laid out as the notes' two-column table (plan 0025): a heading in the left cell, an
+    answer in the right, both wrapping; then a page of running text."""
+    doc = pymupdf.open()
+    page = doc.new_page()
+    page.insert_textbox(
+        pymupdf.Rect(50, 40, 550, 75), FILLER.strip()[:160], fontname="helv", fontsize=9
+    )
+    rows = (
+        (
+            "Propozycje co do sposobu podzialu zysku lub pokrycia straty za rok obrotowy",
+            "Z uwagi na toczace sie postepowanie nie przedstawia sie sposobu pokrycia straty netto.",
+        ),
+        (
+            "Dane o stanie rezerw wedlug celu ich utworzenia na poczatek roku obrotowego",
+            "Spolka nie tworzyla rezerw w okresie sprawozdawczym ani w okresie poprzedzajacym go.",
+        ),
+    )
+    y = 80.0
+    for heading, answer in rows:
+        page.insert_textbox(
+            pymupdf.Rect(52, y + 2, 198, y + 78), heading, fontname="helv", fontsize=10
+        )
+        page.insert_textbox(
+            pymupdf.Rect(206, y + 2, 402, y + 78), answer, fontname="helv", fontsize=10
+        )
+        y += 80
+    doc.new_page().insert_textbox(pymupdf.Rect(50, 50, 550, 800), FILLER.strip(), fontname="helv")
+    data = doc.tobytes()
+    doc.close()
+    return data
+
+
+def test_a_page_read_by_columns_is_counted_in_coverage(
+    models: tuple[Any, Any], extractor: ex.Extractor
+) -> None:
+    mask_nlp, lemma_nlp = models
+    prefilter = preprocessing.load_prefilter("prefilter_v1")
+    read = [ts.read_notes(_file(5), _statement(_two_column_pdf()), prefilter, mask_nlp, lemma_nlp)]
+    assert read[0].pages_reordered == 1
+    _signals, coverage, _detections = _build(read, extractor, {"opinion_type"}, ex.NoCalls())
+    TEXT_COVERAGE.validate(coverage)
+    row = _coverage(coverage, 5, "litigation")
+    assert (row["pages_text"], row["pages_reordered"]) == (2, 1)
+    assert {r["pages_reordered"] for r in coverage.to_dicts()} == {1}
+
+
 def test_model_signals_run_once_confirmed_and_discards_are_quarantined(
     notes: list[ts.StatementNotes], extractor: ex.Extractor
 ) -> None:

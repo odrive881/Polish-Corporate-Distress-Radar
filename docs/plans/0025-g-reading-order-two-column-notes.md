@@ -157,6 +157,18 @@ Plan 0013 (step C's description, the K4 pick-up), AGENT_SPEC §6 G ("As built", 
     `going_concern_uncertainty`, 46 `post_balance_sheet_event`, 36 `loss_coverage_resolution`, 15 `litigation`,
     9 `continued_existence_vote`, 1 `key_customer_loss`; 127 of them on the draw's entities. The prefilter's
     selection changes on 8 pages. At October's rate (868 for $3.80): **about $0.72** (decision 2).
+- **Step B, built (2026-11-10, branch `plan-0025-reading-order`).** `page_text.py`: `READING_ORDER_VERSION = "2"`,
+  `Page.reordered`, step A's rule (`_reads_across`) and method (d) (`_by_cells_and_columns`); `text_signals.py`:
+  `reading_order=` in `pipeline_hash`, `pages_reordered` in `text_coverage` (checked `<= pages_text` in its
+  contract; AGENT_SPEC §5; the SQLMesh external model `ext.text_coverage`, whose view reads `SELECT *`, so the
+  stored file stays readable until the `text` job rewrites it). Against the store, read-only: the built code
+  reorders exactly step A's 303 pages, with text identical to the census's method on every one, and leaves the
+  other 42 detected pages as they were. Tests on drawn PDFs (`test_page_text.py`, `test_text_signals.py`): a
+  wrapping two-column table, ruled and unruled, read heading then answer, row by row, the same characters, the
+  same string twice; not reordered: a one-line answer beside a heading, equal columns of the same text, labels
+  beside figures, a single-column page; `pages_reordered` reaches `text_coverage`. `make check`: lint, types and
+  1,898 tests passed, one failed (the external model's column list), fixed; that test and `make transform-test`
+  then passed.
 
 ## What this plan does not do
 

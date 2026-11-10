@@ -115,6 +115,7 @@ COVERAGE_COLUMNS: dict[str, pl.DataType | type[pl.DataType]] = {
     "pages_text": pl.Int32,
     "pages_needs_ocr": pl.Int32,
     "pages_sparse": pl.Int32,
+    "pages_reordered": pl.Int32,  # text pages read by cells or columns, not `sort=True` (plan 0025)
     "pages_selected": pl.Int32,  # by the prefilter, for this signal
     "kept_present": pl.Int32,
     "kept_absent": pl.Int32,
@@ -159,6 +160,7 @@ def pipeline_hash(
         f"schema={SCHEMA_VERSION}",
         f"masking={masking.MASKING_VERSION}",
         f"text_page_chars={page_text.TEXT_PAGE_CHARS}",
+        f"reading_order={page_text.READING_ORDER_VERSION}",
         "runnable=" + ",".join(s for s in SIGNAL_TYPES if s in set(runnable)),
     ]
     digest.update("\n".join(parts).encode())
@@ -201,6 +203,7 @@ class StatementNotes:
         default_factory=list[tuple[str, str]]
     )  # (reason, path)
     page_status: Counter[str] = field(default_factory=Counter[str])
+    pages_reordered: int = 0
 
 
 def read_notes(
@@ -250,6 +253,7 @@ def _read(
             notes.page_status[page.status] += 1
             if page.status != "text":
                 continue
+            notes.pages_reordered += page.reordered
             text = masking.mask(page.text, mask_nlp).text
             sentences = preprocessing.analyse(text, lemma_nlp)
             notes.pages.append(
@@ -406,6 +410,7 @@ def build(
                     "pages_text": text_pages,
                     "pages_needs_ocr": notes.page_status["needs_ocr"],
                     "pages_sparse": notes.page_status["sparse"],
+                    "pages_reordered": notes.pages_reordered,
                     "pages_selected": selected,
                     "kept_present": kept[True],
                     "kept_absent": kept[False],

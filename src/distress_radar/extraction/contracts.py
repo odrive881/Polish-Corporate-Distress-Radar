@@ -100,6 +100,7 @@ def _counts_add_up(data: pa.PolarsData) -> pl.LazyFrame:
             <= pl.col("pages_selected")
         )
         & (pl.col("pages_selected") <= pl.col("pages_text"))
+        & (pl.col("pages_reordered") <= pl.col("pages_text"))
     )
 
 

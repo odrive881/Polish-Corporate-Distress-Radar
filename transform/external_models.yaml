@@ -104,6 +104,7 @@
     pages_text: INT
     pages_needs_ocr: INT
     pages_sparse: INT
+    pages_reordered: INT
     pages_selected: INT
     kept_present: INT
     kept_absent: INT
