@@ -3,7 +3,8 @@
 **Stage:** G (text signals; the page text of plan 0013 step C), before plan 0013's K4 labelling resumes. **Status:
 proposed (2026-11-10): written on the owner's request (option C of the three put to the owner the same day:
 keep the text as it is, read every page with `sort=False`, or fix only the pages a rule detects); owner
-decisions 1 and 2 open; decisions 3–8 this plan's own (flag any to change).**
+decisions 1 and 2 open; decisions 3–8 this plan's own (flag any to change). 2026-11-10: step A done (Progress):
+303 pages to reorder, method (d) chosen, 164 requests to send (about $0.72).**
 
 - **Invariants:** 3 (lineage: a page's text records how it was read), 4 (no silent loss: a reordered page holds
   exactly the words it held before, none dropped or doubled), 5 (idempotence: the reading order is versioned, a
@@ -129,6 +130,33 @@ Plan 0013 (step C's description, the K4 pick-up), AGENT_SPEC §6 G ("As built", 
 
 - **2026-11-10:** written. Found and measured as in § "Why"; `find_tables()` checked on the owner's example page.
   Labelling of `golden_sample_v4` paused on the owner's affected pages until this plan's step C.
+- **Step A (2026-11-10, read-only, scratch scripts; counts only, page text shown only masked).**
+  - **A.1, census.** Every stored notes page and dated auditor report: 22,834 and 229 text pages. The detection
+    rule of § "Why" first missed the owner's example company, whose columns are 5 points apart (the census asked
+    for 8): the gutter is now any gap over 2 points. Detected: **345 pages in 93 entities' notes** (210 pages, 47
+    entities in list v3's draw); no auditor report. Of these, `sort=True` actually puts two different side-by-side
+    segments on one output line on **303**; the other 42 read correctly now. So the rule that picks a page is the
+    measured fault itself: two consecutive rows of prose side by side **and** `sort=True` joining a pair of them
+    (a pair whose texts are equal, or one inside the other, as in a current-year and a prior-year column, cannot
+    be judged this way and is not counted). The most affected: …3781 22 pages, …9502 13, …5448 13, …6563 12,
+    …3537 12.
+  - **A.2, the method.** On the 345 pages: (a) `find_tables()` with `sort=True` bands passed 216 (31 still
+    interleaved, 74 with text doubled where a band overlapped a table, 37 with no table found); (b) `sort=False`,
+    (c) blocks by column, and **(d)** passed all 345 on the three criteria (no interleaving, the same characters,
+    the same string twice). (d), added in step A, is one rule combining (a) and (c): every text line of the page
+    is emitted exactly once; a line inside a `find_tables()` cell goes with its cell (rows top to bottom, cells
+    left to right), the rest is split into bands by vertical whitespace and each band read column by column. The
+    criteria could not tell (b), (c) and (d) apart (they agree word for word on 43 of 303 pages), so the pages
+    where they differ most were read, masked: on a ruled table (…7849, an off-balance-sheet register) (b) reads
+    column by column, every title, then every amount, then every method, and moves the page's heading; (d) reads
+    it row by row, heading first. (d) also reads the owner's example heading first and the answer whole, and
+    leaves a page without a table as `sort=True` had it. **(d) is the method kept** (decision 4's "a combination
+    is allowed if it is one rule").
+  - **A.3, the cost.** The 303 pages' masked text all changes. Today they make 162 model requests, all found in
+    the response store (so the keys were rebuilt exactly). With (d) they make **164, all new**: 57
+    `going_concern_uncertainty`, 46 `post_balance_sheet_event`, 36 `loss_coverage_resolution`, 15 `litigation`,
+    9 `continued_existence_vote`, 1 `key_customer_loss`; 127 of them on the draw's entities. The prefilter's
+    selection changes on 8 pages. At October's rate (868 for $3.80): **about $0.72** (decision 2).
 
 ## What this plan does not do
 
