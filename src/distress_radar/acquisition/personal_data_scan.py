@@ -29,7 +29,23 @@ from typing import Any
 
 from distress_radar.acquisition.redaction import personal_data_markers
 
-DATA_SUFFIXES = frozenset({".xml", ".json", ".zip", ".pdf", ".xades", ".xsig"})
+DATA_SUFFIXES = frozenset(
+    {
+        ".xml",
+        ".json",
+        ".zip",
+        ".pdf",
+        ".xades",
+        ".xsig",
+        ".doc",
+        ".docx",
+        ".xls",
+        ".xlsx",
+        ".odt",
+        ".ods",
+        ".rtf",
+    }
+)
 REFUSED_SUFFIXES = frozenset({".har"})
 EVAL_DIR = "evals/"
 EVAL_SUFFIXES = frozenset({".jsonl", ".json"})

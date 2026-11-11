@@ -219,3 +219,46 @@ them until then; the measured recall covers report pages once they are labelled.
 only where the masker takes it for a person (a sole practitioner's firm often is), and its number on the list of audit firms is never stored (owner, 2026-10-05): a firm can be a sole
 practitioner, a natural person, so the text stage keeps only whether the firm changed between reports
 (`auditor_reports.auditor_changed`), and the rule that reads the number must not reach the key auditor's own.
+
+## Fourth addendum, 2026-11-11: office files' metadata (redaction version 5)
+
+**Context.** Rule 4 of the second addendum removed a PDF's document metadata because "an author is usually the
+person who wrote the notes". The same is true of every other format filers attach, and no rule reached them.
+Found while reviewing list v3 group A's auditor-report delivery (2026-11-11), where a Word report's author and
+last saver passed redaction and the marker check; a scan of the store then found the gap everywhere (counts
+only, no value read): 943 of 13,948 stored objects hold an office file, almost all statement notes attached in
+`Plik/Zawartosc`; 912 of them name someone in metadata: 494 OOXML or OpenDocument files with an author or last
+saver, 422 objects with OLE files (Word 97+ and Excel, every one with a summary author), 16 with RTF authors,
+one flat Word XML file. One Excel file links another workbook by a path under `C:\Users\<user>`.
+
+**Decision.**
+1. **Office files lose the people their metadata names, before hashing**, wherever they sit: top-level, a ZIP
+   member, a base64 payload (`Zawartosc`, `DaneZalacznika`, a signature's `ds:Object`) or an OOXML package's
+   embeddings (`acquisition/office_metadata.py`):
+   - OOXML: `docProps/core.xml` and `docProps/custom.xml` emptied; `Company`, `Manager`, `HyperlinkBase`,
+     `HLinks` removed from `docProps/app.xml`; `author` / `initials` attributes (comments, tracked changes) and
+     comment author lists blanked; the people parts' names and ids blanked; an external relationship to a local
+     or network file loses its target.
+   - OpenDocument: `dc:creator` in every part (document, comment, tracked change), `meta:initial-creator`,
+     `meta:printed-by` and user-defined properties blanked; `meta.xml` loses title, subject, description and
+     keywords. Flat XML of either family (`pkg:package`, `office:document`) the same, part by part.
+   - RTF: the `\info` group, annotation authors and the revision table emptied.
+   - OLE compound files, rewritten in place, every length and offset kept: all strings of both summary
+     property sets zeroed (Word writes the strings in `HeadingPairs` and `TitlesOfParts` without MS-OLEPS's
+     padding; either layout is read, and a property set in neither is refused); Word's `SttbSavedBy`,
+     `SttbfRMark`, `GrpXstAtnOwners`, `AutosaveSource` and `SttbFnm` keep their lengths and lose their
+     characters; Excel's `WriteAccess` and external `SupBook` paths zeroed; PowerPoint's `Current User` name
+     zeroed.
+2. **Fail closed.** A file of these formats that cannot be read safely (a broken compound file, Word before 97,
+   unbalanced RTF, an unreadable XML part) is refused, and `personal_data_markers` flags it. Body text is not
+   touched: a name in the notes stays the free-text residual this ADR accepted, read only through the third
+   addendum's masking.
+3. **Version.** Downloads are redacted under `REDACTION_VERSION = "5"`, and the marker check looks for the same
+   fields independently, so the blocking `personal_data` check and the pre-commit scan (which now also reads
+   `.doc`, `.docx`, `.xls`, `.xlsx`, `.odt`, `.ods`, `.rtf`) catch what version 4 left. Stored objects are
+   re-derived by `redaction_migration`, as for versions 2–4.
+
+**Consequences.** Notes attached as Word files keep their text but not who wrote them. Every migrated
+download's hash changes, so parsing, the text job and the warehouse are rebuilt over them; no figure may move.
+Nothing the project reads uses the removed fields: office attachments are counted, not opened
+(`page_text`, "unsupported").

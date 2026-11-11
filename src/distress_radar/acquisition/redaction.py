@@ -28,6 +28,10 @@ hashed and stored, so the raw store never holds it:
   the token too (`redact_rdf_detail`).
 - PDF document metadata (information dictionary and XMP) is removed: an author is usually the
   person who wrote the notes.
+- Office files (version 5, ADR 0009 fourth addendum): Word, Excel, PowerPoint, OpenDocument and
+  RTF files, top-level, in a ZIP, inside a base64 payload or as flat XML, lose the people their
+  metadata names: authors, last savers, comment and revision authors, the user who saved
+  (`office_metadata`).
 
 A file with nothing to remove is returned byte for byte. The result is
 deterministic, so re-downloading the same file stores the same object.
@@ -60,7 +64,10 @@ from typing import cast
 import pymupdf
 from lxml import etree
 
-REDACTION_VERSION = "4"
+from distress_radar.acquisition import office_metadata
+from distress_radar.acquisition.office_metadata import OfficeMetadataError
+
+REDACTION_VERSION = "5"
 RDF_DETAIL_REDACTION_VERSION = "rdf-detail-1"
 KEPT_EXTENSIONS = frozenset(
     {
@@ -183,6 +190,12 @@ def redact_file(data: bytes, where: str) -> Redaction | None:
         return _redact_pdf(data, where)
     if body.startswith(b"\x30"):
         return _unwrap_cms(data, where)
+    try:
+        office = office_metadata.strip(body, where)
+    except OfficeMetadataError as exc:
+        raise RedactionError(str(exc)) from exc
+    if office is not None:
+        return Redaction(office.data, office.actions) if office.actions else Redaction(data)
     if not body.lstrip().startswith(b"<"):
         return Redaction(data)
     try:
@@ -391,6 +404,15 @@ def _redact_xml(root: etree._Element, original: bytes, where: str) -> Redaction:
     if signatures:
         actions.append(f"{where}: removed {len(signatures)} ds:Signature")
     actions.extend(_rename_attachments(root, where))
+
+    def embedded(payload: bytes, step: str) -> bytes | None:
+        inner = redact_file(payload, step)
+        return inner.data if inner is not None and inner.changed else None
+
+    try:
+        actions.extend(office_metadata.strip_flat(root, where, embedded))
+    except OfficeMetadataError as exc:
+        raise RedactionError(str(exc)) from exc
     for el in root.iter(etree.Element):
         if etree.QName(el).localname not in _BASE64_PAYLOADS:
             continue
@@ -711,7 +733,10 @@ def _file_markers(data: bytes, where: str) -> list[str]:
     # text, several MB of base64 spell a marker such as "PESEL" by chance.
     text = _BASE64_RUN.sub(b"><", body) if body.lstrip().startswith(b"<") else body
     found = [f"{where}: {name}" for name, pattern in _MARKERS.items() if pattern.search(text)]
-    if body.lstrip().startswith(b"%PDF"):
+    office = office_metadata.markers(body, where)
+    if office is not None:
+        found.extend(office)
+    elif body.lstrip().startswith(b"%PDF"):
         found.extend(_pdf_markers(body, where))
     elif body.lstrip().startswith(b"<"):
         try:
@@ -725,6 +750,9 @@ def _file_markers(data: bytes, where: str) -> list[str]:
         if next(root.iter(f"{{{DS_NS}}}Signature"), None) is not None:
             found.append(f"{where}: xml_signature")
         found.extend(_attachment_name_markers(root, where))
+        found.extend(office_metadata.flat_markers(root, where))
+        for part, payload in office_metadata.flat_binaries(root):
+            found.extend(_file_markers(payload, f"{where}>{part}"))
         for el in root.iter(etree.Element):
             local = etree.QName(el).localname
             if local in _BASE64_PAYLOADS or el.get("Encoding") == f"{DS_NS}base64":
