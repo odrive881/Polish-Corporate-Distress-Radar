@@ -394,6 +394,10 @@ companies print it often. The labelling notebook still masks by hand; the export
   91 pages. The 189-page golden file changed on one page's text, so the nine acceptances of 2026-10-22 lapsed:
   scores unchanged, and the gate in `make check` fails until the owner accepts them again.
 
+- **v5's reports in the store (2026-11-13).** List v3 group A's auditor reports are imported (plan 0014, Progress:
+  75 files of 26 companies) and read (`text` run `be682d5a`, 131 requests; 101 reports read store-wide, 48 before),
+  features rebuilt (run `e4571c66`). v5's queue is not rebuilt yet: `make label-queue` does it, keeping labels,
+  and prints its pools for the owner's rates.
 - **The `text` job over list v3 (2026-11-09).** `extractor_v7` on `claude-opus-5-5`, over list v3's random group
   and the distress group's first delivery. Two runs stopped on the provider's 401 (`invalid x-api-key`); `e42b2fa2`
   sent 5,569 requests (3,225 replayed) and failed the blocking `evidence_masked` check on 11 rows over 5 evidence

@@ -312,6 +312,7 @@ src/distress_radar/
 │   ├── script_import.py         # A3, scripted downloads tier: the PAD script's listings and ZIPs (plan 0014; inbox RDF_SCRIPT_INBOX, gitignored)
 │   ├── rdf_queue.py             # A3: the re-search queue for the owner's script, KRS numbers only (plan 0018 step C; RDF_QUEUE_DIR, gitignored)
 │   ├── redaction.py             # invariant 6: signer data, file names, PDF metadata out before storing (ADR 0009)
+│   ├── office_metadata.py       # invariant 6: the people office files' metadata names (OOXML, ODF, RTF, OLE), out (ADR 0009 fourth addendum)
 │   ├── redaction_migration.py   # re-store objects under the current redaction; the store-wide scan
 │   ├── personal_data_scan.py    # pre-commit scan of staged files (`make hooks`)
 │   ├── krs_extract.py           # A4 — full KRS extracts (open KRS API), redacted, content-addressed

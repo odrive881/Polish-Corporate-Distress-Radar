@@ -12,9 +12,9 @@
 **Order:** after ADR 0013's decision. It does not wait for plan 0013 (Phase 7). A1 is the owner's
 Rejestr.io list (ADR 0014, accepted 2026-10-06), loaded in step 0.
 
-## Status: active (2026-10-18): owner decisions 1–6 accepted as recommended; steps 0 and B–D built, step F's docs written; list v1 imported three times (2026-10-09, 2026-10-13 and 2026-10-16, Progress) and everything downstream rebuilt, up to `backtest_v8`; list v2's distress group imported and parsed once (2026-10-17), its legal sources and labels rebuilt by the night of 2026-10-19 (plan 0018) and label v3 (plan 0022), and the models retrained on them (`backtest_v9`); list v2's random group superseded by list v3's (plan 0019); what list v2 can bring to the champion rule's event floor in § "Events" (2026-10-18), and how the rule reads it decided the same day (option (a): unweighted, a promotion provisional); deferred by the owner (2026-10-20): the script writing every tab of an expanded row and re-searching list v1's unsearched companies; the second import's two importer questions decided (owner, 2026-10-23: items 3 and 4 below); list v3's random group imported and parsed (2026-10-28, Progress), its legal sources fetched and labels rebuilt (label v4, plan 0024, 2026-11-03), features rebuilt on `feature_set_v6` (2026-11-03); list v3's distress group's first delivery imported and parsed, features rebuilt on `feature_set_v8` (2026-11-09, Progress); the `text` job run once over everything imported, and features rebuilt on it (2026-11-09, Progress); open: re-searching the 87 companies the script listed found with 0 rows, group A's 10 not searched, step A's field-by-field comparison and step E on the seed
+## Status: active (2026-10-18): owner decisions 1–6 accepted as recommended; steps 0 and B–D built, step F's docs written; list v1 imported three times (2026-10-09, 2026-10-13 and 2026-10-16, Progress) and everything downstream rebuilt, up to `backtest_v8`; list v2's distress group imported and parsed once (2026-10-17), its legal sources and labels rebuilt by the night of 2026-10-19 (plan 0018) and label v3 (plan 0022), and the models retrained on them (`backtest_v9`); list v2's random group superseded by list v3's (plan 0019); what list v2 can bring to the champion rule's event floor in § "Events" (2026-10-18), and how the rule reads it decided the same day (option (a): unweighted, a promotion provisional); deferred by the owner (2026-10-20): the script writing every tab of an expanded row and re-searching list v1's unsearched companies; the second import's two importer questions decided (owner, 2026-10-23: items 3 and 4 below); list v3's random group imported and parsed (2026-10-28, Progress), its legal sources fetched and labels rebuilt (label v4, plan 0024, 2026-11-03), features rebuilt on `feature_set_v6` (2026-11-03); list v3's distress group's first delivery imported and parsed, features rebuilt on `feature_set_v8` (2026-11-09, Progress); the `text` job run once over everything imported, and features rebuilt on it (2026-11-09, Progress); list v3 group A's auditor reports imported, read and in the features (2026-11-13, Progress); open: re-searching the 87 companies the script listed found with 0 rows, group A's 10 not searched, step A's field-by-field comparison and step E on the seed
 
-### Where this stands (2026-11-09, the `text` run added): pick up here
+### Where this stands (2026-11-09, the `text` run added; group A's auditor reports 2026-11-13): pick up here
 
 - **Last delivery imported:** `E:\missing_docs_download` (2026-11-09, run `77da5ac3`): 152 of the 162 drawn
   companies still missing for `backtest_v10` (77 bankrupt, 65 in liquidation, 20 of group A), searched 2026-11-06
@@ -28,14 +28,16 @@ Rejestr.io list (ADR 0014, accepted 2026-10-06), loaded in step 0.
 - **In the stores (2026-11-09):** 1,497 entities in `entity_master`, 976 in `filing_index`, 973 with canonical
   facts. Label set `d4e5f58c…` (`outcome_labels_v4`, frozen by the nightly 2026-11-10; `2bdf7715…` on 2026-11-06), still without the 4 drawn companies. `feature_store` on `feature_set_v8`
   (164,263 rows, 1,497 entities; `leakage` passed), rebuilt after the `text` run (run `3077f07e`), so the batch's
-  text features are in; `text_signals` from run `be562e44` (`extractor_v7`, 2026-11-09).
+  text features are in; `text_signals` from run `be562e44` (`extractor_v7`, 2026-11-09). On 2026-11-13 group A's
+  auditor reports were added (§ "Progress"): `text` run `be682d5a`, features run `e4571c66`, same counts.
 - **The event floor (readiness notebook, 2026-11-09):** 504 drawn companies included (473 on 2026-11-03); 59
   events at 12 and at 24 months in the main run, which reaches the champion rule's 50, and 42 in `no_regime`
   (32 before), which does not.
 - **Scoring is paused by design (since 2026-11-02):** the served models were trained on a `feature_set_v6` build
   whose hash no longer matches the store, so scheduled `scoring` refuses. It resumes with the models
   `backtest_v10` trains (plan 0019 step G).
-- **Next, in order:** the script's re-search of the 87, group A's 10 and the drawn companies still held back with
+- **Next, in order:** the script's re-search of the 87, group A's 10, 0000286847's statements (it lists 8
+  auditor reports and none are stored) and the drawn companies still held back with
   only one tab listed (item 1 below); import, parse; the nightly fetches the legal sources and freezes a label set
   holding the 4 drawn companies not yet in it; the `text` job again only for what that import adds; the owner's
   `weights.nonresponse` decision (the included shares differ by 45%); then `backtest_v10`'s pins (plan 0019).
@@ -309,6 +311,29 @@ statement tier, and the share of scans; and, from ADR 0014, the list's compositi
 the next list representative.
 
 ### Progress
+
+- **List v3 group A's auditor reports (2026-11-13).** The owner's folder `E:\auditor_reports_600_list`: the
+  script's auditor-report (type 19) run over group A, 492 of 600 searched (2026-11-10 to 11-11), 28 companies
+  with 93 rows. Imported after the store's redaction v5 migration (ADR 0009 fourth addendum, run
+  `redaction-789324e3`), which this delivery's review had prompted.
+  - **Importer fix (`2825621`):** the first import held back 13 companies as having "fewer than 3 filed years":
+    a reports-only listing lists only audited years, and the gate counted the listing alone, though all 13 have 3
+    to 9 statement years in `filing_index`. The gate now counts the stored periods (not deleted) with the listed
+    ones.
+  - **Stored:** 82 rows indexed, 75 report files of 26 companies, all dated. Not stored, as expected:
+    0000775448's 2025 file (a PESEL in its signature certificate; refused, fail closed), 0000866004 (no
+    statements, so still under 3 years), 0000584205's 2023 ZIP (1 of 2 tabs listed), 5 searches incomplete
+    (0000551339 ×2, 0000140000, 0000144286, 0000718507), and two rows RDF lists as prepared after submission
+    (0000718507 2020, 0000286847 2019; not used, which fails the run by design). 7 searched companies are not in
+    `entity_master`; six list no reports, but **0000286847 lists 8 reports and has no statements stored**: its
+    statements are to be searched again.
+  - **`text` (run `be682d5a`):** 131 requests sent (`going_concern_uncertainty` 80, `emphasis_of_matter` 39,
+    `post_balance_sheet_event` 6, `litigation` 4, `continued_existence_vote` 2); the 905 migrated files'
+    notes were replayed (office attachments are counted, not opened, so their page text did not change). 101
+    auditor reports read (48 before), 33 companies; present: `opinion_type` 81, `emphasis_of_matter` 5,
+    `litigation` 3. Notes unchanged at 5,617 statements.
+  - **Features (run `e4571c66`):** `feature_set_v8`, 164,263 rows, 1,497 entities (unchanged: no new company);
+    `leakage` and `feature_coverage` passed; `legal_events_quarantine` warns, as since plan 0024.
 
 - **The `text` job over list v3 (2026-11-09).** Run once, as the owner chose on 2026-10-21, after list v3's random
   group and the distress group's first delivery were in; `extractor_v7` (`prefilter_v4`, `claude-opus-5-5`).
