@@ -971,3 +971,22 @@ def test_outages_completeness_young_entities_and_missing_tabs(
     assert report.incomplete_groups == [
         f"{KRS} {KRS}/2025.zip: 1 of 2 tabs listed; ZIP not imported"
     ]
+
+    # A later listing of one more year alone (as a delivery of auditor reports lists only the
+    # audited years): the 3 years already stored count with it.
+    later = _inbox(
+        tmp_path / "later",
+        _documents(year(3)),
+        _entities(_search() | {"list_rows": "1", "searched_at": "2026-10-09 10:00:00"}),
+        {f"{KRS}/2022.zip": one},
+    )
+    report = import_listing(
+        later,
+        conn=conn,
+        store=InMemoryObjectStore(),
+        ingestion_run_id="run-3",
+        document_types=load_document_types(),
+        resolved=set(manifest.resolved_entities(conn)),
+        min_history_years=4,
+    )
+    assert report.too_few_years == [] and report.indexed == 1

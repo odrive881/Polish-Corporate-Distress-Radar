@@ -449,13 +449,18 @@ def complete_search(search: ListedSearch, rows_listed: int) -> bool:
     return search.found and search.list_rows is not None and rows_listed >= search.list_rows
 
 
-def filed_years(tabs: Iterable[ListedTab]) -> dict[str, int]:
-    """Per KRS, the distinct periods with a listed document not deleted (`min_history_years`)."""
+def filed_periods(tabs: Iterable[ListedTab]) -> dict[str, set[date]]:
+    """Per KRS, the distinct period ends with a listed document not deleted."""
     periods: dict[str, set[date]] = {}
     for listed in tabs:
         if listed.status == "NIEUSUNIETY":
             periods.setdefault(listed.krs, set()).add(listed.period_end)
-    return {krs: len(ends) for krs, ends in periods.items()}
+    return periods
+
+
+def filed_years(tabs: Iterable[ListedTab]) -> dict[str, int]:
+    """Per KRS, the distinct periods with a listed document not deleted (`min_history_years`)."""
+    return {krs: len(ends) for krs, ends in filed_periods(tabs).items()}
 
 
 def current_documents(tabs: Iterable[ListedTab]) -> tuple[dict[str, ListedTab], list[str]]:
@@ -1029,8 +1034,9 @@ def import_listing(
 ) -> ScriptImportReport:
     """Import the script's inbox into the manifest; commits per step.
 
-    An entity listing fewer filed years than `min_history_years` (the segment's) is not imported
-    and is reported; a later listing with enough years imports it. An entity in `left_out` (the
+    An entity with fewer filed years than `min_history_years` (the segment's), counting the
+    listed periods and those already in `filing_index`, is not imported and is reported; a later
+    listing with enough years imports it. An entity in `left_out` (the
     owner's decision) is never imported and is reported.
     """
     report = ScriptImportReport()
@@ -1128,7 +1134,15 @@ def import_listing(
             report.searches += inserted
         conn.commit()
 
-    years = filed_years(current.values())
+    # The years already stored count with the listed ones: a delivery of auditor reports alone
+    # lists only the audited years of an entity whose statements are already imported.
+    periods = filed_periods(current.values())
+    for krs, period_end in conn.execute(
+        "SELECT DISTINCT krs, period_end FROM filing_index WHERE status = 'NIEUSUNIETY'"
+    ):
+        if krs in periods:
+            periods[krs].add(period_end)
+    years = {krs: len(ends) for krs, ends in periods.items()}
     young: set[str] = set()
     if min_history_years is not None:
         for krs, n in sorted(years.items()):
