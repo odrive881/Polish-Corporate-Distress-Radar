@@ -262,3 +262,13 @@ one flat Word XML file. One Excel file links another workbook by a path under `C
 download's hash changes, so parsing, the text job and the warehouse are rebuilt over them; no figure may move.
 Nothing the project reads uses the removed fields: office attachments are counted, not opened
 (`page_text`, "unsupported").
+
+**Migration, 2026-11-13 (run `redaction-789324e3`).** All 912 objects replaced, every one a download; a
+re-scan of the store finds 0 holding personal data, and `raw_documents` still holds 13,948 rows. A first
+attempt stopped on its first object and rolled back: `text_extractions`, added by the text stage after the
+migration was written, still referenced the row it deletes, so the migration now drops the old file's
+`text_extractions` rows as it does `parsed_documents` (905 of the 912 had them, 2,634 rows; the next `text`
+run recreates them, its model answers keyed by page text). Re-parsing the 912 moved no figure:
+`canonical_value_hash.py`'s hash without lineage over all 1,288,104 rows is unchanged (`4c1191228a8d…`), each
+structure version keeps its row count, and only the hashes that include `source_document_hash` changed. The
+backup of the unredacted originals was deleted once these checks passed.
