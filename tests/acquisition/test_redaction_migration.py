@@ -28,6 +28,7 @@ from distress_radar.acquisition.redaction_migration import (
     replace_document,
     stored_markers,
 )
+from distress_radar.extraction import manifest as extraction_manifest
 from distress_radar.parsing import manifest as parsing_manifest
 from distress_radar.settings import Settings
 
@@ -75,6 +76,7 @@ def conn() -> Iterator[psycopg.Connection]:
         try:
             manifest.ensure_schema(connection)
             parsing_manifest.ensure_schema(connection)
+            extraction_manifest.ensure_schema(connection)
             connection.commit()
             yield connection
         finally:
@@ -131,6 +133,12 @@ def test_signed_document_is_replaced_and_references_follow(conn: psycopg.Connect
         "run-a",
         NOW,
     )
+    conn.execute(
+        "INSERT INTO text_extractions (sha256, source_member, pipeline_hash, krs, document_ref, "
+        "first_ingestion_run_id, first_extracted_at, last_seen_run_id, last_seen_at) "
+        "VALUES (%s, 'zip:sf.xml', 'p', '0000000001', 'ref', 'run-t', %s, 'run-t', %s)",
+        (signed_sha, NOW, NOW),
+    )
     conn.commit()
 
     assert find_unredacted(conn, store) == [signed_sha]
@@ -149,6 +157,7 @@ def test_signed_document_is_replaced_and_references_follow(conn: psycopg.Connect
     assert conn.execute("SELECT sha256 FROM filing_index").fetchall() == [(new,)]
     assert conn.execute("SELECT source_document_hash FROM quarantine_events").fetchall() == [(new,)]
     assert conn.execute("SELECT count(*) FROM parsed_documents").fetchone() == (0,)
+    assert conn.execute("SELECT count(*) FROM text_extractions").fetchone() == (0,)
     assert conn.execute(
         "SELECT sha256, source_url FROM raw_document_fetches ORDER BY source_url"
     ).fetchall() == [(new, "https://rdf/tresc#1"), (clean_sha, "https://rdf/tresc#2")]

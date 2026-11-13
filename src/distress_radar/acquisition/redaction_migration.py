@@ -11,8 +11,8 @@ filings a download holds):
    `content-disposition`;
 3. in one transaction, point every manifest reference at the new hash
    (`filing_index`, `raw_document_fetches`, `quarantine_events`), set a detail's rows'
-   `file_name` to the token, drop the old file's `parsed_documents` rows (re-parsing recreates
-   them), log the replacement in `raw_redactions`, and delete the old `raw_documents` row;
+   `file_name` to the token, drop the old file's `parsed_documents` and `text_extractions` rows
+   (re-parsing and the next `text` run recreate them), log the replacement in `raw_redactions`, and delete the old `raw_documents` row;
 4. only then delete the old object and its sidecar.
 
 **Downloads go first** (plan 0011 step E): their members are named from `file_name`, which the
@@ -37,7 +37,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 
 import psycopg
-from psycopg import Connection
+from psycopg import Connection, sql
 
 from distress_radar.acquisition import manifest
 from distress_radar.acquisition.raw_store import (
@@ -202,8 +202,15 @@ def replace_document(
             "UPDATE quarantine_events SET source_document_hash = %s WHERE source_document_hash = %s",
             (new_sha256, old_sha256),
         )
-        if conn.execute("SELECT to_regclass('parsed_documents')").fetchone() != (None,):
-            conn.execute("DELETE FROM parsed_documents WHERE sha256 = %s", (old_sha256,))
+        # Derived manifests of the old file: the parsing and text stages recreate them on their
+        # next run. The text stage's model answers are keyed by page text, not by file, so
+        # re-reading a file whose text the redaction left alone sends no new request.
+        for derived in ("parsed_documents", "text_extractions"):
+            if conn.execute("SELECT to_regclass(%s)", (derived,)).fetchone() != (None,):
+                conn.execute(
+                    sql.SQL("DELETE FROM {} WHERE sha256 = %s").format(sql.Identifier(derived)),
+                    (old_sha256,),
+                )
         manifest.insert_redaction(
             conn,
             received_sha256=old_sha256,
