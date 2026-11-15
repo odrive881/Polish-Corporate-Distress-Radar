@@ -11,7 +11,7 @@
 **Order:** after plan 0012 (complete). It does not wait for ADR 0013: like Phase 6, it builds and measures
 machinery on the seed. Phase 8 (LightGBM, survival, SHAP) reads the feature set this plan adds.
 
-## Status: active (2026-10-13): owner decisions 0–9 accepted; every step built, J's docs included; the model runs on the seed under `extractor_v6` (the default since 2026-10-13; v4 before) with the provider's terms confirmed; all nine signals accepted on the 166-page golden set (2026-10-15) and held by the gate in `make check`; the `text` and `features` jobs re-run under `extractor_v6` (2026-10-15, plan 0017 step H: 868 new requests, all answered); 2026-10-22: `extractor_v7` (`prefilter_v4`) the default; `golden_sample_v3` shelved and the two signals without positives parked; the plan closes on the feature signals, labelled in a stratified sample of list v3's draw (§ "Labelling after list v3", decisions 10–14; K1–K3 built); 2026-11-06: decisions 15–24 (labelling in draw order to a stopping rule, per-kind signals, a holdout, rechecks, a paired gate) accepted by the owner and built as K5, `golden_sample_v4`/`v5` written with provisional rates; 2026-11-09: the `text` job run over list v3 (`be562e44`, Progress); 2026-11-10: K4's queues built, v4's rates set by the owner, labelling paused for plan 0025's reading-order fix and resumed the same day (Progress); open: the owner accepting the nine signals again (the golden file changed on one page's text, scores unchanged), K4's labelling, and the owner's items below
+## Status: active (2026-10-13): owner decisions 0–9 accepted; every step built, J's docs included; the model runs on the seed under `extractor_v6` (the default since 2026-10-13; v4 before) with the provider's terms confirmed; all nine signals accepted on the 166-page golden set (2026-10-15) and held by the gate in `make check`; the `text` and `features` jobs re-run under `extractor_v6` (2026-10-15, plan 0017 step H: 868 new requests, all answered); 2026-10-22: `extractor_v7` (`prefilter_v4`) the default; `golden_sample_v3` shelved and the two signals without positives parked; the plan closes on the feature signals, labelled in a stratified sample of list v3's draw (§ "Labelling after list v3", decisions 10–14; K1–K3 built); 2026-11-06: decisions 15–24 (labelling in draw order to a stopping rule, per-kind signals, a holdout, rechecks, a paired gate) accepted by the owner and built as K5, `golden_sample_v4`/`v5` written with provisional rates; 2026-11-09: the `text` job run over list v3 (`be562e44`, Progress); 2026-11-10: K4's queues built, v4's rates set by the owner, labelling paused for plan 0025's reading-order fix and resumed the same day (Progress); 2026-11-15: the nine signals accepted again by the owner on the changed golden file (scores unchanged); open: K4's labelling, and the owner's items below
 
 ### Where this stands (2026-10-21)
 
@@ -392,7 +392,11 @@ companies print it often. The labelling notebook still masks by hand; the export
   owner's work (`golden.merge`), which also corrected 202 rows still drawn under the provisional rates. Rebuilt:
   2,358 pages (1,242 `answered_present`, 849 `answered_absent`, 267 `not_selected`), 4 carried over labelled; v3
   91 pages. The 189-page golden file changed on one page's text, so the nine acceptances of 2026-10-22 lapsed:
-  scores unchanged, and the gate in `make check` fails until the owner accepts them again.
+  scores unchanged, and the gate in `make check` failed until the owner accepted them again (2026-11-15, below).
+
+- **The nine accepted again (2026-11-15).** The owner ran `make eval-accept` for all nine on the changed golden
+  file. Against the 2026-10-22 results only the acceptance and the golden file's hash differ; the one changed page
+  was re-asked for `going_concern_uncertainty` and answered the same (`absent`). `make check` passes again.
 
 - **v5's reports in the store (2026-11-13).** List v3 group A's auditor reports are imported (plan 0014, Progress:
   75 files of 26 companies) and read (`text` run `be682d5a`, 131 requests; 101 reports read store-wide, 48 before),
