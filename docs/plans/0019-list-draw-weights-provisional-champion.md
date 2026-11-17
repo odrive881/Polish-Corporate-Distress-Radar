@@ -426,6 +426,8 @@ nightly's label set `d4e5f58c…`.* The readiness notebook on `feature_set_v8` (
 
 "No statement imported" holds the 87 companies the script listed as found with 0 rows, to re-search (plan 0014).
 
+**Update, 2026-11-17 (the 87 re-searched and imported, plan 0014 § Progress; readiness on features run `01a075c7`, label set still `d4e5f58c…`):** included A 422 of 593 (81 not found, 62 no statement imported, 18 held back, 8 not in `entity_master`, 1 incomplete search, 1 left out), B w upadłości 98 of 130 (23 held back, 4 incomplete searches, 3 no statement imported, 2 not found), B w likwidacji 49 of 70 (8 not found, 6 held back, 5 no statement imported, 2 not in `entity_master`): 569 in all. Events at 12 months 106 in `main` and 83 in `no_regime`, at 24 months 93 and 65, so every run reaches 50. Included shares by weight A 70.9%, B bankrupt 75.4%, B in liquidation 70.0%: they differ by 5.4%, and `nonresponse: by_group` would scale them by 1.388, 1.326 and 1.327. Ever in distress: 63 of A's 422, 97 of 98 and 49 of 49 in B; 15.43% weighted, 36.73% unweighted. Still not ready: 4 drawn companies not in the latest label set.
+
 - **Floor:** 59 events at each horizon in `main`, which reaches 50; 42 in `no_regime`, which does not. Ever in
   distress: 63 of A's 423, 62 of 63 and 18 of 18 in B; 13.9% weighted, 28.4% unweighted.
 - **Included shares by weight:** A 71.1%, B bankrupt 48.5%, B in liquidation 25.7%, so they differ by 45%.
